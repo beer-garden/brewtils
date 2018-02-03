@@ -17,9 +17,9 @@ def find_version():
 setup(
     name='brewtils',
     version=find_version(),
-    description='Utilities for building and running BEERGARDEN Systems',
+    description='Utilities for building and running beer-garden Systems',
     url=' ',
-    author='The BEERGARDEN Team',
+    author='The beer-garden Team',
     author_email=' ',
     license='MIT',
     packages=find_packages(exclude=['test', 'test.*']),

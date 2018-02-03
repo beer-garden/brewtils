@@ -19,7 +19,7 @@ Date: 1/26/18
 ## [2.2.1]
 1/11/18
 #### Bug Fixes
-- Nested requests that reference a different BEERGARDEN no longer fail (#313)
+- Nested requests that reference a different beer-garden no longer fail (#313)
 
 ## [2.2.0]
 10/23/17

@@ -8,19 +8,19 @@ from brewtils.rest import normalize_url_prefix
 
 
 class RestClient(object):
-    """Simple Rest Client for communicating to with BEERGARDEN.
+    """Simple Rest Client for communicating to with beer-garden.
 
     The is the low-level client responsible for making the actual REST calls. Other clients
     (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by providing useful abstractions.
 
-    :param host: BEERGARDEN REST API hostname.
-    :param port: BEERGARDEN REST API port.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with BEERGARDEN.
-    :param api_version: The BEERGARDEN REST API version. Will default to the latest version.
+    :param host: beer-garden REST API hostname.
+    :param port: beer-garden REST API port.
+    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
+    :param api_version: The beer-garden REST API version. Will default to the latest version.
     :param logger: The logger to use. If None one will be created.
-    :param ca_cert: BEERGARDEN REST API server CA certificate.
+    :param ca_cert: beer-garden REST API server CA certificate.
     :param client_cert: The client certificate to use when making requests.
-    :param url_prefix: BEERGARDEN REST API Url Prefix.
+    :param url_prefix: beer-garden REST API Url Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     """
 
@@ -45,7 +45,7 @@ class RestClient(object):
         if client_cert:
             self.session.cert = client_cert
 
-        # Configure the BEERGARDEN URLs
+        # Configure the beer-garden URLs
         base_url = 'http%s://%s:%s%s' % ('s' if ssl_enabled else '', host, port, normalize_url_prefix(url_prefix))
         self.version_url = base_url + 'version'
         self.config_url = base_url + 'config'
@@ -60,7 +60,7 @@ class RestClient(object):
             self.logging_config_url = base_url + 'api/v1/config/logging/'
             self.event_url = base_url + 'api/vbeta/events/'
         else:
-            raise ValueError("Invalid BEERGARDEN API version: %s" % api_version)
+            raise ValueError("Invalid beer-garden API version: %s" % api_version)
 
     def get_version(self, **kwargs):
         """Perform a GET to the version URL

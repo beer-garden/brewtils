@@ -33,7 +33,7 @@ def get_bg_connection_parameters(**kwargs):
 
     host = kwargs.pop('host', None) or os.environ.get('BG_WEB_HOST')
     if not host:
-        raise BrewmasterValidationError('Unable to create a plugin without a BEERGARDEN host. Please specify one '
+        raise BrewmasterValidationError('Unable to create a plugin without a beer-garden host. Please specify one '
                                         'with bg_host=<host> or by setting the BG_WEB_HOST environment variable.')
 
     port = kwargs.pop('port', None) or os.environ.get('BG_WEB_PORT', '2337')

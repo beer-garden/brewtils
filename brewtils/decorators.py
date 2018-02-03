@@ -24,7 +24,7 @@ _wrap_functions = False
 
 
 def system(cls):
-    """Class decorator that marks a class as a BEERGARDEN System
+    """Class decorator that marks a class as a beer-garden System
 
     Creates a _commands property on the class that holds all registered commands.
 
@@ -45,7 +45,7 @@ def system(cls):
 
 def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=None, form=None, template=None,
             icon_name=None):
-    """Decorator that marks a function as a BEERGARDEN command
+    """Decorator that marks a function as a beer-garden command
 
     For example:
 
@@ -93,7 +93,7 @@ def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=N
 def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None, optional=None, default=None,
               description=None, choices=None, nullable=None, maximum=None, minimum=None, regex=None, is_kwarg=None,
               model=None, form_input_type=None):
-    """Decorator that enables Parameter specifications for a BEERGARDEN Command
+    """Decorator that enables Parameter specifications for a beer-garden Command
 
     This decorator is intended to be used when more specification is desired for a specific Parameter.
 

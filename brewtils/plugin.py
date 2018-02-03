@@ -23,15 +23,15 @@ request_context = threading.local()
 
 
 class PluginBase(object):
-    """A BEERGARDEN Plugin.
+    """A beer-garden Plugin.
 
-    This class represents a BEERGARDEN Plugin - a continuously-running process that can receive and process Requests.
+    This class represents a beer-garden Plugin - a continuously-running process that can receive and process Requests.
 
     To work, a Plugin needs a Client instance - an instance of a class defining which Requests this plugin can accept
     and process. The easiest way to define a `Client` is by annotating a class with the @system decorator.
 
     When creating a Plugin you can pass certain keyword arguments to let the Plugin know how to communicate with the
-    BEERGARDEN instance. These are:
+    beer-garden instance. These are:
 
         - bg_host
         - bg_port
@@ -70,11 +70,11 @@ class PluginBase(object):
     that makes sense and be aware that Requests are processed in separate thread contexts!
 
     :param client: Instance of a class annotated with @system
-    :param str bg_host: Hostname of a BEERGARDEN
-    :param int bg_port: Port BEERGARDEN is listening on
-    :param bool ssl_enabled: Whether to use SSL for BEERGARDEN communication
-    :param ca_cert: Certificate that issued the server certificate used by the BEERGARDEN server
-    :param client_cert: Certificate used by the server making the connection to BEERGARDEN
+    :param str bg_host: Hostname of a beer-garden
+    :param int bg_port: Port beer-garden is listening on
+    :param bool ssl_enabled: Whether to use SSL for beer-garden communication
+    :param ca_cert: Certificate that issued the server certificate used by the beer-garden server
+    :param client_cert: Certificate used by the server making the connection to beer-garden
     :param system: The system definition
     :param name: The system name
     :param description: The system description
@@ -83,13 +83,13 @@ class PluginBase(object):
     :param str instance_name: The name of the instance
     :param logger: A logger that will be used by the Plugin
     :type logger: :py:class:`logging.Logger`
-    :param parser: The parser to use when communicating with BEERGARDEN
+    :param parser: The parser to use when communicating with beer-garden
     :type parser: :py:class:`brewtils.schema_parser.SchemaParser`
     :param bool multithreaded: DEPRECATED Flag specifying whether each message should be processed in a separate thread
     :param int worker_shutdown_timeout: Amount of time to wait during shutdown for threads to finish processing
     :param dict metadata: Metadata specific to this plugin
     :param int max_concurrent: Maximum number of requests to process concurrently
-    :param str bg_url_prefix: URL Prefix BEERGARDEN is on
+    :param str bg_url_prefix: URL Prefix beer-garden is on
     :param str display_name: The display name to use for the system
     :param int max_attempts: Number of times to attempt updating the request before giving up (default -1 aka never)
     :param int max_timeout: Maximum amount of time to wait before retrying to update a request
@@ -367,7 +367,7 @@ class PluginBase(object):
         return getattr(target, request.command)(*args, **request.parameters)
 
     def _update_request(self, request, headers):
-        """Sends a Request update to BEERGARDEN
+        """Sends a Request update to beer-garden
 
         Ephemeral requests do not get updated, so we simply skip them.
 
@@ -541,7 +541,7 @@ class PluginBase(object):
         return system
 
     def _connection_poll(self):
-        """Periodically attempt to re-connect to BEERGARDEN"""
+        """Periodically attempt to re-connect to beer-garden"""
 
         while not self.shutdown_event.wait(5):
             with self.brew_view_error_condition:

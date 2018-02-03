@@ -11,10 +11,10 @@ from brewtils.rest.easy_client import EasyClient
 
 
 class SystemClient(object):
-    """High-level client for generating requests for a BEERGARDEN System.
+    """High-level client for generating requests for a beer-garden System.
 
     SystemClient creation:
-        This class is intended to be the main way to create BEERGARDEN requests. Create an instance with BEERGARDEN
+        This class is intended to be the main way to create beer-garden requests. Create an instance with beer-garden
         connection information (optionally including a url_prefix) and a system name:
 
             client = SystemClient(host, port, 'example_system', ssl_enabled=True, url_prefix=None)
@@ -38,7 +38,7 @@ class SystemClient(object):
 
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first attempt to send a Request. At that
-        point the SystemClient will query BEERGARDEN to get a system definition that matches the system_name and
+        point the SystemClient will query beer-garden to get a system definition that matches the system_name and
         version_constraint. If no matching system can be found a BrewmasterFetchError will be raised. If always_update
         was set to True this will happen before making each request, not just the first.
 
@@ -48,7 +48,7 @@ class SystemClient(object):
             request = client.example_command(param_1='example_param')
 
         In the normal case this will block until the request completes. Request completion is determined by periodically
-        polling BEERGARDEN to check the Request status. The time between polling requests starts at 0.5s and doubles
+        polling beer-garden to check the Request status. The time between polling requests starts at 0.5s and doubles
         each time the request has still not completed, up to max_delay. If a timeout was specified and the Request has
         not completed within that time a BrewmasterTimeoutError will be raised.
 
@@ -70,35 +70,35 @@ class SystemClient(object):
         the request on that version. This is so users of the SystemClient that don't necessarily care about the target
         system version don't need to be restarted if the target system is updated.
 
-    Tweaking BEERGARDEN Request Parameters:
-        There are several parameters that control how BEERGARDEN routes / processes a request. To denote these as
-        intended for BEERGARDEN itself (rather than a parameter to be passed to the Plugin) prepend a leading underscore
+    Tweaking beer-garden Request Parameters:
+        There are several parameters that control how beer-garden routes / processes a request. To denote these as
+        intended for beer-garden itself (rather than a parameter to be passed to the Plugin) prepend a leading underscore
         to the argument name.
 
         Sending to another instance:
             request = client.example_command(_instance_name='instance_2', param_1='example_param')
 
         Request with a comment:
-            request = client.example_command(_comment='I'm a BEERGARDEN comment!', param_1='example_param')
+            request = client.example_command(_comment='I'm a beer-garden comment!', param_1='example_param')
 
         Without the leading underscore the arguments would be treated the same as param_1 - another parameter to be
         passed to the plugin.
 
-    :param host: BEERGARDEN REST API hostname.
-    :param port: BEERGARDEN REST API port.
+    :param host: beer-garden REST API hostname.
+    :param port: beer-garden REST API port.
     :param system_name: The name of the system to use.
     :param version_constraint: The system version to use. Can be specific or 'latest'.
     :param default_instance: The instance to use if not specified when creating a request.
     :param always_update: Specify if SystemClient should check for a newer System version before each request.
     :param timeout: Length of time to wait for a request to complete. 'None' means wait forever.
     :param max_delay: Maximum time to wait between checking the status of a created request.
-    :param api_version: BEERGARDEN API version.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with BEERGARDEN.
-    :param ca_cert: BEERGARDEN REST API server CA certificate.
+    :param api_version: beer-garden API version.
+    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
+    :param ca_cert: beer-garden REST API server CA certificate.
     :param blocking: Flag indicating whether to block after request creation until the request completes.
     :param max_concurrent: Maximum number of concurrent requests allowed.
     :param client_cert: The client certificate to use when making requests.
-    :param url_prefix: BEERGARDEN REST API URL Prefix.
+    :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     """
 
@@ -125,11 +125,11 @@ class SystemClient(object):
                                        client_cert=client_cert, url_prefix=url_prefix, ca_verify=ca_verify)
 
     def __getattr__(self, item):
-        """Standard way to create and send BEERGARDEN requests"""
+        """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)
 
     def create_bg_request(self, command_name, **kwargs):
-        """Create a callable that will execute a BEERGARDEN request when called.
+        """Create a callable that will execute a beer-garden request when called.
 
         Normally you interact with the SystemClient by accessing attributes, but there could be certain cases where you
         want to create a request without sending it.
@@ -147,7 +147,7 @@ class SystemClient(object):
         :param command_name: The name of the command that will be sent.
         :param kwargs: Additional arguments to pass to send_bg_request.
         :raise AttributeError: The system does not have a command with the given command_name.
-        :return: A partial that will create and execute a BEERGARDEN request when called.
+        :return: A partial that will create and execute a beer-garden request when called.
         """
 
         if not self._loaded or self._always_update:
@@ -163,13 +163,13 @@ class SystemClient(object):
                                  (self._system.name, self._system.version, command_name))
 
     def send_bg_request(self, **kwargs):
-        """Actually create a Request and send it to BEERGARDEN
+        """Actually create a Request and send it to beer-garden
 
         NOTE: This method is intended for advanced use only, mainly cases where you're using the SystemClient without a
         predefined System. It assumes that everything needed to construct the request is being passed in kwargs. If
         this doesn't sound like what you want you should check out create_bg_request.
 
-        :param kwargs: All necessary request parameters, including BEERGARDEN internal parameters
+        :param kwargs: All necessary request parameters, including beer-garden internal parameters
         :raise BrewmasterValidationError: If the Request creation failed validation on the server
         :return: If the SystemClient was created with blocking=True a completed request object, otherwise a Future that
         will return the Request when it completes.
@@ -195,9 +195,9 @@ class SystemClient(object):
             return self._thread_pool.submit(self._wait_for_request, request)
 
     def load_bg_system(self):
-        """Query BEERGARDEN for a System definition
+        """Query beer-garden for a System definition
 
-        This method will make the query to BEERGARDEN for a System matching the name and version constraints specified
+        This method will make the query to beer-garden for a System matching the name and version constraints specified
         during SystemClient instance creation.
 
         If this method completes successfully the SystemClient will be ready to create and send Requests.
@@ -214,7 +214,7 @@ class SystemClient(object):
                                                                 version=self._version_constraint)
 
         if self._system is None:
-            raise BrewmasterFetchError("BEERGARDEN has no system named '%s' with a version matching '%s'" %
+            raise BrewmasterFetchError("beer-garden has no system named '%s' with a version matching '%s'" %
                                        (self._system_name, self._version_constraint))
 
         self._commands = {command.name: command for command in self._system.commands}
@@ -244,8 +244,8 @@ class SystemClient(object):
             return None
 
         if request_context.bg_host.upper() != self._host.upper() or request_context.bg_port != self._port:
-            self.logger.warning("A parent request was found, but the destination BEERGARDEN appears "
-                                "to be different than the BEERGARDEN to which this plugin is assigned. "
+            self.logger.warning("A parent request was found, but the destination beer-garden appears "
+                                "to be different than the beer-garden to which this plugin is assigned. "
                                 "Cross-server parent/child requests are not supported at this time. "
                                 "Removing the parent context so the request doesn't fail.")
             return None

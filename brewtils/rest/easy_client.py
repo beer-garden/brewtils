@@ -9,19 +9,19 @@ from brewtils.schema_parser import SchemaParser
 
 
 class EasyClient(object):
-    """Client for communicating with BEERGARDEN.
+    """Client for communicating with beer-garden.
 
     This class provides nice wrappers around the functionality provided by a :py:class:`brewtils.rest.client.RestClient`
 
-    :param host: BEERGARDEN REST API hostname.
-    :param port: BEERGARDEN REST API port.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with BEERGARDEN.
-    :param api_version: The BEERGARDEN REST API version. Will default to the latest version.
-    :param ca_cert: BEERGARDEN REST API server CA certificate.
+    :param host: beer-garden REST API hostname.
+    :param port: beer-garden REST API port.
+    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
+    :param api_version: The beer-garden REST API version. Will default to the latest version.
+    :param ca_cert: beer-garden REST API server CA certificate.
     :param client_cert: The client certificate to use when making requests.
     :param parser: The parser to use. If None will default to an instance of BrewmasterSchemaParser.
     :param logger: The logger to use. If None one will be created.
-    :param url_prefix: BEERGARDEN REST API URL Prefix.
+    :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     """
 

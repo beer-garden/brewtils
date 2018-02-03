@@ -74,17 +74,17 @@ DEFAULT_LOGGING_CONFIG = {
 
 
 def setup_logger(bg_host, bg_port, system_name, ca_cert=None, client_cert=None, ssl_enabled=None):
-    """Configures python logging module to use logging specified in BEERGARDEN API.
+    """Configures python logging module to use logging specified in beer-garden API.
 
     This method will overwrite your current logging configuration, so only call it if you want
-    BEERGARDEN's logging configuration.
+    beer-garden's logging configuration.
 
-    :param str bg_host: Hostname of a BEERGARDEN
-    :param int bg_port: Port BEERGARDEN is listening on
+    :param str bg_host: Hostname of a beer-garden
+    :param int bg_port: Port beer-garden is listening on
     :param str system_name: The system
-    :param ca_cert: Certificate that issued the server certificate used by the BEERGARDEN server
-    :param client_cert: Certificate used by the server making the connection to BEERGARDEN
-    :param bool ssl_enabled: Whether to use SSL for BEERGARDEN communication
+    :param ca_cert: Certificate that issued the server certificate used by the beer-garden server
+    :param client_cert: Certificate used by the server making the connection to beer-garden
+    :param bool ssl_enabled: Whether to use SSL for beer-garden communication
     :return:
     """
     config = get_python_logging_config(bg_host=bg_host, bg_port=bg_port, system_name=system_name, ca_cert=ca_cert,
@@ -95,12 +95,12 @@ def setup_logger(bg_host, bg_port, system_name, ca_cert=None, client_cert=None, 
 def get_python_logging_config(bg_host, bg_port, system_name, ca_cert=None, client_cert=None, ssl_enabled=None):
     """Returns a dictionary for the python logging configuration
 
-    :param str bg_host: Hostname of a BEERGARDEN
-    :param int bg_port: Port BEERGARDEN is listening on
+    :param str bg_host: Hostname of a beer-garden
+    :param int bg_port: Port beer-garden is listening on
     :param str system_name: The system
-    :param ca_cert: Certificate that issued the server certificate used by the BEERGARDEN server
-    :param client_cert: Certificate used by the server making the connection to BEERGARDEN
-    :param bool ssl_enabled: Whether to use SSL for BEERGARDEN communication
+    :param ca_cert: Certificate that issued the server certificate used by the beer-garden server
+    :param client_cert: Certificate used by the server making the connection to beer-garden
+    :param bool ssl_enabled: Whether to use SSL for beer-garden communication
     :return: Python logging configuration
     """
     client = brewtils.get_easy_client(host=bg_host, port=bg_port, ssl_enabled=ssl_enabled,

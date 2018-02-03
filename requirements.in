@@ -1,0 +1,24 @@
+
+# Dependencies
+six
+requests
+marshmallow
+pika
+wrapt
+lark-parser
+enum34
+futures ; python_version < "3.0"
+
+# Documentation Dependencies
+sphinx
+
+# Build / Test Dependencies
+mock
+nose
+rednose
+coverage
+nosexcover
+pylint
+tox
+pytz
+

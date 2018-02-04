@@ -1,10 +1,10 @@
 import logging
 import warnings
 
-from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, Choices, LoggingConfig,\
-    Event, Queue
-from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, RequestSchema, \
-    PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema
+from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
+    Choices, LoggingConfig, Event, Queue
+from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, \
+    RequestSchema, PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema
 
 
 class SchemaParser(object):
@@ -94,8 +94,9 @@ class SchemaParser(object):
         :return: A PatchOperation object
         """
         if not kwargs.pop('many', True):
-            cls.logger.warning("A patch object should always be wrapped as a list of objects. Thus, parsing will "
-                               "always return a list. You specified many as False, this is being ignored and a list "
+            cls.logger.warning("A patch object should always be wrapped as a list of objects. "
+                               "Thus, parsing will always return a list. You specified many as "
+                               "False, this is being ignored and a list "
                                "will be returned anyway.")
         return cls._do_parse(patch, PatchSchema(many=True, **kwargs), from_string=from_string)
 
@@ -112,10 +113,13 @@ class SchemaParser(object):
         :return: A LoggingConfig object
         """
         if kwargs.pop('many', False):
-            cls.logger.warning("A logging config object should never be wrapped as a list of objects. Thus, parsing "
-                               "will always return a dict. You specified many as True, this is being ignored and a "
-                               "dict will be returned anyway.")
-        return cls._do_parse(logging_config, LoggingConfigSchema(many=False, **kwargs), from_string=from_string)
+            cls.logger.warning("A logging config object should never be wrapped as a list of "
+                               "objects. Thus, parsing will always return a dict. You specified "
+                               "many as True, this is being ignored and a dict will be returned "
+                               "anyway.")
+        return cls._do_parse(logging_config,
+                             LoggingConfigSchema(many=False, **kwargs),
+                             from_string=from_string)
 
     @classmethod
     def parse_event(cls, event, from_string=False, **kwargs):
@@ -258,6 +262,7 @@ class SchemaParser(object):
 
 class BrewmasterSchemaParser(SchemaParser):
     def __init__(self):
-        warnings.warn("Reference made to 'BrewmasterSchemaParser'. This name will be removed in version 3.0, please "
-                      "use 'SchemaParser' instead.", DeprecationWarning, stacklevel=2)
+        warnings.warn("Reference made to 'BrewmasterSchemaParser'. This name will be removed in "
+                      "version 3.0, please use 'SchemaParser' instead.",
+                      DeprecationWarning, stacklevel=2)
         super(BrewmasterSchemaParser, self).__init__()

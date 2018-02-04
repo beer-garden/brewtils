@@ -3,7 +3,8 @@ from threading import Event, Thread
 
 
 class StoppableThread(Thread):
-    """Thread class with a stop() method. The thread itself has to check regularly for the stopped() condition."""
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
 
     def __init__(self, **kwargs):
         self.logger = kwargs.pop('logger', logging.getLogger(__name__))

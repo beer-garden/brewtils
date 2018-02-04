@@ -55,7 +55,8 @@ class RepublishRequestException(Exception):
     """Republish to the end of the message queue
 
     :param request: The Request to republish
-    :param headers: A dictionary of headers to be used by `brewtils.request_consumer.RequestConsumer`
+    :param headers: A dictionary of headers to be used by
+        `brewtils.request_consumer.RequestConsumer`
     :type request: :py:class:`brewtils.models.Request`
     """
     def __init__(self, request, headers):

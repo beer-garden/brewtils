@@ -11,7 +11,8 @@ class RestClient(object):
     """Simple Rest Client for communicating to with beer-garden.
 
     The is the low-level client responsible for making the actual REST calls. Other clients
-    (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by providing useful abstractions.
+    (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by providing useful
+    abstractions.
 
     :param host: beer-garden REST API hostname.
     :param port: beer-garden REST API port.
@@ -29,8 +30,8 @@ class RestClient(object):
 
     JSON_HEADERS = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
-    def __init__(self, host, port, ssl_enabled=False, api_version=None, logger=None, ca_cert=None, client_cert=None,
-                 url_prefix=None, ca_verify=True):
+    def __init__(self, host, port, ssl_enabled=False, api_version=None, logger=None, ca_cert=None,
+                 client_cert=None, url_prefix=None, ca_verify=True):
         self.logger = logger or logging.getLogger(__name__)
 
         # Configure the session to use when making requests
@@ -46,7 +47,8 @@ class RestClient(object):
             self.session.cert = client_cert
 
         # Configure the beer-garden URLs
-        base_url = 'http%s://%s:%s%s' % ('s' if ssl_enabled else '', host, port, normalize_url_prefix(url_prefix))
+        scheme = 'https' if ssl_enabled else 'http'
+        base_url = '%s://%s:%s%s' % (scheme, host, port, normalize_url_prefix(url_prefix))
         self.version_url = base_url + 'version'
         self.config_url = base_url + 'config'
 
@@ -110,7 +112,8 @@ class RestClient(object):
         :param payload: The update specification
         :return: Response
         """
-        return self.session.patch(self.system_url + str(system_id), data=payload, headers=self.JSON_HEADERS)
+        return self.session.patch(self.system_url + str(system_id),
+                                  data=payload, headers=self.JSON_HEADERS)
 
     def delete_system(self, system_id):
         """Performs a DELETE on a System URL
@@ -127,7 +130,8 @@ class RestClient(object):
         :param payload: The update specification
         :return: Response
         """
-        return self.session.patch(self.instance_url + str(instance_id), data=payload, headers=self.JSON_HEADERS)
+        return self.session.patch(self.instance_url + str(instance_id),
+                                  data=payload, headers=self.JSON_HEADERS)
 
     def get_commands(self):
         """Performs a GET on the Commands URL"""
@@ -172,7 +176,8 @@ class RestClient(object):
         :param payload: New request definition
         :return: Response to the request
         """
-        return self.session.patch(self.request_url + str(request_id), data=payload, headers=self.JSON_HEADERS)
+        return self.session.patch(self.request_url + str(request_id),
+                                  data=payload, headers=self.JSON_HEADERS)
 
     def post_event(self, payload, publishers=None):
         """Performs a POST on the event URL
@@ -208,6 +213,6 @@ class RestClient(object):
 
 class BrewmasterRestClient(RestClient):
     def __init__(self, *args, **kwargs):
-        warnings.warn("Call made to 'BrewmasterRestClient'. This name will be removed in version 3.0, please use "
-                      "'RestClient' instead.", DeprecationWarning, stacklevel=2)
+        warnings.warn("Call made to 'BrewmasterRestClient'. This name will be removed in version "
+                      "3.0, please use 'RestClient' instead.", DeprecationWarning, stacklevel=2)
         super(BrewmasterRestClient, self).__init__(*args, **kwargs)

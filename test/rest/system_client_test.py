@@ -16,7 +16,8 @@ class SystemClientTest(unittest.TestCase):
         type(self.fake_command_1).name = PropertyMock(return_value='command_1')
         type(self.fake_command_2).name = PropertyMock(return_value='command_2')
 
-        self.fake_system = Mock(version='1.0.0', commands=[self.fake_command_1, self.fake_command_2],
+        self.fake_system = Mock(version='1.0.0', commands=[self.fake_command_1,
+                                                           self.fake_command_2],
                                 instance_names=[u'default'])
         type(self.fake_system).name = PropertyMock(return_value='system')
 
@@ -118,14 +119,14 @@ class SystemClientTest(unittest.TestCase):
 
     def test_create_request_missing_fields(self):
 
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request, _system_name='',
-                          _system_version='', _instance_name='')
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request, _command='', _system_version='',
-                          _instance_name='')
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request, _command='', _system_name='',
-                          _instance_name='')
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request, _command='', _system_name='',
-                          _system_version='')
+        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+                          _system_name='', _system_version='', _instance_name='')
+        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+                          _command='', _system_version='', _instance_name='')
+        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+                          _command='', _system_name='', _instance_name='')
+        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+                          _command='', _system_name='', _system_version='')
 
     @patch('brewtils.rest.system_client.time.sleep', Mock())
     def test_execute_command_1(self):
@@ -141,7 +142,8 @@ class SystemClientTest(unittest.TestCase):
     @patch('brewtils.rest.system_client.time.sleep')
     def test_execute_command_with_delays(self, sleep_mock):
         self.easy_client_mock.create_request.return_value = self.mock_in_progress
-        self.easy_client_mock.find_unique_request.side_effect = [self.mock_in_progress, self.mock_in_progress,
+        self.easy_client_mock.find_unique_request.side_effect = [self.mock_in_progress,
+                                                                 self.mock_in_progress,
                                                                  self.mock_success]
 
         self.client.command_1()
@@ -152,7 +154,8 @@ class SystemClientTest(unittest.TestCase):
     @patch('brewtils.rest.system_client.time.sleep')
     def test_execute_with_max_delay(self, sleep_mock):
         self.easy_client_mock.create_request.return_value = self.mock_in_progress
-        self.easy_client_mock.find_unique_request.side_effect = [self.mock_in_progress, self.mock_in_progress,
+        self.easy_client_mock.find_unique_request.side_effect = [self.mock_in_progress,
+                                                                 self.mock_in_progress,
                                                                  self.mock_success]
 
         self.client._max_delay = 1
@@ -236,7 +239,8 @@ class SystemClientTest(unittest.TestCase):
         type(fake_system_2).name = PropertyMock(return_value='system')
         self.easy_client_mock.find_systems.return_value = [fake_system_2]
 
-        self.easy_client_mock.create_request.side_effect = [BrewmasterValidationError, self.mock_success]
+        self.easy_client_mock.create_request.side_effect = [BrewmasterValidationError,
+                                                            self.mock_success]
 
         self.client.command_1()
         self.assertEqual('2.0.0', self.client._system.version)

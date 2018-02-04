@@ -8,6 +8,10 @@ from brewtils.decorators import system, command, parameter, _resolve_display_mod
 from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter
 
+builtins_path = '__builtin__'
+if sys.version_info > (3,):
+    builtins_path = 'builtins'
+
 
 class SystemTest(unittest.TestCase):
 
@@ -72,7 +76,8 @@ class ParameterTest(unittest.TestCase):
         mock_param = Mock(key='x')
         mock_generate.return_value = Command('command1', parameters=[mock_param])
 
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X', optional=True, default='Charles',
+        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
+                   optional=True, default='Charles',
                    description='Mutant', choices={'type': 'static', 'value': ['1', '2', '3']})
         def foo(self, x):
             pass
@@ -128,13 +133,15 @@ class ParameterTest(unittest.TestCase):
 
     def test_parameter_choices_invalid_type(self):
         with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'INVALID_TYPE', 'value': [1, 2, 3], 'display': 'select'})
+            @parameter(key='x', choices={'type': 'INVALID_TYPE', 'value': [1, 2, 3],
+                                         'display': 'select'})
             def foo(self, x):
                 pass
 
     def test_parameter_choices_invalid_display(self):
         with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'static', 'value': [1, 2, 3], 'display': 'INVALID_DISPLAY'})
+            @parameter(key='x', choices={'type': 'static', 'value': [1, 2, 3],
+                                         'display': 'INVALID_DISPLAY'})
             def foo(self, x):
                 pass
 
@@ -156,7 +163,8 @@ class ParameterTest(unittest.TestCase):
     def test_parameter_choices_with_value_dict(self):
 
         @parameter(key='y')
-        @parameter(key='x', choices={'value': {'a': [1, 2, 3], 'b': [4, 5, 6]}, 'key_reference': '${y}'})
+        @parameter(key='x', choices={'value': {'a': [1, 2, 3], 'b': [4, 5, 6]},
+                                     'key_reference': '${y}'})
         def foo(self, x, y):
             pass
 
@@ -333,7 +341,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(c.parameters, [])
 
     def test_command_generate_command_from_function_py2_compatibility(self):
-        py2_code_mock = Mock(co_varnames=["var1"], co_argcount=1, spec=["co_varnames", "co_argcount"])
+        py2_code_mock = Mock(co_varnames=["var1"], co_argcount=1,
+                             spec=["co_varnames", "co_argcount"])
         py2_method_mock = Mock(func_name="func_name", func_doc="func_doc",
                                __name__="__name__", __doc__="__doc__",
                                func_code=py2_code_mock, func_defaults=["default1"],
@@ -345,7 +354,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(c.description, "func_doc")
 
     def test_command_generate_command_from_function_py3_compatibility(self):
-        py3_code_mock = Mock(co_varnames=["var1"], co_argcount=1, spec=["co_varnames", "co_argcount"])
+        py3_code_mock = Mock(co_varnames=["var1"], co_argcount=1,
+                             spec=["co_varnames", "co_argcount"])
         py3_method_mock = Mock(__name__="__name__", __doc__="__doc__",
                                func_code=py3_code_mock, func_defaults=["default1"],
                                __code__=py3_code_mock, __defaults__=["default1"],
@@ -456,7 +466,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(p.default, [])
 
     def test_parameter_is_kwarg(self):
-        @parameter(key='x', type='Integer', display_name="Professor X", optional=True, default="Charles",
+        @parameter(key='x', type='Integer', display_name="Professor X", optional=True,
+                   default="Charles",
                    description="cool psychic guy.", multi=False, is_kwarg=True)
         def foo(self, **kwargs):
             pass
@@ -474,7 +485,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(p.description, 'cool psychic guy.')
 
     def test_command_do_not_override_parameter(self):
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X', optional=True, default='Charles',
+        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
+                   optional=True, default='Charles',
                    description='I dont know')
         @command
         def foo(self, x):
@@ -494,7 +506,8 @@ class CommandTest(unittest.TestCase):
 
     def test_command_after_parameter_check_command_type(self):
         @command(command_type='INFO')
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X', optional=True, default='Charles',
+        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
+                   optional=True, default='Charles',
                    description='I dont know')
         def foo(self, x):
             pass
@@ -504,7 +517,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(c.command_type, 'INFO')
 
     def test_command_before_parameter_check_command_type(self):
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X', optional=True, default='Charles',
+        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
+                   optional=True, default='Charles',
                    description='I dont know')
         @command(command_type='INFO')
         def foo(self, x):
@@ -516,7 +530,8 @@ class CommandTest(unittest.TestCase):
 
     def test_command_after_parameter_check_output_type(self):
         @command(output_type='JSON')
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X', optional=True, default='Charles',
+        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
+                   optional=True, default='Charles',
                    description='I dont know')
         def foo(self, x):
             pass
@@ -526,7 +541,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(c.output_type, 'JSON')
 
     def test_command_before_parameter_check_output_type(self):
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X', optional=True, default='Charles',
+        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
+                   optional=True, default='Charles',
                    description='I dont know')
         @command(output_type='JSON')
         def foo(self, x):
@@ -540,9 +556,11 @@ class CommandTest(unittest.TestCase):
 
         class MyModel:
             parameters = [
-                Parameter(key='key1', type='Integer', multi=False, display_name='x', optional=True, default=1,
+                Parameter(key='key1', type='Integer', multi=False, display_name='x',
+                          optional=True, default=1,
                           description='key1', choices={'type': 'static', 'value': [1, 2]}),
-                Parameter(key='key2', type='String', multi=False, display_name='y', optional=False, default='100',
+                Parameter(key='key2', type='String', multi=False, display_name='y',
+                          optional=False, default='100',
                           description='key2', choices=['a', 'b', 'c'])
             ]
 
@@ -588,9 +606,11 @@ class CommandTest(unittest.TestCase):
     def test_parameters_with_nested_model_with_default(self):
         class MyModel:
             parameters = [
-                Parameter(key='key1', type='Integer', multi=False, display_name='x', optional=True, default=1,
+                Parameter(key='key1', type='Integer', multi=False, display_name='x',
+                          optional=True, default=1,
                           description='key1'),
-                Parameter(key='key2', type='String', multi=False, display_name='y', optional=False, default='100',
+                Parameter(key='key2', type='String', multi=False, display_name='y',
+                          optional=False, default='100',
                           description='key2')
             ]
 
@@ -607,13 +627,15 @@ class CommandTest(unittest.TestCase):
 
         class MyNestedModel:
             parameters = [
-                Parameter(key='key2', type='String', multi=False, display_name='y', optional=False, default='100',
+                Parameter(key='key2', type='String', multi=False, display_name='y',
+                          optional=False, default='100',
                           description='key2')
             ]
 
         class MyModel:
             parameters = [
-                Parameter(key='key1', multi=False, display_name='x', optional=True, description='key1',
+                Parameter(key='key1', multi=False, display_name='x', optional=True,
+                          description='key1',
                           parameters=[MyNestedModel], default="xval")
             ]
 
@@ -666,35 +688,41 @@ class ResolveModfiersTester(unittest.TestCase):
         self.assertEqual(args, _resolve_display_modifiers(Mock, Mock(), **args))
 
     def test_form_list(self):
-        self.assertEqual({'type': 'fieldset', 'items': []}, _resolve_display_modifiers(Mock, Mock(), form=[])['form'])
+        self.assertEqual({'type': 'fieldset', 'items': []},
+                         _resolve_display_modifiers(Mock, Mock(), form=[])['form'])
 
     def test_raw_template_string(self):
-        self.assertEqual('<html>', _resolve_display_modifiers(Mock(), Mock(), template='<html>').get('template'))
+        self.assertEqual('<html>', _resolve_display_modifiers(Mock(), Mock(),
+                                                              template='<html>').get('template'))
 
     def test_load_url(self):
-        args = {'schema': 'http://test/schema', 'form': 'http://test/form', 'template': 'http://test/template'}
+        args = {'schema': 'http://test/schema', 'form': 'http://test/form',
+                'template': 'http://test/template'}
 
         _resolve_display_modifiers(Mock(), Mock(), **args)
-        self.requests_patch.get.assert_has_calls([call(args['schema']), call(args['form']), call(args['template'])],
+        self.requests_patch.get.assert_has_calls([call(args['schema']), call(args['form']),
+                                                  call(args['template'])],
                                                  any_order=True)
 
     @patch('brewtils.decorators.inspect')
     def test_absolute_path(self, inspect_mock):
-        args = {'schema': '/abs/path/schema.json', 'form': '/abs/path/form.json', 'template': '/abs/path/template.html'}
+        args = {'schema': '/abs/path/schema.json', 'form': '/abs/path/form.json',
+                'template': '/abs/path/template.html'}
         inspect_mock.getfile.return_value = '/abs/test/dir/client.py'
 
-        with patch('builtins.open' if sys.version_info >= (3,) else '__builtin__.open') as open_mock:
+        with patch(builtins_path + '.open') as open_mock:
             _resolve_display_modifiers(Mock(), Mock(), **args)
             open_mock.assert_has_calls([call(args['schema'], 'r'), call(args['form'], 'r'),
                                         call(args['template'], 'r')], any_order=True)
 
     @patch('brewtils.decorators.inspect')
     def test_relative_path(self, inspect_mock):
-        args = {'schema': '../rel/schema.json', 'form': '../rel/form.json', 'template': '../rel/template.html'}
+        args = {'schema': '../rel/schema.json', 'form': '../rel/form.json',
+                'template': '../rel/template.html'}
         inspect_mock.getfile.return_value = '/abs/test/dir/client.py'
 
         # DON'T PUT BREAKPOINTS INSIDE THIS CONTEXT MANAGER! PYCHARM WILL SCREW THINGS UP!
-        with patch('builtins.open' if sys.version_info >= (3,) else '__builtin__.open') as open_mock:
+        with patch(builtins_path + '.open') as open_mock:
             _resolve_display_modifiers(Mock(), Mock(), **args)
             open_mock.assert_has_calls([call('/abs/test/rel/schema.json', 'r'),
                                         call('/abs/test/rel/form.json', 'r'),
@@ -704,24 +732,31 @@ class ResolveModfiersTester(unittest.TestCase):
     def test_json_parsing(self, inspect_mock):
         inspect_mock.getfile.return_value = '/abs/test/dir/client.py'
 
-        with patch('builtins.open' if sys.version_info >= (3,) else '__builtin__.open'):
+        with patch(builtins_path + '.open'):
             _resolve_display_modifiers(Mock(), Mock(), template='/abs/template.html')
             self.assertFalse(self.json_patch.loads.called)
 
-            _resolve_display_modifiers(Mock(), Mock(), schema='/abs/schema', form='/abs/form', template='/abs/template')
+            _resolve_display_modifiers(Mock(), Mock(), schema='/abs/schema', form='/abs/form',
+                                       template='/abs/template')
             self.assertEqual(2, self.json_patch.loads.call_count)
 
     def test_resolve_errors(self):
         self.requests_patch.get.side_effect = Exception
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), schema='http://test')
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), form='http://test')
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), template='http://test')
+        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                          schema='http://test')
+        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                          form='http://test')
+        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                          template='http://test')
 
-        with patch('builtins.open' if sys.version_info >= (3,) else '__builtin__.open') as open_mock:
+        with patch(builtins_path + '.open') as open_mock:
             open_mock.side_effect = Exception
-            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), schema='./test')
-            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), form='./test')
-            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), template='./test')
+            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                              schema='./test')
+            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                              form='./test')
+            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                              template='./test')
 
     def test_type_errors(self):
         self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock, Mock(), template={})
@@ -731,4 +766,5 @@ class ResolveModfiersTester(unittest.TestCase):
 
         self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), schema=123)
         self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), form=123)
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), template=123)
+        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
+                          template=123)

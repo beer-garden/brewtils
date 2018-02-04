@@ -9,12 +9,12 @@ choices_grammar = """
 
     func_args: "(" [arg_pair ("," arg_pair)*] ")"
     url_args: "?" arg_pair ("&" arg_pair)*
-    
+
     arg_pair: CNAME "=" ref
     ?ref: "${" CNAME "}"
 
     ADDRESS: /^http[^\?]*/
-    
+
     %import common.CNAME
     %import common.WS
     %ignore WS
@@ -59,8 +59,8 @@ def parse(input_string, parse_as=None):
     """Attempt to parse a string into a choices dictionary.
 
     :param input_string: The string to parse
-    :param parse_as: String specifying how to parse `input_string`. Valid values are 'func' or 'url'. Will try all valid
-    values if None.
+    :param parse_as: String specifying how to parse `input_string`. Valid values are 'func' or
+        'url'. Will try all valid values if None.
     :return: A dictionary containing the results of the parse
     :raise lark.common.ParseError: The parser was not able to find a valid parsing of `input_string`
     """

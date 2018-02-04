@@ -22,6 +22,36 @@ def get_easy_client(**kwargs):
     return EasyClient(logger=logger, parser=parser, **get_bg_connection_parameters(**kwargs))
 
 
+def get_bool_from_kwargs_and_env(key, env_name, **kwargs):
+    """Gets a boolean value defaults to True"""
+    value = kwargs.get(key, None)
+    if value is None:
+        return os.environ.get(env_name, 'true').lower() != 'false'
+    elif isinstance(value, six.string_types):
+        return value.lower() != 'false'
+    else:
+        return bool(value)
+
+
+def get_from_kwargs_or_env(key, env_names, default, **kwargs):
+    """Get a value from the kwargs provided or environment
+
+    :param key: Key to search in the keyword args
+    :param env_names: Environment names to search
+    :param default: The default if it is not found elsewhere
+    :param kwargs: Keyword Arguments
+    :return:
+    """
+    if kwargs.get(key, None) is not None:
+        return kwargs[key]
+
+    for name in env_names:
+        if name in os.environ:
+            return os.environ[name]
+
+    return default
+
+
 def get_bg_connection_parameters(**kwargs):
     """Parse the keyword arguments, search in the arguments, and environment for the values
 
@@ -33,32 +63,22 @@ def get_bg_connection_parameters(**kwargs):
 
     host = kwargs.pop('host', None) or os.environ.get('BG_WEB_HOST')
     if not host:
-        raise BrewmasterValidationError('Unable to create a plugin without a beer-garden host. Please specify one '
-                                        'with bg_host=<host> or by setting the BG_WEB_HOST environment variable.')
+        raise BrewmasterValidationError('Unable to create a plugin without a beer-garden host. '
+                                        'Please specify one with bg_host=<host> or by setting the '
+                                        'BG_WEB_HOST environment variable.')
 
-    port = kwargs.pop('port', None) or os.environ.get('BG_WEB_PORT', '2337')
+    port = get_from_kwargs_or_env('port', ['BG_WEB_PORT'], '2337', **kwargs)
 
-    url_prefix = kwargs.pop('url_prefix', None) or os.environ.get('BG_URL_PREFIX', None)
+    url_prefix = get_from_kwargs_or_env('url_prefix', ['BG_URL_PREFIX'], None, **kwargs)
     url_prefix = normalize_url_prefix(url_prefix)
 
-    # Default to true
-    ssl_enabled = kwargs.pop('ssl_enabled', None)
-    if ssl_enabled is not None:
-        ssl_enabled = ssl_enabled.lower() != "false" if isinstance(ssl_enabled, six.string_types) else bool(ssl_enabled)
-    else:
-        ssl_enabled = os.environ.get('BG_SSL_ENABLED', 'true').lower() != 'false'
-
-    # Default to true
-    ca_verify = kwargs.pop('ca_verify', None)
-    if ca_verify is not None:
-        ca_verify = ca_verify.lower() != "false" if isinstance(ca_verify, six.string_types) else bool(ca_verify)
-    else:
-        ca_verify = os.environ.get('BG_CA_VERIFY', 'true').lower() != 'false'
+    ssl_enabled = get_bool_from_kwargs_and_env('ssl_enabled', 'BG_SSL_ENABLED', **kwargs)
+    ca_verify = get_bool_from_kwargs_and_env('ca_verify', 'BG_CA_VERIFY', **kwargs)
 
     api_version = kwargs.pop('api_version', RestClient.LATEST_VERSION)
-    ca_cert = kwargs.pop('ca_cert', None) or os.environ.get('BG_CA_CERT') or os.environ.get('BG_SSL_CA_CERT')
-    client_cert = kwargs.pop('client_cert', None) or os.environ.get('BG_CLIENT_CERT') or \
-        os.environ.get('BG_SSL_CLIENT_CERT')
+    ca_cert = get_from_kwargs_or_env('ca_cert', ['BG_CA_CERT', 'BG_SSL_CA_CERT'], None, **kwargs)
+    client_cert = get_from_kwargs_or_env('client_cert', ['BG_CLIENT_CERT', 'BG_SSL_CLIENT_CERT'],
+                                         None, **kwargs)
 
     return {
         'host': host,

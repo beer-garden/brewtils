@@ -54,7 +54,8 @@ class RequestConsumerTest(unittest.TestCase):
         self.callback.side_effect = DiscardMessageException
 
         self.consumer.on_message(Mock(), basic_deliver_mock, Mock(), Mock())
-        channel_mock.basic_nack.assert_called_once_with(basic_deliver_mock.delivery_tag, requeue=False)
+        channel_mock.basic_nack.assert_called_once_with(basic_deliver_mock.delivery_tag,
+                                                        requeue=False)
 
     def test_on_message_unknown_exception(self):
         channel_mock = Mock()
@@ -63,7 +64,8 @@ class RequestConsumerTest(unittest.TestCase):
         self.callback.side_effect = ValueError
 
         self.consumer.on_message(Mock(), basic_deliver_mock, Mock(), Mock())
-        channel_mock.basic_nack.assert_called_once_with(basic_deliver_mock.delivery_tag, requeue=True)
+        channel_mock.basic_nack.assert_called_once_with(basic_deliver_mock.delivery_tag,
+                                                        requeue=True)
 
     def test_on_message_callback_complete(self):
         basic_deliver_mock = Mock()
@@ -95,13 +97,16 @@ class RequestConsumerTest(unittest.TestCase):
         publish_channel_mock = Mock()
         publish_connection_mock = Mock()
         publish_connection_mock.channel.return_value = publish_channel_mock
-        self.pika_patch.BlockingConnection.return_value.__enter__.return_value = publish_connection_mock
+        conn = self.pika_patch.BlockingConnection
+        conn.return_value.__enter__.return_value = publish_connection_mock
 
         self.callback_future.set_exception(future_exception)
         self.consumer.on_message_callback_complete(basic_deliver_mock, self.callback_future)
         publish_channel_mock.basic_publish.assert_called_once_with(
-            exchange=basic_deliver_mock.exchange, properties=self.pika_patch.BasicProperties.return_value,
-            routing_key=basic_deliver_mock.routing_key, body=parser_mock.serialize_request.return_value)
+            exchange=basic_deliver_mock.exchange,
+            properties=self.pika_patch.BasicProperties.return_value,
+            routing_key=basic_deliver_mock.routing_key,
+            body=parser_mock.serialize_request.return_value)
         parser_mock.serialize_request.assert_called_once_with(request_mock)
         channel_mock.basic_ack.assert_called_once_with(basic_deliver_mock.delivery_tag)
 
@@ -131,9 +136,10 @@ class RequestConsumerTest(unittest.TestCase):
         ret_val = self.consumer.open_connection()
         self.assertEqual(self.pika_patch.SelectConnection.return_value, ret_val)
         self.pika_patch.URLParameters.assert_called_with('url')
-        self.pika_patch.SelectConnection.assert_called_with(self.pika_patch.URLParameters.return_value,
-                                                            self.consumer.on_connection_open,
-                                                            stop_ioloop_on_close=False)
+        self.pika_patch.SelectConnection.assert_called_with(
+            self.pika_patch.URLParameters.return_value,
+            self.consumer.on_connection_open,
+            stop_ioloop_on_close=False)
 
     def test_open_connection_shutdown_is_set(self):
         self.consumer.shutdown_event.set()
@@ -154,7 +160,9 @@ class RequestConsumerTest(unittest.TestCase):
     def test_on_connection_open(self, open_channel_mock):
         self.consumer._connection = Mock()
         self.consumer.on_connection_open(Mock())
-        self.consumer._connection.add_on_close_callback.assert_called_once_with(self.consumer.on_connection_closed)
+        self.consumer._connection.add_on_close_callback.assert_called_once_with(
+            self.consumer.on_connection_closed
+        )
         open_channel_mock.assert_called_once_with()
 
     def test_close_connection(self):
@@ -205,7 +213,9 @@ class RequestConsumerTest(unittest.TestCase):
     def test_open_channel(self):
         self.consumer._connection = Mock()
         self.consumer.open_channel()
-        self.consumer._connection.channel.assert_called_with(on_open_callback=self.consumer.on_channel_open)
+        self.consumer._connection.channel.assert_called_with(
+            on_open_callback=self.consumer.on_channel_open
+        )
 
     @patch('brewtils.request_consumer.RequestConsumer.start_consuming')
     def test_on_channel_open(self, start_consuming_mock):
@@ -232,7 +242,9 @@ class RequestConsumerTest(unittest.TestCase):
         self.consumer._channel.basic_consume = Mock(return_value='consumer_tag')
 
         self.consumer.start_consuming()
-        self.consumer._channel.add_on_cancel_callback.assert_called_with(self.consumer.on_consumer_cancelled)
+        self.consumer._channel.add_on_cancel_callback.assert_called_with(
+            self.consumer.on_consumer_cancelled
+        )
         self.consumer._channel.basic_qos.assert_called_with(prefetch_count=1)
         self.consumer._channel.basic_consume.assert_called_with(self.consumer.on_message,
                                                                 queue=self.consumer._queue_name)
@@ -241,7 +253,8 @@ class RequestConsumerTest(unittest.TestCase):
     def test_stop_consuming(self):
         self.consumer._channel = Mock()
         self.consumer.stop_consuming()
-        self.consumer._channel.basic_cancel.assert_called_with(self.consumer.on_cancelok, self.consumer._consumer_tag)
+        self.consumer._channel.basic_cancel.assert_called_with(self.consumer.on_cancelok,
+                                                               self.consumer._consumer_tag)
 
     @patch('brewtils.request_consumer.RequestConsumer.close_channel')
     def test_on_consumer_cancelled(self, close_channel_mock):

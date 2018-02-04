@@ -23,9 +23,12 @@ class ChoicesTest(unittest.TestCase):
         self.assertRaises(ParseError, parse, 'function_name(single=${arg)', parse_as='func')
         self.assertRaises(ParseError, parse, 'function_name(single=$arg})', parse_as='func')
         self.assertRaises(ParseError, parse, 'function_name(single=${arg},)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=$arg, another=$arg)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=${arg}, another=$arg)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=${arg}, another=${arg}', parse_as='func')
+        self.assertRaises(ParseError, parse, 'function_name(single=$arg, another=$arg)',
+                          parse_as='func')
+        self.assertRaises(ParseError, parse, 'function_name(single=${arg}, another=$arg)',
+                          parse_as='func')
+        self.assertRaises(ParseError, parse, 'function_name(single=${arg}, another=${arg}',
+                          parse_as='func')
 
     def test_url_parse_success(self):
         parse('http://address', parse_as='url')
@@ -47,9 +50,12 @@ class ChoicesTest(unittest.TestCase):
         self.assertRaises(ParseError, parse, 'http://address?param=${arg}&', parse_as='url')
         self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2', parse_as='url')
         self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=arg2', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=$arg2', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=${arg2', parse_as='url')
+        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=arg2',
+                          parse_as='url')
+        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=$arg2',
+                          parse_as='url')
+        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=${arg2',
+                          parse_as='url')
 
     def test_reference_parse_success(self):
         self.assertEqual('index', parse('${index}', parse_as='reference'))

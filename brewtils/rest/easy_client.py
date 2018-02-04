@@ -2,7 +2,8 @@ import logging
 import warnings
 
 from brewtils.errors import BrewmasterFetchError, BrewmasterValidationError, BrewmasterSaveError, \
-    BrewmasterDeleteError, BrewmasterConnectionError, BGNotFoundError, BGConflictError, BrewmasterRestError
+    BrewmasterDeleteError, BrewmasterConnectionError, BGNotFoundError, BGConflictError, \
+    BrewmasterRestError
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
@@ -11,7 +12,8 @@ from brewtils.schema_parser import SchemaParser
 class EasyClient(object):
     """Client for communicating with beer-garden.
 
-    This class provides nice wrappers around the functionality provided by a :py:class:`brewtils.rest.client.RestClient`
+    This class provides nice wrappers around the functionality provided by a
+    :py:class:`brewtils.rest.client.RestClient`
 
     :param host: beer-garden REST API hostname.
     :param port: beer-garden REST API port.
@@ -25,12 +27,13 @@ class EasyClient(object):
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     """
 
-    def __init__(self, host, port, ssl_enabled=False, api_version=None, ca_cert=None, client_cert=None,
-                 parser=None, logger=None, url_prefix=None, ca_verify=True):
+    def __init__(self, host, port, ssl_enabled=False, api_version=None, ca_cert=None,
+                 client_cert=None, parser=None, logger=None, url_prefix=None, ca_verify=True):
         self.logger = logger or logging.getLogger(__name__)
         self.parser = parser or SchemaParser()
-        self.client = RestClient(host=host, port=port, ssl_enabled=ssl_enabled, api_version=api_version,
-                                 ca_cert=ca_cert, client_cert=client_cert, url_prefix=url_prefix, ca_verify=ca_verify)
+        self.client = RestClient(host=host, port=port, ssl_enabled=ssl_enabled,
+                                 api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
+                                 url_prefix=url_prefix, ca_verify=ca_verify)
 
     def get_version(self, **kwargs):
         response = self.client.get_version(**kwargs)
@@ -54,7 +57,8 @@ class EasyClient(object):
                 return None
 
             if len(systems) > 1:
-                raise BrewmasterFetchError("More than one system found that specifies the given constraints")
+                raise BrewmasterFetchError("More than one system found that specifies "
+                                           "the given constraints")
 
             return systems[0]
 
@@ -78,7 +82,8 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_system(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError, raise_404=False)
+            self._handle_response_failure(response, default_exc=BrewmasterFetchError,
+                                          raise_404=False)
 
     def create_system(self, system):
         """Create a new system by POSTing to a BREWMASTER server.
@@ -113,7 +118,9 @@ class EasyClient(object):
 
         if new_commands:
             operations.append(PatchOperation('replace', '/commands',
-                                             self.parser.serialize_command(new_commands, to_string=False, many=True)))
+                                             self.parser.serialize_command(new_commands,
+                                                                           to_string=False,
+                                                                           many=True)))
 
         if metadata:
             operations.append(PatchOperation('update', '/metadata', metadata))
@@ -122,7 +129,8 @@ class EasyClient(object):
             if value is not None:
                 operations.append(PatchOperation('replace', '/%s' % attr, value))
 
-        response = self.client.patch_system(system_id, self.parser.serialize_patch(operations, many=True))
+        response = self.client.patch_system(system_id, self.parser.serialize_patch(operations,
+                                                                                   many=True))
 
         if response.ok:
             return self.parser.parse_system(response.json())
@@ -143,8 +151,6 @@ class EasyClient(object):
         return self._remove_system_by_id(system.id)
 
     def _remove_system_by_id(self, system_id):
-        """Removes a system with the specified ID from Brewmaster system, raises BrewmasterDeleteError if an error
-        occurs while deleting"""
 
         if system_id is None:
             raise BrewmasterDeleteError("Cannot delete a system without an id")
@@ -161,7 +167,10 @@ class EasyClient(object):
         :param instance_id: The ID of the instance to start
         :return: The start response
         """
-        response = self.client.patch_instance(instance_id, self.parser.serialize_patch(PatchOperation('initialize')))
+        response = self.client.patch_instance(instance_id,
+                                              self.parser.serialize_patch(
+                                                  PatchOperation('initialize')
+                                              ))
 
         if response.ok:
             return self.parser.parse_instance(response.json())
@@ -214,7 +223,8 @@ class EasyClient(object):
                 return None
 
             if len(requests) > 1:
-                raise BrewmasterFetchError("More than one request found that specifies the given constraints")
+                raise BrewmasterFetchError("More than one request found that specifies "
+                                           "the given constraints")
 
             return requests[0]
 
@@ -238,7 +248,8 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_request(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError, raise_404=False)
+            self._handle_response_failure(response, default_exc=BrewmasterFetchError,
+                                          raise_404=False)
 
     def create_request(self, request):
         """Create a new request.
@@ -272,7 +283,8 @@ class EasyClient(object):
         if error_class:
             operations.append(PatchOperation('replace', '/error_class', error_class))
 
-        response = self.client.patch_request(request_id, self.parser.serialize_patch(operations, many=True))
+        response = self.client.patch_request(request_id, self.parser.serialize_patch(operations,
+                                                                                     many=True))
 
         if response.ok:
             return self.parser.parse_request(response.json())
@@ -295,7 +307,8 @@ class EasyClient(object):
         """Publish a new event.
 
         :param args: The Event to create
-        :param _publishers: Optional list of specific publishers. If None all publishers will be used.
+        :param _publishers: Optional list of specific publishers. If None all publishers will be
+            used.
         :param kwargs: If no Event is given in the *args, on will be constructed from the kwargs
         :return: The response
         """
@@ -364,6 +377,7 @@ class EasyClient(object):
 
 class BrewmasterEasyClient(EasyClient):
     def __init__(self, *args, **kwargs):
-        warnings.warn("Call made to 'BrewmasterEasyClient'. This name will be removed in version 3.0, please use "
+        warnings.warn("Call made to 'BrewmasterEasyClient'. This name will be removed in version "
+                      "3.0, please use "
                       "'EasyClient' instead.", DeprecationWarning, stacklevel=2)
         super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

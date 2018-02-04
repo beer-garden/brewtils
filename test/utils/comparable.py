@@ -1,4 +1,5 @@
-from brewtils.models import System, Command, Instance, Parameter, Request, PatchOperation, LoggingConfig, Event, Queue
+from brewtils.models import System, Command, Instance, Parameter, Request, PatchOperation, \
+    LoggingConfig, Event, Queue
 
 
 def assert_system_equal(system1, system2, deep=False):
@@ -13,8 +14,8 @@ def assert_system_equal(system1, system2, deep=False):
 
         assert hasattr(system1, key), "System1 does not have an attribute '%s'" % key
         assert hasattr(system2, key), "System2 does not have an attribute '%s'" % key
-        assert getattr(system1, key) == getattr(system2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(system1, key), getattr(system2, key))
+        assert getattr(system1, key) == getattr(system2, key), (
+            "%s was not the same (%s, %s)" % (key, getattr(system1, key), getattr(system2, key)))
 
     if deep:
         assert hasattr(system1, "instances"), "System1 does not have attribute 'instances'"
@@ -22,8 +23,8 @@ def assert_system_equal(system1, system2, deep=False):
         assert hasattr(system2, "instances"), "System1 does not have attribute 'instances'"
         assert hasattr(system2, "commands"), "System1 does not have attribute 'commands'"
 
-        assert len(system1.commands) == len(system2.commands), "system1 has a different number " \
-                                                               "of commands than system2"
+        assert len(system1.commands) == len(system2.commands), ("system1 has a different number "
+                                                                "of commands than system2")
         for command1, command2 in zip(sorted(system1.commands, key=lambda x: x.name),
                                       sorted(system2.commands, key=lambda x: x.name)):
             assert_command_equal(command1, command2, deep)
@@ -45,14 +46,14 @@ def assert_command_equal(command1, command2, deep=False):
 
         assert hasattr(command1, key), "Command1 does not have an attribute '%s'" % key
         assert hasattr(command2, key), "Command2 does not have an attribute '%s'" % key
-        assert getattr(command1, key) == getattr(command2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(command1, key), getattr(command2, key))
+        assert getattr(command1, key) == getattr(command2, key), (
+            "%s was not the same (%s, %s)" % (key, getattr(command1, key), getattr(command2, key)))
 
     if deep:
         assert hasattr(command1, "parameters"), "command1 does not have attribute 'parameters'"
         assert hasattr(command2, "parameters"), "command1 does not have attribute 'parameters'"
-        assert len(command1.parameters) == len(command2.parameters), "command1 has a different number " \
-                                                                     "of parameters than command2"
+        assert len(command1.parameters) == len(command2.parameters), (
+            "command1 has a different number of parameters than command2")
         for parameter1, parameter2 in zip(sorted(command1.parameters, key=lambda p: p.key),
                                           sorted(command2.parameters, key=lambda p: p.key)):
             assert_parameter_equal(parameter1, parameter2, deep)
@@ -109,13 +110,15 @@ def assert_parameter_equal(parameter1, parameter2, deep=False):
         assert hasattr(parameter1, key), "parameter1 does not have an attribute '%s'" % key
         assert hasattr(parameter2, key), "parameter2 does not have an attribute '%s'" % key
         assert getattr(parameter1, key) == getattr(parameter2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(parameter1, key), getattr(parameter2, key))
+            "%s was not the same (%s, %s)" % (key,
+                                              getattr(parameter1, key),
+                                              getattr(parameter2, key))
 
     if deep:
         assert hasattr(parameter1, "parameters"), "parameter1 does not have attribute 'parameters'"
         assert hasattr(parameter2, "parameters"), "parameter1 does not have attribute 'parameters'"
-        assert len(parameter1.parameters) == len(parameter2.parameters), "command1 has a different number " \
-                                                                         "of parameters than command2"
+        assert len(parameter1.parameters) == len(parameter2.parameters), (
+            "command1 has a different number of parameters than command2")
         for parameter1, parameter2 in zip(sorted(parameter1.parameters, key=lambda p: p.key),
                                           sorted(parameter2.parameters, key=lambda p: p.key)):
             assert_parameter_equal(parameter1, parameter2, deep)
@@ -138,7 +141,9 @@ def assert_choices_equal(choices1, choices2):
             assert hasattr(choices1, key), "choices1 does not have an attribute '%s'" % key
             assert hasattr(choices2, key), "choices2 does not have an attribute '%s'" % key
             assert getattr(choices1, key) == getattr(choices2, key), \
-                "%s was not the same (%s, %s)" % (key, getattr(choices1, key), getattr(choices2, key))
+                "%s was not the same (%s, %s)" % (key,
+                                                  getattr(choices1, key),
+                                                  getattr(choices2, key))
 
 
 def assert_patch_equal(patch1, patch2, deep=False):
@@ -156,13 +161,16 @@ def assert_patch_equal(patch1, patch2, deep=False):
 def assert_logging_config_equal(logging_config1, logging_config2, deep=False):
     assert isinstance(logging_config1, LoggingConfig), "logging_config1 was not a LoggingConfig"
     assert isinstance(logging_config2, LoggingConfig), "logging_config2 was not a LoggingConfig"
-    assert type(logging_config1) is type(logging_config2), "logging_config1 and logging_config2 are not the same type"
+    assert type(logging_config1) is type(logging_config2), (
+        "logging_config1 and logging_config2 are not the same type")
 
     for key in logging_config1.__dict__.keys():
         assert hasattr(logging_config1, key), "logging_config1 does not have attribute '%s'" % key
         assert hasattr(logging_config2, key), "logging_config2 does not have attribute '%s'" % key
         assert getattr(logging_config1, key) == getattr(logging_config2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(logging_config1, key), getattr(logging_config2, key))
+            "%s was not the same (%s, %s)" % (key,
+                                              getattr(logging_config1, key),
+                                              getattr(logging_config2, key))
 
 
 def assert_event_equal(event1, event2, deep=False):

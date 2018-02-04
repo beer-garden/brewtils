@@ -6,8 +6,8 @@ import unittest
 from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
-from brewtils.errors import BrewmasterValidationError, RequestProcessingError, DiscardMessageException, \
-    RepublishRequestException
+from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
+    DiscardMessageException, RepublishRequestException
 from brewtils.models import Instance, Request, System, Command
 from brewtils.plugin import PluginBase
 
@@ -24,9 +24,11 @@ class PluginBaseTest(unittest.TestCase):
         self.instance = Instance(id='id', name='default', queue_type='rabbitmq',
                                  queue_info={'url': 'url', 'admin': {'name': 'admin_queue'},
                                              'request': {'name': 'request_queue'}})
-        self.system = System(name='test_system', version='1.0.0', instances=[self.instance], metadata={'foo': 'bar'})
+        self.system = System(name='test_system', version='1.0.0', instances=[self.instance],
+                             metadata={'foo': 'bar'})
         self.client = MagicMock(name='client', spec='command', _commands=['command'])
-        self.plugin = PluginBase(self.client, bg_host='localhost', system=self.system, metadata={'foo': 'bar'})
+        self.plugin = PluginBase(self.client, bg_host='localhost', system=self.system,
+                                 metadata={'foo': 'bar'})
         self.plugin.instance = self.instance
 
         self.bm_client_mock = Mock(create_system=Mock(return_value=self.system),
@@ -46,13 +48,15 @@ class PluginBaseTest(unittest.TestCase):
         self.assertEqual(self.plugin.unique_name, 'test_system[default]-1.0.0')
 
     def test_init_with_instance_name_unique_name_check(self):
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system, instance_name='unique')
+        plugin = PluginBase(self.client, bg_host='localhost', system=self.system,
+                            instance_name='unique')
         self.assertEqual(plugin.unique_name, 'test_system[unique]-1.0.0')
 
     @patch('brewtils.plugin.logging.getLogger', Mock(return_value=Mock(root=Mock(handlers=[]))))
     @patch('brewtils.plugin.logging.config.dictConfig', Mock())
     def test_init_defaults(self):
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system, metadata={'foo': 'bar'})
+        plugin = PluginBase(self.client, bg_host='localhost', system=self.system,
+                            metadata={'foo': 'bar'})
         self.assertEqual(plugin.instance_name, 'default')
         self.assertEqual(plugin.bg_host, 'localhost')
         self.assertEqual(plugin.bg_port, '2337')
@@ -119,7 +123,8 @@ class PluginBaseTest(unittest.TestCase):
         self.assertEqual(plugin.bg_port, 3000)
 
     def test_init_custom_logger(self):
-        plugin = PluginBase(self.client, bg_host='localhost', bg_port=3000, system=self.system, logger=Mock())
+        plugin = PluginBase(self.client, bg_host='localhost', bg_port=3000, system=self.system,
+                            logger=Mock())
         self.assertTrue(plugin._custom_logger)
 
     @patch('brewtils.plugin.PluginBase._create_connection_poll_thread')
@@ -141,8 +146,10 @@ class PluginBaseTest(unittest.TestCase):
     @patch('brewtils.plugin.PluginBase._initialize', Mock())
     def test_run_things_died_unexpected(self):
         self.plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        admin_mock = Mock(isAlive=Mock(return_value=False), shutdown_event=Mock(is_set=Mock(return_value=False)))
-        request_mock = Mock(isAlive=Mock(return_value=False), shutdown_event=Mock(is_set=Mock(return_value=False)))
+        admin_mock = Mock(isAlive=Mock(return_value=False),
+                          shutdown_event=Mock(is_set=Mock(return_value=False)))
+        request_mock = Mock(isAlive=Mock(return_value=False),
+                            shutdown_event=Mock(is_set=Mock(return_value=False)))
         poll_mock = Mock(isAlive=Mock(return_value=False))
         self.plugin._create_admin_consumer = Mock(return_value=admin_mock)
         self.plugin._create_standard_consumer = Mock(return_value=request_mock)
@@ -156,8 +163,10 @@ class PluginBaseTest(unittest.TestCase):
     @patch('brewtils.plugin.PluginBase._initialize', Mock())
     def test_run_consumers_closed_by_server(self):
         self.plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        admin_mock = Mock(isAlive=Mock(return_value=False), shutdown_event=Mock(is_set=Mock(return_value=True)))
-        request_mock = Mock(isAlive=Mock(return_value=False), shutdown_event=Mock(is_set=Mock(return_value=True)))
+        admin_mock = Mock(isAlive=Mock(return_value=False),
+                          shutdown_event=Mock(is_set=Mock(return_value=True)))
+        request_mock = Mock(isAlive=Mock(return_value=False),
+                            shutdown_event=Mock(is_set=Mock(return_value=True)))
         poll_mock = Mock(isAlive=Mock(return_value=True))
         self.plugin._create_admin_consumer = Mock(return_value=admin_mock)
         self.plugin._create_standard_consumer = Mock(return_value=request_mock)
@@ -237,12 +246,15 @@ class PluginBaseTest(unittest.TestCase):
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         self.assertEqual(2, update_mock.call_count)
         self.assertEqual('ERROR', request_mock.status)
-        self.assertEqual(json.dumps({"message": "I am an error, but not JSON", "attributes": {}}), request_mock.output)
+        self.assertEqual(json.dumps({"message": "I am an error, but not JSON", "attributes": {}}),
+                         request_mock.output)
         self.assertEqual('ValueError', request_mock.error_class)
 
     @patch('brewtils.plugin.PluginBase._invoke_command')
     @patch('brewtils.plugin.PluginBase._update_request')
-    def test_process_message_invoke_exception_json_output_exception_with_attributes(self, update_mock, invoke_mock):
+    def test_process_message_invoke_exception_json_output_exception_with_attributes(self,
+                                                                                    update_mock,
+                                                                                    invoke_mock):
         class MyError(Exception):
             def __init__(self, foo):
                 self.foo = foo
@@ -256,12 +268,14 @@ class PluginBaseTest(unittest.TestCase):
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         self.assertEqual(2, update_mock.call_count)
         self.assertEqual('ERROR', request_mock.status)
-        self.assertEqual(json.dumps({"message": str(exc), "attributes": {"foo": "bar"}}), request_mock.output)
+        self.assertEqual(json.dumps({"message": str(exc), "attributes": {"foo": "bar"}}),
+                         request_mock.output)
         self.assertEqual('MyError', request_mock.error_class)
 
     @patch('brewtils.plugin.PluginBase._invoke_command')
     @patch('brewtils.plugin.PluginBase._update_request')
-    def test_process_message_invoke_exception_json_output_exception_with_bad_attributes(self, update_mock, invoke_mock):
+    def test_process_message_json_output_exception_with_bad_attributes(self, update_mock,
+                                                                       invoke_mock):
         class MyError(Exception):
             def __init__(self, foo):
                 self.foo = foo
@@ -276,7 +290,8 @@ class PluginBaseTest(unittest.TestCase):
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         self.assertEqual(2, update_mock.call_count)
         self.assertEqual('ERROR', request_mock.status)
-        self.assertEqual(json.dumps({"message": str(thing), "attributes": str(thing.__dict__)}), request_mock.output)
+        self.assertEqual(json.dumps({"message": str(thing), "attributes": str(thing.__dict__)}),
+                         request_mock.output)
         self.assertEqual('MyError', request_mock.error_class)
 
     @patch('brewtils.plugin.PluginBase._pre_process')
@@ -299,7 +314,8 @@ class PluginBaseTest(unittest.TestCase):
 
         self.plugin.process_request_message(message_mock, {})
         pre_process_mock.assert_called_once_with(message_mock)
-        pool_mock.submit.assert_called_once_with(self.plugin._update_request, pre_process_mock.return_value, {})
+        pool_mock.submit.assert_called_once_with(self.plugin._update_request,
+                                                 pre_process_mock.return_value, {})
 
     @patch('brewtils.plugin.PluginBase._pre_process')
     def test_process_admin_message(self, pre_process_mock):
@@ -313,7 +329,8 @@ class PluginBaseTest(unittest.TestCase):
                                                  pre_process_mock.return_value, {})
 
     def test_pre_process_request(self):
-        request = Request(id='id', system='test_system', system_version='1.0.0', command_type='ACTION')
+        request = Request(id='id', system='test_system', system_version='1.0.0',
+                          command_type='ACTION')
         self.parser_mock.parse_request.return_value = request
         self.assertEqual(request, self.plugin._pre_process(Mock()))
 
@@ -323,7 +340,8 @@ class PluginBaseTest(unittest.TestCase):
         self.assertEqual(request, self.plugin._pre_process(Mock()))
 
     def test_pre_process_request_ephemeral(self):
-        request = Request(id='id', system='test_system', system_version='1.0.0', command_type='EPHEMERAL')
+        request = Request(id='id', system='test_system', system_version='1.0.0',
+                          command_type='EPHEMERAL')
         self.parser_mock.parse_request.return_value = request
         self.assertEqual(request, self.plugin._pre_process(Mock()))
 
@@ -363,17 +381,21 @@ class PluginBaseTest(unittest.TestCase):
         self.system.commands = [Command('test')]
         self.bm_client_mock.update_system.return_value = self.system
 
-        existing_system = System(id='id', name='test_system', version='1.0.0', instances=[self.instance],
+        existing_system = System(id='id', name='test_system', version='1.0.0',
+                                 instances=[self.instance],
                                  metadata={'foo': 'bar'})
         self.bm_client_mock.find_unique_system.return_value = existing_system
 
         self.plugin._initialize()
         self.assertFalse(self.bm_client_mock.create_system.called)
-        self.bm_client_mock.update_system.assert_called_once_with(self.instance.id, new_commands=self.system.commands,
-                                                                  metadata={"foo": "bar"},
-                                                                  description=self.system.description,
-                                                                  icon_name=self.system.icon_name,
-                                                                  display_name=self.system.display_name)
+        self.bm_client_mock.update_system.assert_called_once_with(
+            self.instance.id,
+            new_commands=self.system.commands,
+            metadata={"foo": "bar"},
+            description=self.system.description,
+            icon_name=self.system.icon_name,
+            display_name=self.system.display_name
+        )
         self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
         self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
         self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
@@ -382,13 +404,15 @@ class PluginBaseTest(unittest.TestCase):
         self.system.commands = [Command('test')]
         self.bm_client_mock.update_system.return_value = self.system
 
-        existing_system = System(id='id', name='test_system', version='1.0.0', instances=[self.instance],
+        existing_system = System(id='id', name='test_system', version='1.0.0',
+                                 instances=[self.instance],
                                  metadata={})
         self.bm_client_mock.find_unique_system.return_value = existing_system
 
         self.plugin._initialize()
         self.assertFalse(self.bm_client_mock.create_system.called)
-        self.bm_client_mock.update_system.assert_called_once_with(self.instance.id, new_commands=self.system.commands,
+        self.bm_client_mock.update_system.assert_called_once_with(self.instance.id,
+                                                                  new_commands=self.system.commands,
                                                                   description=None,
                                                                   display_name=None,
                                                                   icon_name=None,
@@ -423,14 +447,16 @@ class PluginBaseTest(unittest.TestCase):
     @patch('brewtils.plugin.PluginBase._start')
     def test_invoke_command_admin(self, start_mock):
         params = {'p1': 'param'}
-        request = Request(system='test_system', system_version='1.0.0', command='_start', parameters=params)
+        request = Request(system='test_system', system_version='1.0.0', command='_start',
+                          parameters=params)
 
         self.plugin._invoke_command(self.plugin, request)
         start_mock.assert_called_once_with(self.plugin, **params)
 
     def test_invoke_command_request(self):
         params = {'p1': 'param'}
-        request = Request(system='test_system', system_version='1.0.0', command='command', parameters=params)
+        request = Request(system='test_system', system_version='1.0.0', command='command',
+                          parameters=params)
         self.client.command = Mock()
 
         self.plugin._invoke_command(self.client, request)
@@ -438,13 +464,17 @@ class PluginBaseTest(unittest.TestCase):
 
     def test_invoke_command_no_attribute(self):
         params = {'p1': 'param'}
-        request = Request(system='test_system', system_version='1.0.0', command='foo', parameters=params)
-        self.assertRaises(RequestProcessingError, self.plugin._invoke_command, self.plugin.client, request)
+        request = Request(system='test_system', system_version='1.0.0', command='foo',
+                          parameters=params)
+        self.assertRaises(RequestProcessingError, self.plugin._invoke_command,
+                          self.plugin.client, request)
 
     def test_invoke_command_non_callable_attribute(self):
         params = {'p1': 'param'}
-        request = Request(system='test_system', system_version='1.0.0', command='command', parameters=params)
-        self.assertRaises(RequestProcessingError, self.plugin._invoke_command, self.plugin.client, request)
+        request = Request(system='test_system', system_version='1.0.0', command='command',
+                          parameters=params)
+        self.assertRaises(RequestProcessingError, self.plugin._invoke_command,
+                          self.plugin.client, request)
 
     def test_update_request(self):
         request_mock = Mock(is_ephemeral=False)
@@ -483,7 +513,8 @@ class PluginBaseTest(unittest.TestCase):
         self.assertFalse(self.bm_client_mock.update_request.called)
 
     def test_update_request_final_attempt_succeeds(self):
-        request_mock = Mock(is_ephemeral=False, status='SUCCESS', output='Some output', error_class=None)
+        request_mock = Mock(is_ephemeral=False, status='SUCCESS', output='Some output',
+                            error_class=None)
         self.plugin.max_attempts = 1
         self.plugin._update_request(request_mock, {'retry_attempt': 1, 'time_to_wait': 5})
         self.bm_client_mock.update_request.assert_called_with(
@@ -502,7 +533,8 @@ class PluginBaseTest(unittest.TestCase):
         self.assertTrue(self.plugin.shutdown_event.wait.called)
 
     def test_update_request_headers(self):
-        request_mock = Mock(is_ephemeral=False, status='SUCCESS', output='Some output', error_class=None)
+        request_mock = Mock(is_ephemeral=False, status='SUCCESS', output='Some output',
+                            error_class=None)
         self.plugin.shutdown_event = Mock(wait=Mock(return_value=True))
         self.bm_client_mock.update_request.side_effect = ValueError
         with self.assertRaises(RepublishRequestException) as ex:
@@ -513,10 +545,12 @@ class PluginBaseTest(unittest.TestCase):
         self.assertEqual(ex.exception.headers['time_to_wait'], 10)
 
     def test_update_request_final_attempt_fails(self):
-        request_mock = Mock(is_ephemeral=False, status='SUCCESS', output='Some output', error_class=None)
+        request_mock = Mock(is_ephemeral=False, status='SUCCESS', output='Some output',
+                            error_class=None)
         self.plugin.max_attempts = 1
         self.bm_client_mock.update_request.side_effect = ValueError
-        self.assertRaises(DiscardMessageException, self.plugin._update_request, request_mock, {'retry_attempt': 1})
+        self.assertRaises(DiscardMessageException, self.plugin._update_request, request_mock,
+                          {'retry_attempt': 1})
 
     def test_start(self):
         new_instance = Mock()
@@ -524,7 +558,9 @@ class PluginBaseTest(unittest.TestCase):
         self.bm_client_mock.update_instance_status.return_value = new_instance
 
         self.assertTrue(self.plugin._start(Mock()))
-        self.bm_client_mock.update_instance_status.assert_called_once_with(self.instance.id, 'RUNNING')
+        self.bm_client_mock.update_instance_status.assert_called_once_with(
+            self.instance.id, 'RUNNING'
+        )
         self.assertEqual(self.plugin.instance, new_instance)
 
     def test_stop(self):
@@ -533,7 +569,9 @@ class PluginBaseTest(unittest.TestCase):
         self.bm_client_mock.update_instance_status.return_value = new_instance
 
         self.assertTrue(self.plugin._stop(Mock()))
-        self.bm_client_mock.update_instance_status.assert_called_once_with(self.instance.id, 'STOPPED')
+        self.bm_client_mock.update_instance_status.assert_called_once_with(
+            self.instance.id, 'STOPPED'
+        )
         self.assertEqual(self.plugin.instance, new_instance)
 
     def test_status(self):
@@ -566,29 +604,38 @@ class PluginBaseTest(unittest.TestCase):
         self.assertEqual(4, self.plugin._setup_max_concurrent(False, 4))
 
     def test_setup_system_system_and_extra_params(self):
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client, 'default', self.system,
+        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+                          'default', self.system,
                           'name', '', '', '', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client, 'default', self.system,
+        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+                          'default', self.system,
                           '', 'description', '', '', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client, 'default', self.system,
+        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+                          'default', self.system,
                           '', '', 'version', '', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client, 'default', self.system,
+        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+                          'default', self.system,
                           '', '', '', 'icon name', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client, 'default', self.system,
+        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+                          'default', self.system,
                           '', '', '', '', {}, "display_name", None)
 
     def test_setup_system_no_instances(self):
         system = System(name='test_system', version='1.0.0')
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client, 'default', system,
+        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+                          'default', system,
                           '', '', '', '', {}, None, None)
 
     def test_setup_system_no_max_instances(self):
-        system = System(name='test_system', version='1.0.0', instances=[Instance(name='1'), Instance(name='2')])
-        new_system = self.plugin._setup_system(self.client, 'default', system, '', '', '', '', {}, None, None)
+        system = System(name='test_system', version='1.0.0', instances=[Instance(name='1'),
+                                                                        Instance(name='2')])
+        new_system = self.plugin._setup_system(self.client, 'default', system, '', '', '', '', {},
+                                               None, None)
         self.assertEqual(2, new_system.max_instances)
 
     def test_setup_system_construct(self):
-        new_system = self.plugin._setup_system(self.client, 'default', None, 'name', 'desc', '1.0.0', 'icon',
+        new_system = self.plugin._setup_system(self.client, 'default', None, 'name', 'desc',
+                                               '1.0.0', 'icon',
                                                {'foo': 'bar'}, "display_name", None)
         self.assertEqual('name', new_system.name)
         self.assertEqual('desc', new_system.description)
@@ -599,7 +646,8 @@ class PluginBaseTest(unittest.TestCase):
 
     def test_setup_system_construct_no_description(self):
         self.client.__doc__ = 'Description\nSome more stuff'
-        new_system = self.plugin._setup_system(self.client, 'default', None, 'name', '', '1.0.0', 'icon', {}, None, None)
+        new_system = self.plugin._setup_system(self.client, 'default', None, 'name', '', '1.0.0',
+                                               'icon', {}, None, None)
         self.assertEqual('name', new_system.name)
         self.assertEqual('Description', new_system.description)
         self.assertEqual('1.0.0', new_system.version)
@@ -610,7 +658,8 @@ class PluginBaseTest(unittest.TestCase):
         os.environ['BG_NAME'] = 'name'
         os.environ['BG_VERSION'] = '1.0.0'
 
-        new_system = self.plugin._setup_system(self.client, 'default', None, None, 'desc', None, 'icon', {'foo': 'bar'},
+        new_system = self.plugin._setup_system(self.client, 'default', None, None, 'desc', None,
+                                               'icon', {'foo': 'bar'},
                                                "display_name", None)
         self.assertEqual('name', new_system.name)
         self.assertEqual('desc', new_system.description)

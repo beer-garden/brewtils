@@ -3,8 +3,8 @@ import unittest
 from mock import Mock, PropertyMock
 
 from brewtils.errors import BrewmasterModelValidationError, RequestStatusTransitionError
-from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, Choices, LoggingConfig,\
-    Event, Queue
+from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
+    Choices, LoggingConfig, Event, Queue
 
 
 class CommandTest(unittest.TestCase):
@@ -37,83 +37,103 @@ class CommandTest(unittest.TestCase):
         self.assertTrue(c.has_different_parameters([Parameter(key='key1', optional=False)]))
 
     def test_has_different_parameters_different_keys(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key2', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key2', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_type(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='Integer', multi=True, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key1', type='Integer', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_multi(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=False, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key1', type='String', multi=False, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_optional(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=False, default='key1',
+        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=False, default='key1',
                            description='this is key1')
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_default(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key2',
+        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key2',
                            description='this is key1')
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_maximum(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            maximum=10)
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            maximum=20)
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_minimum(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            minimum=10)
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            minimum=20)
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_regex(self):
-        param1 = Parameter(key='key1', type='String', multi=False, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=False, display_name='Key 1',
+                           optional=True, default='key1',
                            regex=r'.')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=False, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key1', type='String', multi=False, display_name='Key 1',
+                           optional=True, default='key1',
                            regex=r'.*')
         self.assertTrue(c.has_different_parameters([param2]))
 
     def test_has_different_parameters_different_order(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
-        param2 = Parameter(key='key2', type='String', multi=True, display_name='Key 2', optional=True, default='key2',
+        param2 = Parameter(key='key2', type='String', multi=True, display_name='Key 2',
+                           optional=True, default='key2',
                            description='this is key2')
 
         c = Command(name='foo', description='bar', parameters=[param1, param2])
         self.assertFalse(c.has_different_parameters([param2, param1]))
 
     def test_has_different_parameters_false(self):
-        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param1 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         c = Command(name='foo', description='bar', parameters=[param1])
-        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1', optional=True, default='key1',
+        param2 = Parameter(key='key1', type='String', multi=True, display_name='Key 1',
+                           optional=True, default='key1',
                            description='this is key1')
         self.assertFalse(c.has_different_parameters([param2]))
 
@@ -179,22 +199,32 @@ class ParameterTest(unittest.TestCase):
         self.assertTrue(p1.is_different(p2))
 
     def test_is_different_mismatched_number_of_parameters(self):
-        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[])
-        p2 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[p1])
+        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[])
+        p2 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[p1])
         self.assertTrue(p1.is_different(p2))
 
     def test_is_different_nested_parameter_different_missing_key(self):
-        nested_parameter1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[])
-        nested_parameter2 = Parameter(key='bar', description='bar', type='Boolean', optional=False, parameters=[])
-        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[nested_parameter1])
-        p2 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[nested_parameter2])
+        nested_parameter1 = Parameter(key='foo', description='bar', type='Boolean',
+                                      optional=False, parameters=[])
+        nested_parameter2 = Parameter(key='bar', description='bar', type='Boolean',
+                                      optional=False, parameters=[])
+        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[nested_parameter1])
+        p2 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[nested_parameter2])
         self.assertTrue(p1.is_different(p2))
 
     def test_is_different_nested_parameter_different(self):
-        nested_parameter1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[])
-        nested_parameter2 = Parameter(key='foo', description='bar', type='String', optional=False, parameters=[])
-        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[nested_parameter1])
-        p2 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[nested_parameter2])
+        nested_parameter1 = Parameter(key='foo', description='bar', type='Boolean',
+                                      optional=False, parameters=[])
+        nested_parameter2 = Parameter(key='foo', description='bar', type='String',
+                                      optional=False, parameters=[])
+        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[nested_parameter1])
+        p2 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[nested_parameter2])
         self.assertTrue(p1.is_different(p2))
 
     def test_is_different_false_no_nested(self):
@@ -202,8 +232,10 @@ class ParameterTest(unittest.TestCase):
         self.assertFalse(p1.is_different(p1))
 
     def test_is_different_false_nested(self):
-        nested_parameter1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[])
-        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False, parameters=[nested_parameter1])
+        nested_parameter1 = Parameter(key='foo', description='bar', type='Boolean',
+                                      optional=False, parameters=[])
+        p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
+                       parameters=[nested_parameter1])
         self.assertFalse(p1.is_different(p1))
 
 
@@ -242,7 +274,8 @@ class RequestTest(unittest.TestCase):
             request = Request(status=begin_status)
             try:
                 request.status = end_status
-                self.fail("Request should not be able to go from status {0} to {1}".format(begin_status, end_status))
+                self.fail("Request should not be able to go from status {0} to {1}"
+                          .format(begin_status, end_status))
             except RequestStatusTransitionError:
                 pass
 
@@ -388,8 +421,8 @@ class LoggingConfigTest(unittest.TestCase):
                           handlers={"logstash": {}, "stdout": {}, "file": {}},
                           formatters={"default": {"format": LoggingConfig.DEFAULT_FORMAT}},
                           loggers=None)
-        self.assertEqual('<LoggingConfig: level=INFO, handlers=%s, formatters=%s' % (c.handler_names,
-                                                                                     c.formatter_names), repr(c))
+        self.assertEqual('<LoggingConfig: level=INFO, handlers=%s, formatters=%s' % (
+            c.handler_names, c.formatter_names), repr(c))
 
     def test_handler_names(self):
         c = LoggingConfig(level="INFO",
@@ -450,18 +483,22 @@ class LoggingConfigTest(unittest.TestCase):
                           }})
         log_config = c.get_plugin_log_config(system_name="system1")
         self.assertListEqual(sorted(list(log_config.formatter_names)), ["default", "stdout"])
-        self.assertEqual(log_config.formatters['default'], {"format": LoggingConfig.DEFAULT_FORMAT})
+        self.assertEqual(log_config.formatters['default'], {
+            "format": LoggingConfig.DEFAULT_FORMAT
+        })
         self.assertEqual(log_config.formatters['stdout'], {"format": "%(message)s"})
 
 
 class EventTest(unittest.TestCase):
 
     def test_str(self):
-        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'}, metadata={})
+        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'},
+                      metadata={})
         self.assertEqual('%s: %s, %s' % (event.name, event.payload, event.metadata), str(event))
 
     def test_repr(self):
-        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'}, metadata={})
+        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'},
+                      metadata={})
         self.assertEqual('<Event: name=%s, error=%s, payload=%s, metadata=%s>' %
                          (event.name, event.error, event.payload, event.metadata), repr(event))
 
@@ -469,11 +506,13 @@ class EventTest(unittest.TestCase):
 class QueueTest(unittest.TestCase):
 
     def test_str(self):
-        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0', instance='default', system_id='1234',
+        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
+                      instance='default', system_id='1234',
                       display='foo.1-0-0.default', size=3)
         self.assertEqual('%s: %s' % (queue.name, queue.size), str(queue))
 
     def test_repr(self):
-        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0', instance='default', system_id='1234',
+        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
+                      instance='default', system_id='1234',
                       display='foo.1-0-0.default', size=3)
         self.assertEqual('<Queue: name=echo.1-0-0.default, size=3>', repr(queue))

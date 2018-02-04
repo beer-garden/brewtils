@@ -25,27 +25,41 @@ class RestClientTest(unittest.TestCase):
 
     def test_version_1_uris(self):
         ssl = RestClient('host', 80, ssl_enabled=True, api_version=1, url_prefix=self.url_prefix)
-        non_ssl = RestClient('host', 80, ssl_enabled=False, api_version=1, url_prefix=self.url_prefix)
+        non_ssl = RestClient('host', 80, ssl_enabled=False, api_version=1,
+                             url_prefix=self.url_prefix)
 
-        self.assertEqual(ssl.system_url, 'https://host:80' + self.url_prefix + 'api/v1/systems/')
-        self.assertEqual(ssl.instance_url, 'https://host:80' + self.url_prefix + 'api/v1/instances/')
-        self.assertEqual(ssl.command_url, 'https://host:80' + self.url_prefix + 'api/v1/commands/')
-        self.assertEqual(ssl.request_url, 'https://host:80' + self.url_prefix + 'api/v1/requests/')
-        self.assertEqual(ssl.queue_url, 'https://host:80' + self.url_prefix + 'api/v1/queues/')
-        self.assertEqual(ssl.logging_config_url, 'https://host:80' + self.url_prefix + 'api/v1/config/logging/')
-        self.assertEqual(non_ssl.system_url, 'http://host:80' + self.url_prefix + 'api/v1/systems/')
-        self.assertEqual(non_ssl.instance_url, 'http://host:80' + self.url_prefix + 'api/v1/instances/')
-        self.assertEqual(non_ssl.command_url, 'http://host:80' + self.url_prefix + 'api/v1/commands/')
-        self.assertEqual(non_ssl.request_url, 'http://host:80' + self.url_prefix + 'api/v1/requests/')
-        self.assertEqual(non_ssl.queue_url, 'http://host:80' + self.url_prefix + 'api/v1/queues/')
-        self.assertEqual(ssl.logging_config_url, 'https://host:80' + self.url_prefix + 'api/v1/config/logging/')
+        self.assertEqual(ssl.system_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/systems/')
+        self.assertEqual(ssl.instance_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/instances/')
+        self.assertEqual(ssl.command_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/commands/')
+        self.assertEqual(ssl.request_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/requests/')
+        self.assertEqual(ssl.queue_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/queues/')
+        self.assertEqual(ssl.logging_config_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/config/logging/')
+        self.assertEqual(non_ssl.system_url,
+                         'http://host:80' + self.url_prefix + 'api/v1/systems/')
+        self.assertEqual(non_ssl.instance_url,
+                         'http://host:80' + self.url_prefix + 'api/v1/instances/')
+        self.assertEqual(non_ssl.command_url,
+                         'http://host:80' + self.url_prefix + 'api/v1/commands/')
+        self.assertEqual(non_ssl.request_url,
+                         'http://host:80' + self.url_prefix + 'api/v1/requests/')
+        self.assertEqual(non_ssl.queue_url,
+                         'http://host:80' + self.url_prefix + 'api/v1/queues/')
+        self.assertEqual(ssl.logging_config_url,
+                         'https://host:80' + self.url_prefix + 'api/v1/config/logging/')
 
     def test_init_invalid_api_version(self):
         self.assertRaises(ValueError, RestClient, 'host', 80, api_version=-1)
 
     def test_get_version_1(self):
         self.client_version_1.get_version(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.version_url, params={'key': 'value'})
+        self.session_mock.get.assert_called_with(self.client_version_1.version_url,
+                                                 params={'key': 'value'})
 
     def test_get_logging_config_1(self):
         self.client_version_1.get_logging_config(system_name="system_name")
@@ -54,15 +68,18 @@ class RestClientTest(unittest.TestCase):
 
     def test_get_systems_1(self):
         self.client_version_1.get_systems(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.system_url, params={'key': 'value'})
+        self.session_mock.get.assert_called_with(self.client_version_1.system_url,
+                                                 params={'key': 'value'})
 
     def test_get_system_1(self):
         self.client_version_1.get_system('id')
-        self.session_mock.get.assert_called_with(self.client_version_1.system_url + 'id', params={})
+        self.session_mock.get.assert_called_with(self.client_version_1.system_url + 'id',
+                                                 params={})
 
     def test_get_system_2(self):
         self.client_version_1.get_system('id', key="value")
-        self.session_mock.get.assert_called_with(self.client_version_1.system_url + 'id', params={"key": "value"})
+        self.session_mock.get.assert_called_with(self.client_version_1.system_url + 'id',
+                                                 params={"key": "value"})
 
     def test_post_systems_1(self):
         self.client_version_1.post_systems(payload='payload')
@@ -71,7 +88,8 @@ class RestClientTest(unittest.TestCase):
 
     def test_patch_system(self):
         self.client_version_1.patch_system('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.system_url + 'id', data='payload',
+        self.session_mock.patch.assert_called_with(self.client_version_1.system_url + 'id',
+                                                   data='payload',
                                                    headers=self.client_version_1.JSON_HEADERS)
 
     def test_delete_system_1(self):
@@ -80,7 +98,8 @@ class RestClientTest(unittest.TestCase):
 
     def test_patch_instance_1(self):
         self.client_version_1.patch_instance('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.instance_url + 'id', data='payload',
+        self.session_mock.patch.assert_called_with(self.client_version_1.instance_url + 'id',
+                                                   data='payload',
                                                    headers=self.client_version_1.JSON_HEADERS)
 
     def test_get_commands_1(self):
@@ -93,7 +112,8 @@ class RestClientTest(unittest.TestCase):
 
     def test_get_requests(self,):
         self.client_version_1.get_requests(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.request_url, params={'key': 'value'})
+        self.session_mock.get.assert_called_with(self.client_version_1.request_url,
+                                                 params={'key': 'value'})
 
     def test_get_request(self):
         self.client_version_1.get_request(request_id='id')
@@ -101,18 +121,21 @@ class RestClientTest(unittest.TestCase):
 
     def test_post_requests(self):
         self.client_version_1.post_requests(payload='payload')
-        self.session_mock.post.assert_called_with(self.client_version_1.request_url, data='payload',
+        self.session_mock.post.assert_called_with(self.client_version_1.request_url,
+                                                  data='payload',
                                                   headers=self.client_version_1.JSON_HEADERS)
 
     def test_patch_request(self):
         self.client_version_1.patch_request('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.request_url + 'id', data='payload',
+        self.session_mock.patch.assert_called_with(self.client_version_1.request_url + 'id',
+                                                   data='payload',
                                                    headers=self.client_version_1.JSON_HEADERS)
 
     def test_post_event(self):
         self.client_version_1.post_event(payload='payload')
         self.session_mock.post.assert_called_with(self.client_version_1.event_url, data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS, params=None)
+                                                  headers=self.client_version_1.JSON_HEADERS,
+                                                  params=None)
 
     def test_post_event_specific_publisher(self):
         self.client_version_1.post_event(payload='payload', publishers=['pika'])

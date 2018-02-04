@@ -4,7 +4,8 @@ import warnings
 from mock import ANY, Mock, patch
 
 from brewtils.errors import BrewmasterFetchError, BrewmasterValidationError, BrewmasterSaveError, \
-    BrewmasterDeleteError, BrewmasterConnectionError, BGNotFoundError, BGConflictError, BrewmasterRestError
+    BrewmasterDeleteError, BrewmasterConnectionError, BGNotFoundError, BGConflictError, \
+    BrewmasterRestError
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
 
@@ -14,12 +15,18 @@ class EasyClientTest(unittest.TestCase):
     def setUp(self):
         self.parser = Mock()
         self.client = EasyClient(host='localhost', port='3000', api_version=1, parser=self.parser)
-        self.fake_success_response = Mock(ok=True, status_code=200, json=Mock(return_value='payload'))
-        self.fake_server_error_response = Mock(ok=False, status_code=500, json=Mock(return_value='payload'))
-        self.fake_connection_error_response = Mock(ok=False, status_code=503, json=Mock(return_value='payload'))
-        self.fake_client_error_response = Mock(ok=False, status_code=400, json=Mock(return_value='payload'))
-        self.fake_not_found_error_response = Mock(ok=False, status_code=404, json=Mock(return_value='payload'))
-        self.fake_conflict_error_response = Mock(ok=False, status_code=409, json=Mock(return_value='payload'))
+        self.fake_success_response = Mock(ok=True, status_code=200,
+                                          json=Mock(return_value='payload'))
+        self.fake_server_error_response = Mock(ok=False, status_code=500,
+                                               json=Mock(return_value='payload'))
+        self.fake_connection_error_response = Mock(ok=False, status_code=503,
+                                                   json=Mock(return_value='payload'))
+        self.fake_client_error_response = Mock(ok=False, status_code=400,
+                                               json=Mock(return_value='payload'))
+        self.fake_not_found_error_response = Mock(ok=False, status_code=404,
+                                                  json=Mock(return_value='payload'))
+        self.fake_conflict_error_response = Mock(ok=False, status_code=409,
+                                                 json=Mock(return_value='payload'))
 
     @patch('brewtils.rest.client.RestClient.get_version')
     def test_get_version(self, mock_get):
@@ -312,7 +319,8 @@ class EasyClientTest(unittest.TestCase):
     def test_update_instance_status_client_error(self, request_mock):
         request_mock.return_value = self.fake_client_error_response
 
-        self.assertRaises(BrewmasterValidationError, self.client.update_instance_status, 'id', 'status')
+        self.assertRaises(BrewmasterValidationError, self.client.update_instance_status, 'id',
+                          'status')
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with('id', ANY)
 
@@ -327,7 +335,8 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_update_instance_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.update_instance_status, 'id', 'status')
+        self.assertRaises(BrewmasterConnectionError, self.client.update_instance_status, 'id',
+                          'status')
 
     # Instance heartbeat
     @patch('brewtils.rest.client.RestClient.patch_instance')
@@ -454,7 +463,8 @@ class EasyClientTest(unittest.TestCase):
     def test_update_request(self, request_mock):
         request_mock.return_value = self.fake_success_response
 
-        self.client.update_request('id', status='new_status', output='new_output', error_class='ValueError')
+        self.client.update_request('id', status='new_status', output='new_output',
+                                   error_class='ValueError')
         self.parser.parse_request.assert_called_with('payload')
         self.assertEqual(1, request_mock.call_count)
         payload = request_mock.call_args[0][1]

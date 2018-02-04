@@ -29,8 +29,9 @@ class Command(object):
     COMMAND_TYPES = ('ACTION', 'INFO', 'EPHEMERAL')
     OUTPUT_TYPES = ('STRING', 'JSON', 'XML', 'HTML')
 
-    def __init__(self, name, description=None, id=None, parameters=None, command_type=None, output_type=None,
-                 schema=None, form=None, template=None, icon_name=None, system=None):
+    def __init__(self, name, description=None, id=None, parameters=None, command_type=None,
+                 output_type=None, schema=None, form=None, template=None, icon_name=None,
+                 system=None):
         self.name = name
         self.description = description
         self.id = id
@@ -93,11 +94,11 @@ class Instance(object):
 
     schema = 'InstanceSchema'
 
-    INSTANCE_STATUSES = {'INITIALIZING', 'RUNNING', 'PAUSED', 'STOPPED', 'DEAD', 'UNRESPONSIVE', 'STARTING', 'STOPPING',
-                         'UNKNOWN'}
+    INSTANCE_STATUSES = {'INITIALIZING', 'RUNNING', 'PAUSED', 'STOPPED', 'DEAD', 'UNRESPONSIVE',
+                         'STARTING', 'STOPPING', 'UNKNOWN'}
 
-    def __init__(self, name=None, description=None, id=None, status=None, status_info=None, queue_type=None,
-                 queue_info=None, icon_name=None, metadata=None):
+    def __init__(self, name=None, description=None, id=None, status=None, status_info=None,
+                 queue_type=None, queue_info=None, icon_name=None, metadata=None):
 
         self.name = name
         self.description = description
@@ -144,9 +145,9 @@ class Parameter(object):
     TYPES = ("String", "Integer", "Float", "Boolean", "Any", "Dictionary", "Date", "DateTime")
     FORM_INPUT_TYPES = ("textarea",)
 
-    def __init__(self, key, type=None, multi=None, display_name=None, optional=None, default=None, description=None,
-                 choices=None, parameters=None, nullable=None, maximum=None, minimum=None, regex=None,
-                 form_input_type=None):
+    def __init__(self, key, type=None, multi=None, display_name=None, optional=None, default=None,
+                 description=None, choices=None, parameters=None, nullable=None, maximum=None,
+                 minimum=None, regex=None, form_input_type=None):
 
         self.key = key
         self.type = type
@@ -167,13 +168,16 @@ class Parameter(object):
         return self.key
 
     def __repr__(self):
-        return '<Parameter: key=%s, type=%s, description=%s>' % (self.key, self.type, self.description)
+        return '<Parameter: key=%s, type=%s, description=%s>' % (self.key,
+                                                                 self.type,
+                                                                 self.description)
 
     def is_different(self, other):
         if not type(other) is type(self):
             return True
 
-        fields_to_compare = ['key', 'type', 'multi', 'optional', 'default', 'nullable', 'maximum', 'minimum', 'regex']
+        fields_to_compare = ['key', 'type', 'multi', 'optional', 'default', 'nullable', 'maximum',
+                             'minimum', 'regex']
         for field in fields_to_compare:
             if getattr(self, field) != getattr(other, field):
                 return True
@@ -202,9 +206,10 @@ class Request(object):
     COMMAND_TYPES = ('ACTION', 'INFO', 'EPHEMERAL')
     OUTPUT_TYPES = ('STRING', 'JSON', 'XML', 'HTML')
 
-    def __init__(self, system=None, system_version=None, instance_name=None, command=None, id=None, parent=None,
-                 children=None, parameters=None, comment=None, output=None, output_type=None, status=None,
-                 command_type=None, created_at=None, error_class=None, metadata=None, updated_at=None):
+    def __init__(self, system=None, system_version=None, instance_name=None, command=None,
+                 id=None, parent=None, children=None, parameters=None, comment=None, output=None,
+                 output_type=None, status=None, command_type=None, created_at=None,
+                 error_class=None, metadata=None, updated_at=None):
 
         self.system = system
         self.system_version = system_version
@@ -228,8 +233,9 @@ class Request(object):
         return self.command
 
     def __repr__(self):
-        return '<Request: command=%s, status=%s, system=%s, system_version=%s, instance_name=%s>' %\
-               (self.command, self.status, self.system, self.system_version, self.instance_name)
+        return ('<Request: command=%s, status=%s, '
+                'system=%s, system_version=%s, instance_name=%s>' %
+                (self.command, self.status, self.system, self.system_version, self.instance_name))
 
     @property
     def status(self):
@@ -242,12 +248,15 @@ class Request(object):
     @status.setter
     def status(self, value):
         if self._status in self.COMPLETED_STATUSES:
-            raise RequestStatusTransitionError("Status for a request cannot be updated once it has been completed. "
-                                               "Current status: {0} Requested status: {1}".format(self.status, value))
+            raise RequestStatusTransitionError("Status for a request cannot be updated once "
+                                               "it has been completed. Current status: {0} "
+                                               "Requested status: {1}".format(self.status, value))
 
-        elif self._status == 'IN_PROGRESS' and value not in self.COMPLETED_STATUSES + ('IN_PROGRESS', ):
-            raise RequestStatusTransitionError("A request cannot go from IN_PROGRESS to a non-completed status. "
-                                               "Completed statuses are {0}. You requested: {1}"
+        elif (self._status == 'IN_PROGRESS' and
+              value not in self.COMPLETED_STATUSES + ('IN_PROGRESS', )):
+            raise RequestStatusTransitionError("A request cannot go from IN_PROGRESS to "
+                                               "a non-completed status. Completed statuses are "
+                                               "{0}. You requested: {1}"
                                                .format(self.COMPLETED_STATUSES, value))
         self._status = value
 
@@ -256,8 +265,8 @@ class System(object):
 
     schema = 'SystemSchema'
 
-    def __init__(self, name=None, description=None, version=None, id=None, max_instances=None, instances=None,
-                 commands=None, icon_name=None, display_name=None, metadata=None):
+    def __init__(self, name=None, description=None, version=None, id=None, max_instances=None,
+                 instances=None, commands=None, icon_name=None, display_name=None, metadata=None):
 
         self.name = name
         self.description = description
@@ -356,7 +365,11 @@ class LoggingConfig(object):
     SUPPORTED_HANDLERS = ("stdout", "file", "logstash")
 
     DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    DEFAULT_HANDLER = {"class": "logging.StreamHandler", "stream": "ext::/sys.stdout", "formatter": "default"}
+    DEFAULT_HANDLER = {
+        "class": "logging.StreamHandler",
+        "stream": "ext::/sys.stdout",
+        "formatter": "default"
+    }
 
     def __init__(self, level=None, handlers=None, formatters=None, loggers=None):
         self.level = level
@@ -439,7 +452,8 @@ class LoggingConfig(object):
         return '%s, %s, %s' % (self.level, self.handler_names, self.formatter_names)
 
     def __repr__(self):
-        return '<LoggingConfig: level=%s, handlers=%s, formatters=%s' % (self.level, self.handler_names,
+        return '<LoggingConfig: level=%s, handlers=%s, formatters=%s' % (self.level,
+                                                                         self.handler_names,
                                                                          self.formatter_names)
 
 
@@ -458,15 +472,16 @@ class Event(object):
         return '%s: %s, %s' % (self.name, self.payload, self.metadata)
 
     def __repr__(self):
-        return '<Event: name=%s, error=%s, payload=%s, metadata=%s>' % \
-               (self.name, self.error, self.payload, self.metadata)
+        return ('<Event: name=%s, error=%s, payload=%s, metadata=%s>' %
+                (self.name, self.error, self.payload, self.metadata))
 
 
 class Queue(object):
 
     schema = 'QueueSchema'
 
-    def __init__(self, name=None, system=None, version=None, instance=None, system_id=None, display=None, size=None):
+    def __init__(self, name=None, system=None, version=None, instance=None, system_id=None,
+                 display=None, size=None):
         self.name = name
         self.system = system
         self.version = version

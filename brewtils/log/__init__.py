@@ -3,8 +3,8 @@
 This module is for setting up your plugins logging correctly.
 
 Example:
-    In order to use this, you should simply call ``setup_logger`` in the same file where you initialize your
-    plugin sometime before you initialize your Plugin object.
+    In order to use this, you should simply call ``setup_logger`` in the same file where you
+    initialize your plugin sometime before you initialize your Plugin object.
 
         host = 'localhost'
         port = 2337
@@ -21,7 +21,8 @@ import logging.config
 import copy
 import brewtils
 
-# Loggers to always use. These are things that generally, people do not want to see and/or are too verbose.
+# Loggers to always use. These are things that generally,
+# people do not want to see and/or are too verbose.
 DEFAULT_LOGGERS = {
     "pika": {
         "level": "ERROR"
@@ -31,8 +32,8 @@ DEFAULT_LOGGERS = {
     }
 }
 
-# A simple default format/formatter. Generally speaking, the API should return formatters, but since
-# users can configure their logging, it's better if the formatter has a logical backup.
+# A simple default format/formatter. Generally speaking, the API should return formatters,
+# but since users can configure their logging, it's better if the formatter has a logical backup.
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DEFAULT_FORMATTERS = {
     "default": {
@@ -87,12 +88,14 @@ def setup_logger(bg_host, bg_port, system_name, ca_cert=None, client_cert=None, 
     :param bool ssl_enabled: Whether to use SSL for beer-garden communication
     :return:
     """
-    config = get_python_logging_config(bg_host=bg_host, bg_port=bg_port, system_name=system_name, ca_cert=ca_cert,
-                                       client_cert=client_cert, ssl_enabled=ssl_enabled)
+    config = get_python_logging_config(bg_host=bg_host, bg_port=bg_port, system_name=system_name,
+                                       ca_cert=ca_cert, client_cert=client_cert,
+                                       ssl_enabled=ssl_enabled)
     logging.config.dictConfig(config)
 
 
-def get_python_logging_config(bg_host, bg_port, system_name, ca_cert=None, client_cert=None, ssl_enabled=None):
+def get_python_logging_config(bg_host, bg_port, system_name,
+                              ca_cert=None, client_cert=None, ssl_enabled=None):
     """Returns a dictionary for the python logging configuration
 
     :param str bg_host: Hostname of a beer-garden
@@ -137,5 +140,3 @@ def convert_logging_config(logging_config):
         "handlers": list(config_to_return['handlers'].keys())
     }
     return config_to_return
-
-

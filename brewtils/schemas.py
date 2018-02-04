@@ -26,7 +26,8 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def from_epoch(epoch):
-        # utcfromtimestamp will correctly parse milliseconds in Python 3, but in Python 2 we need to help it
+        # utcfromtimestamp will correctly parse milliseconds in Python 3,
+        # but in Python 2 we need to help it
         seconds, millis = divmod(epoch, 1000)
         return datetime.datetime.utcfromtimestamp(seconds).replace(microsecond=millis*1000)
 
@@ -47,7 +48,8 @@ class BaseSchema(Schema):
 
     @classmethod
     def get_attribute_names(cls):
-        return [key for key, value in cls._declared_fields.items() if isinstance(value, fields.FieldABC)]
+        return [key for key, value in cls._declared_fields.items()
+                if isinstance(value, fields.FieldABC)]
 
 
 class ChoicesSchema(BaseSchema):
@@ -127,7 +129,8 @@ class RequestSchema(BaseSchema):
     instance_name = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
     parent = fields.Nested('self', exclude=('children', ), allow_none=True)
-    children = fields.Nested('self', exclude=('parent', 'children'), many=True, default=None, allow_none=True)
+    children = fields.Nested('self', exclude=('parent', 'children'), many=True,
+                             default=None, allow_none=True)
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)
     output = fields.Str(allow_none=True)

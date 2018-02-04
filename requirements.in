@@ -18,7 +18,6 @@ nose
 rednose
 coverage
 nosexcover
-pylint
 tox
 pytz
-
+flake8

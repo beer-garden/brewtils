@@ -10,24 +10,28 @@ from brewtils.schema_parser import SchemaParser
 
 
 class RequestConsumer(threading.Thread):
-    """Consumer that will handle unexpected interactions with RabbitMQ such as channel and connection closures.
+    """Consumer that will handle unexpected interactions with RabbitMQ.
 
-    If RabbitMQ closes the connection, it will reopen it. You should look at the output, as there are limited reasons
-    why the connection may be closed, which usually are tied to permission related issues or socket timeouts.
+    If RabbitMQ closes the connection, it will reopen it. You should look at the output, as there
+    are limited reasons why the connection may be closed, which usually are tied to permission
+    related issues or socket timeouts.
 
-    If the channel is closed, it will indicate a problem with one of the commands that were issued and that should
-    surface in the output as well.
+    If the channel is closed, it will indicate a problem with one of the commands that were issued
+    and that should surface in the output as well.
 
     :param str amqp_url: The AMQP url to connection with
     :param str queue_name: The name of the queue to connect to
-    :param func on_message_callback: The function called to invoke message processing. Must return a Future.
+    :param func on_message_callback: The function called to invoke message processing.
+        Must return a Future.
     :param event panic_event: An event to be set in the event of a catastrophic failure
     :type event: :py:class:`threading.Event`
     :param logger: A configured logger
     :type logger: :py:class:`logging.Logger`
     :param str thread_name: The name to use for this thread
-    :param int max_connect_retries: Number of connection retry attempts before failure. Default -1 (retry forever).
-    :param int max_connect_backoff: Maximum amount of time to wait between connection retry attempts. Default 30.
+    :param int max_connect_retries: Number of connection retry attempts before failure.
+        Default -1 (retry forever).
+    :param int max_connect_backoff: Maximum amount of time to wait between connection retry
+        attempts. Default 30.
     :param int max_concurrent: Maximum number of requests to process concurrently
     """
 
@@ -51,48 +55,62 @@ class RequestConsumer(threading.Thread):
         super(RequestConsumer, self).__init__(name=thread_name)
 
     def run(self):
-        """Run the example consumer by connection to RabbitMQ and then starting the IOLoop to block and allow the
-        SelectConnection to operate.
+        """Run the example consumer.
+
+        Creates a connection to the queueing service, then starts the IOLoop. The IOLoop will block
+        and allow the SelectConnection to operate.
+
+        :return:
         """
         self._connection = self.open_connection()
 
         # It is possible to return from open_connection without acquiring a connection.
-        # This usually happens if no max_connect_retries was set and we are constantly trying to connect to a queue that
-        #  does not exist. For those cases, there is no reason to start an ioloop.
+        # This usually happens if no max_connect_retries was set and we are constantly trying to
+        # connect to a queue that does not exist. For those cases, there is no reason to start
+        # an ioloop.
         if self._connection:
             self._connection.ioloop.start()
 
     def stop(self):
-        """Cleanly shutdown the connection to RabbitMQ by closing the channel. The stop_consuming method should already
-        have been called. When Pika acknowledges the channel closure we will close the connection, which will end the
-        RequestConsumer.
+        """Cleanly shutdown the connection.
+
+        Assumes the stop_consuming method has already been called. When the queueing service
+        acknowledges the closure, the connection is closed which will end the RequestConsumer.
+
+        :return:
         """
         self.logger.debug('Stopping request consumer')
         self.shutdown_event.set()
         self.close_channel()
 
     def on_message(self, channel, basic_deliver, properties, body):
-        """Invoked by pika when a message is delivered from RabbitMQ. The channel is passed for your convenience. The
-        basic_deliver object that is passed in carries the exchange, routing key, delivery tag and a redelivered flag
-        for the message. the properties passed in is an instance of BasicProperties with the message properties and the
-        body is the message that was sent.
+        """Invoked when a message is delivered from the queueing service.
+
+        Invoked by pika when a message is delivered from RabbitMQ. The channel is passed for your
+        convenience. The basic_deliver object that is passed in carries the exchange, routing key,
+        delivery tag and a redelivered flag for the message. the properties passed in is an
+        instance of BasicProperties with the message properties and the body is the message that
+        was sent.
 
         :param pika.channel.Channel channel: The channel object
         :param pika.Spec.Basic.Deliver basic_deliver: basic_deliver method
         :param pika.Spec.BasicProperties properties: properties
         :param str|unicode body: The message body
         """
-        self.logger.debug("Received message #%s from %s on channel %s: %s", basic_deliver.delivery_tag,
-                          properties.app_id, channel.channel_number, body)
+        self.logger.debug("Received message #%s from %s on channel %s: %s",
+                          basic_deliver.delivery_tag, properties.app_id,
+                          channel.channel_number, body)
 
         try:
             future = self._on_message_callback(body, properties.headers)
             future.add_done_callback(partial(self.on_message_callback_complete, basic_deliver))
         except DiscardMessageException:
-            self.logger.debug('Nacking message %s, not attempting to requeue', basic_deliver.delivery_tag)
+            self.logger.debug('Nacking message %s, not attempting to requeue',
+                              basic_deliver.delivery_tag)
             self._channel.basic_nack(basic_deliver.delivery_tag, requeue=False)
         except Exception as ex:
-            self.logger.exception('Exception while trying to schedule message %s, about to nack and requeue: %s',
+            self.logger.exception('Exception while trying to schedule message %s, about to nack '
+                                  'and requeue: %s',
                                   basic_deliver.delivery_tag, ex)
             self._channel.basic_nack(basic_deliver.delivery_tag, requeue=True)
 
@@ -108,7 +126,8 @@ class RequestConsumer(threading.Thread):
                 self.logger.debug('Acking message %s', basic_deliver.delivery_tag)
                 self._channel.basic_ack(basic_deliver.delivery_tag)
             except Exception as ex:
-                self.logger.exception('Error acking message %s, about to shut down: %s', basic_deliver.delivery_tag, ex)
+                self.logger.exception('Error acking message %s, about to shut down: %s',
+                                      basic_deliver.delivery_tag, ex)
                 self._panic_event.set()
         else:
             future_ex = future.exception()
@@ -118,11 +137,15 @@ class RequestConsumer(threading.Thread):
                     with pika.BlockingConnection(pika.URLParameters(self._url)) as conn:
                         headers = future_ex.headers
                         headers.update({'request_id': future_ex.request.id})
-                        props = pika.BasicProperties(app_id='beer-garden', content_type='text/plain',
+                        props = pika.BasicProperties(app_id='beer-garden',
+                                                     content_type='text/plain',
                                                      headers=headers, priority=1)
-                        conn.channel().basic_publish(exchange=basic_deliver.exchange, properties=props,
+                        conn.channel().basic_publish(exchange=basic_deliver.exchange,
+                                                     properties=props,
                                                      routing_key=basic_deliver.routing_key,
-                                                     body=SchemaParser.serialize_request(future_ex.request))
+                                                     body=SchemaParser.serialize_request(
+                                                         future_ex.request)
+                                                     )
 
                     self._channel.basic_ack(basic_deliver.delivery_tag)
                 except Exception as ex:
@@ -130,17 +153,21 @@ class RequestConsumer(threading.Thread):
                                           basic_deliver.delivery_tag, ex)
                     self._panic_event.set()
             elif isinstance(future_ex, DiscardMessageException):
-                self.logger.info('Nacking message %s, not attempting to requeue', basic_deliver.delivery_tag)
+                self.logger.info('Nacking message %s, not attempting to requeue',
+                                 basic_deliver.delivery_tag)
                 self._channel.basic_nack(basic_deliver.delivery_tag, requeue=False)
             else:
-                # If request processing throws anything else we are in a seriously bad state, we should just die
-                self.logger.exception('Unexpected exception during request %s processing, about to shut down: %s',
+                # If request processing throws anything else we are in a seriously bad state
+                self.logger.exception('Unexpected exception during request %s processing, '
+                                      'about to shut down: %s',
                                       basic_deliver.delivery_tag, future_ex, exc_info=False)
                 self._panic_event.set()
 
     def open_connection(self):
-        """This method connects to RabbitMQ, returning the connection handle. When the connection is established, the
-        on_connection_open method will be invoked by pika.
+        """Opens a connection to the queueing service.
+
+        This method connects to RabbitMQ, returning the connection handle. When the connection
+        is established, the on_connection_open method will be invoked by pika.
 
         :rtype: pika.SelectConnection
         """
@@ -161,8 +188,11 @@ class RequestConsumer(threading.Thread):
                 retries += 1
 
     def on_connection_open(self, unused_connection):
-        """This method is called by pika once the connection to RabbitMQ has been established. It passes the handle to
-        the connection object in case we need it, but in this case, we'll just mark it unused.
+        """Invoked when the connection has been established.
+
+        This method is called by pika once the connection to RabbitMQ has been established. It
+        passes the handle to the connection object in case we need it, but in this case, we'll
+        just mark it unused.
 
         :type unused_connection: pika.SelectConnection
         """
@@ -176,8 +206,10 @@ class RequestConsumer(threading.Thread):
         self._connection.close()
 
     def on_connection_closed(self, connection, reply_code, reply_text):
-        """This method is invoked by pika when the connection to RabbitMQ is closed unexpectedly. Since it is
-        unexpected, we will reconnect to RabbitMQ if it disconnects.
+        """Invoked when the connection is closed.
+
+        This method is invoked by pika when the connection to RabbitMQ is closed unexpectedly.
+        Since it is unexpected, we will reconnect to RabbitMQ if it disconnects.
 
         :param pika.connection.Connection connection: the closed connection object
         :param int reply_code: The server provided reply_code if given
@@ -193,12 +225,13 @@ class RequestConsumer(threading.Thread):
         if self.shutdown_event.is_set():
             self._connection.ioloop.stop()
         else:
-            self.logger.warning('Connection unexpectedly closed: (%s) %s' % (reply_code, reply_text))
+            self.logger.warning('Connection unexpectedly closed: (%s) %s' %
+                                (reply_code, reply_text))
             self.logger.warning('Attempting to reopen connection in 5 seconds')
             self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):
-        """Will be invoked by the IOLoop timer if the connection is closed. See the on_connection_closed method."""
+        """Will be invoked by the IOLoop timer if the connection is closed."""
 
         # This is the old connection IOLoop instance, stop its ioloop
         self._connection.ioloop.stop()
@@ -212,7 +245,10 @@ class RequestConsumer(threading.Thread):
                 self._connection.ioloop.start()
 
     def open_channel(self):
-        """Open a new channel with RabbitMQ by issuing the Channel.Open RPC command. When RabbitMQ responds that the
+        """Opens a channel on the queueing service.
+
+        Open a new channel with RabbitMQ by issuing the Channel.Open RPC command.
+        When RabbitMQ responds that the
         channel is open, the on_channel_open callback will be invoked by pika.
         """
         self.logger.debug('Opening a new channel')
@@ -233,14 +269,17 @@ class RequestConsumer(threading.Thread):
         self.start_consuming()
 
     def close_channel(self):
-        """Call to close the channel with RabbitMQ cleanly by issuing the Channel.Close RPC command."""
+        """Call to close the channel cleanly by issuing the Channel.Close RPC command."""
         self.logger.debug('Closing the channel')
         self._channel.close()
 
     def on_channel_closed(self, channel, reply_code, reply_text):
-        """Invoked by pika when RabbitMQ unexpectedly closes the channel. Channels are usually closed if you attempt to
-        do something that violates the protocol, such as re-declare an exchange or queue with different parameters. In
-        this case, we'll close the connection to shutdown the object.
+        """Invoekd when the queueing service unexpectedly closes the channle.
+
+        Invoked by pika when RabbitMQ unexpectedly closes the channel. Channels are usually closed
+        if you attempt to do something that violates the protocol, such as re-declare an exchange
+        or queue with different parameters. In this case, we'll close the connection to shutdown
+        the object.
 
         :param pika.channel.Channel channel: The closed channel
         :param int reply_code: The numeric reason the channel was closed
@@ -250,10 +289,13 @@ class RequestConsumer(threading.Thread):
         self._connection.close()
 
     def start_consuming(self):
-        """This method sets up the consumer by first calling add_on_cancel_callback so that the object is notified if
-        RabbitMQ cancels the consumer. It then issues the Basic.Consume RPC command which returns the consumer tag that
-        is used to uniquely identify the consumer with RabbitMQ. We keep the value to use it when we want to cancel
-        consuming. The on_message method is passed in as a callback pika will invoke when a message is fully received.
+        """Begin consuming messages from the queueing service.
+
+        This method sets up the consumer by first calling add_on_cancel_callback so that the
+        object is notified if RabbitMQ cancels the consumer. It then issues the Basic.Consume RPC
+        command which returns the consumer tag that is used to uniquely identify the consumer with
+        RabbitMQ. We keep the value to use it when we want to cancel consuming. The on_message
+        method is passed in as a callback pika will invoke when a message is fully received.
         """
         self.logger.debug('Issuing consumer related RPC commands')
 
@@ -263,7 +305,7 @@ class RequestConsumer(threading.Thread):
         self._consumer_tag = self._channel.basic_consume(self.on_message, queue=self._queue_name)
 
     def stop_consuming(self):
-        """Tell RabbitMQ that you would like to stop consuming by sending the Basic.Cancel RPC command."""
+        """Stop consuming by sending the Basic.Cancel RPC command."""
         self.logger.debug("Stopping consuming on channel %s", self._channel)
         if self._channel:
             self.logger.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
@@ -279,9 +321,11 @@ class RequestConsumer(threading.Thread):
             self.close_channel()
 
     def on_cancelok(self, unused_frame):
-        """This method is invoked by pika when RabbitMQ acknowledges the cancellation of a consumer. At this point we
-        will close the channel. This will invoke the on_channel_closed method once the channel has been closed, which
-        will in-turn close the connection.
+        """Invoked when the queueing service acknowledges cancellation.
+
+        This method is invoked by pika when RabbitMQ acknowledges the cancellation of a consumer.
+        At this point we will close the channel. This will invoke the on_channel_closed method
+        once the channel has been closed, which will in-turn close the connection.
 
         :param pika.frame.Method unused_frame: The Basic.CancelOK frame
         """

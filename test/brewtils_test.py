@@ -22,6 +22,3 @@ class BrewtilsTest(unittest.TestCase):
     def test_get_easy_client(self):
         client = brewtils.get_easy_client(**self.params)
         self.assertIsInstance(client, EasyClient)
-
-if __name__ == '__main__':
-    unittest.main()

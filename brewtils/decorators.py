@@ -27,7 +27,7 @@ _wrap_functions = False
 def system(cls):
     """Class decorator that marks a class as a beer-garden System
 
-    Creates a _commands property on the class that holds all registered commands.
+    Creates a ``_commands`` property on the class that holds all registered commands.
 
     :param cls: The class to decorated
     :return: The decorated class
@@ -50,9 +50,11 @@ def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=N
 
     For example:
 
-    @command(output_type='JSON')
-    def echo_json(self, message):
-        return message
+    .. code-block:: python
+
+        @command(output_type='JSON')
+        def echo_json(self, message):
+            return message
 
     :param _wrapped: The function to decorate. This is handled as a positional argument and
         shouldn't be explicitly set.
@@ -99,12 +101,12 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
 
     This decorator is intended to be used when more specification is desired for a Parameter.
 
-    For example:
+    For example::
 
-    @parameter(key="message", description="Message to echo", optional=True, type="String",
-               default="Hello, World!")
-    def echo(self, message):
-        return message
+        @parameter(key="message", description="Message to echo", optional=True, type="String",
+                   default="Hello, World!")
+        def echo(self, message):
+            return message
 
     :param _wrapped: The function to decorate. This is handled as a positional argument and
         shouldn't be explicitly set.

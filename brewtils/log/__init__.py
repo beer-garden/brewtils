@@ -6,6 +6,8 @@ Example:
     In order to use this, you should simply call ``setup_logger`` in the same file where you
     initialize your plugin sometime before you initialize your Plugin object.
 
+    .. code-block:: python
+
         host = 'localhost'
         port = 2337
         ssl_enabled = False

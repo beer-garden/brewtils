@@ -42,6 +42,7 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=BrewmasterFetchError)
 
+
     def find_unique_system(self, **kwargs):
         """Find a unique system using keyword arguments as search parameters.
 
@@ -209,7 +210,8 @@ class EasyClient(object):
     def find_unique_request(self, **kwargs):
         """Find a unique request using keyword arguments as search parameters.
 
-        *NOTE: If 'id' is present in kwargs then all other parameters will be ignored.
+        .. note::
+            If 'id' is present in kwargs then all other parameters will be ignored.
 
         :param kwargs: Search parameters
         :return: One request instance

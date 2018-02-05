@@ -29,25 +29,25 @@ class PluginBase(object):
     and process Requests.
 
     To work, a Plugin needs a Client instance - an instance of a class defining which Requests
-    this plugin can accept and process. The easiest way to define a `Client` is by annotating a
-    class with the @system decorator.
+    this plugin can accept and process. The easiest way to define a ``Client`` is by annotating a
+    class with the ``@system`` decorator.
 
     When creating a Plugin you can pass certain keyword arguments to let the Plugin know how to
     communicate with the beer-garden instance. These are:
 
-        - bg_host
-        - bg_port
-        - ssl_enabled
-        - ca_cert
-        - client_cert
-        - bg_url_prefix
+        - ``bg_host``
+        - ``bg_port``
+        - ``ssl_enabled``
+        - ``ca_cert``
+        - ``client_cert``
+        - ``bg_url_prefix``
 
     A Plugin also needs some identifying data. You can either pass parameters to the Plugin or
-    pass a fully defined System object (but not both). Note that some fields are optional:
+    pass a fully defined System object (but not both). Note that some fields are optional::
 
-        PluginBase(name="Test", version="1.0.0", instance_name="default, description="A Test")
+        PluginBase(name="Test", version="1.0.0", instance_name="default", description="A Test")
 
-    or
+    or::
 
         the_system = System(name="Test",
                             version="1.0.0",
@@ -56,26 +56,33 @@ class PluginBase(object):
         PluginBase(system=the_system)
 
     If passing parameters directly note that these fields are required:
-        - name          (Environment variable BG_NAME will be used if not specified)
-        - version       (Environment variable BG_VERSION will be used if not specified)
-        - instance_name (Environment variable BG_INSTANCE_NAME will be used if not specified.
-                         'default' will be used if not specified and loading from environment
-                         variable is unsuccessful)
+
+    name
+        Environment variable ``BG_NAME`` will be used if not specified
+
+    version
+        Environment variable ``BG_VERSION`` will be used if not specified
+
+    instance_name
+        Environment variable ``BG_INSTANCE_NAME`` will be used if not specified. 'default' will
+        be used if not specified and loading from envirornment variable was unsuccessful
 
     And these fields are optional:
-        - description   (Will use docstring summary line from Client if not specified)
-        - icon_name
-        - metadata
-        - display_name
+
+    - description   (Will use docstring summary line from Client if not specified)
+    - icon_name
+    - metadata
+    - display_name
 
     Plugins service requests using a :py:class:`concurrent.futures.ThreadPoolExecutor`. The
     maximum number of threads available is controlled by the max_concurrent argument (the
     'multithreaded' argument has been deprecated).
 
-    **WARNING**: The default value for max_concurrent is 1. This means that a Plugin that invokes
-    a Command on itself in the course of processing a Request will deadlock! If you intend to do
-    this, please set max_concurrent to a value that makes sense and be aware that Requests are
-    processed in separate thread contexts!
+    .. warning::
+        The default value for ``max_concurrent`` is 1. This means that a Plugin that invokes
+        a Command on itself in the course of processing a Request will deadlock! If you intend
+        to do this, please set ``max_concurrent`` to a value that makes sense and be aware that
+        Requests are processed in separate thread contexts!
 
     :param client: Instance of a class annotated with @system.
     :param str bg_host: Hostname of a beer-garden.

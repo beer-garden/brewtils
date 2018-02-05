@@ -16,7 +16,7 @@ class SystemClient(object):
     SystemClient creation:
         This class is intended to be the main way to create beer-garden requests. Create an
         instance with beer-garden connection information (optionally including a url_prefix) and
-        a system name:
+        a system name::
 
             client = SystemClient(host, port, 'example_system', ssl_enabled=True, url_prefix=None)
 
@@ -46,7 +46,7 @@ class SystemClient(object):
         before making each request, not just the first.
 
     Making a Request:
-        The standard way to create and send requests is by calling object attributes:
+        The standard way to create and send requests is by calling object attributes::
 
             request = client.example_command(param_1='example_param')
 
@@ -54,12 +54,14 @@ class SystemClient(object):
         determined by periodically polling beer-garden to check the Request status. The time
         between polling requests starts at 0.5s and doubles each time the request has still not
         completed, up to max_delay. If a timeout was specified and the Request has not completed
-        within that time a BrewmasterTimeoutError will be raised.
+        within that time a ``BrewmasterTimeoutError`` will be raised.
 
         It is also possible to create the SystemClient in non-blocking mode by specifying
         blocking=False. In this case the request creation will immediately return a Future and
         will spawn a separate thread to poll for Request completion. The max_concurrent parameter
         is used to control the maximum threads available for polling.
+
+        .. code-block:: python
 
             # Create a SystemClient with blocking=False
             client = SystemClient(host, port, 'example_system', ssl_enabled=True, blocking=False)
@@ -81,10 +83,12 @@ class SystemClient(object):
         denote these as intended for beer-garden itself (rather than a parameter to be passed to
         the Plugin) prepend a leading underscore to the argument name.
 
-        Sending to another instance:
+        Sending to another instance::
+
             request = client.example_command(_instance_name='instance_2', param_1='example_param')
 
-        Request with a comment:
+        Request with a comment::
+
             request = client.example_command(_comment='I'm a beer-garden comment!',
                                              param_1='example_param')
 
@@ -144,7 +148,8 @@ class SystemClient(object):
         Normally you interact with the SystemClient by accessing attributes, but there could be
         certain cases where you want to create a request without sending it.
 
-        Example:
+        Example::
+
             client = SystemClient(host, port, 'system', blocking=False)
             requests = []
 
@@ -179,10 +184,11 @@ class SystemClient(object):
     def send_bg_request(self, **kwargs):
         """Actually create a Request and send it to beer-garden
 
-        NOTE: This method is intended for advanced use only, mainly cases where you're using the
-        SystemClient without a predefined System. It assumes that everything needed to construct
-        the request is being passed in kwargs. If this doesn't sound like what you want you should
-        check out create_bg_request.
+        .. note::
+            This method is intended for advanced use only, mainly cases where you're using the
+            SystemClient without a predefined System. It assumes that everything needed to
+            construct the request is being passed in kwargs. If this doesn't sound like what you
+            want you should check out create_bg_request.
 
         :param kwargs: All necessary request parameters, including beer-garden internal parameters
         :raise BrewmasterValidationError: If the Request creation failed validation on the server

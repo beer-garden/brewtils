@@ -23,3 +23,5 @@ nosexcover
 tox
 pytz
 flake8
+wheel
+twine

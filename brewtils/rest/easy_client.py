@@ -42,7 +42,6 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=BrewmasterFetchError)
 
-
     def find_unique_system(self, **kwargs):
         """Find a unique system using keyword arguments as search parameters.
 

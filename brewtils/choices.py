@@ -1,4 +1,4 @@
-from lark import Lark, Transformer
+from lark import Lark, Transformer, UnexpectedInput
 from lark.common import ParseError
 
 
@@ -65,7 +65,10 @@ def parse(input_string, parse_as=None):
     :raise lark.common.ParseError: The parser was not able to find a valid parsing of `input_string`
     """
     def _parse(_input_string, _parser):
-        return FunctionTransformer().transform(_parser.parse(_input_string))
+        try:
+            return FunctionTransformer().transform(_parser.parse(_input_string))
+        except UnexpectedInput as e:
+            raise ParseError(e)
 
     if parse_as is not None:
         return _parse(input_string, parsers[parse_as])

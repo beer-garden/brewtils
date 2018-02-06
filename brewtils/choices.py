@@ -1,5 +1,13 @@
-from lark import Lark, Transformer, UnexpectedInput
+from lark import Lark, Transformer
 from lark.common import ParseError
+
+
+# Lark added some new errors in later versions
+try:
+    from lark import GrammarError, LexError
+except ImportError:
+    GrammarError = ParseError
+    LexError = ParseError
 
 
 choices_grammar = """
@@ -67,7 +75,7 @@ def parse(input_string, parse_as=None):
     def _parse(_input_string, _parser):
         try:
             return FunctionTransformer().transform(_parser.parse(_input_string))
-        except UnexpectedInput as e:
+        except (GrammarError, LexError, ParseError) as e:
             raise ParseError(e)
 
     if parse_as is not None:

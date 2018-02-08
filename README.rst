@@ -4,7 +4,7 @@ Brewtils
 .. image:: https://img.shields.io/pypi/v/brewtils.svg
         :target: https://pypi.python.org/pypi/brewtils
 
-.. image:: https://img.shields.io/travis/loganasherjones/yapconf.svg
+.. image:: https://img.shields.io/travis/beer-garden/brewtils.svg
         :target: https://travis-ci.org/beer-garden/brewtils?branch=master
 
 .. image:: https://codecov.io/gh/beer-garden/brewtils/branch/master/graph/badge.svg

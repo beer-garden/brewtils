@@ -1,27 +1,33 @@
+
+========
 Brewtils
 ========
-
-.. image:: https://img.shields.io/pypi/v/brewtils.svg
-        :target: https://pypi.python.org/pypi/brewtils
-
-.. image:: https://img.shields.io/travis/beer-garden/brewtils.svg
-        :target: https://travis-ci.org/beer-garden/brewtils?branch=master
-
-.. image:: https://codecov.io/gh/beer-garden/brewtils/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/beer-garden/brewtils
-
-.. image:: https://readthedocs.org/projects/brewtils/badge/?version=latest
-        :target: https://brewtils.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-.. image:: https://pyup.io/repos/github/beer-garden/brewtils/shield.svg
-     :target: https://pyup.io/repos/github/beer-garden/brewtils/
-     :alt: Updates
-
 
 Brewtils is the Python library for interfacing with Beergarden systems. If you are planning on
 writing beer-garden plugins, this is the correct library for you. In addition to writing plugins,
 it provides simple ways to query the API and is officially supported by the beer-garden team.
+
+|pypi| |travis| |codecov| |docs| |pyup|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/brewtils.svg
+   :target: https://pypi.python.org/pypi/brewtils
+   :alt: PyPI
+
+.. |travis| image:: https://img.shields.io/travis/beer-garden/brewtils.svg
+   :target: https://travis-ci.org/beer-garden/brewtils?branch=master
+   :alt: Build Status
+
+.. |codecov| image:: https://codecov.io/gh/beer-garden/brewtils/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/beer-garden/brewtils
+   :alt: Code Coverage
+
+.. |docs| image:: https://readthedocs.org/projects/brewtils/badge/?version=latest
+   :target: https://brewtils.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+.. |pyup| image:: https://pyup.io/repos/github/beer-garden/brewtils/shield.svg
+   :target: https://pyup.io/repos/github/beer-garden/brewtils/
+   :alt: Pyup Updates
 
 Features
 --------

@@ -7,7 +7,11 @@ Brewtils is the Python library for interfacing with Beergarden systems. If you a
 writing beer-garden plugins, this is the correct library for you. In addition to writing plugins,
 it provides simple ways to query the API and is officially supported by the beer-garden team.
 
-|pypi| |travis| |codecov| |docs| |pyup|
+|slack| |pypi| |travis| |codecov| |docs| |pyup|
+
+.. |slack| image:: https://img.shields.io/badge/slack-Join%20Us!-3e313c.svg
+   :target: https://beer-garden-io.slack.com/
+   :alt: Slack
 
 .. |pypi| image:: https://img.shields.io/pypi/v/brewtils.svg
    :target: https://pypi.python.org/pypi/brewtils

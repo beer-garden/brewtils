@@ -1,5 +1,11 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help test
+# Makefile for brewtils
+
+MODULE_NAME   = brewtils
+TEST_DIR      = test
+
+.PHONY: clean clean-build clean-docs clean-test clean-pyc docs help test
 .DEFAULT_GOAL := help
+
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
 try:
@@ -21,12 +27,13 @@ for line in sys.stdin:
 		print("%-20s %s" % (target, help))
 endef
 export PRINT_HELP_PYSCRIPT
+
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+clean: clean-build clean-docs clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 
 clean-build: ## remove build artifacts
@@ -35,6 +42,11 @@ clean-build: ## remove build artifacts
 	rm -fr .eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
+
+clean-docs: ## remove doc artifacts
+	rm -f docs/$(MODULE_NAME).rst
+	rm -f docs/modules.rst
+	$(MAKE) -C docs clean
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -48,10 +60,10 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 
 lint: ## check style with flake8
-	flake8 brewtils test
+	flake8 $(MODULE_NAME) $(TEST_DIR)
 
 test: ## run tests quickly with the default Python
-	nosetests
+	nosetests $(TEST_DIR)
 
 test-all: ## run tests on every Python version with tox
 	tox
@@ -63,10 +75,7 @@ coverage: ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	rm -f docs/brewtils.rst
-	rm -f docs/modules.rst
 	sphinx-apidoc -o docs/ brewtils
-	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
 
@@ -74,11 +83,9 @@ servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
 test-release: dist ## package and upload a release to the testpypi
-	$(MAKE) dist
 	twine upload --repository testpypi dist/*
 
 release: dist ## package and upload a release
-	$(MAKE) dist
 	twine upload dist/*
 
 dist: clean ## builds source and wheel package

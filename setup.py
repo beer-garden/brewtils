@@ -31,7 +31,7 @@ setup(
         'six',
         'wrapt',
         'lark-parser',
-        'enum34',
+        'enum34;python_version<"3.4"',
         'futures;python_version<"3.0"'
     ],
     classifiers=[

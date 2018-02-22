@@ -12,7 +12,7 @@ chardet==3.0.4            # via requests
 colorama==0.3.9           # via rednose
 coverage==4.5
 docutils==0.14            # via sphinx
-enum34==1.1.6
+enum34==1.1.6 ; python_version < "3.4"
 flake8==3.5.0
 futures==3.2.0 ; python_version < "3.0"
 idna==2.6                 # via requests

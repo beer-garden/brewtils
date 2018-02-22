@@ -340,6 +340,17 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(c.description, 'This is a doc')
         self.assertEqual(c.parameters, [])
 
+    @patch('brewtils.decorators._generate_params_from_function', Mock())
+    def test_command_overwrite_description(self):
+        new_description = 'So descriptive'
+
+        @command(description=new_description)
+        def foo(self):
+            """This is a doc"""
+            pass
+
+        self.assertEqual(foo._command.description, new_description)
+
     def test_command_generate_command_from_function_py2_compatibility(self):
         py2_code_mock = Mock(co_varnames=["var1"], co_argcount=1,
                              spec=["co_varnames", "co_argcount"])

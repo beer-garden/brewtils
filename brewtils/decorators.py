@@ -45,7 +45,7 @@ def system(cls):
 
 
 def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=None, form=None,
-            template=None, icon_name=None):
+            template=None, icon_name=None, description=None):
     """Decorator that marks a function as a beer-garden command
 
     For example:
@@ -64,16 +64,21 @@ def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=N
     :param form: A custom form definition.
     :param template: A custom template definition.
     :param icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
+    :param description: The command description. Will override the function's docstring.
     :return: The decorated function.
     """
     if _wrapped is None:
         return functools.partial(command, command_type=command_type, output_type=output_type,
-                                 schema=schema, form=form, template=template, icon_name=icon_name)
+                                 schema=schema, form=form, template=template, icon_name=icon_name,
+                                 description=description)
 
     generated_command = _generate_command_from_function(_wrapped)
     generated_command.command_type = command_type
     generated_command.output_type = output_type
     generated_command.icon_name = icon_name
+
+    if description:
+        generated_command.description = description
 
     resolved_mod = _resolve_display_modifiers(_wrapped, generated_command.name, schema=schema,
                                               form=form, template=template)

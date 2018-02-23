@@ -10,10 +10,12 @@ babel==2.5.3              # via sphinx
 certifi==2018.1.18        # via requests
 chardet==3.0.4            # via requests
 colorama==0.3.9           # via rednose
+configparser==3.5.0       # via flake8
 coverage==4.5
 docutils==0.14            # via sphinx
 enum34==1.1.6 ; python_version < "3.4"
 flake8==3.5.0
+funcsigs==1.0.2           # via mock
 futures==3.2.0 ; python_version < "3.0"
 idna==2.6                 # via requests
 imagesize==0.7.1          # via sphinx
@@ -48,6 +50,7 @@ termstyle==0.1.11         # via rednose
 tox==2.9.1
 tqdm==4.19.5              # via twine
 twine==1.9.1
+typing==3.6.4             # via sphinx
 urllib3==1.22             # via requests
 virtualenv==15.1.0        # via tox
 watchdog==0.8.3

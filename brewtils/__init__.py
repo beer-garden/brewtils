@@ -5,9 +5,10 @@ import six
 from brewtils.decorators import command, parameter, system
 from brewtils.plugin import RemotePlugin
 from brewtils.rest import normalize_url_prefix
+from brewtils.rest.system_client import SystemClient
 from ._version import __version__ as generated_version
 
-__all__ = ['command', 'parameter', 'system', 'RemotePlugin']
+__all__ = ['command', 'parameter', 'system', 'RemotePlugin', 'SystemClient']
 __version__ = generated_version
 
 

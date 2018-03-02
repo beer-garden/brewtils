@@ -4,7 +4,8 @@ from concurrent.futures import wait
 
 from mock import call, patch, Mock, PropertyMock
 
-from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, BrewmasterValidationError
+from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, \
+    BrewmasterValidationError, BGRequestFailedError
 from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
 
 
@@ -23,6 +24,7 @@ class SystemClientTest(unittest.TestCase):
 
         self.mock_in_progress = Mock(status='IN PROGRESS', output='output')
         self.mock_success = Mock(status='SUCCESS', output='output')
+        self.mock_error = Mock(status='ERROR', output='error_output')
 
         easy_client_patcher = patch('brewtils.rest.system_client.EasyClient')
         self.addCleanup(easy_client_patcher.stop)
@@ -138,6 +140,27 @@ class SystemClientTest(unittest.TestCase):
         self.easy_client_mock.find_unique_request.assert_called_with(id=self.mock_in_progress.id)
         self.assertEqual(request.status, self.mock_success.status)
         self.assertEqual(request.output, self.mock_success.output)
+
+    @patch('brewtils.rest.system_client.time.sleep', Mock())
+    def test_execute_command_1_error_raise(self):
+        self.easy_client_mock.find_unique_request.return_value = self.mock_error
+        self.easy_client_mock.create_request.return_value = self.mock_in_progress
+
+        with self.assertRaises(BGRequestFailedError) as ex:
+            self.client.command_1(_raise_on_error=True)
+
+        self.assertEqual(ex.exception.request.status, 'ERROR')
+        self.assertEqual(ex.exception.request.output, 'error_output')
+
+    @patch('brewtils.rest.system_client.time.sleep', Mock())
+    def test_execute_command_1_error(self):
+        self.easy_client_mock.find_unique_request.return_value = self.mock_error
+        self.easy_client_mock.create_request.return_value = self.mock_in_progress
+
+        request = self.client.command_1(_raise_on_error=False)
+
+        self.assertEqual(request.status, 'ERROR')
+        self.assertEqual(request.output, 'error_output')
 
     @patch('brewtils.rest.system_client.time.sleep')
     def test_execute_command_with_delays(self, sleep_mock):

@@ -245,6 +245,10 @@ class Request(object):
     def is_ephemeral(self):
         return self.command_type and self.command_type.upper() == 'EPHEMERAL'
 
+    @property
+    def is_json(self):
+        return self.output_type and self.output_type.upper() == 'JSON'
+
     @status.setter
     def status(self, value):
         if self._status in self.COMPLETED_STATUSES:

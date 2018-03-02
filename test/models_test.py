@@ -285,6 +285,12 @@ class RequestTest(unittest.TestCase):
         request.command_type = 'EPHEMERAL'
         self.assertTrue(request.is_ephemeral)
 
+    def test_is_json(self):
+        request = Request(output_type=None)
+        self.assertFalse(request.is_json)
+        request.output_type = 'JSON'
+        self.assertTrue(request.is_json)
+
 
 class SystemTest(unittest.TestCase):
 

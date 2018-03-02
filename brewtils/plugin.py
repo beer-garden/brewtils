@@ -12,7 +12,8 @@ from requests import ConnectionError
 
 import brewtils
 from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException, BrewmasterConnectionError, parse_exception_as_json
+    DiscardMessageException, RepublishRequestException, \
+    BrewmasterConnectionError, parse_exception_as_json
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient

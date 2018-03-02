@@ -3,6 +3,7 @@ import os
 import threading
 import unittest
 
+import sys
 from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
@@ -287,13 +288,19 @@ class PluginBaseTest(unittest.TestCase):
         request_mock = Mock(output_type="JSON")
         exc = MyError("bar")
         invoke_mock.side_effect = exc
+        # On python version 2, errors with custom attributes do not list those
+        # attributes as arguments.
+        if sys.version_info.major < 3:
+            arguments = []
+        else:
+            arguments = ["bar"]
 
         self.plugin.process_message(target_mock, request_mock, {})
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         self.assertEqual(2, update_mock.call_count)
         self.assertEqual('ERROR', request_mock.status)
         self.assertEqual(json.dumps({"message": str(exc),
-                                     "arguments": [str(exc)],
+                                     "arguments": arguments,
                                      "attributes": {"foo": "bar"}}),
                          request_mock.output)
         self.assertEqual('MyError', request_mock.error_class)
@@ -312,12 +319,17 @@ class PluginBaseTest(unittest.TestCase):
         thing = MyError(message)
         invoke_mock.side_effect = thing
 
+        # On python version 2, errors with custom attributes do not list those
+        # attributes as arguments.
+        if sys.version_info.major < 3:
+            arguments = []
+        else:
+            arguments = [str(message)]
+
         self.plugin.process_message(target_mock, request_mock, {})
         invoke_mock.assert_called_once_with(target_mock, request_mock)
-        self.assertEqual(2, update_mock.call_count)
-        self.assertEqual('ERROR', request_mock.status)
         self.assertEqual(json.dumps({"message": str(thing),
-                                     "arguments": [str(thing)],
+                                     "arguments": arguments,
                                      "attributes": str(thing.__dict__)}),
                          request_mock.output)
         self.assertEqual('MyError', request_mock.error_class)

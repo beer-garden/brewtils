@@ -139,6 +139,10 @@ def parse_exception_as_json(exc):
     If parsing fails at all, then a simple str() will be applied either the
     argument or attribute value.
 
+    Note:
+        On python version 2, errors with custom attributes do not list those
+        attributes as arguments.
+
     Args:
         exc (Exception):
 

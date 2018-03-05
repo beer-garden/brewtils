@@ -144,7 +144,10 @@ def parse_exception_as_json(exc):
         attributes as arguments.
 
     Args:
-        exc (Exception):
+        exc (Exception): The exception you would like to format as JSON.
+
+    Raises:
+        ValueError: If the exception passed in is not an Exception.
 
     Returns:
         A valid JSON string representing (the best we can) the exception.

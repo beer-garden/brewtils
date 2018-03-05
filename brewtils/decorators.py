@@ -171,8 +171,7 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
                                     "(should is_kwarg be True?)") % (key, cmd.name))
 
     # Update parameter definition with the plugin_param arguments
-    type_to_format = param.type if type is None else type
-    param.type = _format_type(type_to_format)
+    param.type = _format_type(param.type if type is None else type)
     param.multi = param.multi if multi is None else multi
     param.display_name = param.display_name if display_name is None else display_name
     param.optional = param.optional if optional is None else optional

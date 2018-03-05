@@ -71,7 +71,7 @@ class ParameterTest(unittest.TestCase):
             def foo(self, x):
                 pass
 
-    def test_parameter_python_types(self):
+    def test_parameter_types(self):
 
         for t, expected in [
             (str, 'String'),
@@ -79,6 +79,12 @@ class ParameterTest(unittest.TestCase):
             (float, 'Float'),
             (bool, 'Boolean'),
             (dict, 'Dictionary'),
+            ('String', 'String'),
+            ('Integer', 'Integer'),
+            ('Float', 'Float'),
+            ('Boolean', 'Boolean'),
+            ('Dictionary', 'Dictionary'),
+            ('Any', 'Any'),
         ]:
 
             @system

@@ -31,9 +31,11 @@ setup(
         'six',
         'wrapt',
         'lark-parser',
-        'enum34;python_version<"3.4"',
-        'futures;python_version<"3.0"'
     ],
+    extras_require={
+        ':python_version=="2.7"': ['futures',],
+        ':python_version<"3.4"': ['enum34',]
+    },
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",

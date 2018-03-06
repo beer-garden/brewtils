@@ -14,8 +14,8 @@ class RestClient(object):
     (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by providing useful
     abstractions.
 
-    :param host: beer-garden REST API hostname.
-    :param port: beer-garden REST API port.
+    :param bg_host: beer-garden REST API hostname.
+    :param bg_port: beer-garden REST API port.
     :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
     :param api_version: The beer-garden REST API version. Will default to the latest version.
     :param logger: The logger to use. If None one will be created.
@@ -30,8 +30,18 @@ class RestClient(object):
 
     JSON_HEADERS = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
-    def __init__(self, host, port, ssl_enabled=False, api_version=None, logger=None, ca_cert=None,
-                 client_cert=None, url_prefix=None, ca_verify=True):
+    def __init__(self, bg_host=None, bg_port=None, ssl_enabled=False, api_version=None,
+                 logger=None, ca_cert=None, client_cert=None, url_prefix=None, ca_verify=True,
+                 **kwargs):
+
+        bg_host = bg_host or kwargs.get('host')
+        if not bg_host:
+            raise ValueError('Missing keyword argument "bg_host"')
+
+        bg_port = bg_port or kwargs.get('port')
+        if not bg_port:
+            raise ValueError('Missing keyword argument "bg_port"')
+
         self.logger = logger or logging.getLogger(__name__)
 
         # Configure the session to use when making requests
@@ -48,7 +58,7 @@ class RestClient(object):
 
         # Configure the beer-garden URLs
         scheme = 'https' if ssl_enabled else 'http'
-        base_url = '%s://%s:%s%s' % (scheme, host, port, normalize_url_prefix(url_prefix))
+        base_url = '%s://%s:%s%s' % (scheme, bg_host, bg_port, normalize_url_prefix(url_prefix))
         self.version_url = base_url + 'version'
         self.config_url = base_url + 'config'
 

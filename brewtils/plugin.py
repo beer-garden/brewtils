@@ -130,16 +130,16 @@ class PluginBase(object):
             self._custom_logger = False
 
         connection_parameters = brewtils.get_bg_connection_parameters(
-            host=bg_host,
-            port=bg_port,
+            bg_host=bg_host,
+            bg_port=bg_port,
             ssl_enabled=ssl_enabled,
             ca_cert=ca_cert,
             client_cert=client_cert,
             url_prefix=bg_url_prefix,
             ca_verify=kwargs.get('ca_verify', None)
         )
-        self.bg_host = connection_parameters['host']
-        self.bg_port = connection_parameters['port']
+        self.bg_host = connection_parameters['bg_host']
+        self.bg_port = connection_parameters['bg_port']
         self.ssl_enabled = connection_parameters['ssl_enabled']
         self.ca_cert = connection_parameters['ca_cert']
         self.client_cert = connection_parameters['client_cert']

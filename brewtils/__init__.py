@@ -1,22 +1,33 @@
-import os
+import warnings
 
-import six
+from yapconf import YapconfSpec
+from yapconf.exceptions import YapconfItemNotFound
 
 from brewtils.decorators import command, parameter, system
 from brewtils.plugin import RemotePlugin
+from brewtils.errors import BrewmasterValidationError
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.system_client import SystemClient
+from .specification import SPECIFICATION
 from ._version import __version__ as generated_version
 
 __all__ = ['command', 'parameter', 'system', 'RemotePlugin', 'SystemClient']
 __version__ = generated_version
 
+spec = YapconfSpec(SPECIFICATION, env_prefix='BG_')
+
 
 def get_easy_client(**kwargs):
-    """Initialize an EasyClient using Environment variables as default values
+    """Easy way to get an EasyClient
 
-    :param kwargs: Options for configuring the EasyClient
-    :return: An EasyClient
+    The benefit to this method over creating an EasyClient directly is that this method will also
+    search the environment for parameters. Kwargs passed to this method will take priority, however.
+
+    Args:
+        **kwargs: Options for configuring the EasyClient
+
+    Returns:
+        :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
     """
     from brewtils.rest.easy_client import EasyClient
 
@@ -26,71 +37,76 @@ def get_easy_client(**kwargs):
     return EasyClient(logger=logger, parser=parser, **get_bg_connection_parameters(**kwargs))
 
 
-def get_bool_from_kwargs_and_env(key, env_name, **kwargs):
-    """Gets a boolean value defaults to True"""
-    value = kwargs.get(key, None)
-    if value is None:
-        return os.environ.get(env_name, 'true').lower() != 'false'
-    elif isinstance(value, six.string_types):
-        return value.lower() != 'false'
-    else:
-        return bool(value)
+def get_bg_connection_parameters(cli_args=None, **kwargs):
+    """Convienence wrapper around ``load_config`` that returns only connection parameters
 
+    Args:
+        cli_args (list, optional): List of command line arguments for configuration loading
+        **kwargs: Additional configuration overrides
 
-def get_from_kwargs_or_env(key, env_names, default, **kwargs):
-    """Get a value from the kwargs provided or environment
-
-    :param key: Key to search in the keyword args
-    :param env_names: Environment names to search
-    :param default: The default if it is not found elsewhere
-    :param kwargs: Keyword Arguments
-    :return:
+    Returns:
+        :dict: Parameters needed to make a connection to beergarden
     """
-    if kwargs.get(key, None) is not None:
-        return kwargs[key]
+    config = load_config(cli_args=cli_args, **kwargs)
 
-    for name in env_names:
-        if name in os.environ:
-            return os.environ[name]
-
-    return default
+    return {key: config[key] for key in ('bg_host', 'bg_port', 'ssl_enabled', 'api_version',
+                                         'ca_cert', 'client_cert', 'url_prefix', 'ca_verify')}
 
 
-def get_bg_connection_parameters(**kwargs):
-    """Parse the keyword arguments, search in the arguments, and environment for the values
+def load_config(cli_args=None, **kwargs):
+    """Load configuration using Yapconf
 
-    :param kwargs:
-    :return:
+    Configuation will be loaded from these sources, with earlier sources having higher priority:
+
+        1. ``**kwargs`` passed to this method
+        2. ``cli_args`` passed to this method
+        3. Environment variables using the ``BG_`` prefix
+        4. Default values in the brewtils specification
+
+    Args:
+        cli_args (list, optional): List of command line arguments for configuration loading
+        **kwargs: Additional configuration overrides
+
+    Returns:
+        :obj:`box.Box`: The resolved configuration object
     """
-    from brewtils.rest.client import RestClient
-    from brewtils.errors import BrewmasterValidationError
+    sources = []
 
-    host = kwargs.pop('host', None) or os.environ.get('BG_WEB_HOST')
-    if not host:
-        raise BrewmasterValidationError('Unable to create a plugin without a beer-garden host. '
-                                        'Please specify one with bg_host=<host> or by setting the '
-                                        'BG_WEB_HOST environment variable.')
+    if kwargs:
+        # Do a little kwarg massaging for backwards compatibility
+        if 'bg_host' not in kwargs and 'host' in kwargs:
+            warnings.warn("brewtils.load_config called with 'host' keyword argument. This name "
+                          "will be removed in version 3.0, please use 'bg_host' instead.",
+                          DeprecationWarning, stacklevel=2)
+            kwargs['bg_host'] = kwargs.pop('host')
+        if 'bg_port' not in kwargs and 'port' in kwargs:
+            warnings.warn("brewtils.load_config called with 'port' keyword argument. This name "
+                          "will be removed in version 3.0, please use 'bg_port' instead.",
+                          DeprecationWarning, stacklevel=2)
+            kwargs['bg_port'] = kwargs.pop('port')
 
-    port = get_from_kwargs_or_env('port', ['BG_WEB_PORT'], '2337', **kwargs)
+        sources.append(('kwargs', kwargs))
 
-    url_prefix = get_from_kwargs_or_env('url_prefix', ['BG_URL_PREFIX'], None, **kwargs)
-    url_prefix = normalize_url_prefix(url_prefix)
+    if(cli_args):
+        from argparse import ArgumentParser
 
-    ssl_enabled = get_bool_from_kwargs_and_env('ssl_enabled', 'BG_SSL_ENABLED', **kwargs)
-    ca_verify = get_bool_from_kwargs_and_env('ca_verify', 'BG_CA_VERIFY', **kwargs)
+        parser = ArgumentParser()
+        spec.add_arguments(parser)
+        parsed_args = parser.parse_args(cli_args)
+        sources.append(('cli_args', vars(parsed_args)))
 
-    api_version = kwargs.pop('api_version', RestClient.LATEST_VERSION)
-    ca_cert = get_from_kwargs_or_env('ca_cert', ['BG_CA_CERT', 'BG_SSL_CA_CERT'], None, **kwargs)
-    client_cert = get_from_kwargs_or_env('client_cert', ['BG_CLIENT_CERT', 'BG_SSL_CLIENT_CERT'],
-                                         None, **kwargs)
+    sources.append('ENVIRONMENT')
 
-    return {
-        'host': host,
-        'port': port,
-        'ssl_enabled': ssl_enabled,
-        'api_version': api_version,
-        'ca_cert': ca_cert,
-        'client_cert': client_cert,
-        'url_prefix': url_prefix,
-        'ca_verify': ca_verify
-    }
+    try:
+        config = spec.load_config(*sources)
+    except YapconfItemNotFound as ex:
+        if ex.item.name == 'bg_host':
+            raise BrewmasterValidationError('Unable to create a plugin without a beer-garden host. '
+                                            'Please specify one on the command line (--bg-host), '
+                                            'in the environment (BG_HOST), or in kwargs (bg_host)')
+        raise
+
+    # Make sure the url_prefix is normal
+    config.url_prefix = normalize_url_prefix(config.url_prefix)
+
+    return config

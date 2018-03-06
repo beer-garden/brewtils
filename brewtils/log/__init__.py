@@ -26,12 +26,9 @@ import brewtils
 # Loggers to always use. These are things that generally,
 # people do not want to see and/or are too verbose.
 DEFAULT_LOGGERS = {
-    "pika": {
-        "level": "ERROR"
-    },
-    "requests.packages.urllib3.connectionpool": {
-        "level": "WARN"
-    }
+    "pika": {"level": "ERROR"},
+    "requests.packages.urllib3.connectionpool": {"level": "WARN"},
+    "yapconf": {"level": "WARN"},
 }
 
 # A simple default format/formatter. Generally speaking, the API should return formatters,

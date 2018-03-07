@@ -12,7 +12,8 @@ from requests import ConnectionError
 
 import brewtils
 from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException, BrewmasterConnectionError
+    DiscardMessageException, RepublishRequestException, BrewmasterConnectionError, \
+    PluginValidationError
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient
@@ -320,6 +321,19 @@ class PluginBase(object):
             else:
                 new_commands = None
 
+            if not existing_system.has_instance(self.instance_name):
+                if len(existing_system.instances) < existing_system.max_instances:
+                    existing_system.instances.append(Instance(name=self.instance_name))
+                    self.bm_client.create_system(existing_system)
+                else:
+                    raise PluginValidationError('Unable to create plugin with instance name "%s": '
+                                                'System "%s[%s]" has an instance limit of %d and '
+                                                'existing instances %s' %
+                                                (self.instance_name, existing_system.name,
+                                                 existing_system.version,
+                                                 existing_system.max_instances,
+                                                 ', '.join(existing_system.instance_names)))
+
             # We always update in case the metadata has changed.
             self.system = self.bm_client.update_system(existing_system.id,
                                                        new_commands=new_commands,
@@ -330,8 +344,13 @@ class PluginBase(object):
         else:
             self.system = self.bm_client.create_system(self.system)
 
-        instance_id = next(instance.id for instance in self.system.instances
-                           if instance.name == self.instance_name)
+        # Sanity check to make sure an instance with this name was registered
+        if self.system.has_instance(self.instance_name):
+            instance_id = self.system.get_instance(self.instance_name).id
+        else:
+            raise PluginValidationError('Unable to find registered instance with name "%s"' %
+                                        self.instance_name)
+
         self.instance = self.bm_client.initialize_instance(instance_id)
 
         self.logger.debug("Plugin %s is initialized", self.unique_name)

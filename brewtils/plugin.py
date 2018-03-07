@@ -13,7 +13,7 @@ from requests import ConnectionError
 import brewtils
 from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
     DiscardMessageException, RepublishRequestException, BrewmasterConnectionError, \
-    PluginValidationError
+    PluginValidationError, parse_exception_as_json
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient
@@ -625,32 +625,12 @@ class PluginBase(object):
                         self.brew_view_down = False
                         self.brew_view_error_condition.notify_all()
 
-    def _format_error_output(self, request, exc):
-        """Formats error output appropriately.
-
-        If the request's output type is JSON, then we format it appropriately. Otherwise, we
-        simply return a string version of the Exception. If the JSON formatting fails, we will
-        simply return a string version of the __dict__ object of the exception.
-
-        :param request:
-        :param exc:
-        :return:
-        """
-
-        message = str(exc)
-
-        if not request.output_type or request.output_type.upper() != "JSON":
-            return message
-
-        # Process a JSON request type
-        output = {"message": message, "attributes": exc.__dict__}
-        try:
-            return json.dumps(output)
-        except Exception:
-            self.logger.debug("Could not convert attributes of exception to JSON. "
-                              "Just stringify dict.")
-            output['attributes'] = str(exc.__dict__)
-            return json.dumps(output)
+    @staticmethod
+    def _format_error_output(request, exc):
+        if request.is_json:
+            return parse_exception_as_json(exc)
+        else:
+            return str(exc)
 
     @staticmethod
     def _format_output(output):

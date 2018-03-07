@@ -3,6 +3,7 @@ import os
 import threading
 import unittest
 
+import sys
 from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
@@ -225,7 +226,7 @@ class PluginBaseTest(unittest.TestCase):
     @patch('brewtils.plugin.PluginBase._update_request')
     def test_process_message_invoke_exception(self, update_mock, invoke_mock):
         target_mock = Mock()
-        request_mock = Mock(is_ephemeral=False)
+        request_mock = Mock(is_ephemeral=False, is_json=False)
         invoke_mock.side_effect = ValueError('I am an error')
 
         self.plugin.process_message(target_mock, request_mock, {})
@@ -246,9 +247,33 @@ class PluginBaseTest(unittest.TestCase):
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         self.assertEqual(2, update_mock.call_count)
         self.assertEqual('ERROR', request_mock.status)
-        self.assertEqual(json.dumps({"message": "I am an error, but not JSON", "attributes": {}}),
+        self.assertEqual(json.dumps({"message": "I am an error, but not JSON",
+                                     "arguments": ["I am an error, but not JSON"],
+                                     "attributes": {}}),
                          request_mock.output)
         self.assertEqual('ValueError', request_mock.error_class)
+
+    @patch('brewtils.plugin.PluginBase._invoke_command')
+    @patch('brewtils.plugin.PluginBase._update_request', Mock())
+    def test_format_json_args(self, invoke_mock):
+        target_mock = Mock()
+        request_mock = Mock(is_json=True)
+        exc = Exception({"foo": "bar"})
+        invoke_mock.side_effect = exc
+
+        self.plugin.process_message(target_mock, request_mock, {})
+        self.assertEqual(json.loads(request_mock.output), {"foo": "bar"})
+
+    @patch('brewtils.plugin.PluginBase._invoke_command')
+    @patch('brewtils.plugin.PluginBase._update_request', Mock())
+    def test_format_json_string_args(self, invoke_mock):
+        target_mock = Mock()
+        request_mock = Mock(is_json=True)
+        exc = Exception(json.dumps({"foo": "bar"}))
+        invoke_mock.side_effect = exc
+
+        self.plugin.process_message(target_mock, request_mock, {})
+        self.assertDictEqual(json.loads(request_mock.output), {"foo": "bar"})
 
     @patch('brewtils.plugin.PluginBase._invoke_command')
     @patch('brewtils.plugin.PluginBase._update_request')
@@ -263,12 +288,20 @@ class PluginBaseTest(unittest.TestCase):
         request_mock = Mock(output_type="JSON")
         exc = MyError("bar")
         invoke_mock.side_effect = exc
+        # On python version 2, errors with custom attributes do not list those
+        # attributes as arguments.
+        if sys.version_info.major < 3:
+            arguments = []
+        else:
+            arguments = ["bar"]
 
         self.plugin.process_message(target_mock, request_mock, {})
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         self.assertEqual(2, update_mock.call_count)
         self.assertEqual('ERROR', request_mock.status)
-        self.assertEqual(json.dumps({"message": str(exc), "attributes": {"foo": "bar"}}),
+        self.assertEqual(json.dumps({"message": str(exc),
+                                     "arguments": arguments,
+                                     "attributes": {"foo": "bar"}}),
                          request_mock.output)
         self.assertEqual('MyError', request_mock.error_class)
 
@@ -286,11 +319,18 @@ class PluginBaseTest(unittest.TestCase):
         thing = MyError(message)
         invoke_mock.side_effect = thing
 
+        # On python version 2, errors with custom attributes do not list those
+        # attributes as arguments.
+        if sys.version_info.major < 3:
+            arguments = []
+        else:
+            arguments = [str(message)]
+
         self.plugin.process_message(target_mock, request_mock, {})
         invoke_mock.assert_called_once_with(target_mock, request_mock)
-        self.assertEqual(2, update_mock.call_count)
-        self.assertEqual('ERROR', request_mock.status)
-        self.assertEqual(json.dumps({"message": str(thing), "attributes": str(thing.__dict__)}),
+        self.assertEqual(json.dumps({"message": str(thing),
+                                     "arguments": arguments,
+                                     "attributes": str(thing.__dict__)}),
                          request_mock.output)
         self.assertEqual('MyError', request_mock.error_class)
 

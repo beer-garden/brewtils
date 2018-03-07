@@ -112,6 +112,12 @@ class BGConflictError(BrewmasterRestError):
     pass
 
 
+class BGRequestFailedError(BrewmasterRestError):
+    """Request returned with a 200, but the status was ERROR"""
+    def __init__(self, request):
+        self.request = request
+
+
 class BGNotFoundError(BrewmasterRestError):
     """Error Indicating a 404 was raised on the server"""
     pass

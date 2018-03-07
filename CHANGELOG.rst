@@ -1,6 +1,22 @@
 Brewtils Changelog
 ==================
 
+2.3.2
+-----
+Date: 3/7/18
+
+Bug Fixes
+^^^^^^^^^
+- Fixed issue with multi-instance remote plugins failing to initialize
+
+2.3.1
+-----
+Date: 2/22/18
+
+New Features
+^^^^^^^^^^^^
+- Added ``description`` keyword argument to ``@command`` decorator
+
 2.3.0
 -----
 Date: 1/26/18

@@ -8,7 +8,7 @@ from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
 from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException
+    DiscardMessageException, RepublishRequestException, PluginValidationError
 from brewtils.models import Instance, Request, System, Command
 from brewtils.plugin import PluginBase
 
@@ -422,8 +422,7 @@ class PluginBaseTest(unittest.TestCase):
         self.bm_client_mock.update_system.return_value = self.system
 
         existing_system = System(id='id', name='test_system', version='1.0.0',
-                                 instances=[self.instance],
-                                 metadata={'foo': 'bar'})
+                                 instances=[self.instance], metadata={'foo': 'bar'})
         self.bm_client_mock.find_unique_system.return_value = existing_system
 
         self.plugin._initialize()
@@ -439,6 +438,24 @@ class PluginBaseTest(unittest.TestCase):
         self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
         self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
         self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
+
+    def test_initialize_system_new_instance(self):
+        self.plugin.instance_name = 'new_instance'
+
+        existing_system = System(id='id', name='test_system', version='1.0.0',
+                                 instances=[self.instance], max_instances=2,
+                                 metadata={'foo': 'bar'})
+        self.bm_client_mock.find_unique_system.return_value = existing_system
+
+        self.plugin._initialize()
+        self.assertTrue(self.bm_client_mock.create_system.called)
+        self.assertTrue(self.bm_client_mock.update_system.called)
+
+    def test_initialize_system_new_instance_maximum(self):
+        self.plugin.instance_name = 'new_instance'
+        self.bm_client_mock.find_unique_system.return_value = self.system
+
+        self.assertRaises(PluginValidationError, self.plugin._initialize)
 
     def test_initialize_system_update_metadata(self):
         self.system.commands = [Command('test')]
@@ -460,6 +477,12 @@ class PluginBaseTest(unittest.TestCase):
         self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
         self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
         self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
+
+    def test_initialize_unregistered_instance(self):
+        self.system.has_instance = Mock(return_value=False)
+        self.bm_client_mock.find_unique_system.return_value = None
+
+        self.assertRaises(PluginValidationError, self.plugin._initialize)
 
     def test_shutdown(self):
         self.plugin.request_consumer = Mock()

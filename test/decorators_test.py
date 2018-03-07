@@ -71,6 +71,33 @@ class ParameterTest(unittest.TestCase):
             def foo(self, x):
                 pass
 
+    def test_parameter_types(self):
+
+        for t, expected in [
+            (str, 'String'),
+            (int, 'Integer'),
+            (float, 'Float'),
+            (bool, 'Boolean'),
+            (dict, 'Dictionary'),
+            ('String', 'String'),
+            ('Integer', 'Integer'),
+            ('Float', 'Float'),
+            ('Boolean', 'Boolean'),
+            ('Dictionary', 'Dictionary'),
+            ('Any', 'Any'),
+        ]:
+
+            @system
+            class MyClass(object):
+
+                @parameter(key='x', type=t)
+                def foo(self, x):
+                    pass
+
+            c = MyClass()
+            self.assertEqual(c._commands[0].get_parameter_by_key('x').type,
+                             expected)
+
     @patch('brewtils.decorators._generate_command_from_function')
     def test_parameter_set_param_values(self, mock_generate):
         mock_param = Mock(key='x')

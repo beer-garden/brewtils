@@ -6,6 +6,7 @@
 #
 alabaster==0.7.10         # via sphinx
 argh==0.26.2              # via watchdog
+attrs==17.4.0             # via pytest
 babel==2.5.3              # via sphinx
 certifi==2018.1.18        # via requests
 chardet==3.0.4            # via requests
@@ -15,7 +16,7 @@ coverage==4.5
 docutils==0.14            # via sphinx
 enum34==1.1.6 ; python_version < "3.4"
 flake8==3.5.0
-funcsigs==1.0.2           # via mock
+funcsigs==1.0.2           # via mock, pytest
 futures==3.2.0 ; python_version < "3.0"
 idna==2.6                 # via requests
 imagesize==0.7.1          # via sphinx
@@ -31,11 +32,12 @@ pathtools==0.1.2          # via watchdog
 pbr==3.1.1                # via mock
 pika==0.11.2
 pkginfo==1.4.1            # via twine
-pluggy==0.6.0             # via tox
-py==1.5.2                 # via tox
+pluggy==0.6.0             # via pytest, tox
+py==1.5.2                 # via pytest, tox
 pycodestyle==2.3.1        # via flake8
 pyflakes==1.6.0           # via flake8
 pygments==2.2.0           # via sphinx
+pytest==3.4.2
 pytz==2017.3
 pyyaml==3.12              # via watchdog
 rednose==1.2.3

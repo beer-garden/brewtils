@@ -25,3 +25,4 @@ pytz
 flake8
 wheel
 twine
+pytest

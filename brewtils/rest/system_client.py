@@ -4,7 +4,8 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
-from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, BrewmasterValidationError
+from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, \
+    BrewmasterValidationError, BGRequestFailedError
 from brewtils.models import Request
 from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
@@ -111,12 +112,14 @@ class SystemClient(object):
     :param client_cert: The client certificate to use when making requests.
     :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
+    :param raise_on_error: Raises an error if the request ends in an error state.
     """
 
     def __init__(self, host, port, system_name, version_constraint='latest',
                  default_instance='default', always_update=False, timeout=None, max_delay=30,
                  api_version=None, ssl_enabled=False, ca_cert=None, blocking=True,
-                 max_concurrent=None, client_cert=None, url_prefix=None, ca_verify=True):
+                 max_concurrent=None, client_cert=None, url_prefix=None, ca_verify=True,
+                 raise_on_error=False):
         self._system_name = system_name
         self._version_constraint = version_constraint
         self._default_instance = default_instance
@@ -124,6 +127,7 @@ class SystemClient(object):
         self._timeout = timeout
         self._max_delay = max_delay
         self._blocking = blocking
+        self._raise_on_error = raise_on_error
         self._host = host
         self._port = port
         self.logger = logging.getLogger(__name__)
@@ -212,9 +216,12 @@ class SystemClient(object):
             raise
 
         if self._blocking:
-            return self._wait_for_request(request)
+            return self._wait_for_request(request,
+                                          kwargs.get('_raise_on_error', self._raise_on_error))
         else:
-            return self._thread_pool.submit(self._wait_for_request, request)
+            return self._thread_pool.submit(self._wait_for_request,
+                                            request,
+                                            kwargs.get('_raise_on_error', self._raise_on_error))
 
     def load_bg_system(self):
         """Query beer-garden for a System definition
@@ -245,7 +252,7 @@ class SystemClient(object):
         self._commands = {command.name: command for command in self._system.commands}
         self._loaded = True
 
-    def _wait_for_request(self, request):
+    def _wait_for_request(self, request, raise_on_error):
         """Poll the server until the request is completed or errors"""
 
         delay_time = 0.5
@@ -261,6 +268,9 @@ class SystemClient(object):
             delay_time = min(delay_time * 2, self._max_delay)
 
             request = self._easy_client.find_unique_request(id=request.id)
+
+        if raise_on_error and request.status == 'ERROR':
+            raise BGRequestFailedError(request)
 
         return request
 

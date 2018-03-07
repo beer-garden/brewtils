@@ -171,7 +171,7 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
                                     "(should is_kwarg be True?)") % (key, cmd.name))
 
     # Update parameter definition with the plugin_param arguments
-    param.type = param.type if type is None else type
+    param.type = _format_type(param.type if type is None else type)
     param.multi = param.multi if multi is None else multi
     param.display_name = param.display_name if display_name is None else display_name
     param.optional = param.optional if optional is None else optional
@@ -342,6 +342,21 @@ def _resolve_display_modifiers(wrapped, command_name, schema=None, form=None, te
                                    "file path, or URL" % (key, command_name))
 
     return resolved
+
+
+def _format_type(param_type):
+    if param_type == str:
+        return 'String'
+    elif param_type == int:
+        return 'Integer'
+    elif param_type == float:
+        return 'Float'
+    elif param_type == bool:
+        return 'Boolean'
+    elif param_type == dict:
+        return 'Dictionary'
+    else:
+        return param_type
 
 
 def _format_choices(choices):

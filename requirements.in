@@ -1,11 +1,11 @@
 
 # Dependencies
-six
-requests
+lark-parser
 marshmallow
 pika
+requests
+six
 wrapt
-lark-parser
 enum34 ; python_version < "3.4"
 futures ; python_version < "3.0"
 
@@ -15,14 +15,11 @@ sphinx_rtd_theme
 watchdog
 
 # Build / Test Dependencies
-mock
-nose
-rednose
 coverage
-nosexcover
-tox
-pytz
 flake8
-wheel
-twine
+mock
 pytest
+pytz
+tox
+twine
+wheel

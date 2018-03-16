@@ -72,11 +72,15 @@ coverage: ## check code coverage quickly with the default Python
 	coverage run --source brewtils -m pytest
 	coverage report -m
 	coverage html
+
+coverage-view: coverage ## view coverage report in a browser
 	$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	sphinx-apidoc -o docs/ brewtils
 	$(MAKE) -C docs html
+
+docs-view: docs ## view generated documenation in a browser
 	$(BROWSER) docs/_build/html/index.html
 
 servedocs: docs ## compile the docs watching for changes

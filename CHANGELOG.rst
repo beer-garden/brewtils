@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.3.3
+-----
+Date: 3/20/18
+
+Bug Fixes
+^^^^^^^^^
+- Fixed issue (#39) to avoid possible infinite loops
+
 2.3.2
 -----
 Date: 3/7/18

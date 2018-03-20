@@ -13,7 +13,7 @@ from requests import ConnectionError
 import brewtils
 from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
     DiscardMessageException, RepublishRequestException, BrewmasterConnectionError, \
-    PluginValidationError
+    PluginValidationError, BrewmasterRestClientError
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient
@@ -480,6 +480,17 @@ class PluginBase(object):
             self.logger.error('Error updating request status: '
                               '{0} exception: {1}'.format(request.id, exc))
             raise RepublishRequestException(request, headers)
+
+        elif isinstance(exc, BrewmasterRestClientError):
+            message = ('Error updating request {0} and it is a '
+                       'client error. Probable cause is that this '
+                       'request is already updated. In which case, ignore '
+                       'this message. If request {0} did not complete, '
+                       'please file an issue. Discarding request to '
+                       'avoid an infinte loop. exception: {1}'
+                       .format(request.id, exc))
+            self.logger.error(message)
+            raise DiscardMessageException(message)
 
         # Time to discard the message because we've given up
         elif self._should_be_final_attempt(headers):

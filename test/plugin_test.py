@@ -7,7 +7,8 @@ from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
 from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException, PluginValidationError
+    DiscardMessageException, RepublishRequestException, PluginValidationError, \
+    BrewmasterRestClientError
 from brewtils.models import Instance, Request, System, Command
 from brewtils.plugin import PluginBase
 
@@ -513,6 +514,14 @@ class PluginBaseTest(unittest.TestCase):
         self.plugin._update_request(request_mock, {})
         self.assertTrue(error_condition_mock.wait.called)
         self.assertTrue(self.bm_client_mock.update_request.called)
+
+    def test_update_request_client_error(self):
+        request_mock = Mock(is_ephemeral=False)
+        self.bm_client_mock.update_request.side_effect = BrewmasterRestClientError
+
+        self.assertRaises(DiscardMessageException, self.plugin._update_request, request_mock, {})
+        self.assertTrue(self.bm_client_mock.update_request.called)
+        self.assertFalse(self.plugin.brew_view_down)
 
     def test_update_request_connection_error(self):
         request_mock = Mock(is_ephemeral=False)

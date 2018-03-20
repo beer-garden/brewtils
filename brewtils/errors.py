@@ -74,12 +74,22 @@ class BrewmasterRestError(Exception):
     pass
 
 
-class BrewmasterConnectionError(BrewmasterRestError):
+class BrewmasterRestClientError(BrewmasterRestError):
+    """Wrapper for all 4XX errors"""
+    pass
+
+
+class BrewmasterRestServerError(BrewmasterRestError):
+    """Wrapper for all 5XX errors"""
+    pass
+
+
+class BrewmasterConnectionError(BrewmasterRestServerError):
     """Error indicating a connection error while performing a request"""
     pass
 
 
-class BrewmasterTimeoutError(BrewmasterRestError):
+class BrewmasterTimeoutError(BrewmasterRestServerError):
     """Error Indicating a Timeout was reached while performing a request"""
     pass
 
@@ -89,26 +99,26 @@ class BrewmasterFetchError(BrewmasterRestError):
     pass
 
 
-class BrewmasterValidationError(BrewmasterRestError):
+class BrewmasterValidationError(BrewmasterRestClientError):
     """Error Indicating a client (400) Error occurred performing a POST/PUT"""
     pass
 
 
-class BrewmasterSaveError(BrewmasterRestError):
+class BrewmasterSaveError(BrewmasterRestServerError):
     """Error Indicating a server Error occurred performing a POST/PUT"""
     pass
 
 
-class BrewmasterDeleteError(BrewmasterRestError):
+class BrewmasterDeleteError(BrewmasterRestServerError):
     """Error Indicating a server Error occurred performing a DELETE"""
     pass
 
 
-class BGConflictError(BrewmasterRestError):
+class BGConflictError(BrewmasterRestClientError):
     """Error indicating a 409 was raised on the server"""
     pass
 
 
-class BGNotFoundError(BrewmasterRestError):
+class BGNotFoundError(BrewmasterRestClientError):
     """Error Indicating a 404 was raised on the server"""
     pass

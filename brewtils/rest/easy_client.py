@@ -15,8 +15,8 @@ class EasyClient(object):
     This class provides nice wrappers around the functionality provided by a
     :py:class:`brewtils.rest.client.RestClient`
 
-    :param host: beer-garden REST API hostname.
-    :param port: beer-garden REST API port.
+    :param bg_host: beer-garden REST API hostname.
+    :param bg_port: beer-garden REST API port.
     :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
     :param api_version: The beer-garden REST API version. Will default to the latest version.
     :param ca_cert: beer-garden REST API server CA certificate.
@@ -27,11 +27,16 @@ class EasyClient(object):
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     """
 
-    def __init__(self, host, port, ssl_enabled=False, api_version=None, ca_cert=None,
-                 client_cert=None, parser=None, logger=None, url_prefix=None, ca_verify=True):
+    def __init__(self, bg_host=None, bg_port=None, ssl_enabled=False, api_version=None,
+                 ca_cert=None, client_cert=None, parser=None, logger=None, url_prefix=None,
+                 ca_verify=True, **kwargs):
+
+        bg_host = bg_host or kwargs.get('host')
+        bg_port = bg_port or kwargs.get('port')
+
         self.logger = logger or logging.getLogger(__name__)
         self.parser = parser or SchemaParser()
-        self.client = RestClient(host=host, port=port, ssl_enabled=ssl_enabled,
+        self.client = RestClient(bg_host=bg_host, bg_port=bg_port, ssl_enabled=ssl_enabled,
                                  api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
                                  url_prefix=url_prefix, ca_verify=ca_verify)
 

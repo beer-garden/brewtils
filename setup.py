@@ -25,12 +25,13 @@ setup(
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={'': ['README.md']},
     install_requires=[
+        'lark-parser',
         'marshmallow',
         'pika',
         'requests',
         'six',
         'wrapt',
-        'lark-parser',
+        'yapconf>=0.2.1',
     ],
     extras_require={
         ':python_version=="2.7"': ['futures',],

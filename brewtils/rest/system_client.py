@@ -115,11 +115,11 @@ class SystemClient(object):
     :param raise_on_error: Raises an error if the request ends in an error state.
     """
 
-    def __init__(self, host, port, system_name, version_constraint='latest',
+    def __init__(self, bg_host=None, bg_port=None, system_name=None, version_constraint='latest',
                  default_instance='default', always_update=False, timeout=None, max_delay=30,
                  api_version=None, ssl_enabled=False, ca_cert=None, blocking=True,
                  max_concurrent=None, client_cert=None, url_prefix=None, ca_verify=True,
-                 raise_on_error=False):
+                 raise_on_error=False, **kwargs):
         self._system_name = system_name
         self._version_constraint = version_constraint
         self._default_instance = default_instance
@@ -128,8 +128,8 @@ class SystemClient(object):
         self._max_delay = max_delay
         self._blocking = blocking
         self._raise_on_error = raise_on_error
-        self._host = host
-        self._port = port
+        self._bg_host = bg_host or kwargs.get('host')
+        self._bg_port = bg_port or kwargs.get('port')
         self.logger = logging.getLogger(__name__)
 
         self._loaded = False
@@ -137,10 +137,10 @@ class SystemClient(object):
         self._commands = None
 
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
-        self._easy_client = EasyClient(host, port, ssl_enabled=ssl_enabled,
-                                       api_version=api_version, ca_cert=ca_cert,
-                                       client_cert=client_cert, url_prefix=url_prefix,
-                                       ca_verify=ca_verify)
+        self._easy_client = EasyClient(bg_host=self._bg_host, bg_port=self._bg_port,
+                                       ssl_enabled=ssl_enabled, api_version=api_version,
+                                       ca_cert=ca_cert, client_cert=client_cert,
+                                       url_prefix=url_prefix, ca_verify=ca_verify)
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""
@@ -279,8 +279,8 @@ class SystemClient(object):
         if parent is None:
             return None
 
-        if (request_context.bg_host.upper() != self._host.upper() or
-                request_context.bg_port != self._port):
+        if (request_context.bg_host.upper() != self._bg_host.upper() or
+                request_context.bg_port != self._bg_port):
             self.logger.warning("A parent request was found, but the destination beer-garden "
                                 "appears to be different than the beer-garden to which this plugin "
                                 "is assigned. Cross-server parent/child requests are not supported "

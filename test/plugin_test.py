@@ -60,15 +60,10 @@ class PluginBaseTest(unittest.TestCase):
                             metadata={'foo': 'bar'})
         self.assertEqual(plugin.instance_name, 'default')
         self.assertEqual(plugin.bg_host, 'localhost')
-        self.assertEqual(plugin.bg_port, '2337')
+        self.assertEqual(plugin.bg_port, 2337)
         self.assertEqual(plugin.ssl_enabled, True)
         self.assertFalse(plugin._custom_logger)
         self.assertEqual(plugin.ca_verify, True)
-
-    def test_init_ssl_bad_env_variable(self):
-        os.environ['BG_SSL_ENABLED'] = 'BAD VALUE HERE'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.ssl_enabled, True)
 
     def test_init_not_ssl(self):
         plugin = PluginBase(self.client, bg_host='localhost', system=self.system, ssl_enabled=False)
@@ -83,11 +78,6 @@ class PluginBaseTest(unittest.TestCase):
         os.environ['BG_SSL_ENABLED'] = 'False'
         plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
         self.assertEqual(plugin.ssl_enabled, False)
-
-    def test_init_ca_verify_bad_env_variable(self):
-        os.environ['BG_CA_VERIFY'] = 'BAD VALUE HERE'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.ca_verify, True)
 
     def test_init_not_ca_verify(self):
         plugin = PluginBase(self.client, bg_host='localhost', system=self.system, ca_verify=False)
@@ -116,7 +106,7 @@ class PluginBaseTest(unittest.TestCase):
     def test_init_bg_port_env(self):
         os.environ['BG_WEB_PORT'] = '4000'
         plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.bg_port, '4000')
+        self.assertEqual(plugin.bg_port, 4000)
 
     def test_init_bg_port_both(self):
         os.environ['BG_WEB_PORT'] = '4000'

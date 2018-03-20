@@ -15,8 +15,17 @@ class RestClientTest(unittest.TestCase):
         self.url_prefix = "beer"
         self.url_prefix = brewtils.rest.normalize_url_prefix(self.url_prefix)
 
-        self.client_version_1 = RestClient('host', 80, api_version=1, url_prefix=self.url_prefix)
+        self.client_version_1 = RestClient(bg_host='host', bg_port=80, api_version=1,
+                                           url_prefix=self.url_prefix)
         self.client_version_1.session = self.session_mock
+
+    def test_old_positional_args(self):
+        test_client = RestClient('host', 80, api_version=1, url_prefix=self.url_prefix)
+        self.assertEqual(test_client.version_url, self.client_version_1.version_url)
+
+    def test_no_host_or_port(self):
+        self.assertRaises(ValueError, RestClient, bg_port=80)
+        self.assertRaises(ValueError, RestClient, bg_host='host')
 
     def test_non_versioned_uris(self):
         client = RestClient('host', 80, url_prefix=self.url_prefix)

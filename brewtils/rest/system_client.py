@@ -3,6 +3,7 @@ import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from multiprocessing import cpu_count
 
 from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, \
     BrewmasterValidationError, BGRequestFailedError
@@ -136,7 +137,10 @@ class SystemClient(object):
         self._system = None
         self._commands = None
 
+        if max_concurrent is None:
+            max_concurrent = (cpu_count() or 1) * 5
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
+
         self._easy_client = EasyClient(bg_host=self._bg_host, bg_port=self._bg_port,
                                        ssl_enabled=ssl_enabled, api_version=api_version,
                                        ca_cert=ca_cert, client_cert=client_cert,

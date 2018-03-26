@@ -137,6 +137,8 @@ class SystemClient(object):
         self._system = None
         self._commands = None
 
+        # This is for Python 3.4 compatibility - max_workers MUST be non-None
+        # in that version. This logic is what was added in Python 3.5
         if max_concurrent is None:
             max_concurrent = (cpu_count() or 1) * 5
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)

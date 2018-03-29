@@ -70,6 +70,11 @@ class RequestProcessingError(AckAndContinueException):
     pass
 
 
+class RequestPublishException(Exception):
+    """Error while publishing request"""
+    pass
+
+
 # Rest / Client errors
 class RestError(Exception):
     """Base exception for REST errors"""

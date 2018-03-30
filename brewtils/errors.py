@@ -1,22 +1,21 @@
-"""Module containing all of the BREWMASTER error definitions"""
 import json
 
 from six import string_types
 
 
 # Models
-class BrewmasterModelError(Exception):
-    """Wrapper Error for All BrewmasterModelErrors"""
+class ModelError(Exception):
+    """Base exception for model errors"""
     pass
 
 
-class BrewmasterModelValidationError(BrewmasterModelError):
-    """Error to indicate an invalid Brewmaster Model"""
+class ModelValidationError(ModelError):
+    """Invalid model"""
     pass
 
 
-class RequestStatusTransitionError(BrewmasterModelValidationError):
-    """Error to indicate an updated status was not a valid transition"""
+class RequestStatusTransitionError(ModelValidationError):
+    """A status update was an invalid transition"""
     pass
 
 
@@ -72,65 +71,79 @@ class RequestProcessingError(AckAndContinueException):
 
 
 # Rest / Client errors
-class BrewmasterRestError(Exception):
-    """Wrapper Error to Wrap more specific BREWMASTER Rest Errors"""
+class RestError(Exception):
+    """Base exception for REST errors"""
     pass
 
 
-class BrewmasterRestClientError(BrewmasterRestError):
+class RestClientError(RestError):
     """Wrapper for all 4XX errors"""
     pass
 
 
-class BrewmasterRestServerError(BrewmasterRestError):
+class RestServerError(RestError):
     """Wrapper for all 5XX errors"""
     pass
 
 
-class BrewmasterConnectionError(BrewmasterRestServerError):
+class ConnectionError(RestServerError):
     """Error indicating a connection error while performing a request"""
     pass
 
 
-class BrewmasterTimeoutError(BrewmasterRestServerError):
+class TimeoutError(RestServerError):
     """Error Indicating a Timeout was reached while performing a request"""
     pass
 
 
-class BrewmasterFetchError(BrewmasterRestError):
+class FetchError(RestError):
     """Error Indicating a server Error occurred performing a GET"""
     pass
 
 
-class BrewmasterValidationError(BrewmasterRestClientError):
+class ValidationError(RestClientError):
     """Error Indicating a client (400) Error occurred performing a POST/PUT"""
     pass
 
 
-class BrewmasterSaveError(BrewmasterRestServerError):
+class SaveError(RestServerError):
     """Error Indicating a server Error occurred performing a POST/PUT"""
     pass
 
 
-class BrewmasterDeleteError(BrewmasterRestServerError):
+class DeleteError(RestServerError):
     """Error Indicating a server Error occurred performing a DELETE"""
     pass
 
 
-class BGConflictError(BrewmasterRestClientError):
+class BGConflictError(RestClientError):
     """Error indicating a 409 was raised on the server"""
     pass
 
 
-class BGRequestFailedError(BrewmasterRestError):
+class BGRequestFailedError(RestError):
     """Request returned with a 200, but the status was ERROR"""
     def __init__(self, request):
         self.request = request
 
 
-class BGNotFoundError(BrewmasterRestClientError):
+class BGNotFoundError(RestClientError):
     """Error Indicating a 404 was raised on the server"""
     pass
+
+
+# Alias the old 'Brewmaster' names
+BrewmasterModelError = ModelError
+BrewmasterModelValidationError = ModelValidationError
+BrewmasterRestError = RestError
+BrewmasterRestClientError = RestClientError
+BrewmasterRestServerError = RestServerError
+BrewmasterConnectionError = ConnectionError
+BrewmasterTimeoutError = TimeoutError
+BrewmasterFetchError = FetchError
+BrewmasterValidationError = ValidationError
+BrewmasterSaveError = SaveError
+BrewmasterDeleteError = DeleteError
 
 
 def parse_exception_as_json(exc):

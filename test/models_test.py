@@ -2,7 +2,7 @@ import unittest
 
 from mock import Mock, PropertyMock
 
-from brewtils.errors import BrewmasterModelValidationError, RequestStatusTransitionError
+from brewtils.errors import ModelValidationError, RequestStatusTransitionError
 from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
     Choices, LoggingConfig, Event, Queue
 
@@ -247,7 +247,7 @@ class RequestTest(unittest.TestCase):
     def test_init_none_command_type(self):
         try:
             Request(system='foo', command='bar', command_type=None)
-        except BrewmasterModelValidationError:
+        except ModelValidationError:
             self.fail("Request should be allowed to initialize a None Command Type.")
 
     def test_str(self):

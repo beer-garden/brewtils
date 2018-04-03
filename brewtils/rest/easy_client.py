@@ -2,7 +2,7 @@ import logging
 import warnings
 
 from brewtils.errors import FetchError, ValidationError, SaveError, \
-    DeleteError, ConnectionError, BGNotFoundError, BGConflictError, \
+    DeleteError, RestConnectionError, NotFoundError, ConflictError, \
     RestError
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
@@ -306,7 +306,7 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_logging_config(response.json())
         else:
-            self._handle_response_failure(response, default_exc=ConnectionError)
+            self._handle_response_failure(response, default_exc=RestConnectionError)
 
     def publish_event(self, *args, **kwargs):
         """Publish a new event by POSTing
@@ -367,15 +367,15 @@ class EasyClient(object):
     def _handle_response_failure(response, default_exc=RestError, raise_404=True):
         if response.status_code == 404:
             if raise_404:
-                raise BGNotFoundError(response.json())
+                raise NotFoundError(response.json())
             else:
                 return None
         elif response.status_code == 409:
-            raise BGConflictError(response.json())
+            raise ConflictError(response.json())
         elif 400 <= response.status_code < 500:
             raise ValidationError(response.json())
         elif response.status_code == 503:
-            raise ConnectionError(response.json())
+            raise RestConnectionError(response.json())
         else:
             raise default_exc(response.json())
 

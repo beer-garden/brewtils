@@ -86,12 +86,12 @@ class RestServerError(RestError):
     pass
 
 
-class ConnectionError(RestServerError):
+class RestConnectionError(RestServerError):
     """Error indicating a connection error while performing a request"""
     pass
 
 
-class TimeoutError(RestServerError):
+class ConnectionTimeoutError(RestServerError):
     """Error Indicating a Timeout was reached while performing a request"""
     pass
 
@@ -116,34 +116,37 @@ class DeleteError(RestServerError):
     pass
 
 
-class BGConflictError(RestClientError):
+class ConflictError(RestClientError):
     """Error indicating a 409 was raised on the server"""
     pass
 
 
-class BGRequestFailedError(RestError):
+class RequestFailedError(RestError):
     """Request returned with a 200, but the status was ERROR"""
     def __init__(self, request):
         self.request = request
 
 
-class BGNotFoundError(RestClientError):
+class NotFoundError(RestClientError):
     """Error Indicating a 404 was raised on the server"""
     pass
 
 
-# Alias the old 'Brewmaster' names
+# Alias old names
 BrewmasterModelError = ModelError
 BrewmasterModelValidationError = ModelValidationError
 BrewmasterRestError = RestError
 BrewmasterRestClientError = RestClientError
 BrewmasterRestServerError = RestServerError
-BrewmasterConnectionError = ConnectionError
-BrewmasterTimeoutError = TimeoutError
+BrewmasterConnectionError = RestConnectionError
+BrewmasterTimeoutError = ConnectionTimeoutError
 BrewmasterFetchError = FetchError
 BrewmasterValidationError = ValidationError
 BrewmasterSaveError = SaveError
 BrewmasterDeleteError = DeleteError
+BGConflictError = ConflictError
+BGRequestFailedError = RequestFailedError
+BGNotFoundError = NotFoundError
 
 
 def parse_exception_as_json(exc):

@@ -5,7 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
 
-from brewtils.errors import TimeoutError, FetchError, ValidationError, BGRequestFailedError
+from brewtils.errors import ConnectionTimeoutError, FetchError, ValidationError, \
+    RequestFailedError
 from brewtils.models import Request
 from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
@@ -55,7 +56,7 @@ class SystemClient(object):
         determined by periodically polling beer-garden to check the Request status. The time
         between polling requests starts at 0.5s and doubles each time the request has still not
         completed, up to max_delay. If a timeout was specified and the Request has not completed
-        within that time a ``TimeoutError`` will be raised.
+        within that time a ``ConnectionTimeoutError`` will be raised.
 
         It is also possible to create the SystemClient in non-blocking mode by specifying
         blocking=False. In this case the request creation will immediately return a Future and
@@ -264,8 +265,8 @@ class SystemClient(object):
         while request.status not in Request.COMPLETED_STATUSES:
 
             if self._timeout and total_wait_time > self._timeout:
-                raise TimeoutError("Timeout reached waiting for request '%s' to complete" %
-                                   str(request))
+                raise ConnectionTimeoutError("Timeout waiting for request '%s' to complete" %
+                                             str(request))
 
             time.sleep(delay_time)
             total_wait_time += delay_time
@@ -274,7 +275,7 @@ class SystemClient(object):
             request = self._easy_client.find_unique_request(id=request.id)
 
         if raise_on_error and request.status == 'ERROR':
-            raise BGRequestFailedError(request)
+            raise RequestFailedError(request)
 
         return request
 

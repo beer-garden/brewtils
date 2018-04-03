@@ -12,7 +12,7 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.errors import ValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException, ConnectionError, \
+    DiscardMessageException, RepublishRequestException, RestConnectionError, \
     PluginValidationError, RestClientError, parse_exception_as_json
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
@@ -475,7 +475,7 @@ class PluginBase(object):
     def _handle_request_update_failure(self, request, headers, exc):
 
         # If brew-view is down, we always want to try again (yes even if it is the 'final_attempt')
-        if isinstance(exc, (RequestsConnectionError, ConnectionError)):
+        if isinstance(exc, (RequestsConnectionError, RestConnectionError)):
             self.brew_view_down = True
             self.logger.error('Error updating request status: '
                               '{0} exception: {1}'.format(request.id, exc))
@@ -559,7 +559,7 @@ class PluginBase(object):
             if not self.brew_view_down:
                 try:
                     self.bm_client.instance_heartbeat(self.instance.id)
-                except (RequestsConnectionError, ConnectionError):
+                except (RequestsConnectionError, RestConnectionError):
                     self.brew_view_down = True
                     raise
 

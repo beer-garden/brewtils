@@ -4,8 +4,8 @@ from concurrent.futures import wait
 
 from mock import call, patch, Mock, PropertyMock
 
-from brewtils.errors import TimeoutError, FetchError, \
-    ValidationError, BGRequestFailedError
+from brewtils.errors import ConnectionTimeoutError, FetchError, \
+    ValidationError, RequestFailedError
 from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
 
 
@@ -146,7 +146,7 @@ class SystemClientTest(unittest.TestCase):
         self.easy_client_mock.find_unique_request.return_value = self.mock_error
         self.easy_client_mock.create_request.return_value = self.mock_in_progress
 
-        with self.assertRaises(BGRequestFailedError) as ex:
+        with self.assertRaises(RequestFailedError) as ex:
             self.client.command_1(_raise_on_error=True)
 
         self.assertEqual(ex.exception.request.status, 'ERROR')
@@ -194,7 +194,7 @@ class SystemClientTest(unittest.TestCase):
 
         self.client._timeout = 1
 
-        self.assertRaises(TimeoutError, self.client.command_1)
+        self.assertRaises(ConnectionTimeoutError, self.client.command_1)
         self.easy_client_mock.find_unique_request.assert_called_with(id=self.mock_in_progress.id)
 
     @patch('brewtils.rest.system_client.time.sleep', Mock())
@@ -235,7 +235,7 @@ class SystemClientTest(unittest.TestCase):
 
         self.easy_client_mock.find_unique_request.assert_called_with(id=self.mock_in_progress.id)
         for future in futures:
-            self.assertRaises(TimeoutError, future.result)
+            self.assertRaises(ConnectionTimeoutError, future.result)
 
     def test_always_update(self):
         self.client._always_update = True

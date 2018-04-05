@@ -1,16 +1,16 @@
 import logging
 import warnings
 
-from brewtils.errors import BrewmasterFetchError, BrewmasterValidationError, BrewmasterSaveError, \
-    BrewmasterDeleteError, BrewmasterConnectionError, BGNotFoundError, BGConflictError, \
-    BrewmasterRestError
+from brewtils.errors import FetchError, ValidationError, SaveError, \
+    DeleteError, RestConnectionError, NotFoundError, ConflictError, \
+    RestError
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 
 
 class EasyClient(object):
-    """Client for communicating with beer-garden.
+    """Client for communicating with beer-garden
 
     This class provides nice wrappers around the functionality provided by a
     :py:class:`brewtils.rest.client.RestClient`
@@ -21,7 +21,7 @@ class EasyClient(object):
     :param api_version: The beer-garden REST API version. Will default to the latest version.
     :param ca_cert: beer-garden REST API server CA certificate.
     :param client_cert: The client certificate to use when making requests.
-    :param parser: The parser to use. If None will default to an instance of BrewmasterSchemaParser.
+    :param parser: The parser to use. If None will default to an instance of SchemaParser.
     :param logger: The logger to use. If None one will be created.
     :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
@@ -45,10 +45,10 @@ class EasyClient(object):
         if response.ok:
             return response
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError)
+            self._handle_response_failure(response, default_exc=FetchError)
 
     def find_unique_system(self, **kwargs):
-        """Find a unique system using keyword arguments as search parameters.
+        """Find a unique system using keyword arguments as search parameters
 
         :param kwargs: Search parameters
         :return: One system instance
@@ -62,13 +62,12 @@ class EasyClient(object):
                 return None
 
             if len(systems) > 1:
-                raise BrewmasterFetchError("More than one system found that specifies "
-                                           "the given constraints")
+                raise FetchError("More than one system found that specifies the given constraints")
 
             return systems[0]
 
     def find_systems(self, **kwargs):
-        """Find systems using keyword arguments as search parameters.
+        """Find systems using keyword arguments as search parameters
 
         :param kwargs: Search parameters
         :return: A list of system instances satisfying the given search parameters
@@ -78,20 +77,20 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_system(response.json(), many=True)
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError)
+            self._handle_response_failure(response, default_exc=FetchError)
 
     def _find_system_by_id(self, system_id, **kwargs):
-        """Finds a system by id, convert JSON to a system object and return it."""
+        """Finds a system by id, convert JSON to a system object and return it"""
         response = self.client.get_system(system_id, **kwargs)
 
         if response.ok:
             return self.parser.parse_system(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError,
+            self._handle_response_failure(response, default_exc=FetchError,
                                           raise_404=False)
 
     def create_system(self, system):
-        """Create a new system by POSTing to a BREWMASTER server.
+        """Create a new system by POSTing
 
         :param system: The system to create
         :return: The system creation response
@@ -102,10 +101,10 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_system(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def update_system(self, system_id, new_commands=None, **kwargs):
-        """Update a system with a PATCH
+        """Update a system by PATCHing
 
         :param system_id: The ID of the system to update
         :param new_commands: The new commands
@@ -140,10 +139,10 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_system(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def remove_system(self, **kwargs):
-        """Remove a specific system using keyword arguments as search parameters.
+        """Remove a specific system by DELETEing, using keyword arguments as search parameters
 
         :param kwargs: Search parameters
         :return: The response
@@ -151,23 +150,23 @@ class EasyClient(object):
         system = self.find_unique_system(**kwargs)
 
         if system is None:
-            raise BrewmasterFetchError("Could not find system matching the given search parameters")
+            raise FetchError("Could not find system matching the given search parameters")
 
         return self._remove_system_by_id(system.id)
 
     def _remove_system_by_id(self, system_id):
 
         if system_id is None:
-            raise BrewmasterDeleteError("Cannot delete a system without an id")
+            raise DeleteError("Cannot delete a system without an id")
 
         response = self.client.delete_system(system_id)
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterDeleteError)
+            self._handle_response_failure(response, default_exc=DeleteError)
 
     def initialize_instance(self, instance_id):
-        """Start an instance by PATCHing to a BREWMASTER server.
+        """Start an instance by PATCHing
 
         :param instance_id: The ID of the instance to start
         :return: The start response
@@ -180,10 +179,10 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_instance(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def update_instance_status(self, instance_id, new_status):
-        """Update an instance by PATCHing to a BREWMASTER server.
+        """Update an instance by PATCHing
 
         :param instance_id: The ID of the instance to start
         :param new_status: The updated status
@@ -195,10 +194,10 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_instance(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def instance_heartbeat(self, instance_id):
-        """Send heartbeat to BREWMASTER for health and status purposes
+        """Send heartbeat for health and status
 
         :param instance_id: The ID of the instance
         :return: The response
@@ -209,10 +208,10 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def find_unique_request(self, **kwargs):
-        """Find a unique request using keyword arguments as search parameters.
+        """Find a unique request using keyword arguments as search parameters
 
         .. note::
             If 'id' is present in kwargs then all other parameters will be ignored.
@@ -229,13 +228,13 @@ class EasyClient(object):
                 return None
 
             if len(requests) > 1:
-                raise BrewmasterFetchError("More than one request found that specifies "
-                                           "the given constraints")
+                raise FetchError("More than one request found that specifies "
+                                 "the given constraints")
 
             return requests[0]
 
     def find_requests(self, **kwargs):
-        """Find requests using keyword arguments as search parameters.
+        """Find requests using keyword arguments as search parameters
 
         :param kwargs: Search parameters
         :return: A list of request instances satisfying the given search parameters
@@ -245,20 +244,20 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_request(response.json(), many=True)
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError)
+            self._handle_response_failure(response, default_exc=FetchError)
 
     def _find_request_by_id(self, request_id):
-        """Finds a request by id, convert JSON to a request object and return it."""
+        """Finds a request by id, convert JSON to a request object and return it"""
         response = self.client.get_request(request_id)
 
         if response.ok:
             return self.parser.parse_request(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterFetchError,
+            self._handle_response_failure(response, default_exc=FetchError,
                                           raise_404=False)
 
     def create_request(self, request):
-        """Create a new request.
+        """Create a new request by POSTing
 
         :param request: The request to create
         :return: The response
@@ -269,10 +268,10 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_request(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def update_request(self, request_id, status=None, output=None, error_class=None):
-        """Set various fields on a request with a PATCH
+        """Set various fields on a request by PATCHing
 
         :param request_id: The ID of the request to update
         :param status: The new status
@@ -295,7 +294,7 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_request(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterSaveError)
+            self._handle_response_failure(response, default_exc=SaveError)
 
     def get_logging_config(self, system_name):
         """Get the logging configuration for a particular system.
@@ -307,10 +306,10 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_logging_config(response.json())
         else:
-            self._handle_response_failure(response, default_exc=BrewmasterConnectionError)
+            self._handle_response_failure(response, default_exc=RestConnectionError)
 
     def publish_event(self, *args, **kwargs):
-        """Publish a new event.
+        """Publish a new event by POSTing
 
         :param args: The Event to create
         :param _publishers: Optional list of specific publishers. If None all publishers will be
@@ -365,18 +364,18 @@ class EasyClient(object):
             self._handle_response_failure(response)
 
     @staticmethod
-    def _handle_response_failure(response, default_exc=BrewmasterRestError, raise_404=True):
+    def _handle_response_failure(response, default_exc=RestError, raise_404=True):
         if response.status_code == 404:
             if raise_404:
-                raise BGNotFoundError(response.json())
+                raise NotFoundError(response.json())
             else:
                 return None
         elif response.status_code == 409:
-            raise BGConflictError(response.json())
+            raise ConflictError(response.json())
         elif 400 <= response.status_code < 500:
-            raise BrewmasterValidationError(response.json())
+            raise ValidationError(response.json())
         elif response.status_code == 503:
-            raise BrewmasterConnectionError(response.json())
+            raise RestConnectionError(response.json())
         else:
             raise default_exc(response.json())
 

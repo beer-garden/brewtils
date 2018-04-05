@@ -7,7 +7,7 @@ from yapconf.exceptions import YapconfItemNotFound
 
 import brewtils
 import brewtils.rest
-from brewtils.errors import BrewmasterValidationError
+from brewtils.errors import ValidationError
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -82,7 +82,7 @@ class BrewtilsTest(unittest.TestCase):
         self.assertEqual(self.params, brewtils.get_bg_connection_parameters(**params))
 
     def test_get_bg_connection_parameters_no_host(self):
-        self.assertRaises(BrewmasterValidationError, brewtils.get_bg_connection_parameters)
+        self.assertRaises(ValidationError, brewtils.get_bg_connection_parameters)
 
     def test_get_bg_connection_parameters_no_something(self):
 

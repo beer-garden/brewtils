@@ -3,9 +3,8 @@ import warnings
 
 from mock import ANY, Mock, patch
 
-from brewtils.errors import BrewmasterFetchError, BrewmasterValidationError, BrewmasterSaveError, \
-    BrewmasterDeleteError, BrewmasterConnectionError, BGNotFoundError, BGConflictError, \
-    BrewmasterRestError
+from brewtils.errors import FetchError, ValidationError, SaveError, \
+    DeleteError, RestConnectionError, NotFoundError, ConflictError, RestError
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
 
@@ -39,13 +38,13 @@ class EasyClientTest(unittest.TestCase):
     def test_get_version_error(self, mock_get):
         mock_get.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterFetchError, self.client.get_version)
+        self.assertRaises(FetchError, self.client.get_version)
         mock_get.assert_called()
 
     @patch('brewtils.rest.client.RestClient.get_version')
     def test_get_version_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.get_version)
+        self.assertRaises(RestConnectionError, self.client.get_version)
 
     @patch('brewtils.rest.client.RestClient.get_logging_config')
     def test_get_logging_config(self, mock_get):
@@ -59,7 +58,7 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.get_logging_config')
     def test_get_logging_config_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.get_logging_config, 'system_name')
+        self.assertRaises(RestConnectionError, self.client.get_logging_config, 'system_name')
 
     # Find systems
     @patch('brewtils.rest.client.RestClient.get_systems')
@@ -77,12 +76,12 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.get_systems')
     def test_find_systems_server_error(self, mock_get):
         mock_get.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterFetchError, self.client.find_systems)
+        self.assertRaises(FetchError, self.client.find_systems)
 
     @patch('brewtils.rest.client.RestClient.get_systems')
     def test_find_systems_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.find_systems)
+        self.assertRaises(RestConnectionError, self.client.find_systems)
 
     @patch('brewtils.rest.client.RestClient.get_systems')
     def test_find_systems_call_parser(self, mock_get):
@@ -108,7 +107,7 @@ class EasyClientTest(unittest.TestCase):
 
     def test_find_unique_system_multiple(self):
         self.client.find_systems = Mock(return_value=['system1', 'system2'])
-        self.assertRaises(BrewmasterFetchError, self.client.find_unique_system)
+        self.assertRaises(FetchError, self.client.find_unique_system)
 
     @patch('brewtils.rest.client.RestClient.get_system')
     def test_find_system_by_id(self, mock_get):
@@ -130,13 +129,13 @@ class EasyClientTest(unittest.TestCase):
     def test_find_system_by_id_server_error(self, mock_get):
         mock_get.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterFetchError, self.client._find_system_by_id, 'id')
+        self.assertRaises(FetchError, self.client._find_system_by_id, 'id')
         mock_get.assert_called_with('id')
 
     @patch('brewtils.rest.client.RestClient.get_system')
     def test_find_system_by_id_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client._find_system_by_id, 'id')
+        self.assertRaises(RestConnectionError, self.client._find_system_by_id, 'id')
 
     # Create system
     @patch('brewtils.rest.client.RestClient.post_systems')
@@ -152,17 +151,17 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.post_systems')
     def test_create_system_client_error(self, mock_post):
         mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client.create_system, 'system')
+        self.assertRaises(ValidationError, self.client.create_system, 'system')
 
     @patch('brewtils.rest.client.RestClient.post_systems')
     def test_create_system_server_error(self, mock_post):
         mock_post.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterSaveError, self.client.create_system, 'system')
+        self.assertRaises(SaveError, self.client.create_system, 'system')
 
     @patch('brewtils.rest.client.RestClient.post_systems')
     def test_create_system_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.create_system, 'system')
+        self.assertRaises(RestConnectionError, self.client.create_system, 'system')
 
     # Update request
     @patch('brewtils.rest.client.RestClient.patch_system')
@@ -203,34 +202,34 @@ class EasyClientTest(unittest.TestCase):
     def test_update_system_client_error(self, mock_patch):
         mock_patch.return_value = self.fake_client_error_response
 
-        self.assertRaises(BrewmasterValidationError, self.client.update_system, 'id')
+        self.assertRaises(ValidationError, self.client.update_system, 'id')
         mock_patch.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_system')
     def test_update_system_invalid_id(self, mock_patch):
         mock_patch.return_value = self.fake_not_found_error_response
 
-        self.assertRaises(BGNotFoundError, self.client.update_system, 'id')
+        self.assertRaises(NotFoundError, self.client.update_system, 'id')
         mock_patch.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_system')
     def test_update_system_conflict(self, mock_patch):
         mock_patch.return_value = self.fake_conflict_error_response
 
-        self.assertRaises(BGConflictError, self.client.update_system, 'id')
+        self.assertRaises(ConflictError, self.client.update_system, 'id')
         mock_patch.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_system')
     def test_update_system_server_error(self, mock_patch):
         mock_patch.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterSaveError, self.client.update_system, 'id')
+        self.assertRaises(SaveError, self.client.update_system, 'id')
         mock_patch.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_system')
     def test_update_system_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.update_system, 'system')
+        self.assertRaises(RestConnectionError, self.client.update_system, 'system')
 
     # Remove system
     @patch('brewtils.rest.easy_client.EasyClient._remove_system_by_id')
@@ -248,7 +247,7 @@ class EasyClientTest(unittest.TestCase):
     def test_remove_system_none_found(self, find_mock, remove_mock):
         find_mock.return_value = None
 
-        self.assertRaises(BrewmasterFetchError, self.client.remove_system, search='search params')
+        self.assertRaises(FetchError, self.client.remove_system, search='search params')
         self.assertFalse(remove_mock.called)
         find_mock.assert_called_once_with(search='search params')
 
@@ -262,20 +261,20 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.delete_system')
     def test_remove_system_by_id_client_error(self, mock_remove):
         mock_remove.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client._remove_system_by_id, 'foo')
+        self.assertRaises(ValidationError, self.client._remove_system_by_id, 'foo')
 
     @patch('brewtils.rest.client.RestClient.delete_system')
     def test_remove_system_by_id_server_error(self, mock_remove):
         mock_remove.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterDeleteError, self.client._remove_system_by_id, 'foo')
+        self.assertRaises(DeleteError, self.client._remove_system_by_id, 'foo')
 
     @patch('brewtils.rest.client.RestClient.delete_system')
     def test_remove_system_by_id_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client._remove_system_by_id, 'foo')
+        self.assertRaises(RestConnectionError, self.client._remove_system_by_id, 'foo')
 
     def test_remove_system_by_id_none(self):
-        self.assertRaises(BrewmasterDeleteError, self.client._remove_system_by_id, None)
+        self.assertRaises(DeleteError, self.client._remove_system_by_id, None)
 
     # Initialize instance
     @patch('brewtils.rest.client.RestClient.patch_instance')
@@ -290,7 +289,7 @@ class EasyClientTest(unittest.TestCase):
     def test_initialize_instance_client_error(self, request_mock):
         request_mock.return_value = self.fake_client_error_response
 
-        self.assertRaises(BrewmasterValidationError, self.client.initialize_instance, 'id')
+        self.assertRaises(ValidationError, self.client.initialize_instance, 'id')
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with('id', ANY)
 
@@ -298,14 +297,14 @@ class EasyClientTest(unittest.TestCase):
     def test_initialize_instance_server_error(self, request_mock):
         request_mock.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterSaveError, self.client.initialize_instance, 'id')
+        self.assertRaises(SaveError, self.client.initialize_instance, 'id')
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_initialize_instance_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.initialize_instance, 'id')
+        self.assertRaises(RestConnectionError, self.client.initialize_instance, 'id')
 
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_update_instance_status(self, request_mock):
@@ -319,7 +318,7 @@ class EasyClientTest(unittest.TestCase):
     def test_update_instance_status_client_error(self, request_mock):
         request_mock.return_value = self.fake_client_error_response
 
-        self.assertRaises(BrewmasterValidationError, self.client.update_instance_status, 'id',
+        self.assertRaises(ValidationError, self.client.update_instance_status, 'id',
                           'status')
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with('id', ANY)
@@ -328,14 +327,14 @@ class EasyClientTest(unittest.TestCase):
     def test_update_instance_status_server_error(self, request_mock):
         request_mock.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterSaveError, self.client.update_instance_status, 'id', 'status')
+        self.assertRaises(SaveError, self.client.update_instance_status, 'id', 'status')
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_update_instance_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.update_instance_status, 'id',
+        self.assertRaises(RestConnectionError, self.client.update_instance_status, 'id',
                           'status')
 
     # Instance heartbeat
@@ -350,20 +349,20 @@ class EasyClientTest(unittest.TestCase):
     def test_instance_heartbeat_client_error(self, request_mock):
         request_mock.return_value = self.fake_client_error_response
 
-        self.assertRaises(BrewmasterValidationError, self.client.instance_heartbeat, 'id')
+        self.assertRaises(ValidationError, self.client.instance_heartbeat, 'id')
         request_mock.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_instance_heartbeat_server_error(self, request_mock):
         request_mock.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterSaveError, self.client.instance_heartbeat, 'id')
+        self.assertRaises(SaveError, self.client.instance_heartbeat, 'id')
         request_mock.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_instance_heartbeat_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.instance_heartbeat, 'id')
+        self.assertRaises(RestConnectionError, self.client.instance_heartbeat, 'id')
 
     # Find requests
     @patch('brewtils.rest.easy_client.EasyClient._find_request_by_id')
@@ -381,7 +380,7 @@ class EasyClientTest(unittest.TestCase):
 
     def test_find_unique_request_multiple(self):
         self.client.find_requests = Mock(return_value=['request1', 'request2'])
-        self.assertRaises(BrewmasterFetchError, self.client.find_unique_request)
+        self.assertRaises(FetchError, self.client.find_unique_request)
 
     @patch('brewtils.rest.client.RestClient.get_requests')
     def test_find_requests(self, mock_get):
@@ -396,13 +395,13 @@ class EasyClientTest(unittest.TestCase):
     def test_find_requests_error(self, mock_get):
         mock_get.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterFetchError, self.client.find_requests, search='params')
+        self.assertRaises(FetchError, self.client.find_requests, search='params')
         mock_get.assert_called_with(search='params')
 
     @patch('brewtils.rest.client.RestClient.get_requests')
     def test_find_requests_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.find_requests, search='params')
+        self.assertRaises(RestConnectionError, self.client.find_requests, search='params')
 
     @patch('brewtils.rest.client.RestClient.get_request')
     def test_find_request_by_id(self, mock_get):
@@ -424,13 +423,13 @@ class EasyClientTest(unittest.TestCase):
     def test_find_request_by_id_server_error(self, mock_get):
         mock_get.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterFetchError, self.client._find_request_by_id, 'id')
+        self.assertRaises(FetchError, self.client._find_request_by_id, 'id')
         mock_get.assert_called_with('id')
 
     @patch('brewtils.rest.client.RestClient.get_request')
     def test_find_request_by_id_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client._find_request_by_id, 'id')
+        self.assertRaises(RestConnectionError, self.client._find_request_by_id, 'id')
 
     # Create request
     @patch('brewtils.rest.client.RestClient.post_requests')
@@ -446,17 +445,17 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.post_requests')
     def test_create_request_client_error(self, mock_post):
         mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client.create_request, 'request')
+        self.assertRaises(ValidationError, self.client.create_request, 'request')
 
     @patch('brewtils.rest.client.RestClient.post_requests')
     def test_create_request_server_error(self, mock_post):
         mock_post.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterSaveError, self.client.create_request, 'request')
+        self.assertRaises(SaveError, self.client.create_request, 'request')
 
     @patch('brewtils.rest.client.RestClient.post_requests')
     def test_create_request_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.create_request, 'request')
+        self.assertRaises(RestConnectionError, self.client.create_request, 'request')
 
     # Update request
     @patch('brewtils.rest.client.RestClient.patch_request')
@@ -476,20 +475,20 @@ class EasyClientTest(unittest.TestCase):
     def test_update_request_client_error(self, request_mock):
         request_mock.return_value = self.fake_client_error_response
 
-        self.assertRaises(BrewmasterValidationError, self.client.update_request, 'id')
+        self.assertRaises(ValidationError, self.client.update_request, 'id')
         request_mock.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_request')
     def test_update_request_server_error(self, request_mock):
         request_mock.return_value = self.fake_server_error_response
 
-        self.assertRaises(BrewmasterSaveError, self.client.update_request, 'id')
+        self.assertRaises(SaveError, self.client.update_request, 'id')
         request_mock.assert_called_once_with('id', ANY)
 
     @patch('brewtils.rest.client.RestClient.patch_request')
     def test_update_request_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.update_request, 'id')
+        self.assertRaises(RestConnectionError, self.client.update_request, 'id')
 
     # Publish Event
     @patch('brewtils.rest.client.RestClient.post_event')
@@ -500,13 +499,13 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.post_event')
     def test_publish_event_errors(self, mock_post):
         mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client.publish_event, 'system')
+        self.assertRaises(ValidationError, self.client.publish_event, 'system')
 
         mock_post.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterRestError, self.client.publish_event, 'system')
+        self.assertRaises(RestError, self.client.publish_event, 'system')
 
         mock_post.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.publish_event, 'system')
+        self.assertRaises(RestConnectionError, self.client.publish_event, 'system')
 
     # Queues
     @patch('brewtils.rest.client.RestClient.get_queues')
@@ -518,13 +517,13 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.get_queues')
     def test_get_queues_errors(self, mock_get):
         mock_get.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client.get_queues)
+        self.assertRaises(ValidationError, self.client.get_queues)
 
         mock_get.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterRestError, self.client.get_queues)
+        self.assertRaises(RestError, self.client.get_queues)
 
         mock_get.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.get_queues)
+        self.assertRaises(RestConnectionError, self.client.get_queues)
 
     @patch('brewtils.rest.client.RestClient.delete_queue')
     def test_clear_queue(self, mock_delete):
@@ -534,13 +533,13 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.delete_queue')
     def test_clear_queue_errors(self, mock_delete):
         mock_delete.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client.clear_queue, 'queue')
+        self.assertRaises(ValidationError, self.client.clear_queue, 'queue')
 
         mock_delete.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterRestError, self.client.clear_queue, 'queue')
+        self.assertRaises(RestError, self.client.clear_queue, 'queue')
 
         mock_delete.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.clear_queue, 'queue')
+        self.assertRaises(RestConnectionError, self.client.clear_queue, 'queue')
 
     @patch('brewtils.rest.client.RestClient.delete_queues')
     def test_clear_all_queues(self, mock_delete):
@@ -550,13 +549,13 @@ class EasyClientTest(unittest.TestCase):
     @patch('brewtils.rest.client.RestClient.delete_queues')
     def test_clear_all_queues_errors(self, mock_delete):
         mock_delete.return_value = self.fake_client_error_response
-        self.assertRaises(BrewmasterValidationError, self.client.clear_all_queues)
+        self.assertRaises(ValidationError, self.client.clear_all_queues)
 
         mock_delete.return_value = self.fake_server_error_response
-        self.assertRaises(BrewmasterRestError, self.client.clear_all_queues)
+        self.assertRaises(RestError, self.client.clear_all_queues)
 
         mock_delete.return_value = self.fake_connection_error_response
-        self.assertRaises(BrewmasterConnectionError, self.client.clear_all_queues)
+        self.assertRaises(RestConnectionError, self.client.clear_all_queues)
 
 
 class BrewmasterEasyClientTest(unittest.TestCase):

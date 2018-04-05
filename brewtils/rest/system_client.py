@@ -5,8 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
 
-from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, \
-    BrewmasterValidationError, BGRequestFailedError
+from brewtils.errors import ConnectionTimeoutError, FetchError, ValidationError, \
+    RequestFailedError
 from brewtils.models import Request
 from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
@@ -44,7 +44,7 @@ class SystemClient(object):
         The System definition is lazily loaded, so nothing happens until the first attempt to send
         a Request. At that point the SystemClient will query beer-garden to get a system definition
         that matches the system_name and version_constraint. If no matching system can be found a
-        BrewmasterFetchError will be raised. If always_update was set to True this will happen
+        FetchError will be raised. If always_update was set to True this will happen
         before making each request, not just the first.
 
     Making a Request:
@@ -56,7 +56,7 @@ class SystemClient(object):
         determined by periodically polling beer-garden to check the Request status. The time
         between polling requests starts at 0.5s and doubles each time the request has still not
         completed, up to max_delay. If a timeout was specified and the Request has not completed
-        within that time a ``BrewmasterTimeoutError`` will be raised.
+        within that time a ``ConnectionTimeoutError`` will be raised.
 
         It is also possible to create the SystemClient in non-blocking mode by specifying
         blocking=False. In this case the request creation will immediately return a Future and
@@ -201,7 +201,7 @@ class SystemClient(object):
             want you should check out create_bg_request.
 
         :param kwargs: All necessary request parameters, including beer-garden internal parameters
-        :raise BrewmasterValidationError: If the Request creation failed validation on the server
+        :raise ValidationError: If the Request creation failed validation on the server
         :return: If the SystemClient was created with blocking=True a completed request object,
             otherwise a Future that will return the Request when it completes.
         """
@@ -210,7 +210,7 @@ class SystemClient(object):
         # check for a new version and retry
         try:
             request = self._easy_client.create_request(self._construct_bg_request(**kwargs))
-        except BrewmasterValidationError:
+        except ValidationError:
             if self._system and self._version_constraint == 'latest':
                 old_version = self._system.version
 
@@ -238,7 +238,7 @@ class SystemClient(object):
         If this method completes successfully the SystemClient will be ready to create and send
         Requests.
 
-        :raise BrewmasterFetchError: If unable to find a matching System
+        :raise FetchError: If unable to find a matching System
         :return: None
         """
 
@@ -251,9 +251,8 @@ class SystemClient(object):
                                                                 version=self._version_constraint)
 
         if self._system is None:
-            raise BrewmasterFetchError("beer-garden has no system named '%s' with a version "
-                                       "matching '%s'" %
-                                       (self._system_name, self._version_constraint))
+            raise FetchError("Beer-garden has no system named '%s' with a version matching '%s'" %
+                             (self._system_name, self._version_constraint))
 
         self._commands = {command.name: command for command in self._system.commands}
         self._loaded = True
@@ -266,8 +265,8 @@ class SystemClient(object):
         while request.status not in Request.COMPLETED_STATUSES:
 
             if self._timeout and total_wait_time > self._timeout:
-                raise BrewmasterTimeoutError("Timeout reached waiting for request '%s' to "
-                                             "complete" % str(request))
+                raise ConnectionTimeoutError("Timeout waiting for request '%s' to complete" %
+                                             str(request))
 
             time.sleep(delay_time)
             total_wait_time += delay_time
@@ -276,7 +275,7 @@ class SystemClient(object):
             request = self._easy_client.find_unique_request(id=request.id)
 
         if raise_on_error and request.status == 'ERROR':
-            raise BGRequestFailedError(request)
+            raise RequestFailedError(request)
 
         return request
 
@@ -314,13 +313,13 @@ class SystemClient(object):
             metadata['system_display_name'] = system_display
 
         if command is None:
-            raise BrewmasterValidationError('Unable to send a request with no command')
+            raise ValidationError('Unable to send a request with no command')
         if system_name is None:
-            raise BrewmasterValidationError('Unable to send a request with no system name')
+            raise ValidationError('Unable to send a request with no system name')
         if system_version is None:
-            raise BrewmasterValidationError('Unable to send a request with no system version')
+            raise ValidationError('Unable to send a request with no system version')
         if instance_name is None:
-            raise BrewmasterValidationError('Unable to send a request with no instance name')
+            raise ValidationError('Unable to send a request with no instance name')
 
         return Request(command=command, system=system_name, system_version=system_version,
                        instance_name=instance_name, comment=comment, output_type=output_type,

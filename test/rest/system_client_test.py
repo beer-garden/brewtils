@@ -4,8 +4,8 @@ from concurrent.futures import wait
 
 from mock import call, patch, Mock, PropertyMock
 
-from brewtils.errors import BrewmasterTimeoutError, BrewmasterFetchError, \
-    BrewmasterValidationError, BGRequestFailedError
+from brewtils.errors import ConnectionTimeoutError, FetchError, \
+    ValidationError, RequestFailedError
 from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
 
 
@@ -66,11 +66,11 @@ class SystemClientTest(unittest.TestCase):
     def test_load_bg_system_no_system_with_version_constraint(self):
         self.client._version_constraint = '1.0.0'
         self.easy_client_mock.find_unique_system.return_value = None
-        self.assertRaises(BrewmasterFetchError, self.client.load_bg_system)
+        self.assertRaises(FetchError, self.client.load_bg_system)
 
     def test_load_bg_system_no_system_without_version_constraint(self):
         self.easy_client_mock.find_systems.return_value = []
-        self.assertRaises(BrewmasterFetchError, self.client.load_bg_system)
+        self.assertRaises(FetchError, self.client.load_bg_system)
 
     def test_load_bg_system_latest_version(self):
         fake_system_2 = Mock(version='2.0.0', commands=[self.fake_command_1, self.fake_command_2],
@@ -121,13 +121,13 @@ class SystemClientTest(unittest.TestCase):
 
     def test_create_request_missing_fields(self):
 
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+        self.assertRaises(ValidationError, self.client._construct_bg_request,
                           _system_name='', _system_version='', _instance_name='')
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+        self.assertRaises(ValidationError, self.client._construct_bg_request,
                           _command='', _system_version='', _instance_name='')
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+        self.assertRaises(ValidationError, self.client._construct_bg_request,
                           _command='', _system_name='', _instance_name='')
-        self.assertRaises(BrewmasterValidationError, self.client._construct_bg_request,
+        self.assertRaises(ValidationError, self.client._construct_bg_request,
                           _command='', _system_name='', _system_version='')
 
     @patch('brewtils.rest.system_client.time.sleep', Mock())
@@ -146,7 +146,7 @@ class SystemClientTest(unittest.TestCase):
         self.easy_client_mock.find_unique_request.return_value = self.mock_error
         self.easy_client_mock.create_request.return_value = self.mock_in_progress
 
-        with self.assertRaises(BGRequestFailedError) as ex:
+        with self.assertRaises(RequestFailedError) as ex:
             self.client.command_1(_raise_on_error=True)
 
         self.assertEqual(ex.exception.request.status, 'ERROR')
@@ -194,7 +194,7 @@ class SystemClientTest(unittest.TestCase):
 
         self.client._timeout = 1
 
-        self.assertRaises(BrewmasterTimeoutError, self.client.command_1)
+        self.assertRaises(ConnectionTimeoutError, self.client.command_1)
         self.easy_client_mock.find_unique_request.assert_called_with(id=self.mock_in_progress.id)
 
     @patch('brewtils.rest.system_client.time.sleep', Mock())
@@ -235,7 +235,7 @@ class SystemClientTest(unittest.TestCase):
 
         self.easy_client_mock.find_unique_request.assert_called_with(id=self.mock_in_progress.id)
         for future in futures:
-            self.assertRaises(BrewmasterTimeoutError, future.result)
+            self.assertRaises(ConnectionTimeoutError, future.result)
 
     def test_always_update(self):
         self.client._always_update = True
@@ -249,9 +249,9 @@ class SystemClientTest(unittest.TestCase):
         self.assertTrue(load_mock.called)
 
     def test_retry_send_no_different_version(self):
-        self.easy_client_mock.create_request.side_effect = BrewmasterValidationError
+        self.easy_client_mock.create_request.side_effect = ValidationError
 
-        self.assertRaises(BrewmasterValidationError, self.client.command_1)
+        self.assertRaises(ValidationError, self.client.command_1)
         self.assertEqual(1, self.easy_client_mock.create_request.call_count)
 
     def test_retry_send_different_version(self):
@@ -262,7 +262,7 @@ class SystemClientTest(unittest.TestCase):
         type(fake_system_2).name = PropertyMock(return_value='system')
         self.easy_client_mock.find_systems.return_value = [fake_system_2]
 
-        self.easy_client_mock.create_request.side_effect = [BrewmasterValidationError,
+        self.easy_client_mock.create_request.side_effect = [ValidationError,
                                                             self.mock_success]
 
         self.client.command_1()

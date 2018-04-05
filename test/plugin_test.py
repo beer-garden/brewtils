@@ -7,9 +7,9 @@ import sys
 from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
-from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
+from brewtils.errors import ValidationError, RequestProcessingError, \
     DiscardMessageException, RepublishRequestException, PluginValidationError, \
-    BrewmasterRestClientError
+    RestClientError
 from brewtils.models import Instance, Request, System, Command
 from brewtils.plugin import PluginBase
 
@@ -44,7 +44,7 @@ class PluginBaseTest(unittest.TestCase):
         os.environ = self.safe_copy
 
     def test_init_no_bg_host(self):
-        self.assertRaises(BrewmasterValidationError, PluginBase, self.client)
+        self.assertRaises(ValidationError, PluginBase, self.client)
 
     def test_init_no_instance_name_unique_name_check(self):
         self.assertEqual(self.plugin.unique_name, 'test_system[default]-1.0.0')
@@ -547,7 +547,7 @@ class PluginBaseTest(unittest.TestCase):
 
     def test_update_request_client_error(self):
         request_mock = Mock(is_ephemeral=False)
-        self.bm_client_mock.update_request.side_effect = BrewmasterRestClientError
+        self.bm_client_mock.update_request.side_effect = RestClientError
 
         self.assertRaises(DiscardMessageException, self.plugin._update_request, request_mock, {})
         self.assertTrue(self.bm_client_mock.update_request.called)
@@ -666,25 +666,25 @@ class PluginBaseTest(unittest.TestCase):
         self.assertEqual(4, self.plugin._setup_max_concurrent(False, 4))
 
     def test_setup_system_system_and_extra_params(self):
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+        self.assertRaises(ValidationError, self.plugin._setup_system, self.client,
                           'default', self.system,
                           'name', '', '', '', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+        self.assertRaises(ValidationError, self.plugin._setup_system, self.client,
                           'default', self.system,
                           '', 'description', '', '', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+        self.assertRaises(ValidationError, self.plugin._setup_system, self.client,
                           'default', self.system,
                           '', '', 'version', '', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+        self.assertRaises(ValidationError, self.plugin._setup_system, self.client,
                           'default', self.system,
                           '', '', '', 'icon name', {}, None, None)
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+        self.assertRaises(ValidationError, self.plugin._setup_system, self.client,
                           'default', self.system,
                           '', '', '', '', {}, "display_name", None)
 
     def test_setup_system_no_instances(self):
         system = System(name='test_system', version='1.0.0')
-        self.assertRaises(BrewmasterValidationError, self.plugin._setup_system, self.client,
+        self.assertRaises(ValidationError, self.plugin._setup_system, self.client,
                           'default', system,
                           '', '', '', '', {}, None, None)
 

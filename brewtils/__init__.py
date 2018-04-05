@@ -5,7 +5,7 @@ from yapconf.exceptions import YapconfItemNotFound
 
 from brewtils.decorators import command, parameter, system
 from brewtils.plugin import RemotePlugin
-from brewtils.errors import BrewmasterValidationError
+from brewtils.errors import ValidationError
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.system_client import SystemClient
 from .specification import SPECIFICATION
@@ -101,9 +101,9 @@ def load_config(cli_args=None, **kwargs):
         config = spec.load_config(*sources)
     except YapconfItemNotFound as ex:
         if ex.item.name == 'bg_host':
-            raise BrewmasterValidationError('Unable to create a plugin without a beer-garden host. '
-                                            'Please specify one on the command line (--bg-host), '
-                                            'in the environment (BG_HOST), or in kwargs (bg_host)')
+            raise ValidationError('Unable to create a plugin without a beer-garden host. '
+                                  'Please specify one on the command line (--bg-host), '
+                                  'in the environment (BG_HOST), or in kwargs (bg_host)')
         raise
 
     # Make sure the url_prefix is normal

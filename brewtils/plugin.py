@@ -8,12 +8,12 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 
 import six
-from requests import ConnectionError
+from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
-from brewtils.errors import BrewmasterValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException, BrewmasterConnectionError, \
-    PluginValidationError, BrewmasterRestClientError, parse_exception_as_json
+from brewtils.errors import ValidationError, RequestProcessingError, \
+    DiscardMessageException, RepublishRequestException, RestConnectionError, \
+    PluginValidationError, RestClientError, parse_exception_as_json
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient
@@ -475,13 +475,13 @@ class PluginBase(object):
     def _handle_request_update_failure(self, request, headers, exc):
 
         # If brew-view is down, we always want to try again (yes even if it is the 'final_attempt')
-        if isinstance(exc, (ConnectionError, BrewmasterConnectionError)):
+        if isinstance(exc, (RequestsConnectionError, RestConnectionError)):
             self.brew_view_down = True
             self.logger.error('Error updating request status: '
                               '{0} exception: {1}'.format(request.id, exc))
             raise RepublishRequestException(request, headers)
 
-        elif isinstance(exc, BrewmasterRestClientError):
+        elif isinstance(exc, RestClientError):
             message = ('Error updating request {0} and it is a '
                        'client error. Probable cause is that this '
                        'request is already updated. In which case, ignore '
@@ -559,7 +559,7 @@ class PluginBase(object):
             if not self.brew_view_down:
                 try:
                     self.bm_client.instance_heartbeat(self.instance.id)
-                except (ConnectionError, BrewmasterConnectionError):
+                except (RequestsConnectionError, RestConnectionError):
                     self.brew_view_down = True
                     raise
 
@@ -591,16 +591,14 @@ class PluginBase(object):
                       metadata, display_name, max_instances):
         if system:
             if name or description or version or icon_name or display_name or max_instances:
-                raise BrewmasterValidationError("Sorry, you can't specify a system as well as "
-                                                "system creation helper keywords (name, "
-                                                "description, version, max_instances, "
-                                                "display_name, and icon_name)")
+                raise ValidationError("Sorry, you can't specify a system as well as system "
+                                      "creation helper keywords (name, description, version, "
+                                      "max_instances, display_name, and icon_name)")
 
             if not system.instances:
-                raise BrewmasterValidationError("Explicit system definition requires explicit "
-                                                "instance definition (use "
-                                                "instances=[Instance(name='default')] "
-                                                "for default behavior)")
+                raise ValidationError("Explicit system definition requires explicit instance "
+                                      "definition (use instances=[Instance(name='default')] "
+                                      "for default behavior)")
 
             if not system.max_instances:
                 system.max_instances = len(system.instances)

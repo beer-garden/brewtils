@@ -3,8 +3,13 @@ import json
 from six import string_types
 
 
+class BrewtilsException(Exception):
+    """Base exception"""
+    pass
+
+
 # Models
-class ModelError(Exception):
+class ModelError(BrewtilsException):
     """Base exception for model errors"""
     pass
 
@@ -20,7 +25,7 @@ class RequestStatusTransitionError(ModelValidationError):
 
 
 # Plugins
-class PluginError(Exception):
+class PluginError(BrewtilsException):
     """Generic error class"""
     pass
 
@@ -36,24 +41,29 @@ class PluginParamError(PluginError):
 
 
 # Requests
-class AckAndContinueException(Exception):
+class RequestProcessException(BrewtilsException):
+    """Base for exceptions that occur during request processing"""
     pass
 
 
-class NoAckAndDieException(Exception):
+class AckAndContinueException(RequestProcessException):
     pass
 
 
-class AckAndDieException(Exception):
+class NoAckAndDieException(RequestProcessException):
     pass
 
 
-class DiscardMessageException(Exception):
+class AckAndDieException(RequestProcessException):
+    pass
+
+
+class DiscardMessageException(RequestProcessException):
     """Raising an instance will result in a message not being requeued"""
     pass
 
 
-class RepublishRequestException(Exception):
+class RepublishRequestException(RequestProcessException):
     """Republish to the end of the message queue
 
     :param request: The Request to republish
@@ -70,8 +80,13 @@ class RequestProcessingError(AckAndContinueException):
     pass
 
 
+class RequestPublishException(BrewtilsException):
+    """Error while publishing request"""
+    pass
+
+
 # Rest / Client errors
-class RestError(Exception):
+class RestError(BrewtilsException):
     """Base exception for REST errors"""
     pass
 

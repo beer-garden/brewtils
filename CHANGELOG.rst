@@ -1,13 +1,31 @@
 Brewtils Changelog
 ==================
 
+2.3.4
+-----
+Date: 4/5/18
+
+New Features
+^^^^^^^^^^^^
+- Python 3.4 is now supported (#43)
+- Now using Yapconf_ for configuration parsing (#34)
+- Parameter types can now be specified as native Python types (#29)
+- Added flag to raise an exception if a request created with ``SystemClient`` completes with an 'ERROR' status (#28)
+
+Other Changes
+^^^^^^^^^^^^^
+- All exceptions now inherit from ``BrewtilsException`` (#45)
+- Removed references to ``Brewmaster`` exception classes (#44)
+- Requests with JSON ``command_type`` are smarter about formatting exceptions (#27)
+- Decorators, ``RemotePlugin``, and ``SystemClient`` can now be imported directly from the ``brewtils`` package
+
 2.3.3
 -----
 Date: 3/20/18
 
 Bug Fixes
 ^^^^^^^^^
-- Fixed issue (#39) to avoid possible infinite loops
+- Fixed bug where request updating could retry forever (#39)
 
 2.3.2
 -----
@@ -15,7 +33,7 @@ Date: 3/7/18
 
 Bug Fixes
 ^^^^^^^^^
-- Fixed issue with multi-instance remote plugins failing to initialize
+- Fixed issue with multi-instance remote plugins failing to initialize (#35)
 
 2.3.1
 -----
@@ -114,3 +132,4 @@ Other changes
 - Request processing now occurs inside of a ``ThreadPoolExecutor`` thread
 - Better serialization handling for epoch fields
 
+.. _Yapconf: https://github.com/loganasherjones/yapconf

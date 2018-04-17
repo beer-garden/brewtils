@@ -294,6 +294,11 @@ class PluginBase(object):
             raise RequestProcessingError('Unable to process message - currently shutting down')
 
         try:
+            # Pika gives us bytes but we want a string to be ok too
+            try:
+                message = message.decode()
+            except AttributeError:
+                pass
             request = self.parser.parse_request(message, from_string=True)
         except Exception as ex:
             self.logger.exception("Unable to parse message body: {0}. Exception: {1}"

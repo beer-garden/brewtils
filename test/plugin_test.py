@@ -365,6 +365,13 @@ class PluginBaseTest(unittest.TestCase):
         self.parser_mock.parse_request.return_value = request
         self.assertEqual(request, self.plugin._pre_process(Mock()))
 
+    def test_pre_process_string(self):
+        message = Mock(decode=Mock(side_effect=AttributeError))
+        request = Request(id='id', system='test_system', system_version='1.0.0',
+                          command_type='ACTION')
+        self.parser_mock.parse_request.return_value = request
+        self.assertEqual(request, self.plugin._pre_process(message))
+
     def test_pre_process_request_no_command_type(self):
         request = Request(id='id', system='test_system', system_version='1.0.0')
         self.parser_mock.parse_request.return_value = request

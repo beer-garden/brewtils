@@ -29,6 +29,7 @@ setup(
         'marshmallow',
         'pika',
         'requests',
+        'simplejson',
         'six',
         'wrapt',
         'yapconf>=0.2.1',

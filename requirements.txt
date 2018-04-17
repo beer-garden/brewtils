@@ -43,6 +43,7 @@ pytz==2018.3
 pyyaml==3.12              # via watchdog
 requests-toolbelt==0.8.0  # via twine
 requests==2.18.4
+simplejson==3.13.2
 six==1.11.0
 snowballstemmer==1.2.1    # via sphinx
 sphinx-rtd-theme==0.2.4

@@ -1,4 +1,5 @@
 import logging
+import six
 import warnings
 
 from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
@@ -145,6 +146,9 @@ class SchemaParser(object):
 
     @classmethod
     def _do_parse(cls, data, schema, from_string=False):
+        if from_string and not isinstance(data, six.string_types):
+            raise TypeError("When from_string=True data must be a string-type")
+
         schema.context['models'] = cls._models
         return schema.loads(data).data if from_string else schema.load(data).data
 

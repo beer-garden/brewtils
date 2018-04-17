@@ -42,6 +42,18 @@ class RequestConsumerTest(unittest.TestCase):
 
         props = Mock(headers='headers')
         self.consumer.on_message(Mock(), Mock(delivery_tag='tag'), props, fake_message)
+        self.callback.assert_called_with(fake_message.decode(), 'headers')
+
+        self.callback_future.set_result(None)
+        self.assertTrue(callback_complete_mock.called)
+
+    @patch('brewtils.request_consumer.RequestConsumer.on_message_callback_complete')
+    def test_on_message_string(self, callback_complete_mock):
+        fake_message = Mock()
+        fake_message.decode.side_effect = AttributeError
+
+        props = Mock(headers='headers')
+        self.consumer.on_message(Mock(), Mock(delivery_tag='tag'), props, fake_message)
         self.callback.assert_called_with(fake_message, 'headers')
 
         self.callback_future.set_result(None)

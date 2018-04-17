@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.3.5
+-----
+Date: 4/17/18
+
+Bug Fixes
+^^^^^^^^^
+- Using `simplejson` package to fix JSON parsing issue in Python 3.4 & 3.5 (#48, #49)
+
 2.3.4
 -----
 Date: 4/5/18

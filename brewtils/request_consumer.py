@@ -101,6 +101,12 @@ class RequestConsumer(threading.Thread):
                           basic_deliver.delivery_tag, properties.app_id,
                           channel.channel_number, body)
 
+        # Pika gives us bytes, but we want a string to be ok too
+        try:
+            body = body.decode()
+        except AttributeError:
+            pass
+
         try:
             future = self._on_message_callback(body, properties.headers)
             future.add_done_callback(partial(self.on_message_callback_complete, basic_deliver))

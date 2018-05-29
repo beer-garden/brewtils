@@ -149,6 +149,7 @@ class RequestSchema(BaseSchema):
     created_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
     updated_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
     metadata = fields.Dict(allow_none=True)
+    requester = fields.String(allow_none=True)
 
 
 class StatusInfoSchema(BaseSchema):

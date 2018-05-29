@@ -136,7 +136,8 @@ class SchemaParserTest(unittest.TestCase):
             'created_at': 1451606400000,
             'updated_at': 1451606400000,
             'error_class': None,
-            'metadata': {'child': 'stuff'}
+            'metadata': {'child': 'stuff'},
+            'requester': 'user',
         }
         self.child_request =\
             Request(system='child_system', system_version='1.0.0', instance_name='default',
@@ -144,7 +145,7 @@ class SchemaParserTest(unittest.TestCase):
                     parameters={}, comment='bye!', output='nested output',
                     output_type='STRING', status='CREATED', command_type='ACTION',
                     created_at=datetime(2016, 1, 1), error_class=None, metadata={'child': 'stuff'},
-                    updated_at=datetime(2016, 1, 1))
+                    updated_at=datetime(2016, 1, 1), requester='user')
 
         self.parent_request_dict = {
             'system': 'parent_system',
@@ -162,7 +163,8 @@ class SchemaParserTest(unittest.TestCase):
             'created_at': 1451606400000,
             'updated_at': 1451606400000,
             'error_class': None,
-            'metadata': {'parent': 'stuff'}
+            'metadata': {'parent': 'stuff'},
+            'requester': 'user',
         }
         self.parent_request =\
             Request(system='parent_system', system_version='1.0.0', instance_name='default',
@@ -170,7 +172,7 @@ class SchemaParserTest(unittest.TestCase):
                     parameters={}, comment='bye!', output='nested output', output_type='STRING',
                     status='CREATED', command_type='ACTION', created_at=datetime(2016, 1, 1),
                     error_class=None, metadata={'parent': 'stuff'},
-                    updated_at=datetime(2016, 1, 1))
+                    updated_at=datetime(2016, 1, 1), requester='user')
 
         self.request_dict = {
             'system': 'system',
@@ -189,7 +191,8 @@ class SchemaParserTest(unittest.TestCase):
             'created_at': 1451606400000,
             'updated_at': 1451606400000,
             'error_class': 'ValueError',
-            'metadata': {'request': 'stuff'}
+            'metadata': {'request': 'stuff'},
+            'requester': 'user',
         }
         self.request =\
             Request(system='system', system_version='1.0.0', instance_name='default',
@@ -197,7 +200,8 @@ class SchemaParserTest(unittest.TestCase):
                     children=[self.child_request], parameters={'message': 'hey!'}, comment='hi!',
                     output='output', output_type='STRING', status='CREATED', command_type='ACTION',
                     created_at=datetime(2016, 1, 1), error_class='ValueError',
-                    metadata={'request': 'stuff'}, updated_at=datetime(2016, 1, 1))
+                    metadata={'request': 'stuff'}, updated_at=datetime(2016, 1, 1),
+                    requester='user')
 
         self.patch_dict = {'operations': [{'operation': 'replace', 'path': '/status',
                                            'value': 'RUNNING'}]}

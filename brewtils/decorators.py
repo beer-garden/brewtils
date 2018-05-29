@@ -2,13 +2,14 @@ import functools
 import inspect
 import json
 import os
+import types
 
 import requests
 import six
-import types
 import wrapt
 from lark.common import ParseError
 
+import brewtils.plugin
 from brewtils.choices import parse
 from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter, Choices
@@ -40,6 +41,7 @@ def system(cls):
             commands.append(method_command)
 
     cls._commands = commands
+    cls._current_request = property(lambda self: brewtils.plugin.request_context.current_request)
 
     return cls
 

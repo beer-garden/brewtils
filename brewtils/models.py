@@ -1,6 +1,7 @@
 from enum import Enum
 
 import six
+
 from brewtils.errors import RequestStatusTransitionError
 
 __all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
@@ -503,3 +504,12 @@ class Queue(object):
 
     def __repr__(self):
         return '<Queue: name=%s, size=%s>' % (self.name, self.size)
+
+
+class Principal(object):
+
+    def __init__(self, id=None, username=None, roles=None, preferences=None):
+        self.id = id
+        self.username = username
+        self.roles = roles
+        self.preferences = preferences

@@ -1,11 +1,14 @@
 import logging
-import six
 import warnings
 
-from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue
-from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, \
-    RequestSchema, PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema
+import six
+
+from brewtils.models import (
+    System, Instance, Command, Parameter, Request, PatchOperation, Choices,
+    LoggingConfig, Event, Queue, Principal)
+from brewtils.schemas import (
+    SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, RequestSchema,
+    PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema, PrincipalSchema)
 
 
 class SchemaParser(object):
@@ -22,6 +25,7 @@ class SchemaParser(object):
         'LoggingConfigSchema': LoggingConfig,
         'EventSchema': Event,
         'QueueSchema': Queue,
+        'PrincipalSchema': Principal,
     }
 
     logger = logging.getLogger(__name__)
@@ -145,6 +149,17 @@ class SchemaParser(object):
         return cls._do_parse(queue, QueueSchema(**kwargs), from_string=from_string)
 
     @classmethod
+    def parse_principal(cls, principal, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a queue model object
+
+        :param principal: The raw input
+        :param from_string: True if 'event' is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Principal object
+        """
+        return cls._do_parse(principal, PrincipalSchema(**kwargs), from_string=from_string)
+
+    @classmethod
     def _do_parse(cls, data, schema, from_string=False):
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
@@ -258,6 +273,17 @@ class SchemaParser(object):
         :return: Serialized representation of queue
         """
         return cls._do_serialize(QueueSchema(**kwargs), queue, to_string)
+
+    @classmethod
+    def serialize_principal(cls, principal, to_string=True, **kwargs):
+        """Convert a principal model into serialized form
+
+        :param principal: The principal object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation
+        """
+        return cls._do_serialize(PrincipalSchema(**kwargs), principal, to_string)
 
     @staticmethod
     def _do_serialize(schema, data, to_string):

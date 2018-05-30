@@ -202,3 +202,11 @@ class QueueSchema(BaseSchema):
     system_id = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
     size = fields.Integer(allow_none=True)
+
+
+class PrincipalSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    username = fields.Str(allow_none=True)
+    roles = fields.List(fields.Str())
+    preferences = fields.Dict(allow_none=True)

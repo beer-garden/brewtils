@@ -7,7 +7,7 @@ from marshmallow.utils import UTC
 
 __all__ = ['SystemSchema', 'InstanceSchema', 'CommandSchema', 'ParameterSchema',
            'RequestSchema', 'PatchSchema', 'LoggingConfigSchema', 'EventSchema',
-           'QueueSchema']
+           'QueueSchema', 'PrincipalSchema', 'RoleSchema']
 
 
 class DateTime(fields.DateTime):
@@ -208,5 +208,11 @@ class PrincipalSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
-    roles = fields.List(fields.Str())
+    roles = fields.Nested('RoleSchema', many=True, allow_none=True)
     preferences = fields.Dict(allow_none=True)
+
+
+class RoleSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)

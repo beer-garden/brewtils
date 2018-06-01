@@ -5,7 +5,8 @@ import six
 from brewtils.errors import RequestStatusTransitionError
 
 __all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
-           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue']
+           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue',
+           'Principal', 'Role']
 
 
 class Events(Enum):
@@ -513,3 +514,10 @@ class Principal(object):
         self.username = username
         self.roles = roles
         self.preferences = preferences
+
+
+class Role(object):
+
+    def __init__(self, id=None, name=None):
+        self.id = id
+        self.name = name

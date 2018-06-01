@@ -5,6 +5,10 @@ import simplejson
 from marshmallow import Schema, post_dump, post_load, pre_load, fields
 from marshmallow.utils import UTC
 
+__all__ = ['SystemSchema', 'InstanceSchema', 'CommandSchema', 'ParameterSchema',
+           'RequestSchema', 'PatchSchema', 'LoggingConfigSchema', 'EventSchema',
+           'QueueSchema']
+
 
 class DateTime(fields.DateTime):
     """Class that adds methods for (de)serializing DateTime fields as an epoch"""

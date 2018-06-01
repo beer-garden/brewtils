@@ -3,6 +3,9 @@ from enum import Enum
 import six
 from brewtils.errors import RequestStatusTransitionError
 
+__all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
+           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue']
+
 
 class Events(Enum):
     BREWVIEW_STARTED = 1

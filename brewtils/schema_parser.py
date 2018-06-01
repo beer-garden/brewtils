@@ -2,10 +2,8 @@ import logging
 import six
 import warnings
 
-from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue
-from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, \
-    RequestSchema, PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema
+from brewtils.models import *
+from brewtils.schemas import *
 
 
 class SchemaParser(object):
@@ -21,7 +19,7 @@ class SchemaParser(object):
         'ChoicesSchema': Choices,
         'LoggingConfigSchema': LoggingConfig,
         'EventSchema': Event,
-        'QueueSchema': Queue
+        'QueueSchema': Queue,
     }
 
     logger = logging.getLogger(__name__)
@@ -32,7 +30,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to a system model object
 
         :param system: The raw input
-        :param from_string: True if 'system' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A System object
         """
@@ -43,7 +41,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to an instance model object
 
         :param instance: The raw input
-        :param from_string: True if 'instance' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Instance object
         """
@@ -54,7 +52,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to a command model object
 
         :param command: The raw input
-        :param from_string: True if 'command' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Command object
         """
@@ -65,7 +63,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to a parameter model object
 
         :param parameter: The raw input
-        :param from_string: True if 'parameter' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Parameter object
         """
@@ -76,7 +74,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to a request model object
 
         :param request: The raw input
-        :param from_string: True if 'request' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Request object
         """
@@ -90,7 +88,7 @@ class SchemaParser(object):
         from this method.
 
         :param patch: The raw input
-        :param from_string: True if 'patch' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A PatchOperation object
         """
@@ -109,7 +107,7 @@ class SchemaParser(object):
         from this method.
 
         :param logging_config: The raw input
-        :param from_string: True if 'logging_config' is a JSON string, False if a dictionary
+        :param from_string: True if 'input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A LoggingConfig object
         """
@@ -127,7 +125,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to an event model object
 
         :param event: The raw input
-        :param from_string: True if 'event' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Event object
         """
@@ -138,7 +136,7 @@ class SchemaParser(object):
         """Convert raw JSON string or dictionary to a queue model object
 
         :param queue: The raw input
-        :param from_string: True if 'event' is a JSON string, False if a dictionary
+        :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Queue object
         """

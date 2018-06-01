@@ -2,8 +2,10 @@ import logging
 import six
 import warnings
 
-from brewtils.models import *
-from brewtils.schemas import *
+from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
+    Choices, LoggingConfig, Event, Queue
+from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, \
+    RequestSchema, PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema
 
 
 class SchemaParser(object):

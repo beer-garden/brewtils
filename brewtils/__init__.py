@@ -11,7 +11,9 @@ from brewtils.rest.system_client import SystemClient
 from .specification import SPECIFICATION
 from ._version import __version__ as generated_version
 
-__all__ = ['command', 'parameter', 'system', 'RemotePlugin', 'SystemClient']
+__all__ = ['command', 'parameter', 'system', 'RemotePlugin', 'SystemClient',
+           'get_easy_client', 'get_connection_info']
+
 __version__ = generated_version
 
 spec = YapconfSpec(SPECIFICATION, env_prefix='BG_')

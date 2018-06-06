@@ -212,7 +212,7 @@ class Request(object):
     def __init__(self, system=None, system_version=None, instance_name=None, command=None,
                  id=None, parent=None, children=None, parameters=None, comment=None, output=None,
                  output_type=None, status=None, command_type=None, created_at=None,
-                 error_class=None, metadata=None, updated_at=None):
+                 error_class=None, metadata=None, updated_at=None, has_parent=None):
 
         self.system = system
         self.system_version = system_version
@@ -231,6 +231,7 @@ class Request(object):
         self.updated_at = updated_at
         self.error_class = error_class
         self.metadata = metadata or {}
+        self.has_parent = has_parent
 
     def __str__(self):
         return self.command

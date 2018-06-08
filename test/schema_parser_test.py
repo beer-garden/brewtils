@@ -137,6 +137,7 @@ class SchemaParserTest(unittest.TestCase):
             'updated_at': 1451606400000,
             'error_class': None,
             'metadata': {'child': 'stuff'},
+            'has_parent': True,
             'requester': 'user',
         }
         self.child_request =\
@@ -145,7 +146,7 @@ class SchemaParserTest(unittest.TestCase):
                     parameters={}, comment='bye!', output='nested output',
                     output_type='STRING', status='CREATED', command_type='ACTION',
                     created_at=datetime(2016, 1, 1), error_class=None, metadata={'child': 'stuff'},
-                    updated_at=datetime(2016, 1, 1), requester='user')
+                    updated_at=datetime(2016, 1, 1), has_parent=True, requester='user')
 
         self.parent_request_dict = {
             'system': 'parent_system',
@@ -164,6 +165,7 @@ class SchemaParserTest(unittest.TestCase):
             'updated_at': 1451606400000,
             'error_class': None,
             'metadata': {'parent': 'stuff'},
+            'has_parent': False,
             'requester': 'user',
         }
         self.parent_request =\
@@ -172,7 +174,7 @@ class SchemaParserTest(unittest.TestCase):
                     parameters={}, comment='bye!', output='nested output', output_type='STRING',
                     status='CREATED', command_type='ACTION', created_at=datetime(2016, 1, 1),
                     error_class=None, metadata={'parent': 'stuff'},
-                    updated_at=datetime(2016, 1, 1), requester='user')
+                    updated_at=datetime(2016, 1, 1), has_parent=False, requester='user')
 
         self.request_dict = {
             'system': 'system',
@@ -192,6 +194,7 @@ class SchemaParserTest(unittest.TestCase):
             'updated_at': 1451606400000,
             'error_class': 'ValueError',
             'metadata': {'request': 'stuff'},
+            'has_parent': True,
             'requester': 'user',
         }
         self.request =\
@@ -201,7 +204,7 @@ class SchemaParserTest(unittest.TestCase):
                     output='output', output_type='STRING', status='CREATED', command_type='ACTION',
                     created_at=datetime(2016, 1, 1), error_class='ValueError',
                     metadata={'request': 'stuff'}, updated_at=datetime(2016, 1, 1),
-                    requester='user')
+                    has_parent=True, requester='user')
 
         self.patch_dict = {'operations': [{'operation': 'replace', 'path': '/status',
                                            'value': 'RUNNING'}]}

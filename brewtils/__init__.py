@@ -11,7 +11,9 @@ from brewtils.rest.system_client import SystemClient
 from .specification import SPECIFICATION
 from ._version import __version__ as generated_version
 
-__all__ = ['command', 'parameter', 'system', 'RemotePlugin', 'SystemClient']
+__all__ = ['command', 'parameter', 'system', 'RemotePlugin', 'SystemClient',
+           'get_easy_client', 'get_connection_info']
+
 __version__ = generated_version
 
 spec = YapconfSpec(SPECIFICATION, env_prefix='BG_')
@@ -37,8 +39,8 @@ def get_easy_client(**kwargs):
     return EasyClient(logger=logger, parser=parser, **get_bg_connection_parameters(**kwargs))
 
 
-def get_bg_connection_parameters(cli_args=None, **kwargs):
-    """Convienence wrapper around ``load_config`` that returns only connection parameters
+def get_connection_info(cli_args=None, **kwargs):
+    """Convenience wrapper around ``load_config`` that returns only connection parameters
 
     Args:
         cli_args (list, optional): List of command line arguments for configuration loading
@@ -87,7 +89,7 @@ def load_config(cli_args=None, **kwargs):
 
         sources.append(('kwargs', kwargs))
 
-    if(cli_args):
+    if cli_args:
         from argparse import ArgumentParser
 
         parser = ArgumentParser()
@@ -110,3 +112,7 @@ def load_config(cli_args=None, **kwargs):
     config.url_prefix = normalize_url_prefix(config.url_prefix)
 
     return config
+
+
+# Alias old names for compatibility
+get_bg_connection_parameters = get_connection_info

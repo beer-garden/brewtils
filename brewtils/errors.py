@@ -131,6 +131,11 @@ class DeleteError(RestServerError):
     pass
 
 
+class WaitExceededError(RestClientError):
+    """Error indicating a timeout occurred waiting for a request to complete"""
+    pass
+
+
 class ConflictError(RestClientError):
     """Error indicating a 409 was raised on the server"""
     pass

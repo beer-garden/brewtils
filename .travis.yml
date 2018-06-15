@@ -6,9 +6,9 @@ python:
   - 3.4
   - 2.7
 
-install: pip install -U tox-travis codecov
-script: tox
-after_success: codecov
+install: "make deps"
+script: "make lint coverage"
+after_success: "codecov"
 
 deploy:
   provider: pypi

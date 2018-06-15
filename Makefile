@@ -4,6 +4,7 @@ MODULE_NAME   = brewtils
 TEST_DIR      = test
 
 .PHONY: clean clean-build clean-docs clean-test clean-pyc docs help test
+
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -27,15 +28,23 @@ for line in sys.stdin:
 		print("%-20s %s" % (target, help))
 endef
 export PRINT_HELP_PYSCRIPT
-
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
+
+# Misc
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-docs clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+install: clean ## install the package to the active Python's site-packages
+	python setup.py install
 
 
+# Dependencies
+deps: ## install python dependencies
+	pip install -r requirements.txt
+
+
+# Cleaning
 clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
@@ -48,7 +57,7 @@ clean-docs: ## remove doc artifacts
 	rm -f docs/modules.rst
 	$(MAKE) -C docs clean
 
-clean-pyc: ## remove Python file artifacts
+clean-python: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
@@ -59,14 +68,24 @@ clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
 	rm -fr htmlcov/
 
+clean-all: clean-build clean-docs clean-python clean-test ## remove everything
+
+clean: clean-all ## alias of clean-all
+
+
+# Linting
 lint: ## check style with flake8
 	flake8 $(MODULE_NAME) $(TEST_DIR)
 
-test: ## run tests quickly with the default Python
+
+# Testing / Coverage
+test-python: ## run tests quickly with the default Python
 	pytest $(TEST_DIR)
 
-test-all: ## run tests on every Python version with tox
+test-tox: ## run tests on every Python version with tox
 	tox
+
+test: test-python ## alias of test-python
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source brewtils -m pytest
@@ -76,6 +95,8 @@ coverage: ## check code coverage quickly with the default Python
 coverage-view: coverage ## view coverage report in a browser
 	$(BROWSER) htmlcov/index.html
 
+
+# Documentation
 docs: ## generate Sphinx HTML documentation, including API docs
 	sphinx-apidoc -o docs/ brewtils
 	$(MAKE) -C docs html
@@ -83,18 +104,19 @@ docs: ## generate Sphinx HTML documentation, including API docs
 docs-view: docs ## view generated documenation in a browser
 	$(BROWSER) docs/_build/html/index.html
 
-servedocs: docs ## compile the docs watching for changes
+docs-serve: docs ## generate the docs and watch for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
-test-release: dist ## package and upload a release to the testpypi
-	twine upload --repository testpypi dist/*
 
-release: dist ## package and upload a release
-	twine upload dist/*
-
-dist: clean ## builds source and wheel package
+# Packaging
+package: clean ## builds source and wheel package
 	python setup.py sdist bdist_wheel
 	ls -l dist
 
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+
+# Publishing
+publish-package-test: package ## upload a package to the testpypi
+	twine upload --repository testpypi dist/*
+
+publish-package: package ## upload a package
+	twine upload dist/*

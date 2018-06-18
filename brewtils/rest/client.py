@@ -171,13 +171,24 @@ class RestClient(object):
         """
         return self.session.get(self.request_url + request_id)
 
-    def post_requests(self, payload):
+    def post_requests(self, payload, **kwargs):
         """Performs a POST on the Request URL
 
-        :param payload: New request definition
-        :return: Response to the request
+        Args:
+            payload: New request definition
+
+        Keyword Args:
+            wait: Wait for request to complete
+            max_wait: Maximum seconds to wait
+
+        Returns:
+            Response to the request
         """
-        return self.session.post(self.request_url, data=payload, headers=self.JSON_HEADERS)
+        params = {k: v for k, v in kwargs.items() if k in ['wait', 'max_wait']}
+
+        return self.session.post(self.request_url, data=payload,
+                                 headers=self.JSON_HEADERS,
+                                 params=params)
 
     def patch_request(self, request_id, payload):
         """Performs a PATCH on the Request URL

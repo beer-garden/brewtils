@@ -132,7 +132,8 @@ class RestClientTest(unittest.TestCase):
         self.client_version_1.post_requests(payload='payload')
         self.session_mock.post.assert_called_with(self.client_version_1.request_url,
                                                   data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS)
+                                                  headers=self.client_version_1.JSON_HEADERS,
+                                                  params={})
 
     def test_patch_request(self):
         self.client_version_1.patch_request('id', payload='payload')

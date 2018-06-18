@@ -205,11 +205,16 @@ class SystemClient(object):
         :return: If the SystemClient was created with blocking=True a completed request object,
             otherwise a Future that will return the Request when it completes.
         """
+        extra_params = {}
+        for k, v in kwargs.items():
+            if k in ['_wait', '_max_wait']:
+                extra_params[k[1:]] = v
 
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
         try:
-            request = self._easy_client.create_request(self._construct_bg_request(**kwargs))
+            request = self._construct_bg_request(**kwargs)
+            request = self._easy_client.create_request(request, **extra_params)
         except ValidationError:
             if self._system and self._version_constraint == 'latest':
                 old_version = self._system.version
@@ -306,6 +311,10 @@ class SystemClient(object):
         comment = kwargs.pop('_comment', None)
         output_type = kwargs.pop('_output_type', None)
         metadata = kwargs.pop('_metadata', {})
+
+        # Need to pop these so they aren't included as request params
+        kwargs.pop('_wait', None)
+        kwargs.pop('_max_wait', None)
 
         parent = self._get_parent_for_request()
 

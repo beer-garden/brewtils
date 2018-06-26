@@ -510,15 +510,18 @@ class Queue(object):
 
 class Principal(object):
 
-    def __init__(self, id=None, username=None, roles=None, preferences=None):
+    def __init__(self, id=None, username=None, roles=None, permissions=None,
+                 preferences=None):
         self.id = id
         self.username = username
         self.roles = roles
+        self.permissions = permissions
         self.preferences = preferences
 
 
 class Role(object):
 
-    def __init__(self, id=None, name=None):
+    def __init__(self, id=None, name=None, permissions=None):
         self.id = id
         self.name = name
+        self.permissions = permissions

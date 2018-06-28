@@ -1,6 +1,7 @@
 import unittest
 import warnings
 
+import requests.exceptions
 from mock import ANY, Mock, patch
 
 from brewtils.errors import FetchError, ValidationError, SaveError, \
@@ -26,6 +27,20 @@ class EasyClientTest(unittest.TestCase):
                                                   json=Mock(return_value='payload'))
         self.fake_conflict_error_response = Mock(ok=False, status_code=409,
                                                  json=Mock(return_value='payload'))
+
+    @patch('brewtils.rest.client.RestClient.get_config', Mock())
+    def test_can_connect_success(self):
+        self.assertTrue(self.client.can_connect())
+
+    @patch('brewtils.rest.client.RestClient.get_config')
+    def test_can_connect_failure(self, get_mock):
+        get_mock.side_effect = requests.exceptions.ConnectionError
+        self.assertFalse(self.client.can_connect())
+
+    @patch('brewtils.rest.client.RestClient.get_config')
+    def test_can_connect_error(self, get_mock):
+        get_mock.side_effect = requests.exceptions.SSLError
+        self.assertRaises(requests.exceptions.SSLError, self.client.can_connect)
 
     @patch('brewtils.rest.client.RestClient.get_version')
     def test_get_version(self, mock_get):

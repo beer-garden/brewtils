@@ -1,9 +1,11 @@
 import logging
 import warnings
 
-from brewtils.errors import FetchError, ValidationError, SaveError, \
-    DeleteError, RestConnectionError, NotFoundError, ConflictError, \
-    RestError
+import requests.exceptions
+
+from brewtils.errors import (
+    FetchError, ValidationError, SaveError, DeleteError, RestConnectionError,
+    NotFoundError, ConflictError, RestError)
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
@@ -39,6 +41,32 @@ class EasyClient(object):
         self.client = RestClient(bg_host=bg_host, bg_port=bg_port, ssl_enabled=ssl_enabled,
                                  api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
                                  url_prefix=url_prefix, ca_verify=ca_verify)
+
+    def can_connect(self):
+        """Determine if Beergarden is responding to requests.
+
+        return False) on a
+        # ConnectionError but raise on subclasses (e.g. SSLError)
+
+        Returns:
+            A bool indicating if the connection attempt was successful. Will
+            return False only if a ConnectionError is raised during the attempt.
+            Any other exception will be re-raised.
+
+        Raises:
+            requests.exceptions.RequestException:
+                The connection attempt resulted in an exception that indicates
+                something other than a basic connection error. For example,
+                an error with certificate verification.
+        """
+        try:
+            self.client.get_config()
+        except requests.exceptions.ConnectionError as ex:
+            if type(ex) == requests.exceptions.ConnectionError:
+                return False
+            raise
+
+        return True
 
     def get_version(self, **kwargs):
         response = self.client.get_version(**kwargs)

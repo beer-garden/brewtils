@@ -21,6 +21,7 @@ Example:
 
 import logging.config
 import copy
+import os
 import brewtils
 
 # Loggers to always use. These are things that generally,
@@ -67,7 +68,7 @@ DEFAULT_LOGGING_CONFIG = {
     "handlers": DEFAULT_HANDLERS,
     "loggers": DEFAULT_LOGGERS,
     "root": {
-        "level": "INFO",
+        "level": os.environ.get("BG_LOG_LEVEL", "INFO"),
         "handlers": ["default"]
     }
 }

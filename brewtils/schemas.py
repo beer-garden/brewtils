@@ -7,7 +7,7 @@ from marshmallow.utils import UTC
 
 __all__ = ['SystemSchema', 'InstanceSchema', 'CommandSchema', 'ParameterSchema',
            'RequestSchema', 'PatchSchema', 'LoggingConfigSchema', 'EventSchema',
-           'QueueSchema']
+           'QueueSchema', 'JobSchema']
 
 
 class DateTime(fields.DateTime):
@@ -202,3 +202,15 @@ class QueueSchema(BaseSchema):
     system_id = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
     size = fields.Integer(allow_none=True)
+
+
+class JobSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    trigger_type = fields.Str(allow_none=True)
+    trigger_args = fields.Dict(allow_none=True)
+    request_payload = fields.Dict(allow_none=True)
+    misfire_grace_time = fields.Int(allow_none=True)
+    coalesce = fields.Bool(allow_none=True)
+    max_instances = fields.Integer(allow_none=True)

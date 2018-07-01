@@ -4,7 +4,7 @@ from mock import Mock, PropertyMock
 
 from brewtils.errors import ModelValidationError, RequestStatusTransitionError
 from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
-    Choices, LoggingConfig, Event, Queue
+    Choices, LoggingConfig, Event, Queue, Job
 
 
 class CommandTest(unittest.TestCase):
@@ -522,3 +522,14 @@ class QueueTest(unittest.TestCase):
                       instance='default', system_id='1234',
                       display='foo.1-0-0.default', size=3)
         self.assertEqual('<Queue: name=echo.1-0-0.default, size=3>', repr(queue))
+
+
+class JobTest(unittest.TestCase):
+
+    def test_str(self):
+        job = Job(name='name', trigger_type='cron', trigger_args={}, id='id')
+        self.assertEqual('name: id', str(job))
+
+    def test_repr(self):
+        job = Job(name='name', id='id')
+        self.assertEqual('<Job: name=name, id=id>', repr(job))

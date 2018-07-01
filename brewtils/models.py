@@ -4,7 +4,8 @@ import six
 from brewtils.errors import RequestStatusTransitionError
 
 __all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
-           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue']
+           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue',
+           'Job']
 
 
 class Events(Enum):
@@ -503,3 +504,35 @@ class Queue(object):
 
     def __repr__(self):
         return '<Queue: name=%s, size=%s>' % (self.name, self.size)
+
+
+class Job(object):
+
+    TRIGGER_TYPES = {'interval', 'date', 'cron'}
+    schema = 'JobSchema'
+
+    def __init__(
+            self,
+            id=None,
+            name=None,
+            trigger_type=None,
+            trigger_args=None,
+            request_payload=None,
+            misfire_grace_time=None,
+            coalesce=None,
+            max_instances=None,
+    ):
+        self.id = id
+        self.name = name
+        self.trigger_type = trigger_type
+        self.trigger_args = trigger_args
+        self.request_payload = request_payload
+        self.misfire_grace_time = misfire_grace_time
+        self.coalesce = coalesce
+        self.max_instances = max_instances
+
+    def __str__(self):
+        return '%s: %s' % (self.name, self.id)
+
+    def __repr__(self):
+        return '<Job: name=%s, id=%s>' % (self.name, self.id)

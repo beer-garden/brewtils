@@ -17,11 +17,11 @@ from datetime import datetime
 from marshmallow.exceptions import MarshmallowError
 
 from brewtils.models import Command, Instance, Parameter, Request, System, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue
+    Choices, LoggingConfig, Event, Queue, Job
 from brewtils.schema_parser import SchemaParser, BrewmasterSchemaParser
 from test.utils.comparable import assert_parameter_equal, assert_command_equal, \
     assert_system_equal, assert_instance_equal, assert_request_equal, assert_patch_equal, \
-    assert_logging_config_equal, assert_event_equal, assert_queue_equal
+    assert_logging_config_equal, assert_event_equal, assert_queue_equal, assert_job_equal
 
 
 class SchemaParserTest(unittest.TestCase):
@@ -249,6 +249,18 @@ class SchemaParserTest(unittest.TestCase):
                            instance='default', system_id='1234', display='foo.1-0-0.default',
                            size=3)
 
+        self.job_dict = {
+            'name': 'job_name',
+            'id': 'job_id',
+            'trigger_type': 'cron',
+            'trigger_args': {'minutes': '*/5'},
+            'request_payload': {'foo': 'bar'},
+            'misfire_grace_time': 3,
+            'coalesce': True,
+            'max_instances': 2,
+        }
+        self.job = Job(**self.job_dict)
+
         # Finish setting up our circular system <-> command dependency
         self.command.system = self.system
         self.command_dict['system'] = {'id': self.system.id}
@@ -342,6 +354,9 @@ class SchemaParserTest(unittest.TestCase):
     def test_parse_queue(self):
         assert_queue_equal(self.queue, self.parser.parse_queue(self.queue_dict))
 
+    def test_parse_job(self):
+        assert_job_equal(self.job, self.parser.parse_job(self.job_dict))
+
     def test_serialize_system(self):
         self.assertEqual(self.system_dict, self.parser.serialize_system(self.system,
                                                                         to_string=False))
@@ -399,6 +414,10 @@ class SchemaParserTest(unittest.TestCase):
     def test_serialize_queue(self):
         self.assertEqual(self.queue_dict,
                          self.parser.serialize_queue(self.queue, to_string=False))
+
+    def test_serialize_job(self):
+        self.assertEqual(self.job_dict,
+                         self.parser.serialize_job(self.job, to_string=False))
 
 
 class BrewmasterSchemaParserTest(unittest.TestCase):

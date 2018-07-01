@@ -1,5 +1,5 @@
 from brewtils.models import System, Command, Instance, Parameter, Request, PatchOperation, \
-    LoggingConfig, Event, Queue
+    LoggingConfig, Event, Queue, Job
 
 
 def assert_system_equal(system1, system2, deep=False):
@@ -195,3 +195,15 @@ def assert_queue_equal(queue1, queue2, deep=False):
         assert hasattr(queue2, key), "queue2 does not have an attribute '%s'" % key
         assert getattr(queue1, key) == getattr(queue2, key), \
             "%s was not the same (%s, %s)" % (key, getattr(queue1, key), getattr(queue2, key))
+
+
+def assert_job_equal(job1, job2, deep=False):
+    assert isinstance(job1, Job), "job1 was not an Job"
+    assert isinstance(job2, Job), "job2 was not an Job"
+    assert type(job1) is type(job2), "job1 and job2 are not the same type"
+
+    for key in job1.__dict__.keys():
+        assert hasattr(job1, key), "job1 does not have an attribute '%s'" % key
+        assert hasattr(job2, key), "job2 does not have an attribute '%s'" % key
+        assert getattr(job1, key) == getattr(job2, key), \
+            "%s was not the same (%s, %s)" % (key, getattr(job1, key), getattr(job2, key))

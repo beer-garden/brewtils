@@ -221,6 +221,19 @@ def _parent_request(parent_request_dict, ts_dt):
 
 
 @pytest.fixture
+def request_template_dict():
+    return {
+        'system': 'system',
+        'system_version': '1.0.0',
+        'instance_name': 'default',
+        'command': 'speak',
+        'parameters': {'message': 'hey!'},
+        'comment': 'hi!',
+        'metadata': {'request': 'stuff'},
+    }
+
+
+@pytest.fixture
 def request_dict(parent_request_dict, child_request_dict, ts_epoch):
     """A request represented as a dictionary."""
     return {
@@ -364,17 +377,14 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def job_dict(ts_epoch, child_request_dict):
+def job_dict(ts_epoch, request_template_dict):
     """A job represented as a dictionary."""
-    request_template = copy.deepcopy(child_request_dict)
-    request_template['children'] = None
-    request_template['parent'] = None
     return {
         'name': 'job_name',
         'id': 'job_id',
         'trigger_type': 'cron',
         'trigger_args': {'minutes': '*/5'},
-        'request_template': request_template,
+        'request_template': request_template_dict,
         'misfire_grace_time': 3,
         'coalesce': True,
         'max_instances': 2,
@@ -383,11 +393,10 @@ def job_dict(ts_epoch, child_request_dict):
 
 
 @pytest.fixture
-def bg_job(job_dict, _child_request, ts_dt):
+def bg_job(job_dict, ts_dt):
     """A job as a model."""
     dict_copy = copy.deepcopy(job_dict)
     dict_copy['next_run_time'] = ts_dt
-    dict_copy['request_template'] = _child_request
     return Job(**dict_copy)
 
 

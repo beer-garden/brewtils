@@ -129,18 +129,24 @@ class SystemSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
 
 
-class RequestSchema(BaseSchema):
+class RequestTemplateSchema(BaseSchema):
+    """Used as a base class for request and a request template for jobs."""
 
-    id = fields.Str(allow_none=True)
     system = fields.Str(allow_none=True)
     system_version = fields.Str(allow_none=True)
     instance_name = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    parameters = fields.Dict(allow_none=True)
+    comment = fields.Str(allow_none=True)
+    metadata = fields.Dict(allow_none=True)
+
+
+class RequestSchema(RequestTemplateSchema):
+
+    id = fields.Str(allow_none=True)
     parent = fields.Nested('self', exclude=('children', ), allow_none=True)
     children = fields.Nested('self', exclude=('parent', 'children'), many=True,
                              default=None, allow_none=True)
-    parameters = fields.Dict(allow_none=True)
-    comment = fields.Str(allow_none=True)
     output = fields.Str(allow_none=True)
     output_type = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
@@ -148,7 +154,6 @@ class RequestSchema(BaseSchema):
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
     updated_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
-    metadata = fields.Dict(allow_none=True)
     has_parent = fields.Bool(allow_none=True)
 
 
@@ -210,7 +215,7 @@ class JobSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     trigger_type = fields.Str(allow_none=True)
     trigger_args = fields.Dict(allow_none=True)
-    request_template = fields.Nested('RequestSchema', many=False)
+    request_template = fields.Nested('RequestTemplateSchema')
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
     max_instances = fields.Integer(allow_none=True)

@@ -202,10 +202,7 @@ def assert_job_equal(job1, job2, deep=False):
     assert isinstance(job2, Job), "job2 was not an Job"
     assert type(job1) is type(job2), "job1 and job2 are not the same type"
 
-    deep_fields = ["request_template"]
     for key in job1.__dict__.keys():
-        if key in deep_fields:
-            continue
 
         assert hasattr(job1, key), "Job1 does not have an attribute '%s'" % key
         assert hasattr(job2, key), "Job2 does not have an attribute '%s'" % key
@@ -214,8 +211,3 @@ def assert_job_equal(job1, job2, deep=False):
           (key, getattr(job1, key), getattr(job2, key))
         )
         assert getattr(job1, key) == getattr(job1, key), message
-
-    if deep:
-        assert hasattr(job1, "request_template"), "Job1 does not have attribute 'request_payload'"
-        assert hasattr(job2, "request_template"), "Job2 does not have attribute 'request_payload'"
-        assert_request_equal(job1.request_template, job2.request_template)

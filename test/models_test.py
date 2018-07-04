@@ -4,7 +4,7 @@ from mock import Mock, PropertyMock
 
 from brewtils.errors import ModelValidationError, RequestStatusTransitionError
 from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
-    Choices, LoggingConfig, Event, Queue, Job
+    Choices, LoggingConfig, Event, Queue, Job, RequestTemplate
 
 
 class CommandTest(unittest.TestCase):
@@ -237,6 +237,17 @@ class ParameterTest(unittest.TestCase):
         p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
                        parameters=[nested_parameter1])
         self.assertFalse(p1.is_different(p1))
+
+
+class RequestTemplateTest(unittest.TestCase):
+
+    def test_str(self):
+        self.assertEqual('command', str(RequestTemplate(command='command')))
+
+    def test_repr(self):
+        request = RequestTemplate(command='command', system='system')
+        self.assertNotEqual(-1, repr(request).find('name'))
+        self.assertNotEqual(-1, repr(request).find('system'))
 
 
 class RequestTest(unittest.TestCase):

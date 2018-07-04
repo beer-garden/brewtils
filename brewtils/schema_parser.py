@@ -3,7 +3,7 @@ import six
 import warnings
 
 from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue, Job
+    Choices, LoggingConfig, Event, Queue, Job, RequestTemplate
 from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, \
     RequestSchema, PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema, JobSchema
 
@@ -16,6 +16,7 @@ class SchemaParser(object):
         'InstanceSchema': Instance,
         'CommandSchema': Command,
         'ParameterSchema': Parameter,
+        'RequestTemplateSchema': RequestTemplate,
         'RequestSchema': Request,
         'PatchSchema': PatchOperation,
         'ChoicesSchema': Choices,

@@ -5,7 +5,7 @@ from brewtils.errors import RequestStatusTransitionError
 
 __all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
            'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue',
-           'Job']
+           'Job', 'RequestTemplate']
 
 
 class Events(Enum):
@@ -201,7 +201,39 @@ class Parameter(object):
         return False
 
 
-class Request(object):
+class RequestTemplate(object):
+
+    schema = 'RequestTemplateSchema'
+
+    def __init__(
+            self,
+            system=None,
+            system_version=None,
+            instance_name=None,
+            command=None,
+            parameters=None,
+            comment=None,
+            metadata=None,
+    ):
+        self.system = system
+        self.system_version = system_version
+        self.instance_name = instance_name
+        self.command = command
+        self.parameters = parameters
+        self.comment = comment
+        self.metadata = metadata or {}
+
+    def __str__(self):
+        return self.command
+
+    def __repr__(self):
+        return (
+            '<RequestTemplate: command=%s, system=%s, system_version=%s, instance_name=%s>' %
+            (self.command, self.system, self.system_version, self.instance_name)
+        )
+
+
+class Request(RequestTemplate):
 
     schema = 'RequestSchema'
 
@@ -215,15 +247,12 @@ class Request(object):
                  output_type=None, status=None, command_type=None, created_at=None,
                  error_class=None, metadata=None, updated_at=None, has_parent=None):
 
-        self.system = system
-        self.system_version = system_version
-        self.instance_name = instance_name
-        self.command = command
+        super(Request, self).__init__(
+            system, system_version, instance_name, command, parameters, comment, metadata
+        )
         self.id = id
         self.parent = parent
         self.children = children
-        self.parameters = parameters
-        self.comment = comment
         self.output = output
         self.output_type = output_type
         self._status = status
@@ -231,11 +260,7 @@ class Request(object):
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class
-        self.metadata = metadata or {}
         self.has_parent = has_parent
-
-    def __str__(self):
-        return self.command
 
     def __repr__(self):
         return ('<Request: command=%s, status=%s, '

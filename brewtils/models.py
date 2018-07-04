@@ -517,19 +517,21 @@ class Job(object):
             name=None,
             trigger_type=None,
             trigger_args=None,
-            request_payload=None,
+            request_template=None,
             misfire_grace_time=None,
             coalesce=None,
             max_instances=None,
+            next_run_time=None,
     ):
         self.id = id
         self.name = name
         self.trigger_type = trigger_type
         self.trigger_args = trigger_args
-        self.request_payload = request_payload
+        self.request_template = request_template
         self.misfire_grace_time = misfire_grace_time
         self.coalesce = coalesce
         self.max_instances = max_instances
+        self.next_run_time = next_run_time
 
     def __str__(self):
         return '%s: %s' % (self.name, self.id)

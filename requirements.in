@@ -21,6 +21,7 @@ coverage
 flake8
 mock
 pytest
+pytest-lazy-fixture
 pytz
 tox
 twine

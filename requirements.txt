@@ -39,6 +39,7 @@ pyflakes==1.6.0           # via flake8
 pygments==2.2.0           # via sphinx
 pyparsing==2.2.0          # via packaging
 pytest==3.6.1
+pytest-lazy-fixture==0.4.0
 python-box==3.2.0         # via yapconf
 pytz==2018.4
 pyyaml==3.12              # via watchdog

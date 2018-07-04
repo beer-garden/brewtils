@@ -10,427 +10,257 @@ from __future__ import unicode_literals
 # that's the way it is :/
 
 import copy
-import unittest
 import warnings
-from datetime import datetime
 
+import pytest
 from marshmallow.exceptions import MarshmallowError
 
-from brewtils.models import Command, Instance, Parameter, Request, System, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue, Job
+from brewtils.models import System
 from brewtils.schema_parser import SchemaParser, BrewmasterSchemaParser
 from test.utils.comparable import assert_parameter_equal, assert_command_equal, \
     assert_system_equal, assert_instance_equal, assert_request_equal, assert_patch_equal, \
     assert_logging_config_equal, assert_event_equal, assert_queue_equal, assert_job_equal
 
 
-class SchemaParserTest(unittest.TestCase):
-
-    def setUp(self):
-        self.maxDiff = None
-        self.parser = SchemaParser()
-
-        nested_parameter_dict = {
-            'key': 'nested', 'type': None, 'multi': None, 'display_name': None, 'optional': None,
-            'default': None, 'description': None, 'choices': None, 'parameters': [],
-            'nullable': None, 'maximum': None, 'minimum': None, 'regex': None,
-            'form_input_type': None,
-        }
-
-        self.parameter_dict = {
-            'key': 'key',
-            'type': 'Any',
-            'multi': False,
-            'display_name': 'display',
-            'optional': True,
-            'default': 'default',
-            'description': 'desc',
-            'choices': {'display': 'select', 'strict': True, 'type': 'static',
-                        'value': ['choiceA', 'choiceB'],
-                        'details': {}},
-            'parameters': [nested_parameter_dict],
-            'nullable': False,
-            'maximum': 10,
-            'minimum': 1,
-            'regex': '.*',
-            'form_input_type': None
-        }
-        self.parameter = Parameter('key', type='Any', multi=False, display_name='display',
-                                   optional=True, default='default', description='desc',
-                                   nullable=False, regex='.*', parameters=[Parameter('nested')],
-                                   maximum=10, minimum=1,
-                                   choices=Choices(type='static',
-                                                   value=['choiceA', 'choiceB'],
-                                                   strict=True,
-                                                   display='select', details={}),
-                                   form_input_type=None)
-
-        # Need to set the system after we declare the system...
-        self.command_dict = {
-            'name': 'name',
-            'description': 'desc',
-            'id': '123f11af55a38e64799f1234',
-            'parameters': [self.parameter_dict],
-            'command_type': 'ACTION',
-            'output_type': 'STRING',
-            'schema': {},
-            'form': {},
-            'template': '<html></html>',
-            'icon_name': 'icon!',
-            'system': None  # Set at the bottom of __init__
-        }
-        self.command = Command('name', description='desc', id='123f11af55a38e64799f1234',
-                               parameters=[self.parameter],
-                               command_type='ACTION', output_type='STRING', schema={}, form={},
-                               template='<html></html>', icon_name='icon!', system=None)
-
-        self.instance_dict = {
-            'id': '584f11af55a38e64799fd1d4',
-            'name': 'default',
-            'description': 'desc',
-            'status': 'RUNNING',
-            'icon_name': 'icon!',
-            'queue_type': 'rabbitmq',
-            'queue_info': {'queue': 'abc[default]-0.0.1',
-                           'url': 'amqp://guest:guest@localhost:5672'},
-            'status_info': {'heartbeat': 1451606400000},
-            'metadata': {}
-        }
-        self.instance = Instance(id='584f11af55a38e64799fd1d4', name='default', description='desc',
-                                 status='RUNNING', icon_name='icon!',
-                                 status_info={'heartbeat': datetime(2016, 1, 1)},
-                                 metadata={}, queue_type='rabbitmq',
-                                 queue_info={'queue': 'abc[default]-0.0.1',
-                                             'url': 'amqp://guest:guest@localhost:5672'})
-
-        self.system_dict = {
-            'name': 'name',
-            'description': 'desc',
-            'version': '1.0.0',
-            'id': '584f11af55a38e64799f1234',
-            'max_instances': 1,
-            'instances': [self.instance_dict],
-            'commands': [self.command_dict],
-            'icon_name': 'fa-beer',
-            'display_name': 'non-offensive',
-            'metadata': {'some': 'stuff'}
-        }
-        self.system = System(name='name', description='desc', version='1.0.0',
-                             id='584f11af55a38e64799f1234', max_instances=1,
-                             instances=[self.instance], commands=[self.command],
-                             icon_name='fa-beer', display_name='non-offensive',
-                             metadata={'some': 'stuff'})
-
-        self.child_request_dict = {
-            'system': 'child_system',
-            'system_version': '1.0.0',
-            'instance_name': 'default',
-            'command': 'say',
-            'id': '58542eb571afd47ead90d25f',
-            'parameters': {},
-            'comment': 'bye!',
-            'output': 'nested output',
-            'output_type': 'STRING',
-            'status': 'CREATED',
-            'command_type': 'ACTION',
-            'created_at': 1451606400000,
-            'updated_at': 1451606400000,
-            'error_class': None,
-            'metadata': {'child': 'stuff'},
-            'has_parent': True,
-        }
-        self.child_request =\
-            Request(system='child_system', system_version='1.0.0', instance_name='default',
-                    command='say', id='58542eb571afd47ead90d25f', parent=None, children=None,
-                    parameters={}, comment='bye!', output='nested output',
-                    output_type='STRING', status='CREATED', command_type='ACTION',
-                    created_at=datetime(2016, 1, 1), error_class=None, metadata={'child': 'stuff'},
-                    updated_at=datetime(2016, 1, 1), has_parent=True)
-
-        self.parent_request_dict = {
-            'system': 'parent_system',
-            'system_version': '1.0.0',
-            'instance_name': 'default',
-            'command': 'say',
-            'id': '58542eb571afd47ead90d25f',
-            'parent': None,
-            'parameters': {},
-            'comment': 'bye!',
-            'output': 'nested output',
-            'output_type': 'STRING',
-            'status': 'CREATED',
-            'command_type': 'ACTION',
-            'created_at': 1451606400000,
-            'updated_at': 1451606400000,
-            'error_class': None,
-            'metadata': {'parent': 'stuff'},
-            'has_parent': False,
-        }
-        self.parent_request =\
-            Request(system='parent_system', system_version='1.0.0', instance_name='default',
-                    command='say', id='58542eb571afd47ead90d25f', parent=None, children=None,
-                    parameters={}, comment='bye!', output='nested output', output_type='STRING',
-                    status='CREATED', command_type='ACTION', created_at=datetime(2016, 1, 1),
-                    error_class=None, metadata={'parent': 'stuff'},
-                    updated_at=datetime(2016, 1, 1), has_parent=False)
-
-        self.request_dict = {
-            'system': 'system',
-            'system_version': '1.0.0',
-            'instance_name': 'default',
-            'command': 'speak',
-            'id': '58542eb571afd47ead90d25e',
-            'parent': self.parent_request_dict,
-            'children': [self.child_request_dict],
-            'parameters': {'message': 'hey!'},
-            'comment': 'hi!',
-            'output': 'output',
-            'output_type': 'STRING',
-            'status': 'CREATED',
-            'command_type': 'ACTION',
-            'created_at': 1451606400000,
-            'updated_at': 1451606400000,
-            'error_class': 'ValueError',
-            'metadata': {'request': 'stuff'},
-            'has_parent': True,
-        }
-        self.request =\
-            Request(system='system', system_version='1.0.0', instance_name='default',
-                    command='speak', id='58542eb571afd47ead90d25e', parent=self.parent_request,
-                    children=[self.child_request], parameters={'message': 'hey!'}, comment='hi!',
-                    output='output', output_type='STRING', status='CREATED', command_type='ACTION',
-                    created_at=datetime(2016, 1, 1), error_class='ValueError',
-                    metadata={'request': 'stuff'}, updated_at=datetime(2016, 1, 1),
-                    has_parent=True)
-
-        self.patch_dict = {'operations': [{'operation': 'replace', 'path': '/status',
-                                           'value': 'RUNNING'}]}
-        self.patch_many_dict = {'operations': [
-            {'operation': 'replace', 'path': '/status', 'value': 'RUNNING'},
-            {'operation': 'replace2', 'path': '/status2', 'value': 'RUNNING2'}
-        ]}
-        self.patch_no_envelope_dict = {'operation': 'replace', 'path': '/status',
-                                       'value': 'RUNNING'}
-        self.patch1 = PatchOperation(operation='replace', path='/status', value='RUNNING')
-        self.patch2 = PatchOperation(operation='replace2', path='/status2', value='RUNNING2')
-
-        self.logging_config_dict = {
-            "level": "INFO",
-            "handlers": {"stdout": {"foo": "bar"}},
-            "formatters": {"default": {"format": LoggingConfig.DEFAULT_FORMAT}}
-        }
-        self.logging_config = LoggingConfig(level="INFO",
-                                            handlers={"stdout": {"foo": "bar"}},
-                                            formatters={"default": {
-                                                "format": LoggingConfig.DEFAULT_FORMAT}
-                                            })
-
-        self.event_dict = {
-            'name': 'REQUEST_CREATED',
-            'error': False,
-            'payload': {'id': '58542eb571afd47ead90d25e'},
-            'metadata': {'extra': 'info'},
-            'timestamp': 1451606400000
-        }
-        self.event = Event(name='REQUEST_CREATED', error=False,
-                           payload={'id': '58542eb571afd47ead90d25e'},
-                           metadata={'extra': 'info'}, timestamp=datetime(2016, 1, 1))
-
-        self.queue_dict = {
-            'name': 'echo.1-0-0.default',
-            'system': 'echo',
-            'version': '1.0.0',
-            'instance': 'default',
-            'system_id': '1234',
-            'display': 'foo.1-0-0.default',
-            'size': 3
-        }
-        self.queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
-                           instance='default', system_id='1234', display='foo.1-0-0.default',
-                           size=3)
-
-        self.job_dict = {
-            'name': 'job_name',
-            'id': 'job_id',
-            'trigger_type': 'cron',
-            'trigger_args': {'minutes': '*/5'},
-            'request_payload': {'foo': 'bar'},
-            'misfire_grace_time': 3,
-            'coalesce': True,
-            'max_instances': 2,
-        }
-        self.job = Job(**self.job_dict)
-
-        # Finish setting up our circular system <-> command dependency
-        self.command.system = self.system
-        self.command_dict['system'] = {'id': self.system.id}
-
-        # Finish setting up our circular request parent <-> dependencies
-        self.child_request.parent = self.request
-        self.parent_request.children = [self.request]
-
-    def test_parse_none(self):
-        self.assertRaises(TypeError, self.parser.parse_system, None, from_string=True)
-        self.assertRaises(TypeError, self.parser.parse_system, None, from_string=False)
-
-    def test_parse_empty(self):
-        self.parser.parse_system({}, from_string=False)
-        self.parser.parse_system('{}', from_string=True)
-
-    def test_parse_error(self):
-        self.assertRaises(ValueError, self.parser.parse_system, '', from_string=True)
-        self.assertRaises(ValueError, self.parser.parse_system, 'bad bad bad', from_string=True)
-
-    def test_parse_bad_input_type(self):
-        self.assertRaises(TypeError, self.parser.parse_system, ['list', 'is', 'bad'],
-                          from_string=True)
-        self.assertRaises(TypeError, self.parser.parse_system, {'bad': 'bad bad'},
-                          from_string=True)
-
-    def test_parse_fail_validation(self):
-        self.system_dict['name'] = None
-        self.assertRaises(MarshmallowError, self.parser.parse_system, self.system_dict)
-        self.assertRaises(MarshmallowError, self.parser.parse_system, 'bad bad bad',
-                          from_string=False)
-
-    def test_parse_non_strict_failure(self):
-        self.system_dict['name'] = None
-        self.parser.parse_system(self.system_dict, from_string=False, strict=False)
-
-    def test_no_modify_arguments(self):
-        system_copy = copy.deepcopy(self.system_dict)
-        self.parser.parse_system(self.system_dict)
-        self.assertEqual(system_copy, self.system_dict)
-
-    def test_parse_system(self):
-        assert_system_equal(self.system, self.parser.parse_system(self.system_dict), True)
-
-    def test_parse_instance(self):
-        assert_instance_equal(self.instance, self.parser.parse_instance(self.instance_dict), True)
-
-    def test_parse_command(self):
-        assert_command_equal(self.command, self.parser.parse_command(self.command_dict), True)
-
-    def test_parse_parameter(self):
-        assert_parameter_equal(self.parameter,
-                               self.parser.parse_parameter(self.parameter_dict),
-                               True)
-
-    def test_parse_request(self):
-        assert_request_equal(self.request, self.parser.parse_request(self.request_dict), True)
-
-    def test_parse_patch(self):
-        assert_patch_equal(self.patch1, self.parser.parse_patch(self.patch_dict)[0], True)
-
-    def test_parse_patch_ignore_many(self):
-        assert_patch_equal(self.patch1, self.parser.parse_patch(self.patch_dict,
-                                                                many=False)[0],
-                           True)
-
-    def test_parse_patch_no_envelope(self):
-        assert_patch_equal(self.parser.parse_patch(self.patch_no_envelope_dict)[0], self.patch1)
-
-    def test_parse_many_patch_no_envelope(self):
-        assert_patch_equal(self.parser.parse_patch([self.patch_no_envelope_dict])[0], self.patch1)
-
-    def test_parse_patch_many(self):
-        patches = sorted(self.parser.parse_patch(self.patch_many_dict, many=True),
-                         key=lambda x: x.operation)
-        for index, patch in enumerate([self.patch1, self.patch2]):
-            assert_patch_equal(patch, patches[index])
-
-    def test_parse_logging_config(self):
-        assert_logging_config_equal(self.logging_config,
-                                    self.parser.parse_logging_config(self.logging_config_dict))
-
-    def test_parse_logging_config_ignore_many(self):
-        assert_logging_config_equal(self.logging_config,
-                                    self.parser.parse_logging_config(self.logging_config_dict,
-                                                                     many=True))
-
-    def test_parse_event(self):
-        assert_event_equal(self.event, self.parser.parse_event(self.event_dict))
-
-    def test_parse_queue(self):
-        assert_queue_equal(self.queue, self.parser.parse_queue(self.queue_dict))
-
-    def test_parse_job(self):
-        assert_job_equal(self.job, self.parser.parse_job(self.job_dict))
-
-    def test_serialize_system(self):
-        self.assertEqual(self.system_dict, self.parser.serialize_system(self.system,
-                                                                        to_string=False))
-
-    def test_serialize_system_no_commands(self):
-        self.system_dict.pop('commands')
-        self.assertEqual(self.system_dict, self.parser.serialize_system(self.system,
-                                                                        to_string=False,
-                                                                        include_commands=False))
-
-    def test_serialize_system_no_commands_other_excludes(self):
-        self.system_dict.pop('commands')
-        self.system_dict.pop('icon_name')
-        self.assertEqual(self.system_dict, self.parser.serialize_system(self.system,
-                                                                        to_string=False,
-                                                                        include_commands=False,
-                                                                        exclude=('icon_name',)))
-
-    def test_serialize_instance(self):
-        self.assertEqual(self.instance_dict, self.parser.serialize_instance(self.instance,
-                                                                            to_string=False))
-
-    def test_serialize_command(self):
-        self.assertEqual(self.command_dict, self.parser.serialize_command(self.command,
-                                                                          to_string=False))
-
-    def test_serialize_parameter(self):
-        self.assertEqual(self.parameter_dict, self.parser.serialize_parameter(self.parameter,
-                                                                              to_string=False))
-
-    def test_serialize_request(self):
-        self.assertEqual(self.request_dict, self.parser.serialize_request(self.request,
-                                                                          to_string=False))
-
-    def test_serialize_patch(self):
-        self.assertEqual(self.patch_dict, self.parser.serialize_patch(self.patch1,
-                                                                      to_string=False,
-                                                                      many=False))
-
-    def test_serialize_patch_many(self):
-        self.assertEqual(self.patch_many_dict,
-                         self.parser.serialize_patch([self.patch1, self.patch2],
-                                                     to_string=False,
-                                                     many=True))
-
-    def test_serialize_logging_config(self):
-        self.assertEqual(self.logging_config_dict,
-                         self.parser.serialize_logging_config(self.logging_config,
-                                                              to_string=False))
-
-    def test_serialize_event(self):
-        self.assertEqual(self.event_dict,
-                         self.parser.serialize_event(self.event, to_string=False))
-
-    def test_serialize_queue(self):
-        self.assertEqual(self.queue_dict,
-                         self.parser.serialize_queue(self.queue, to_string=False))
-
-    def test_serialize_job(self):
-        self.assertEqual(self.job_dict,
-                         self.parser.serialize_job(self.job, to_string=False))
+@pytest.mark.parametrize('data,kwargs,error', [
+    (None, {'from_string': True}, TypeError),
+    (None, {'from_string': False}, TypeError),
+    ('', {'from_string': True}, ValueError),
+    ('bad bad bad', {'from_string': True}, ValueError),
+    (['list', 'is', 'bad'], {'from_string': True}, TypeError),
+    ({'bad': 'bad bad'}, {'from_string': True}, TypeError),
+    ({'name': None}, {}, MarshmallowError),
+    ('bad bad bad', {}, MarshmallowError),
+])
+def test_parse_error(data, kwargs, error):
+    parser = SchemaParser()
+    with pytest.raises(error):
+        parser.parse_system(data, **kwargs)
 
 
-class BrewmasterSchemaParserTest(unittest.TestCase):
+def test_non_strict_failure(system_dict):
+    parser = SchemaParser()
+    system_dict['name'] = None
+    value = parser.parse_system(system_dict, from_string=False, strict=False)
+    assert value.get('name') is None
+    assert value['version'] == system_dict['version']
 
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
 
-            BrewmasterSchemaParser()
-            self.assertEqual(1, len(w))
+def test_no_modify(system_dict):
+    system_copy = copy.deepcopy(system_dict)
+    SchemaParser().parse_system(system_dict)
+    assert system_copy == system_dict
 
-            warning = w[0]
-            self.assertEqual(warning.category, DeprecationWarning)
-            self.assertIn("'BrewmasterSchemaParser'", str(warning))
-            self.assertIn("'SchemaParser'", str(warning))
-            self.assertIn('3.0', str(warning))
+
+@pytest.mark.parametrize('method,data,kwargs,assertion,assert_kwargs,expected', [
+    (
+        'parse_system',
+        {},
+        {'from_string': False},
+        assert_system_equal,
+        {},
+        System(),
+    ),
+    (
+        'parse_system',
+        '{}',
+        {'from_string': True},
+        assert_system_equal,
+        {},
+        System(),
+    ),
+    (
+        'parse_system',
+        pytest.lazy_fixture('system_dict'),
+        {},
+        assert_system_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_system'),
+    ),
+    (
+        'parse_instance',
+        pytest.lazy_fixture('instance_dict'),
+        {},
+        assert_instance_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_instance'),
+    ),
+    (
+        'parse_command',
+        pytest.lazy_fixture('command_dict'),
+        {},
+        assert_command_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_command'),
+    ),
+    (
+        'parse_parameter',
+        pytest.lazy_fixture('parameter_dict'),
+        {},
+        assert_parameter_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_parameter'),
+    ),
+    (
+        'parse_request',
+        pytest.lazy_fixture('request_dict'),
+        {},
+        assert_request_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_request'),
+    ),
+    (
+        'parse_logging_config',
+        pytest.lazy_fixture('logging_config_dict'),
+        {},
+        assert_logging_config_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_logging_config'),
+    ),
+    (
+        'parse_event',
+        pytest.lazy_fixture('event_dict'),
+        {},
+        assert_event_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_event'),
+    ),
+    (
+        'parse_queue',
+        pytest.lazy_fixture('queue_dict'),
+        {},
+        assert_queue_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_queue'),
+    ),
+    (
+        'parse_job',
+        pytest.lazy_fixture('job_dict'),
+        {},
+        assert_job_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_job'),
+    ),
+])
+def test_parse(method, data, kwargs, assertion, assert_kwargs, expected):
+    parser = SchemaParser()
+    actual = getattr(parser, method)(data, **kwargs)
+    assertion(expected, actual, **assert_kwargs)
+
+
+@pytest.mark.parametrize('data,kwargs', [
+    (pytest.lazy_fixture('patch_dict'), {}),
+    (pytest.lazy_fixture('patch_dict'), {'many': False}),
+    (pytest.lazy_fixture('patch_no_envelop_dict'), {}),
+])
+def test_parse_patch(bg_patch1, data, kwargs):
+    parser = SchemaParser()
+    actual = parser.parse_patch(data, **kwargs)[0]
+    assert_patch_equal(actual, bg_patch1)
+
+
+def test_parse_patch_many(patch_many_dict, bg_patch1, bg_patch2):
+    parser = SchemaParser()
+    patches = sorted(
+        parser.parse_patch(patch_many_dict, many=True),
+        key=lambda x: x.operation
+    )
+    for index, patch in enumerate([bg_patch1, bg_patch2]):
+        assert_patch_equal(patch, patches[index])
+
+
+@pytest.mark.parametrize('method,data,kwargs,expected', [
+    (
+        'serialize_system',
+        pytest.lazy_fixture('bg_system'),
+        {'to_string': False},
+        pytest.lazy_fixture('system_dict')
+    ),
+    (
+        'serialize_instance',
+        pytest.lazy_fixture('bg_instance'),
+        {'to_string': False},
+        pytest.lazy_fixture('instance_dict')
+    ),
+    (
+        'serialize_command',
+        pytest.lazy_fixture('bg_command'),
+        {'to_string': False},
+        pytest.lazy_fixture('command_dict')
+    ),
+    (
+        'serialize_parameter',
+        pytest.lazy_fixture('bg_parameter'),
+        {'to_string': False},
+        pytest.lazy_fixture('parameter_dict')
+    ),
+    (
+        'serialize_request',
+        pytest.lazy_fixture('bg_request'),
+        {'to_string': False},
+        pytest.lazy_fixture('request_dict')
+    ),
+    (
+        'serialize_patch',
+        pytest.lazy_fixture('bg_patch1'),
+        {'to_string': False},
+        pytest.lazy_fixture('patch_dict')
+    ),
+    (
+        'serialize_logging_config',
+        pytest.lazy_fixture('bg_logging_config'),
+        {'to_string': False},
+        pytest.lazy_fixture('logging_config_dict')
+    ),
+    (
+        'serialize_event',
+        pytest.lazy_fixture('bg_event'),
+        {'to_string': False},
+        pytest.lazy_fixture('event_dict')
+    ),
+    (
+        'serialize_queue',
+        pytest.lazy_fixture('bg_queue'),
+        {'to_string': False},
+        pytest.lazy_fixture('queue_dict')
+    ),
+    (
+        'serialize_job',
+        pytest.lazy_fixture('bg_job'),
+        {'to_string': False},
+        pytest.lazy_fixture('job_dict')
+    ),
+])
+def test_serialize(method, data, kwargs, expected):
+    parser = SchemaParser()
+    actual = getattr(parser, method)(data, **kwargs)
+    assert actual == expected
+
+
+@pytest.mark.parametrize('keys,excludes', [
+    (['commands'], (), ),
+    (['commands', 'icon_name'], ('icon_name', ), ),
+])
+def test_serialize_excludes(bg_system, system_dict, keys, excludes):
+    for key in keys:
+        system_dict.pop(key)
+
+    parser = SchemaParser()
+    actual = parser.serialize_system(
+        bg_system, to_string=False, include_commands=False, exclude=excludes
+    )
+    assert actual == system_dict
+
+
+def test_deprecation():
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+
+        BrewmasterSchemaParser()
+        assert len(w) == 1
+
+        warning = w[0]
+        assert warning.category == DeprecationWarning
+        assert "'BrewmasterSchemaParser'" in str(warning)
+        assert "'SchemaParser'" in str(warning)
+        assert '3.0' in str(warning)

@@ -218,4 +218,5 @@ class RoleSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
+    roles = fields.Nested('self', many=True, allow_none=True)
     permissions = fields.List(fields.Str(), allow_none=True)

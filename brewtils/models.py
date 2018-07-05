@@ -521,7 +521,8 @@ class Principal(object):
 
 class Role(object):
 
-    def __init__(self, id=None, name=None, permissions=None):
+    def __init__(self, id=None, name=None, roles=None, permissions=None):
         self.id = id
         self.name = name
+        self.roles = roles
         self.permissions = permissions

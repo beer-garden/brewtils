@@ -28,6 +28,7 @@ setup(
         'lark-parser',
         'marshmallow',
         'pika',
+        "pyjwt",
         'requests',
         'simplejson',
         'six',

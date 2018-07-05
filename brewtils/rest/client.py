@@ -1,3 +1,4 @@
+import json
 import logging
 import warnings
 
@@ -61,6 +62,7 @@ class RestClient(object):
         base_url = '%s://%s:%s%s' % (scheme, bg_host, bg_port, normalize_url_prefix(url_prefix))
         self.version_url = base_url + 'version'
         self.config_url = base_url + 'config'
+        self.login_url = base_url + 'login'
 
         api_version = api_version or self.LATEST_VERSION
         if api_version == 1:
@@ -73,6 +75,25 @@ class RestClient(object):
             self.event_url = base_url + 'api/vbeta/events/'
         else:
             raise ValueError("Invalid beer-garden API version: %s" % api_version)
+
+    def login(self, username, password):
+        """
+
+        Args:
+            username:
+            password:
+
+        Returns:
+            None
+        """
+        resp = self.session.post(self.login_url,
+                                 headers=self.JSON_HEADERS,
+                                 data=json.dumps({'username': username,
+                                                  'password': password})).json()
+
+        self.session.headers['Authorization'] = 'Bearer ' + resp['token']
+
+        return resp
 
     def get_version(self, **kwargs):
         """Perform a GET to the version URL

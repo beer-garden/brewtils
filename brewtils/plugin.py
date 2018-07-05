@@ -7,6 +7,7 @@ import threading
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 
+import jwt
 import six
 from requests import ConnectionError as RequestsConnectionError
 
@@ -14,11 +15,11 @@ import brewtils
 from brewtils.errors import ValidationError, RequestProcessingError, \
     DiscardMessageException, RepublishRequestException, RestConnectionError, \
     PluginValidationError, RestClientError, parse_exception_as_json
+from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
-from brewtils.log import DEFAULT_LOGGING_CONFIG
 
 request_context = threading.local()
 
@@ -311,6 +312,15 @@ class PluginBase(object):
 
     def _initialize(self):
         self.logger.debug("Initializing plugin %s", self.unique_name)
+
+        # Grab a token. FYI, things are going to fail without these permissions:
+        # bg-system-[create,read,update], bg-instance-update, bg-request-update
+        token = self.bm_client.client.login('logan', 'password')['token']
+
+        # Verify that we have necessary permissions
+        decoded = jwt.decode(token, verify=False)
+        if 'bg-system-update' not in decoded['permissions']:
+            raise Exception("Insufficient permissions")
 
         # TODO: We should use self.bm_client.upsert_system once it is supported
         existing_system = self.bm_client.find_unique_system(name=self.system.name,

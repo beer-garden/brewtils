@@ -2,6 +2,7 @@
 # Dependencies
 lark-parser
 marshmallow
+marshmallow-polyfield
 pika
 requests
 simplejson

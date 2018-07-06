@@ -3,9 +3,10 @@ import copy
 from datetime import datetime
 
 import pytest
+import pytz
 
 from brewtils.models import Parameter, Command, Instance, System, Request, PatchOperation, \
-    LoggingConfig, Event, Queue, Job
+    LoggingConfig, Event, Queue, Job, CronTrigger, RequestTemplate, IntervalTrigger, DateTrigger
 
 
 @pytest.fixture
@@ -18,6 +19,18 @@ def ts_epoch():
 def ts_dt():
     """Timestamp as a datetime."""
     return datetime(2016, 1, 1)
+
+
+@pytest.fixture
+def ts_dt_with_tz():
+    """Timezone-aware datetime (US/Eastern)."""
+    return datetime(2016, 1, 1, tzinfo=pytz.timezone('US/Eastern'))
+
+
+@pytest.fixture
+def ts_epoch_with_tz(ts_epoch):
+    """Corresponding time in (US/Eastern)"""
+    return 1451624160000
 
 
 @pytest.fixture
@@ -222,6 +235,7 @@ def _parent_request(parent_request_dict, ts_dt):
 
 @pytest.fixture
 def request_template_dict():
+    """Request template as a dictionary."""
     return {
         'system': 'system',
         'system_version': '1.0.0',
@@ -231,6 +245,12 @@ def request_template_dict():
         'comment': 'hi!',
         'metadata': {'request': 'stuff'},
     }
+
+
+@pytest.fixture
+def bg_request_template(request_template_dict):
+    """Request template as a bg model."""
+    return RequestTemplate(**request_template_dict)
 
 
 @pytest.fixture
@@ -377,13 +397,13 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def job_dict(ts_epoch, request_template_dict):
-    """A job represented as a dictionary."""
+def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
+    """A date job represented as a dictionary."""
     return {
         'name': 'job_name',
         'id': 'job_id',
-        'trigger_type': 'cron',
-        'trigger_args': {'minutes': '*/5'},
+        'trigger_type': 'date',
+        'trigger': date_trigger_dict,
         'request_template': request_template_dict,
         'misfire_grace_time': 3,
         'coalesce': True,
@@ -393,10 +413,50 @@ def job_dict(ts_epoch, request_template_dict):
 
 
 @pytest.fixture
-def bg_job(job_dict, ts_dt):
+def cron_job_dict(job_dict, cron_trigger_dict):
+    """A cron job represented as a dictionary."""
+    dict_copy = copy.deepcopy(job_dict)
+    dict_copy['trigger_type'] = 'cron'
+    dict_copy['trigger'] = cron_trigger_dict
+    return dict_copy
+
+
+@pytest.fixture
+def interval_job_dict(job_dict, interval_trigger_dict):
+    """An interval job represented as a dictionary."""
+    dict_copy = copy.deepcopy(job_dict)
+    dict_copy['trigger_type'] = 'interval'
+    dict_copy['trigger'] = interval_trigger_dict
+    return dict_copy
+
+
+@pytest.fixture
+def bg_job(job_dict, ts_dt, bg_request_template, bg_date_trigger):
     """A job as a model."""
     dict_copy = copy.deepcopy(job_dict)
     dict_copy['next_run_time'] = ts_dt
+    dict_copy['trigger'] = bg_date_trigger
+    dict_copy['request_template'] = bg_request_template
+    return Job(**dict_copy)
+
+
+@pytest.fixture
+def bg_cron_job(cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt):
+    """A beer garden cron job"""
+    dict_copy = copy.deepcopy(cron_job_dict)
+    dict_copy['next_run_time'] = ts_dt
+    dict_copy['trigger'] = bg_cron_trigger
+    dict_copy['request_template'] = bg_request_template
+    return Job(**dict_copy)
+
+
+@pytest.fixture
+def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger, ts_dt):
+    """A beer garden interval job"""
+    dict_copy = copy.deepcopy(interval_job_dict)
+    dict_copy['next_run_time'] = ts_dt
+    dict_copy['trigger'] = bg_interval_trigger
+    dict_copy['request_template'] = bg_request_template
     return Job(**dict_copy)
 
 
@@ -427,3 +487,73 @@ def parent_request(_parent_request, bg_request):
     """A parent request as a model."""
     _parent_request.children = [bg_request]
     return _parent_request
+
+
+@pytest.fixture
+def interval_trigger_dict(ts_epoch):
+    """An interval trigger as a dictionary."""
+    return {
+        'weeks': 1,
+        'days': 1,
+        'hours': 1,
+        'minutes': 1,
+        'seconds': 1,
+        'start_date': ts_epoch,
+        'end_date': ts_epoch,
+        'timezone': 'utc',
+        'jitter': 1,
+    }
+
+
+@pytest.fixture
+def bg_interval_trigger(interval_trigger_dict, ts_dt):
+    """An interval trigger as a model."""
+    dict_copy = copy.deepcopy(interval_trigger_dict)
+    dict_copy['start_date'] = ts_dt
+    dict_copy['end_date'] = ts_dt
+    return IntervalTrigger(**dict_copy)
+
+
+@pytest.fixture
+def cron_trigger_dict(ts_epoch):
+    """A cron trigger as a dictionary."""
+    return {
+        'year': '2020',
+        'month': '*/1',
+        'day': '*/1',
+        'week': '*/1',
+        'day_of_week': '*/1',
+        'hour': '*/1',
+        'minute': '*/1',
+        'second': '*/1',
+        'start_date': ts_epoch,
+        'end_date': ts_epoch,
+        'timezone': 'utc',
+        'jitter': 1,
+    }
+
+
+@pytest.fixture
+def bg_cron_trigger(cron_trigger_dict, ts_dt):
+    """A cron trigger as a model."""
+    dict_copy = copy.deepcopy(cron_trigger_dict)
+    dict_copy['start_date'] = ts_dt
+    dict_copy['end_date'] = ts_dt
+    return CronTrigger(**dict_copy)
+
+
+@pytest.fixture
+def date_trigger_dict(ts_epoch):
+    """A cron trigger as a dictionary."""
+    return {
+        'run_date': ts_epoch,
+        'timezone': 'utc',
+    }
+
+
+@pytest.fixture
+def bg_date_trigger(date_trigger_dict, ts_dt):
+    """A date trigger as a model."""
+    dict_copy = copy.deepcopy(date_trigger_dict)
+    dict_copy['run_date'] = ts_dt
+    return DateTrigger(**dict_copy)

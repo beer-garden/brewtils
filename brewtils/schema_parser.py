@@ -3,7 +3,8 @@ import six
 import warnings
 
 from brewtils.models import System, Instance, Command, Parameter, Request, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue, Job, RequestTemplate
+    Choices, LoggingConfig, Event, Queue, Job, RequestTemplate, DateTrigger, CronTrigger, \
+    IntervalTrigger
 from brewtils.schemas import SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, \
     RequestSchema, PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema, JobSchema
 
@@ -24,6 +25,9 @@ class SchemaParser(object):
         'EventSchema': Event,
         'QueueSchema': Queue,
         'JobSchema': Job,
+        'DateTriggerSchema': DateTrigger,
+        'IntervalTriggerSchema': IntervalTrigger,
+        'CronTriggerSchema': CronTrigger,
     }
 
     logger = logging.getLogger(__name__)

@@ -141,6 +141,22 @@ def test_no_modify(system_dict):
         {'deep': True},
         pytest.lazy_fixture('bg_job'),
     ),
+    (
+        'parse_job',
+        pytest.lazy_fixture('cron_job_dict'),
+        {},
+        assert_job_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_cron_job'),
+    ),
+    (
+        'parse_job',
+        pytest.lazy_fixture('interval_job_dict'),
+        {},
+        assert_job_equal,
+        {'deep': True},
+        pytest.lazy_fixture('bg_interval_job'),
+    ),
 ])
 def test_parse(method, data, kwargs, assertion, assert_kwargs, expected):
     parser = SchemaParser()
@@ -229,6 +245,18 @@ def test_parse_patch_many(patch_many_dict, bg_patch1, bg_patch2):
         pytest.lazy_fixture('bg_job'),
         {'to_string': False},
         pytest.lazy_fixture('job_dict')
+    ),
+    (
+        'serialize_job',
+        pytest.lazy_fixture('bg_cron_job'),
+        {'to_string': False},
+        pytest.lazy_fixture('cron_job_dict')
+    ),
+    (
+        'serialize_job',
+        pytest.lazy_fixture('bg_interval_job'),
+        {'to_string': False},
+        pytest.lazy_fixture('interval_job_dict')
     ),
 ])
 def test_serialize(method, data, kwargs, expected):

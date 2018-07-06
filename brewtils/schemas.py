@@ -4,6 +4,7 @@ import datetime
 import simplejson
 from marshmallow import Schema, post_dump, post_load, pre_load, fields
 from marshmallow.utils import UTC
+from marshmallow_polyfield import PolyField
 
 __all__ = ['SystemSchema', 'InstanceSchema', 'CommandSchema', 'ParameterSchema',
            'RequestSchema', 'PatchSchema', 'LoggingConfigSchema', 'EventSchema',
@@ -209,12 +210,76 @@ class QueueSchema(BaseSchema):
     size = fields.Integer(allow_none=True)
 
 
+class DateTriggerSchema(BaseSchema):
+
+    run_date = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    timezone = fields.Str(allow_none=True)
+
+
+class IntervalTriggerSchema(BaseSchema):
+
+    weeks = fields.Int(allow_none=True)
+    days = fields.Int(allow_none=True)
+    hours = fields.Int(allow_none=True)
+    minutes = fields.Int(allow_none=True)
+    seconds = fields.Int(allow_none=True)
+    start_date = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    end_date = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    timezone = fields.Str(allow_none=True)
+    jitter = fields.Int(allow_none=True)
+
+
+class CronTriggerSchema(BaseSchema):
+
+    year = fields.Str(allow_none=True)
+    month = fields.Str(allow_none=True)
+    day = fields.Str(allow_none=True)
+    week = fields.Str(allow_none=True)
+    day_of_week = fields.Str(allow_none=True)
+    hour = fields.Str(allow_none=True)
+    minute = fields.Str(allow_none=True)
+    second = fields.Str(allow_none=True)
+    start_date = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    end_date = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    timezone = fields.Str(allow_none=True)
+    jitter = fields.Int(allow_none=True)
+
+
+TRIGGER_TYPE_TO_SCHEMA = {
+    'interval': IntervalTriggerSchema,
+    'date': DateTriggerSchema,
+    'cron': CronTriggerSchema,
+}
+
+
+def serialize_trigger_selector(_, obj):
+    try:
+        return TRIGGER_TYPE_TO_SCHEMA[obj.trigger_type]()
+    except KeyError:
+        pass
+
+    raise TypeError('Could not detect %s trigger type schema' % obj.trigger_type)
+
+
+def deserialize_trigger_selector(_, data):
+    try:
+        return TRIGGER_TYPE_TO_SCHEMA[data['trigger_type']]()
+    except KeyError:
+        pass
+
+    raise TypeError('Could not detect %s trigger type schema' % data['trigger_type'])
+
+
 class JobSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     trigger_type = fields.Str(allow_none=True)
-    trigger_args = fields.Dict(allow_none=True)
+    trigger = PolyField(
+        allow_none=True,
+        serialization_schema_selector=serialize_trigger_selector,
+        deserialization_schema_selector=deserialize_trigger_selector,
+    )
     request_template = fields.Nested('RequestTemplateSchema')
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)

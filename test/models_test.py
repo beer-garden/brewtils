@@ -1,10 +1,11 @@
 import unittest
 
+import pytest
 from mock import Mock, PropertyMock
 
 from brewtils.errors import ModelValidationError, RequestStatusTransitionError
 from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
-    Choices, LoggingConfig, Event, Queue, Job, RequestTemplate
+    Choices, LoggingConfig, Event, Queue, RequestTemplate
 
 
 class CommandTest(unittest.TestCase):
@@ -535,12 +536,28 @@ class QueueTest(unittest.TestCase):
         self.assertEqual('<Queue: name=echo.1-0-0.default, size=3>', repr(queue))
 
 
-class JobTest(unittest.TestCase):
-
-    def test_str(self):
-        job = Job(name='name', trigger_type='cron', trigger_args={}, id='id')
-        self.assertEqual('name: id', str(job))
-
-    def test_repr(self):
-        job = Job(name='name', id='id')
-        self.assertEqual('<Job: name=name, id=id>', repr(job))
+@pytest.mark.parametrize('model,str_expected,repr_expected', [
+    (
+        pytest.lazy_fixture('bg_job'),
+        'job_name: job_id',
+        '<Job: name=job_name, id=job_id>'
+    ),
+    (
+        pytest.lazy_fixture('bg_date_trigger'),
+        '<DateTrigger: run_date=2016-01-01 00:00:00>',
+        '<DateTrigger: run_date=2016-01-01 00:00:00>',
+    ),
+    (
+        pytest.lazy_fixture('bg_interval_trigger'),
+        '<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>',
+        '<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>',
+    ),
+    (
+        pytest.lazy_fixture('bg_cron_trigger'),
+        '<CronTrigger: */1 */1 */1 */1 */1>',
+        '<CronTrigger: */1 */1 */1 */1 */1>',
+    ),
+])
+def test_str(model, str_expected, repr_expected):
+    assert str(model) == str_expected
+    assert repr(model) == repr_expected

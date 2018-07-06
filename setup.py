@@ -27,6 +27,7 @@ setup(
     install_requires=[
         'lark-parser',
         'marshmallow',
+        'marshmallow-polyfield',
         'pika',
         'requests',
         'simplejson',

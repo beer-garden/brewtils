@@ -5,7 +5,8 @@ from brewtils.errors import RequestStatusTransitionError
 
 __all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
            'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue',
-           'Job', 'RequestTemplate']
+           'Job', 'RequestTemplate', 'DateTrigger', 'CronTrigger',
+           'IntervalTrigger']
 
 
 class Events(Enum):
@@ -541,7 +542,7 @@ class Job(object):
             id=None,
             name=None,
             trigger_type=None,
-            trigger_args=None,
+            trigger=None,
             request_template=None,
             misfire_grace_time=None,
             coalesce=None,
@@ -551,7 +552,7 @@ class Job(object):
         self.id = id
         self.name = name
         self.trigger_type = trigger_type
-        self.trigger_args = trigger_args
+        self.trigger = trigger
         self.request_template = request_template
         self.misfire_grace_time = misfire_grace_time
         self.coalesce = coalesce
@@ -563,3 +564,94 @@ class Job(object):
 
     def __repr__(self):
         return '<Job: name=%s, id=%s>' % (self.name, self.id)
+
+
+class DateTrigger(object):
+    schema = 'DateTriggerSchema'
+
+    def __init__(self, run_date=None, timezone=None):
+        self.run_date = run_date
+        self.timezone = timezone
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return '<DateTrigger: run_date=%s>' % self.run_date
+
+
+class IntervalTrigger(object):
+    schema = 'IntervalTriggerSchema'
+
+    def __init__(
+            self,
+            weeks=None,
+            days=None,
+            hours=None,
+            minutes=None,
+            seconds=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+            jitter=None,
+    ):
+        self.weeks = weeks
+        self.days = days
+        self.hours = hours
+        self.minutes = minutes
+        self.seconds = seconds
+        self.start_date = start_date
+        self.end_date = end_date
+        self.timezone = timezone
+        self.jitter = jitter
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return (
+            '<IntervalTrigger: weeks=%d, days=%d, hours=%d, '
+            'minutes=%d, seconds=%d>' %
+            (self.weeks, self.days, self.hours, self.minutes, self.seconds)
+        )
+
+
+class CronTrigger(object):
+    schema = 'CronTriggerSchema'
+
+    def __init__(
+            self,
+            year=None,
+            month=None,
+            day=None,
+            week=None,
+            day_of_week=None,
+            hour=None,
+            minute=None,
+            second=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+            jitter=None,
+    ):
+        self.year = year
+        self.month = month
+        self.day = day
+        self.week = week
+        self.day_of_week = day_of_week
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        self.start_date = start_date
+        self.end_date = end_date
+        self.timezone = timezone
+        self.jitter = jitter
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return (
+            '<CronTrigger: %s %s %s %s %s>' %
+            (self.minute, self.hour, self.day, self.month, self.day)
+        )

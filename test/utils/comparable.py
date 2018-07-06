@@ -1,5 +1,5 @@
 from brewtils.models import System, Command, Instance, Parameter, Request, PatchOperation, \
-    LoggingConfig, Event, Queue, Job
+    LoggingConfig, Event, Queue, Job, IntervalTrigger, DateTrigger, CronTrigger, RequestTemplate
 
 
 def assert_system_equal(system1, system2, deep=False):
@@ -146,68 +146,100 @@ def assert_choices_equal(choices1, choices2):
                                                   getattr(choices2, key))
 
 
-def assert_patch_equal(patch1, patch2, deep=False):
-    assert isinstance(patch1, PatchOperation), "patch1 was not an PatchOperation"
-    assert isinstance(patch2, PatchOperation), "patch2 was not an PatchOperation"
-    assert type(patch1) is type(patch2), "patch1 and instance2 are not the same type."
+def default_assert_equal(obj1, obj2, **kwargs):
+    allowed_classes = kwargs['allowed_classes']
+    if not isinstance(allowed_classes, tuple):
+        allowed_classes = tuple([allowed_classes])
 
-    for key in patch1.__dict__.keys():
-        assert hasattr(patch1, key), "patch1 does not have an attribute '%s'" % key
-        assert hasattr(patch2, key), "patch2 does not have an attribute '%s'" % key
-        assert getattr(patch1, key) == getattr(patch2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(patch1, key), getattr(patch2, key))
+    type_name = kwargs['type_name']
+    deep_fields = kwargs.get('deep_fields', [])
+    deep_field_names = [f for f, _ in deep_fields]
+
+    message = ' was not an instance of %s got: ' % str(allowed_classes)
+    types_str = 'Object1: ' + str(type(obj1)) + ' Object2: ' + str(type(obj2))
+    assert isinstance(obj1, allowed_classes), 'obj1' + message + str(type(obj1))
+    assert isinstance(obj2, allowed_classes), 'obj2' + message + str(type(obj2))
+
+    assert type(obj1) is type(obj2), 'object are not the same types ' + types_str
+    for key in obj1.__dict__.keys():
+        if key in deep_field_names:
+            continue
+
+        assert hasattr(obj1, key), "%s1 does not have an attribute '%s'" % (type_name, key)
+        assert hasattr(obj2, key), "%s1 does not have an attribute '%s'" % (type_name, key)
+        message = (
+                "%s: %s was not the same (%s, %s)" %
+                (type_name, key, getattr(obj1, key), getattr(obj2, key))
+        )
+        assert getattr(obj1, key) == getattr(obj2, key), message
+
+    if kwargs.get('deep'):
+        for field, comparer in deep_fields:
+            assert hasattr(obj1, field), "%s1 does not have an attribute '%s'" % (type_name, field)
+            assert hasattr(obj2, field), "%s1 does not have an attribute '%s'" % (type_name, field)
+            comparer(getattr(obj1, field), getattr(obj2, field), deep=True)
+
+
+def assert_patch_equal(patch1, patch2, deep=False):
+    default_assert_equal(
+        patch1, patch2,
+        allowed_classes=PatchOperation,
+        deep=deep,
+        type_name='patch'
+    )
 
 
 def assert_logging_config_equal(logging_config1, logging_config2, deep=False):
-    assert isinstance(logging_config1, LoggingConfig), "logging_config1 was not a LoggingConfig"
-    assert isinstance(logging_config2, LoggingConfig), "logging_config2 was not a LoggingConfig"
-    assert type(logging_config1) is type(logging_config2), (
-        "logging_config1 and logging_config2 are not the same type")
-
-    for key in logging_config1.__dict__.keys():
-        assert hasattr(logging_config1, key), "logging_config1 does not have attribute '%s'" % key
-        assert hasattr(logging_config2, key), "logging_config2 does not have attribute '%s'" % key
-        assert getattr(logging_config1, key) == getattr(logging_config2, key), \
-            "%s was not the same (%s, %s)" % (key,
-                                              getattr(logging_config1, key),
-                                              getattr(logging_config2, key))
+    default_assert_equal(
+        logging_config1,
+        logging_config2,
+        type_name='logging_config',
+        allowed_classes=LoggingConfig,
+        deep=deep
+    )
 
 
 def assert_event_equal(event1, event2, deep=False):
-    assert isinstance(event1, Event), "event1 was not an Event"
-    assert isinstance(event2, Event), "event2 was not an Event"
-    assert type(event1) is type(event2), "event1 and event2 are not the same type"
-
-    for key in event1.__dict__.keys():
-        assert hasattr(event1, key), "event1 does not have an attribute '%s'" % key
-        assert hasattr(event2, key), "event2 does not have an attribute '%s'" % key
-        assert getattr(event1, key) == getattr(event2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(event1, key), getattr(event2, key))
+    default_assert_equal(
+        event1, event2, deep=deep, allowed_classes=Event, type_name='event'
+    )
 
 
 def assert_queue_equal(queue1, queue2, deep=False):
-    assert isinstance(queue1, Queue), "queue1 was not an Queue"
-    assert isinstance(queue2, Queue), "queue2 was not an Queue"
-    assert type(queue1) is type(queue2), "event1 and event2 are not the same type"
-
-    for key in queue1.__dict__.keys():
-        assert hasattr(queue1, key), "queue1 does not have an attribute '%s'" % key
-        assert hasattr(queue2, key), "queue2 does not have an attribute '%s'" % key
-        assert getattr(queue1, key) == getattr(queue2, key), \
-            "%s was not the same (%s, %s)" % (key, getattr(queue1, key), getattr(queue2, key))
+    default_assert_equal(
+        queue1, queue2, deep=deep, allowed_classes=Queue, type_name='queue'
+    )
 
 
 def assert_job_equal(job1, job2, deep=False):
-    assert isinstance(job1, Job), "job1 was not an Job"
-    assert isinstance(job2, Job), "job2 was not an Job"
-    assert type(job1) is type(job2), "job1 and job2 are not the same type"
+    default_assert_equal(
+        job1,
+        job2,
+        allowed_classes=Job,
+        type_name='job',
+        deep=deep,
+        deep_fields=[
+            ('trigger', assert_trigger_equal),
+            ('request_template', assert_request_template_equal)
+        ]
+    )
 
-    for key in job1.__dict__.keys():
 
-        assert hasattr(job1, key), "Job1 does not have an attribute '%s'" % key
-        assert hasattr(job2, key), "Job2 does not have an attribute '%s'" % key
-        message = (
-          "%s was not the same (%s, %s)" %
-          (key, getattr(job1, key), getattr(job2, key))
-        )
-        assert getattr(job1, key) == getattr(job1, key), message
+def assert_request_template_equal(rt1, rt2, deep=False):
+    default_assert_equal(
+        rt1,
+        rt2,
+        allowed_classes=RequestTemplate,
+        type_name='request_template',
+        deep=deep
+    )
+
+
+def assert_trigger_equal(trigger1, trigger2, deep=False):
+    default_assert_equal(
+        trigger1,
+        trigger2,
+        allowed_classes=(CronTrigger, DateTrigger, IntervalTrigger),
+        type_name='trigger',
+        deep=deep
+    )

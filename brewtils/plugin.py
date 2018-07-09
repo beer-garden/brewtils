@@ -7,7 +7,6 @@ import threading
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 
-import jwt
 import six
 from requests import ConnectionError as RequestsConnectionError
 
@@ -130,14 +129,16 @@ class PluginBase(object):
             self.logger = logging.getLogger(__name__)
             self._custom_logger = False
 
-        connection_parameters = brewtils.get_bg_connection_parameters(
+        connection_parameters = brewtils.get_connection_info(
             bg_host=bg_host,
             bg_port=bg_port,
             ssl_enabled=ssl_enabled,
             ca_cert=ca_cert,
             client_cert=client_cert,
             url_prefix=bg_url_prefix,
-            ca_verify=kwargs.get('ca_verify', None)
+            ca_verify=kwargs.get('ca_verify', None),
+            username=kwargs.get('username', None),
+            password=kwargs.get('password', None),
         )
         self.bg_host = connection_parameters['bg_host']
         self.bg_port = connection_parameters['bg_port']
@@ -313,14 +314,8 @@ class PluginBase(object):
     def _initialize(self):
         self.logger.debug("Initializing plugin %s", self.unique_name)
 
-        # Grab a token. FYI, things are going to fail without these permissions:
-        # bg-system-[create,read,update], bg-instance-update, bg-request-update
-        token = self.bm_client.client.login('logan', 'password')['token']
-
-        # Verify that we have necessary permissions
-        decoded = jwt.decode(token, verify=False)
-        if 'bg-system-update' not in decoded['permissions']:
-            raise Exception("Insufficient permissions")
+        # Try to get tokens
+        self.bm_client.login()
 
         # TODO: We should use self.bm_client.upsert_system once it is supported
         existing_system = self.bm_client.find_unique_system(name=self.system.name,

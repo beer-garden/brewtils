@@ -36,7 +36,7 @@ def get_easy_client(**kwargs):
     parser = kwargs.pop('parser', None)
     logger = kwargs.pop('logger', None)
 
-    return EasyClient(logger=logger, parser=parser, **get_bg_connection_parameters(**kwargs))
+    return EasyClient(logger=logger, parser=parser, **get_connection_info(**kwargs))
 
 
 def get_connection_info(cli_args=None, **kwargs):
@@ -51,8 +51,10 @@ def get_connection_info(cli_args=None, **kwargs):
     """
     config = load_config(cli_args=cli_args, **kwargs)
 
-    return {key: config[key] for key in ('bg_host', 'bg_port', 'ssl_enabled', 'api_version',
-                                         'ca_cert', 'client_cert', 'url_prefix', 'ca_verify')}
+    return {key: config[key] for key in (
+        'bg_host', 'bg_port', 'ssl_enabled', 'api_version', 'ca_cert',
+        'client_cert', 'url_prefix', 'ca_verify', 'username', 'password'
+    )}
 
 
 def load_config(cli_args=None, **kwargs):

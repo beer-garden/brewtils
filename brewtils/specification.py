@@ -45,4 +45,14 @@ SPECIFICATION = {
         "description": "Beergarden API version",
         "required": False,
     },
+    "username": {
+        "type": "str",
+        "description": "Username for authentication",
+        "required": False,
+    },
+    "password": {
+        "type": "str",
+        "description": "Password for authentication",
+        "required": False,
+    },
 }

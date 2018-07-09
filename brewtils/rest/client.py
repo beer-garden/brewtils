@@ -59,20 +59,23 @@ class RestClient(object):
 
         # Configure the beer-garden URLs
         scheme = 'https' if ssl_enabled else 'http'
-        base_url = '%s://%s:%s%s' % (scheme, bg_host, bg_port, normalize_url_prefix(url_prefix))
-        self.version_url = base_url + 'version'
-        self.config_url = base_url + 'config'
-        self.login_url = base_url + 'login'
+        self.base_url = (
+            '%s://%s:%s%s' %
+            (scheme, bg_host, bg_port, normalize_url_prefix(url_prefix))
+        )
+        self.version_url = self.base_url + 'version'
+        self.config_url = self.base_url + 'config'
+        self.login_url = self.base_url + 'login'
 
         api_version = api_version or self.LATEST_VERSION
         if api_version == 1:
-            self.system_url = base_url + 'api/v1/systems/'
-            self.instance_url = base_url + 'api/v1/instances/'
-            self.command_url = base_url + 'api/v1/commands/'
-            self.request_url = base_url + 'api/v1/requests/'
-            self.queue_url = base_url + 'api/v1/queues/'
-            self.logging_config_url = base_url + 'api/v1/config/logging/'
-            self.event_url = base_url + 'api/vbeta/events/'
+            self.system_url = self.base_url + 'api/v1/systems/'
+            self.instance_url = self.base_url + 'api/v1/instances/'
+            self.command_url = self.base_url + 'api/v1/commands/'
+            self.request_url = self.base_url + 'api/v1/requests/'
+            self.queue_url = self.base_url + 'api/v1/queues/'
+            self.logging_config_url = self.base_url + 'api/v1/config/logging/'
+            self.event_url = self.base_url + 'api/vbeta/events/'
         else:
             raise ValueError("Invalid beer-garden API version: %s" % api_version)
 

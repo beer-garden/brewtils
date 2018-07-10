@@ -72,9 +72,6 @@ class EasyClient(object):
     def can_connect(self):
         """Determine if Beergarden is responding to requests.
 
-        return False) on a
-        # ConnectionError but raise on subclasses (e.g. SSLError)
-
         Returns:
             A bool indicating if the connection attempt was successful. Will
             return False only if a ConnectionError is raised during the attempt.

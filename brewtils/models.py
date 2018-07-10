@@ -6,7 +6,7 @@ from brewtils.errors import RequestStatusTransitionError
 
 __all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
            'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue',
-           'Principal', 'Role']
+           'Principal', 'Role', 'RefreshToken']
 
 
 class Events(Enum):
@@ -540,3 +540,19 @@ class Role(object):
     def __repr__(self):
         return ('<Role: name=%s, roles=%s, permissions=%s>' %
                 (self.name, self.roles, self.permissions))
+
+
+class RefreshToken(object):
+
+    def __init__(self, id=None, issued_at=None, expires=None, payload=None):
+        self.id = id
+        self.issued_at = issued_at
+        self.expires = expires
+        self.payload = payload or {}
+
+    def __str__(self):
+        return '%s' % self.payload
+
+    def __repr__(self):
+        return ('<RefreshToken: issued_at=%s, expires=%s, payload=%s>' %
+                (self.issued_at, self.expires, self.payload))

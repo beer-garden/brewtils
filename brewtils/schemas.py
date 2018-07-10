@@ -7,7 +7,7 @@ from marshmallow.utils import UTC
 
 __all__ = ['SystemSchema', 'InstanceSchema', 'CommandSchema', 'ParameterSchema',
            'RequestSchema', 'PatchSchema', 'LoggingConfigSchema', 'EventSchema',
-           'QueueSchema', 'PrincipalSchema', 'RoleSchema']
+           'QueueSchema', 'PrincipalSchema', 'RoleSchema', 'RefreshTokenSchema']
 
 
 class DateTime(fields.DateTime):
@@ -220,3 +220,11 @@ class RoleSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     roles = fields.Nested('self', many=True, allow_none=True)
     permissions = fields.List(fields.Str(), allow_none=True)
+
+
+class RefreshTokenSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    issued_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    expires = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    payload = fields.Dict()

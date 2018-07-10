@@ -408,6 +408,8 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         'misfire_grace_time': 3,
         'coalesce': True,
         'next_run_time': ts_epoch,
+        'success_count': 0,
+        'error_count': 0,
     }
 
 

@@ -285,3 +285,5 @@ class JobSchema(BaseSchema):
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
     next_run_time = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    success_count = fields.Int(allow_none=True)
+    error_count = fields.Int(allow_none=True)

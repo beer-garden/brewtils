@@ -547,6 +547,8 @@ class Job(object):
             misfire_grace_time=None,
             coalesce=None,
             next_run_time=None,
+            success_count=None,
+            error_count=None,
     ):
         self.id = id
         self.name = name
@@ -556,6 +558,8 @@ class Job(object):
         self.misfire_grace_time = misfire_grace_time
         self.coalesce = coalesce
         self.next_run_time = next_run_time
+        self.success_count = success_count
+        self.error_count = error_count
 
     def __str__(self):
         return '%s: %s' % (self.name, self.id)

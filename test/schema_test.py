@@ -1,48 +1,57 @@
-import unittest
 from datetime import datetime
 
-import pytz
+import pytest
+from pytz import timezone
 
 from brewtils.models import System
 from brewtils.schemas import DateTime, BaseSchema, SystemSchema
 
 
-class SchemaTest(unittest.TestCase):
+class TestSchema(object):
 
-    def setUp(self):
-        self.test_epoch = 1451651214123
-        self.test_dt = datetime(2016, 1, 1, hour=12, minute=26, second=54, microsecond=123000)
+    @pytest.fixture
+    def test_epoch(self):
+        return 1451651214123
 
-        self.test_epoch_tz = 1451668974123
-        self.test_dt_tz = datetime(2016, 1, 1, hour=12, minute=26, second=54, microsecond=123000,
-                                   tzinfo=pytz.timezone('US/Eastern'))
+    @pytest.fixture
+    def test_dt(self):
+        return datetime(2016, 1, 1, hour=12, minute=26, second=54,
+                        microsecond=123000)
+
+    @pytest.fixture
+    def test_epoch_tz(self):
+        return 1451668974123
+
+    @pytest.fixture
+    def test_dt_tz(self):
+        return datetime(2016, 1, 1, hour=12, minute=26, second=54,
+                        microsecond=123000, tzinfo=timezone('US/Eastern'))
 
     def test_make_object_no_model(self):
-        base_schema = BaseSchema()
-        self.assertEqual('input', base_schema.make_object('input'))
+        assert BaseSchema().make_object('input') == 'input'
 
     def test_make_object_with_model(self):
         system_schema = SystemSchema(context={'models': {'SystemSchema': System}})
-        self.assertIsInstance(system_schema.make_object({'name': 'name'}), System)
+        assert isinstance(system_schema.make_object({'name': 'name'}), System) is True
 
     def test_get_attribute_name(self):
         attributes = SystemSchema.get_attribute_names()
-        self.assertIn('id', attributes)
-        self.assertIn('name', attributes)
-        self.assertNotIn('__model__', attributes)
+        assert 'id' in attributes
+        assert 'name' in attributes
+        assert '__model__' not in attributes
 
-    def test_to_epoch_no_tz(self):
-        self.assertEqual(self.test_epoch, DateTime.to_epoch(self.test_dt))
+    def test_to_epoch_no_tz(self, test_epoch, test_dt):
+        assert test_epoch == DateTime.to_epoch(test_dt)
 
-    def test_to_epoch_local_time(self):
-        self.assertEqual(self.test_epoch, DateTime.to_epoch(self.test_dt, localtime=True))
+    def test_to_epoch_local_time(self, test_epoch, test_dt):
+        assert test_epoch == DateTime.to_epoch(test_dt, localtime=True)
 
-    def test_to_epoch_tz(self):
-        self.assertNotEqual(self.test_epoch, DateTime.to_epoch(self.test_dt_tz))
-        self.assertEqual(self.test_epoch_tz, DateTime.to_epoch(self.test_dt_tz))
+    def test_to_epoch_tz(self, test_epoch, test_epoch_tz, test_dt_tz):
+        assert test_epoch != DateTime.to_epoch(test_dt_tz)
+        assert test_epoch_tz == DateTime.to_epoch(test_dt_tz)
 
-    def test_to_epoch_tz_local(self):
-        self.assertEqual(self.test_epoch, DateTime.to_epoch(self.test_dt_tz, localtime=True))
+    def test_to_epoch_tz_local(self, test_epoch, test_dt_tz):
+        assert test_epoch == DateTime.to_epoch(test_dt_tz, localtime=True)
 
-    def test_from_epoch(self):
-        self.assertEqual(self.test_dt, DateTime.from_epoch(self.test_epoch))
+    def test_from_epoch(self, test_epoch, test_dt):
+        assert test_dt == DateTime.from_epoch(test_epoch)

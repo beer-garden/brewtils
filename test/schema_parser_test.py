@@ -16,12 +16,17 @@ from datetime import datetime
 
 from marshmallow.exceptions import MarshmallowError
 
-from brewtils.models import Command, Instance, Parameter, Request, System, PatchOperation, \
-    Choices, LoggingConfig, Event, Queue
+from brewtils.models import (
+    Command, Instance, Parameter, Request, System, PatchOperation, Choices,
+    LoggingConfig, Event, Queue, Principal, Role
+)
 from brewtils.schema_parser import SchemaParser, BrewmasterSchemaParser
-from test.utils.comparable import assert_parameter_equal, assert_command_equal, \
-    assert_system_equal, assert_instance_equal, assert_request_equal, assert_patch_equal, \
-    assert_logging_config_equal, assert_event_equal, assert_queue_equal
+from test.utils.comparable import (
+    assert_parameter_equal, assert_command_equal, assert_system_equal,
+    assert_instance_equal, assert_request_equal, assert_patch_equal,
+    assert_logging_config_equal, assert_event_equal, assert_queue_equal,
+    assert_principal_equal, assert_role_equal,
+)
 
 
 class SchemaParserTest(unittest.TestCase):
@@ -252,13 +257,51 @@ class SchemaParserTest(unittest.TestCase):
                            instance='default', system_id='1234', display='foo.1-0-0.default',
                            size=3)
 
+        self.nested_role_dict = {
+            'id': '58542eb571afd47ead90d26c',
+            'name': 'bg-anonymous',
+            'roles': [],
+            'permissions': ['bg-request-read'],
+        }
+        self.nested_role = Role(id='58542eb571afd47ead90d26c',
+                                name='bg-anonymous',
+                                roles=[],
+                                permissions=['bg-request-read'])
+
+        self.role_dict = {
+            'id': '58542eb571afd47ead90d26f',
+            'name': 'bg-admin',
+            'roles': [self.nested_role_dict],
+            'permissions': ['bg-all'],
+        }
+        self.role = Role(id='58542eb571afd47ead90d26f',
+                         name='bg-admin',
+                         roles=[self.nested_role],
+                         permissions=['bg-all'])
+
+        self.principal_dict = {
+            'id': '58542eb571afd47ead90d25f',
+            'username': 'admin',
+            'roles': [self.role_dict],
+            'permissions': ['bg-all'],
+            'preferences': {'theme': 'dark'},
+        }
+        self.principal = Principal(id='58542eb571afd47ead90d25f',
+                                   username='admin',
+                                   roles=[self.role],
+                                   permissions=['bg-all'],
+                                   preferences={'theme': 'dark'})
+
         # Finish setting up our circular system <-> command dependency
         self.command.system = self.system
         self.command_dict['system'] = {'id': self.system.id}
 
-        # Finish setting up our circular request parent <-> dependencies
-        self.child_request.parent = self.request
-        self.parent_request.children = [self.request]
+        # DON'T finish setting up circular request parent <-> dependencies
+        # When a parent is serialized its children will be excluded
+        # And when children are serialized they exclude both parent and children
+        # So don't add these links here, we are expecting these to be empty
+        # self.child_request.parent = self.request
+        # self.parent_request.children = [self.request]
 
     def test_parse_none(self):
         self.assertRaises(TypeError, self.parser.parse_system, None, from_string=True)
@@ -294,29 +337,26 @@ class SchemaParserTest(unittest.TestCase):
         self.assertEqual(system_copy, self.system_dict)
 
     def test_parse_system(self):
-        assert_system_equal(self.system, self.parser.parse_system(self.system_dict), True)
+        assert_system_equal(self.system, self.parser.parse_system(self.system_dict))
 
     def test_parse_instance(self):
-        assert_instance_equal(self.instance, self.parser.parse_instance(self.instance_dict), True)
+        assert_instance_equal(self.instance, self.parser.parse_instance(self.instance_dict))
 
     def test_parse_command(self):
-        assert_command_equal(self.command, self.parser.parse_command(self.command_dict), True)
+        assert_command_equal(self.command, self.parser.parse_command(self.command_dict))
 
     def test_parse_parameter(self):
-        assert_parameter_equal(self.parameter,
-                               self.parser.parse_parameter(self.parameter_dict),
-                               True)
+        assert_parameter_equal(self.parameter, self.parser.parse_parameter(self.parameter_dict))
 
     def test_parse_request(self):
-        assert_request_equal(self.request, self.parser.parse_request(self.request_dict), True)
+        assert_request_equal(self.request, self.parser.parse_request(self.request_dict))
 
     def test_parse_patch(self):
-        assert_patch_equal(self.patch1, self.parser.parse_patch(self.patch_dict)[0], True)
+        assert_patch_equal(self.patch1, self.parser.parse_patch(self.patch_dict)[0])
 
     def test_parse_patch_ignore_many(self):
         assert_patch_equal(self.patch1, self.parser.parse_patch(self.patch_dict,
-                                                                many=False)[0],
-                           True)
+                                                                many=False)[0])
 
     def test_parse_patch_no_envelope(self):
         assert_patch_equal(self.parser.parse_patch(self.patch_no_envelope_dict)[0], self.patch1)
@@ -344,6 +384,12 @@ class SchemaParserTest(unittest.TestCase):
 
     def test_parse_queue(self):
         assert_queue_equal(self.queue, self.parser.parse_queue(self.queue_dict))
+
+    def test_parse_principal(self):
+        assert_principal_equal(self.principal, self.parser.parse_principal(self.principal_dict))
+
+    def test_parse_role(self):
+        assert_role_equal(self.role, self.parser.parse_role(self.role_dict))
 
     def test_serialize_system(self):
         self.assertEqual(self.system_dict, self.parser.serialize_system(self.system,
@@ -402,6 +448,14 @@ class SchemaParserTest(unittest.TestCase):
     def test_serialize_queue(self):
         self.assertEqual(self.queue_dict,
                          self.parser.serialize_queue(self.queue, to_string=False))
+
+    def test_serialize_principal(self):
+        self.assertEqual(self.principal_dict,
+                         self.parser.serialize_principal(self.principal, to_string=False))
+
+    def test_serialize_role(self):
+        self.assertEqual(self.role_dict,
+                         self.parser.serialize_role(self.role, to_string=False))
 
 
 class BrewmasterSchemaParserTest(unittest.TestCase):

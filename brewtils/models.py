@@ -518,6 +518,13 @@ class Principal(object):
         self.permissions = permissions
         self.preferences = preferences
 
+    def __str__(self):
+        return '%s' % self.username
+
+    def __repr__(self):
+        return ('<Principal: username=%s, roles=%s, permissions=%s>' %
+                (self.username, self.roles, self.permissions))
+
 
 class Role(object):
 
@@ -526,3 +533,10 @@ class Role(object):
         self.name = name
         self.roles = roles
         self.permissions = permissions
+
+    def __str__(self):
+        return '%s' % self.name
+
+    def __repr__(self):
+        return ('<Role: name=%s, roles=%s, permissions=%s>' %
+                (self.name, self.roles, self.permissions))

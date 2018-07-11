@@ -249,7 +249,13 @@ class Request(RequestTemplate):
                  error_class=None, metadata=None, updated_at=None, has_parent=None):
 
         super(Request, self).__init__(
-            system, system_version, instance_name, command, parameters, comment, metadata
+            system=system,
+            system_version=system_version,
+            instance_name=instance_name,
+            command=command,
+            parameters=parameters,
+            comment=comment,
+            metadata=metadata
         )
         self.id = id
         self.parent = parent

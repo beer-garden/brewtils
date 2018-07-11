@@ -557,6 +557,78 @@ class EasyClientTest(unittest.TestCase):
         mock_delete.return_value = self.fake_connection_error_response
         self.assertRaises(RestConnectionError, self.client.clear_all_queues)
 
+    # Find Jobs
+    @patch('brewtils.rest.client.RestClient.get_jobs')
+    def test_find_jobs(self, mock_get):
+        mock_get.return_value = self.fake_success_response
+        self.parser.parse_job = Mock(return_value='job')
+
+        self.assertEqual('job', self.client.find_jobs(search='params'))
+        self.parser.parse_job.assert_called_with('payload', many=True)
+        mock_get.assert_called_with(search='params')
+
+    @patch('brewtils.rest.client.RestClient.get_jobs')
+    def test_find_jobs_error(self, mock_get):
+        mock_get.return_value = self.fake_server_error_response
+
+        self.assertRaises(FetchError, self.client.find_jobs, search='params')
+        mock_get.assert_called_with(search='params')
+
+    # Create Jobs
+    @patch('brewtils.rest.client.RestClient.post_jobs')
+    def test_create_job(self, mock_post):
+        mock_post.return_value = self.fake_success_response
+        self.parser.serialize_job = Mock(return_value='json_job')
+        self.parser.parse_job = Mock(return_value='job_response')
+
+        self.assertEqual('job_response', self.client.create_job('job'))
+        self.parser.serialize_job.assert_called_with('job')
+        self.parser.parse_job.assert_called_with('payload')
+
+    @patch('brewtils.rest.client.RestClient.post_jobs')
+    def test_create_job_error(self, mock_post):
+        mock_post.return_value = self.fake_client_error_response
+        self.assertRaises(ValidationError, self.client.create_job, 'job')
+
+    # Remove Job
+    @patch('brewtils.rest.client.RestClient.delete_job')
+    def test_delete_job(self, mock_delete):
+        mock_delete.return_value = self.fake_success_response
+        self.assertEqual(True, self.client.remove_job('job_id'))
+
+    @patch('brewtils.rest.client.RestClient.delete_job')
+    def test_delete_job_error(self, mock_delete):
+        mock_delete.return_value = self.fake_client_error_response
+        self.assertRaises(ValidationError, self.client.remove_job, 'job_id')
+
+    # Pause Job
+    @patch('brewtils.rest.easy_client.PatchOperation')
+    @patch('brewtils.rest.client.RestClient.patch_job')
+    def test_pause_job(self, mock_patch, MockPatch):
+        MockPatch.return_value = "patch"
+        mock_patch.return_value = self.fake_success_response
+
+        self.client.pause_job('id')
+        MockPatch.assert_called_with('update', '/status', 'PAUSED')
+        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
+        self.parser.parse_job.assert_called_with('payload')
+
+    @patch('brewtils.rest.client.RestClient.patch_job')
+    def test_pause_job_error(self, mock_patch):
+        mock_patch.return_value = self.fake_client_error_response
+        self.assertRaises(ValidationError, self.client.pause_job, 'id')
+
+    @patch('brewtils.rest.easy_client.PatchOperation')
+    @patch('brewtils.rest.client.RestClient.patch_job')
+    def test_resume_job(self, mock_patch, MockPatch):
+        MockPatch.return_value = "patch"
+        mock_patch.return_value = self.fake_success_response
+
+        self.client.resume_job('id')
+        MockPatch.assert_called_with('update', '/status', 'RUNNING')
+        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
+        self.parser.parse_job.assert_called_with('payload')
+
 
 class BrewmasterEasyClientTest(unittest.TestCase):
 

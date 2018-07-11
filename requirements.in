@@ -2,6 +2,7 @@
 # Dependencies
 lark-parser
 marshmallow
+marshmallow-polyfield
 pika
 requests
 simplejson
@@ -21,6 +22,7 @@ coverage
 flake8
 mock
 pytest
+pytest-lazy-fixture
 pytz
 tox
 twine

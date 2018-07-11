@@ -363,6 +363,86 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response)
 
+    def find_jobs(self, **kwargs):
+        """Find jobs using keyword arguments as search parameters
+
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            List of jobs.
+        """
+        response = self.client.get_jobs(**kwargs)
+
+        if response.ok:
+            return self.parser.parse_job(response.json(), many=True)
+        else:
+            self._handle_response_failure(response, default_exc=FetchError)
+
+    def create_job(self, job):
+        """Create a new job by POSTing
+
+        Args:
+            job: The job to create
+
+        Returns:
+            The job creation response.
+        """
+        json_job = self.parser.serialize_job(job)
+        response = self.client.post_jobs(json_job)
+
+        if response.ok:
+            return self.parser.parse_job(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=SaveError)
+
+    def remove_job(self, job_id):
+        """Remove a job by ID.
+
+        Args:
+            job_id: The ID of the job to remove.
+
+        Returns:
+            True if successful, raises an error otherwise.
+
+        """
+        response = self.client.delete_job(job_id)
+        if response.ok:
+            return True
+        else:
+            self._handle_response_failure(response, default_exc=DeleteError)
+
+    def pause_job(self, job_id):
+        """Pause a Job by ID.
+
+        Args:
+            job_id: The ID of the job to pause.
+
+        Returns:
+            A copy of the job.
+        """
+        self._patch_job(job_id, [PatchOperation('update', '/status', 'PAUSED')])
+
+    def _patch_job(self, job_id, operations):
+        response = self.client.patch_job(
+            job_id, self.parser.serialize_patch(operations, many=True)
+        )
+        if response.ok:
+            return self.parser.parse_job(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=SaveError)
+
+    def resume_job(self, job_id):
+        """Resume a job by ID.
+
+        Args:
+            job_id: The ID of the job to resume.
+
+        Returns:
+            A copy of the job.
+        """
+        self._patch_job(job_id, [PatchOperation('update', '/status', 'RUNNING')])
+
     @staticmethod
     def _handle_response_failure(response, default_exc=RestError, raise_404=True):
         if response.status_code == 404:

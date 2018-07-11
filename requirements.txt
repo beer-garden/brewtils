@@ -24,6 +24,7 @@ jinja2==2.10              # via sphinx
 lark-parser==0.5.6
 markupsafe==1.0           # via jinja2
 marshmallow==2.15.3
+marshmallow-polyfield==3.2
 mccabe==0.6.1             # via flake8
 mock==2.0.0
 more-itertools==4.2.0     # via pytest
@@ -39,6 +40,7 @@ pyflakes==1.6.0           # via flake8
 pygments==2.2.0           # via sphinx
 pyparsing==2.2.0          # via packaging
 pytest==3.6.1
+pytest-lazy-fixture==0.4.0
 python-box==3.2.0         # via yapconf
 pytz==2018.4
 pyyaml==3.12              # via watchdog

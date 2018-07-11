@@ -7,7 +7,10 @@ import types
 import requests
 import six
 import wrapt
-from lark.common import ParseError
+try:
+    from lark.common import ParseError
+except ImportError:
+    from lark import ParseError
 
 import brewtils.plugin
 from brewtils.choices import parse

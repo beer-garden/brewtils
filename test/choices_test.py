@@ -1,6 +1,10 @@
 import unittest
 
-from lark.common import ParseError
+try:
+    from lark import ParseError
+except ImportError:
+    from lark.common import ParseError
+
 from brewtils.choices import parse
 
 

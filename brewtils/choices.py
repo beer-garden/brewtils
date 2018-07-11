@@ -1,8 +1,12 @@
 from lark import Lark, Transformer
-from lark.common import ParseError
-
 
 # Lark added some new errors in later versions
+# Lark also moved around their error in 0.6.0
+try:
+    from lark import ParseError
+except ImportError:
+    from lark.common import ParseError
+
 try:
     from lark import GrammarError, LexError
 except ImportError:

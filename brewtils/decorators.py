@@ -9,7 +9,7 @@ import six
 import wrapt
 try:
     from lark.common import ParseError
-except ImportError
+except ImportError:
     from lark import ParseError
 
 import brewtils.plugin

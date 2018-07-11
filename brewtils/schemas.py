@@ -225,6 +225,6 @@ class RoleSchema(BaseSchema):
 class RefreshTokenSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
-    issued_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    issued = DateTime(allow_none=True, format='epoch', example='1500065932000')
     expires = DateTime(allow_none=True, format='epoch', example='1500065932000')
     payload = fields.Dict()

@@ -544,9 +544,9 @@ class Role(object):
 
 class RefreshToken(object):
 
-    def __init__(self, id=None, issued_at=None, expires=None, payload=None):
+    def __init__(self, id=None, issued=None, expires=None, payload=None):
         self.id = id
-        self.issued_at = issued_at
+        self.issued = issued
         self.expires = expires
         self.payload = payload or {}
 
@@ -554,5 +554,5 @@ class RefreshToken(object):
         return '%s' % self.payload
 
     def __repr__(self):
-        return ('<RefreshToken: issued_at=%s, expires=%s, payload=%s>' %
-                (self.issued_at, self.expires, self.payload))
+        return ('<RefreshToken: issued=%s, expires=%s, payload=%s>' %
+                (self.issued, self.expires, self.payload))

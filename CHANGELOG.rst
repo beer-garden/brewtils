@@ -1,5 +1,21 @@
 Brewtils Changelog
 ==================
+2.3.7
+-----
+Date: 07/11/18
+
+Bug Fixes
+^^^^^^^^^
+- Updating import problem from lark-parser #61
+- Pinning setup.py versions to prevent future breaks
+
+2.3.6
+-----
+Date: 06/06/18
+
+Other Changes
+^^^^^^^^^^^^^
+- Added `has_parent` to request model
 
 2.3.5
 -----

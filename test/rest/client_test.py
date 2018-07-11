@@ -182,6 +182,31 @@ class RestClientTest(unittest.TestCase):
         self.assertFalse(self.client_version_1.session.verify)
         self.assertTrue(urllib_mock.disable_warnings.called)
 
+    def test_get_jobs(self,):
+        self.client_version_1.get_jobs(key='value')
+        self.session_mock.get.assert_called_with(self.client_version_1.job_url,
+                                                 params={'key': 'value'})
+
+    def test_get_job(self):
+        self.client_version_1.get_job(job_id='id')
+        self.session_mock.get.assert_called_with(self.client_version_1.job_url + 'id')
+
+    def test_post_jobs(self):
+        self.client_version_1.post_jobs(payload='payload')
+        self.session_mock.post.assert_called_with(self.client_version_1.job_url,
+                                                  data='payload',
+                                                  headers=self.client_version_1.JSON_HEADERS)
+
+    def test_patch_job(self):
+        self.client_version_1.patch_job('id', payload='payload')
+        self.session_mock.patch.assert_called_with(self.client_version_1.job_url + 'id',
+                                                   data='payload',
+                                                   headers=self.client_version_1.JSON_HEADERS)
+
+    def test_delete_job(self):
+        self.client_version_1.delete_job(job_id='id')
+        self.session_mock.delete.assert_called_with(self.client_version_1.job_url + 'id')
+
 
 class BrewmasterRestClientTest(unittest.TestCase):
 

@@ -5,11 +5,14 @@ import six
 
 from brewtils.models import (
     System, Instance, Command, Parameter, Request, PatchOperation, Choices,
-    LoggingConfig, Event, Queue, Principal, Role, RefreshToken)
+    LoggingConfig, Event, Queue, Principal, Role, RefreshToken, Job,
+    RequestTemplate, DateTrigger, CronTrigger, IntervalTrigger
+)
 from brewtils.schemas import (
     SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, RequestSchema,
     PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema, PrincipalSchema,
-    RoleSchema, RefreshTokenSchema)
+    RoleSchema, RefreshTokenSchema, JobSchema
+)
 
 
 class SchemaParser(object):
@@ -20,6 +23,7 @@ class SchemaParser(object):
         'InstanceSchema': Instance,
         'CommandSchema': Command,
         'ParameterSchema': Parameter,
+        'RequestTemplateSchema': RequestTemplate,
         'RequestSchema': Request,
         'PatchSchema': PatchOperation,
         'ChoicesSchema': Choices,
@@ -29,6 +33,10 @@ class SchemaParser(object):
         'PrincipalSchema': Principal,
         'RoleSchema': Role,
         'RefreshTokenSchema': RefreshToken,
+        'JobSchema': Job,
+        'DateTriggerSchema': DateTrigger,
+        'IntervalTriggerSchema': IntervalTrigger,
+        'CronTriggerSchema': CronTrigger,
     }
 
     logger = logging.getLogger(__name__)
@@ -185,6 +193,21 @@ class SchemaParser(object):
         return cls._do_parse(refresh_token, RefreshTokenSchema(**kwargs), from_string=from_string)
 
     @classmethod
+    def parse_job(cls, job, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a job model object
+
+        Args:
+            job: Raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Job object.
+
+        """
+        return cls._do_parse(job, JobSchema(**kwargs), from_string=from_string)
+
+    @classmethod
     def _do_parse(cls, data, schema, from_string=False):
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
@@ -331,6 +354,20 @@ class SchemaParser(object):
         :return: Serialized representation
         """
         return cls._do_serialize(RefreshTokenSchema(**kwargs), refresh_token, to_string)
+
+    @classmethod
+    def serialize_job(cls, job, to_string=True, **kwargs):
+        """Convert a job model into serialized form.
+
+        Args:
+            job: The job object(s) to be serialized.
+            to_string: True to generate a JSON-formatted string, False to generate a dictionary.
+            **kwargs: Additional parameters to be passed to the shcema (e.g. many=True)
+
+        Returns:
+            Serialize representation of job.
+        """
+        return cls._do_serialize(JobSchema(**kwargs), job, to_string)
 
     @staticmethod
     def _do_serialize(schema, data, to_string):

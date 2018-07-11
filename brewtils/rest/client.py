@@ -75,6 +75,7 @@ class RestClient(object):
             self.request_url = self.base_url + 'api/v1/requests/'
             self.queue_url = self.base_url + 'api/v1/queues/'
             self.logging_config_url = self.base_url + 'api/v1/config/logging/'
+            self.job_url = self.base_url + 'api/v1/jobs/'
             self.event_url = self.base_url + 'api/vbeta/events/'
         else:
             raise ValueError("Invalid beer-garden API version: %s" % api_version)
@@ -251,6 +252,47 @@ class RestClient(object):
         :return: Response to the request
         """
         return self.session.delete(self.queue_url + queue_name)
+
+    def get_jobs(self, **kwargs):
+        """Performs a GET on the Jobs URL.
+
+        Returns: Response to the request
+        """
+        return self.session.get(self.job_url, params=kwargs)
+
+    def get_job(self, job_id):
+        """Performs a GET on the Job URL
+
+        :param job_id: ID of job
+        :return: Response to the request
+        """
+        return self.session.get(self.job_url + job_id)
+
+    def post_jobs(self, payload):
+        """Performs a POST on the Job URL
+
+        :param payload: New job definition
+        :return: Response to the request
+        """
+        return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
+
+    def patch_job(self, job_id, payload):
+        """Performs a PATCH on the Job URL
+
+        :param job_id: ID of request
+        :param payload: New job definition
+        :return: Response to the request
+        """
+        return self.session.patch(self.job_url + str(job_id),
+                                  data=payload, headers=self.JSON_HEADERS)
+
+    def delete_job(self, job_id):
+        """Performs a DELETE on a Job URL
+
+        :param job_id: The ID of the job to remove
+        :return: Response to the request
+        """
+        return self.session.delete(self.job_url + job_id)
 
 
 class BrewmasterRestClient(RestClient):

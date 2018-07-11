@@ -4,8 +4,10 @@ import pytest
 from mock import Mock, PropertyMock
 
 from brewtils.errors import ModelValidationError, RequestStatusTransitionError
-from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
-    Choices, LoggingConfig, Event, Queue, Principal, Role
+from brewtils.models import (
+    Command, Instance, Parameter, PatchOperation, Request, System, Choices,
+    LoggingConfig, Event, Queue, Principal, Role, RequestTemplate
+)
 
 
 class CommandTest(unittest.TestCase):
@@ -238,6 +240,17 @@ class ParameterTest(unittest.TestCase):
         p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
                        parameters=[nested_parameter1])
         self.assertFalse(p1.is_different(p1))
+
+
+class RequestTemplateTest(unittest.TestCase):
+
+    def test_str(self):
+        self.assertEqual('command', str(RequestTemplate(command='command')))
+
+    def test_repr(self):
+        request = RequestTemplate(command='command', system='system')
+        self.assertNotEqual(-1, repr(request).find('name'))
+        self.assertNotEqual(-1, repr(request).find('system'))
 
 
 class RequestTest(unittest.TestCase):
@@ -554,3 +567,30 @@ class TestRole(object):
     def test_repr(self, role):
         assert repr(role) == "<Role: name=bg-admin, roles=['bg-anonymous'], " \
                              "permissions=['bg-all']>"
+
+
+@pytest.mark.parametrize('model,str_expected,repr_expected', [
+    (
+        pytest.lazy_fixture('bg_job'),
+        'job_name: job_id',
+        '<Job: name=job_name, id=job_id>'
+    ),
+    (
+        pytest.lazy_fixture('bg_date_trigger'),
+        '<DateTrigger: run_date=2016-01-01 00:00:00>',
+        '<DateTrigger: run_date=2016-01-01 00:00:00>',
+    ),
+    (
+        pytest.lazy_fixture('bg_interval_trigger'),
+        '<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>',
+        '<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>',
+    ),
+    (
+        pytest.lazy_fixture('bg_cron_trigger'),
+        '<CronTrigger: */1 */1 */1 */1 */1>',
+        '<CronTrigger: */1 */1 */1 */1 */1>',
+    ),
+])
+def test_str(model, str_expected, repr_expected):
+    assert str(model) == str_expected
+    assert repr(model) == repr_expected

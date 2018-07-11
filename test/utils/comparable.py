@@ -1,14 +1,23 @@
 from functools import partial
 from brewtils.models import (
     System, Command, Instance, Parameter, Request, PatchOperation,
-    LoggingConfig, Event, Queue, Choices, Principal, Role
+    LoggingConfig, Event, Queue, Choices, Principal, Role, Job, IntervalTrigger,
+    DateTrigger, CronTrigger, RequestTemplate
 )
 
 __all__ = [
-    'assert_parameter_equal', 'assert_command_equal', 'assert_system_equal',
-    'assert_instance_equal', 'assert_request_equal', 'assert_patch_equal',
-    'assert_logging_config_equal', 'assert_event_equal', 'assert_queue_equal',
-    'assert_principal_equal', 'assert_role_equal',
+    'assert_parameter_equal',
+    'assert_command_equal',
+    'assert_system_equal',
+    'assert_instance_equal',
+    'assert_request_equal',
+    'assert_patch_equal',
+    'assert_logging_config_equal',
+    'assert_event_equal',
+    'assert_queue_equal',
+    'assert_principal_equal',
+    'assert_role_equal',
+    'assert_job_equal',
 ]
 
 
@@ -54,6 +63,9 @@ assert_patch_equal = partial(_assert_equal, expected_type=PatchOperation)
 assert_logging_config_equal = partial(_assert_equal, expected_type=LoggingConfig)
 assert_event_equal = partial(_assert_equal, expected_type=Event)
 assert_queue_equal = partial(_assert_equal, expected_type=Queue)
+assert_request_template_equal = partial(_assert_equal, expected_type=RequestTemplate)
+assert_trigger_equal = partial(_assert_equal,
+                               expected_type=(CronTrigger, DateTrigger, IntervalTrigger))
 
 
 def assert_command_equal(obj1, obj2):
@@ -62,27 +74,27 @@ def assert_command_equal(obj1, obj2):
     def compare_system(sys1, sys2):
         assert sys1.id == sys2.id
 
-    return _assert_equal(obj1, obj2,
-                         expected_type=Command,
-                         deep_fields={
-                             'parameters': assert_parameter_equal,
-                             'system': compare_system,
-                         })
+    _assert_equal(obj1, obj2,
+                  expected_type=Command,
+                  deep_fields={
+                      'parameters': assert_parameter_equal,
+                      'system': compare_system,
+                  })
 
 
 def assert_parameter_equal(obj1, obj2):
-    return _assert_equal(obj1, obj2,
-                         expected_type=Parameter,
-                         deep_fields={
-                             'parameters': assert_parameter_equal,
-                             'choices': assert_choices_equal,
-                         })
+    _assert_equal(obj1, obj2,
+                  expected_type=Parameter,
+                  deep_fields={
+                      'parameters': assert_parameter_equal,
+                      'choices': assert_choices_equal,
+                  })
 
 
 def assert_principal_equal(obj1, obj2):
-    return _assert_equal(obj1, obj2,
-                         expected_type=Principal,
-                         deep_fields={'roles': assert_role_equal})
+    _assert_equal(obj1, obj2,
+                  expected_type=Principal,
+                  deep_fields={'roles': assert_role_equal})
 
 
 def assert_request_equal(obj1, obj2):
@@ -120,24 +132,33 @@ def assert_request_equal(obj1, obj2):
                           'parent': assert_all_none,
                       })
 
-    return _assert_equal(obj1, obj2,
-                         expected_type=Request,
-                         deep_fields={
-                             'children': compare_child,
-                             'parent': compare_parent,
-                         })
+    _assert_equal(obj1, obj2,
+                  expected_type=Request,
+                  deep_fields={
+                      'children': compare_child,
+                      'parent': compare_parent,
+                  })
 
 
 def assert_role_equal(obj1, obj2):
-    return _assert_equal(obj1, obj2,
-                         expected_type=Role,
-                         deep_fields={'roles': assert_role_equal})
+    _assert_equal(obj1, obj2,
+                  expected_type=Role,
+                  deep_fields={'roles': assert_role_equal})
 
 
 def assert_system_equal(obj1, obj2):
-    return _assert_equal(obj1, obj2,
-                         expected_type=System,
-                         deep_fields={
-                             'commands': assert_command_equal,
-                             'instances': assert_instance_equal,
-                         })
+    _assert_equal(obj1, obj2,
+                  expected_type=System,
+                  deep_fields={
+                      'commands': assert_command_equal,
+                      'instances': assert_instance_equal,
+                  })
+
+
+def assert_job_equal(obj1, obj2):
+    _assert_equal(obj1, obj2,
+                  expected_type=Job,
+                  deep_fields={
+                      'trigger': assert_trigger_equal,
+                      'request_template': assert_request_template_equal,
+                  })

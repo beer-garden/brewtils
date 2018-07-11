@@ -287,3 +287,4 @@ class JobSchema(BaseSchema):
     next_run_time = DateTime(allow_none=True, format='epoch', example='1500065932000')
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
+    status = fields.Str(allow_none=True)

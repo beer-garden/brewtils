@@ -535,6 +535,7 @@ class Queue(object):
 class Job(object):
 
     TRIGGER_TYPES = {'interval', 'date', 'cron'}
+    STATUS_TYPES = {'RUNNING', 'PAUSED'}
     schema = 'JobSchema'
 
     def __init__(
@@ -549,6 +550,7 @@ class Job(object):
             next_run_time=None,
             success_count=None,
             error_count=None,
+            status=None,
     ):
         self.id = id
         self.name = name
@@ -560,6 +562,7 @@ class Job(object):
         self.next_run_time = next_run_time
         self.success_count = success_count
         self.error_count = error_count
+        self.status = status
 
     def __str__(self):
         return '%s: %s' % (self.name, self.id)

@@ -157,6 +157,11 @@ class RequestForbidden(RestClientError):
     pass
 
 
+class AuthorizationRequired(RestClientError):
+    """Error indicating a 401 was raised on the server"""
+    pass
+
+
 # Alias old names
 BrewmasterModelError = ModelError
 BrewmasterModelValidationError = ModelValidationError

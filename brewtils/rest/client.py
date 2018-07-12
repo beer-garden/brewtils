@@ -2,7 +2,9 @@ import functools
 import json
 import logging
 import warnings
+from datetime import datetime
 
+import jwt
 import urllib3
 from requests import Session
 
@@ -14,6 +16,22 @@ def enable_auth(method):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+
+        # Proactively refresh access token, if possible
+        try:
+            if self.access_token and self.refresh_token:
+                now = datetime.utcnow()
+
+                decoded = jwt.decode(self.access_token, verify=False)
+                issued = datetime.utcfromtimestamp(int(decoded['iat']))
+                expires = datetime.utcfromtimestamp(int(decoded['exp']))
+
+                # Try to refresh there's less than 10% time remaining
+                if (expires - now) < (0.1 * (expires - issued)):
+                    self.refresh()
+        except Exception:
+            pass
+
         original_response = method(self, *args, **kwargs)
 
         if original_response.status_code != 401:

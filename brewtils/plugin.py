@@ -314,9 +314,6 @@ class PluginBase(object):
     def _initialize(self):
         self.logger.debug("Initializing plugin %s", self.unique_name)
 
-        # Try to get tokens
-        self.bm_client.login()
-
         # TODO: We should use self.bm_client.upsert_system once it is supported
         existing_system = self.bm_client.find_unique_system(name=self.system.name,
                                                             version=self.system.version)

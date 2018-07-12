@@ -29,45 +29,32 @@ class EasyClient(object):
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     """
 
-    def __init__(self, bg_host=None, bg_port=None, ssl_enabled=False, api_version=None,
-                 ca_cert=None, client_cert=None, parser=None, logger=None, url_prefix=None,
-                 ca_verify=True, **kwargs):
-
+    def __init__(
+            self,
+            bg_host=None,
+            bg_port=None,
+            ssl_enabled=False,
+            api_version=None,
+            ca_cert=None,
+            client_cert=None,
+            parser=None,
+            logger=None,
+            url_prefix=None,
+            ca_verify=True,
+            **kwargs
+    ):
         bg_host = bg_host or kwargs.get('host')
         bg_port = bg_port or kwargs.get('port')
 
         self.logger = logger or logging.getLogger(__name__)
         self.parser = parser or SchemaParser()
 
-        self.username = kwargs.get('username', None)
-        self.password = kwargs.get('password', None)
-        self.access_token = None
-        self.refresh_token = None
-
         self.client = RestClient(
             bg_host=bg_host, bg_port=bg_port, ssl_enabled=ssl_enabled,
             api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
             url_prefix=url_prefix, ca_verify=ca_verify,
-            username=self.username, password=self.password,
+            **kwargs
         )
-
-    def login(self, username=None, password=None):
-        """
-
-        Args:
-            username:
-            password:
-
-        Returns:
-            None
-        """
-        resp = self.client.login(
-            username or self.username,
-            password or self.password,
-        )
-
-        self.access_token = resp['token']
-        self.refresh_token = resp['refresh']
 
     def can_connect(self):
         """Determine if Beergarden is responding to requests.

@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import warnings
@@ -6,6 +7,36 @@ import urllib3
 from requests import Session
 
 from brewtils.rest import normalize_url_prefix
+
+
+def enable_auth(method):
+    """Decorate methods with this to enable using authentication"""
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        original_response = method(self, *args, **kwargs)
+
+        if original_response.status_code != 401:
+            return original_response
+
+        # Try to use the refresh token
+        if self.refresh_token:
+            refresh_response = self.refresh()
+
+            if refresh_response.ok:
+                return method(self, *args, **kwargs)
+
+        # Try to use credentials
+        if self.username and self.password:
+            credential_response = self.get_tokens()
+
+            if credential_response.ok:
+                return method(self, *args, **kwargs)
+
+        # Nothing worked, just return the original response
+        return original_response
+
+    return wrapper
 
 
 class RestClient(object):
@@ -31,10 +62,19 @@ class RestClient(object):
 
     JSON_HEADERS = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
-    def __init__(self, bg_host=None, bg_port=None, ssl_enabled=False, api_version=None,
-                 logger=None, ca_cert=None, client_cert=None, url_prefix=None, ca_verify=True,
-                 **kwargs):
-
+    def __init__(
+            self,
+            bg_host=None,
+            bg_port=None,
+            ssl_enabled=False,
+            api_version=None,
+            logger=None,
+            ca_cert=None,
+            client_cert=None,
+            url_prefix=None,
+            ca_verify=True,
+            **kwargs
+    ):
         bg_host = bg_host or kwargs.get('host')
         if not bg_host:
             raise ValueError('Missing keyword argument "bg_host"')
@@ -57,6 +97,11 @@ class RestClient(object):
         if client_cert:
             self.session.cert = client_cert
 
+        self.username = kwargs.get('username', None)
+        self.password = kwargs.get('password', None)
+        self.access_token = None
+        self.refresh_token = None
+
         # Configure the beer-garden URLs
         scheme = 'https' if ssl_enabled else 'http'
         self.base_url = (
@@ -65,7 +110,6 @@ class RestClient(object):
         )
         self.version_url = self.base_url + 'version'
         self.config_url = self.base_url + 'config'
-        self.login_url = self.base_url + 'login'
 
         api_version = api_version or self.LATEST_VERSION
         if api_version == 1:
@@ -76,29 +120,13 @@ class RestClient(object):
             self.queue_url = self.base_url + 'api/v1/queues/'
             self.logging_config_url = self.base_url + 'api/v1/config/logging/'
             self.job_url = self.base_url + 'api/v1/jobs/'
+            self.token_url = self.base_url + 'api/v1/tokens/'
+
             self.event_url = self.base_url + 'api/vbeta/events/'
         else:
             raise ValueError("Invalid beer-garden API version: %s" % api_version)
 
-    def login(self, username, password):
-        """
-
-        Args:
-            username:
-            password:
-
-        Returns:
-            None
-        """
-        resp = self.session.post(self.login_url,
-                                 headers=self.JSON_HEADERS,
-                                 data=json.dumps({'username': username,
-                                                  'password': password})).json()
-
-        self.session.headers['Authorization'] = 'Bearer ' + resp['token']
-
-        return resp
-
+    @enable_auth
     def get_version(self, **kwargs):
         """Perform a GET to the version URL
 
@@ -107,6 +135,7 @@ class RestClient(object):
         """
         return self.session.get(self.version_url, params=kwargs)
 
+    @enable_auth
     def get_config(self, **kwargs):
         """Perform a GET to the config URL
 
@@ -115,6 +144,7 @@ class RestClient(object):
         """
         return self.session.get(self.config_url, params=kwargs)
 
+    @enable_auth
     def get_logging_config(self, **kwargs):
         """Perform a GET to the logging config URL
 
@@ -123,6 +153,7 @@ class RestClient(object):
         """
         return self.session.get(self.logging_config_url, params=kwargs)
 
+    @enable_auth
     def get_systems(self, **kwargs):
         """Perform a GET on the System collection URL
 
@@ -131,6 +162,7 @@ class RestClient(object):
         """
         return self.session.get(self.system_url, params=kwargs)
 
+    @enable_auth
     def get_system(self, system_id, **kwargs):
         """Performs a GET on the System URL
 
@@ -140,6 +172,7 @@ class RestClient(object):
         """
         return self.session.get(self.system_url + system_id, params=kwargs)
 
+    @enable_auth
     def post_systems(self, payload):
         """Performs a POST on the System URL
 
@@ -148,6 +181,7 @@ class RestClient(object):
         """
         return self.session.post(self.system_url, data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def patch_system(self, system_id, payload):
         """Performs a PATCH on a System URL
 
@@ -158,6 +192,7 @@ class RestClient(object):
         return self.session.patch(self.system_url + str(system_id),
                                   data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def delete_system(self, system_id):
         """Performs a DELETE on a System URL
 
@@ -166,6 +201,7 @@ class RestClient(object):
         """
         return self.session.delete(self.system_url + system_id)
 
+    @enable_auth
     def patch_instance(self, instance_id, payload):
         """Performs a PATCH on the instance URL
 
@@ -176,10 +212,12 @@ class RestClient(object):
         return self.session.patch(self.instance_url + str(instance_id),
                                   data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def get_commands(self):
         """Performs a GET on the Commands URL"""
         return self.session.get(self.command_url)
 
+    @enable_auth
     def get_command(self, command_id):
         """Performs a GET on the Command URL
 
@@ -188,6 +226,7 @@ class RestClient(object):
         """
         return self.session.get(self.command_url + command_id)
 
+    @enable_auth
     def get_requests(self, **kwargs):
         """Performs a GET on the Requests URL
 
@@ -196,6 +235,7 @@ class RestClient(object):
         """
         return self.session.get(self.request_url, params=kwargs)
 
+    @enable_auth
     def get_request(self, request_id):
         """Performs a GET on the Request URL
 
@@ -204,6 +244,7 @@ class RestClient(object):
         """
         return self.session.get(self.request_url + request_id)
 
+    @enable_auth
     def post_requests(self, payload):
         """Performs a POST on the Request URL
 
@@ -212,6 +253,7 @@ class RestClient(object):
         """
         return self.session.post(self.request_url, data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def patch_request(self, request_id, payload):
         """Performs a PATCH on the Request URL
 
@@ -222,6 +264,7 @@ class RestClient(object):
         return self.session.patch(self.request_url + str(request_id),
                                   data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def post_event(self, payload, publishers=None):
         """Performs a POST on the event URL
 
@@ -232,6 +275,7 @@ class RestClient(object):
         return self.session.post(self.event_url, data=payload, headers=self.JSON_HEADERS,
                                  params={'publisher': publishers} if publishers else None)
 
+    @enable_auth
     def get_queues(self):
         """Performs a GET on the Queues URL
 
@@ -239,6 +283,7 @@ class RestClient(object):
         """
         return self.session.get(self.queue_url)
 
+    @enable_auth
     def delete_queues(self):
         """Performs a DELETE on the Queues URL
 
@@ -246,6 +291,7 @@ class RestClient(object):
         """
         return self.session.delete(self.queue_url)
 
+    @enable_auth
     def delete_queue(self, queue_name):
         """Performs a DELETE on a specific Queue URL
 
@@ -253,6 +299,7 @@ class RestClient(object):
         """
         return self.session.delete(self.queue_url + queue_name)
 
+    @enable_auth
     def get_jobs(self, **kwargs):
         """Performs a GET on the Jobs URL.
 
@@ -260,6 +307,7 @@ class RestClient(object):
         """
         return self.session.get(self.job_url, params=kwargs)
 
+    @enable_auth
     def get_job(self, job_id):
         """Performs a GET on the Job URL
 
@@ -268,6 +316,7 @@ class RestClient(object):
         """
         return self.session.get(self.job_url + job_id)
 
+    @enable_auth
     def post_jobs(self, payload):
         """Performs a POST on the Job URL
 
@@ -276,6 +325,7 @@ class RestClient(object):
         """
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def patch_job(self, job_id, payload):
         """Performs a PATCH on the Job URL
 
@@ -286,6 +336,7 @@ class RestClient(object):
         return self.session.patch(self.job_url + str(job_id),
                                   data=payload, headers=self.JSON_HEADERS)
 
+    @enable_auth
     def delete_job(self, job_id):
         """Performs a DELETE on a Job URL
 
@@ -293,6 +344,52 @@ class RestClient(object):
         :return: Response to the request
         """
         return self.session.delete(self.job_url + job_id)
+
+    def get_tokens(self, username=None, password=None):
+        """Use a username and password to get access and refresh tokens
+
+        Args:
+            username: Beergarden username
+            password: Beergarden password
+
+        Returns:
+            Response object
+        """
+        response = self.session.post(
+            self.token_url,
+            headers=self.JSON_HEADERS,
+            data=json.dumps({'username': username or self.username,
+                             'password': password or self.password})
+        )
+
+        if response.ok:
+            response_data = response.json()
+
+            self.access_token = response_data['token']
+            self.refresh_token = response_data['refresh']
+            self.session.headers['Authorization'] = 'Bearer ' + self.access_token
+
+        return response
+
+    def refresh(self, refresh_token=None):
+        """Use a refresh token to obtain a new access token
+
+        Args:
+            refresh_token: Refresh token to use
+
+        Returns:
+            Response object
+        """
+        refresh_token = refresh_token or self.refresh_token
+        response = self.session.get(self.token_url + refresh_token)
+
+        if response.ok:
+            response_data = response.json()
+
+            self.access_token = response_data['token']
+            self.session.headers['Authorization'] = 'Bearer ' + self.access_token
+
+        return response
 
 
 class BrewmasterRestClient(RestClient):

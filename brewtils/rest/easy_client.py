@@ -27,6 +27,10 @@ class EasyClient(object):
     :param logger: The logger to use. If None one will be created.
     :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
+    :param username: Username for Beergarden authentication
+    :param password: Password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
     def __init__(

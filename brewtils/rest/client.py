@@ -73,6 +73,10 @@ class RestClient(object):
     :param client_cert: The client certificate to use when making requests.
     :param url_prefix: beer-garden REST API Url Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
+    :param username: Username for Beergarden authentication
+    :param password: Password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
     # The Latest Version Currently released
@@ -117,8 +121,8 @@ class RestClient(object):
 
         self.username = kwargs.get('username', None)
         self.password = kwargs.get('password', None)
-        self.access_token = None
-        self.refresh_token = None
+        self.access_token = kwargs.get('access_token', None)
+        self.refresh_token = kwargs.get('refresh_token', None)
 
         # Configure the beer-garden URLs
         scheme = 'https' if ssl_enabled else 'http'

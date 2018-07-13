@@ -55,4 +55,14 @@ SPECIFICATION = {
         "description": "Password for authentication",
         "required": False,
     },
+    "access_token": {
+        "type": "str",
+        "description": "Access token for authentication",
+        "required": False,
+    },
+    "refresh_token": {
+        "type": "str",
+        "description": "Refresh token for authentication",
+        "required": False,
+    },
 }

@@ -61,7 +61,8 @@ def get_connection_info(cli_args=None, **kwargs):
 
     return {key: config[key] for key in (
         'bg_host', 'bg_port', 'ssl_enabled', 'api_version', 'ca_cert',
-        'client_cert', 'url_prefix', 'ca_verify', 'username', 'password'
+        'client_cert', 'url_prefix', 'ca_verify', 'username', 'password',
+        'access_token', 'refresh_token',
     )}
 
 

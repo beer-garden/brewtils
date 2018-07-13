@@ -24,6 +24,8 @@ def params():
         'ca_verify': True,
         'username': None,
         'password': None,
+        'access_token': None,
+        'refresh_token': None,
     }
 
 

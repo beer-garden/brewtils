@@ -114,6 +114,10 @@ class SystemClient(object):
     :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     :param raise_on_error: Raises an error if the request ends in an error state.
+    :param username: Username for Beergarden authentication
+    :param password: Password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
     def __init__(

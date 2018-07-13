@@ -113,6 +113,10 @@ class PluginBase(object):
     :param int starting_timeout: Initial time to wait before the first retry.
     :param int max_instances: Maximum number of instances allowed for the system.
     :param bool ca_verify: Verify server certificate when making a request.
+    :param str username: The username for Beergarden authentication
+    :param str password: The password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
     def __init__(self, client, bg_host=None, bg_port=None, ssl_enabled=None, ca_cert=None,

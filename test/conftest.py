@@ -5,8 +5,15 @@ from datetime import datetime
 import pytest
 import pytz
 
-from brewtils.models import Parameter, Command, Instance, System, Request, PatchOperation, \
-    LoggingConfig, Event, Queue, Job, CronTrigger, RequestTemplate, IntervalTrigger, DateTrigger
+from brewtils.models import (
+    Parameter, Command, Instance, System, Request, Choices, PatchOperation,
+    LoggingConfig, Event, Queue, Principal, Role, Job, CronTrigger,
+    RequestTemplate, IntervalTrigger, DateTrigger
+)
+
+# This is a little weird, but we have a circular dependency and this makes
+# things easier
+system_id = '584f11af55a38e64799f1234'
 
 
 @pytest.fixture
@@ -34,6 +41,23 @@ def ts_epoch_with_tz(ts_epoch):
 
 
 @pytest.fixture
+def choices_dict():
+    """Choices as a dictionary."""
+    return {
+        'display': 'select',
+        'strict': True,
+        'type': 'static',
+        'value': ['choiceA', 'choiceB'],
+        'details': {}
+    }
+
+
+@pytest.fixture
+def bg_choices(choices_dict):
+    return Choices(**choices_dict)
+
+
+@pytest.fixture
 def nested_parameter_dict():
     """Nested Parameter as a dictionary."""
     return {
@@ -55,7 +79,7 @@ def nested_parameter_dict():
 
 
 @pytest.fixture
-def parameter_dict(nested_parameter_dict):
+def parameter_dict(nested_parameter_dict, choices_dict):
     """Non-nested parameter as a dictionary."""
     return {
         'key': 'key',
@@ -65,13 +89,7 @@ def parameter_dict(nested_parameter_dict):
         'optional': True,
         'default': 'default',
         'description': 'desc',
-        'choices': {
-            'display': 'select',
-            'strict': True,
-            'type': 'static',
-            'value': ['choiceA', 'choiceB'],
-            'details': {}
-        },
+        'choices': choices_dict,
         'parameters': [nested_parameter_dict],
         'nullable': False,
         'maximum': 10,
@@ -82,16 +100,17 @@ def parameter_dict(nested_parameter_dict):
 
 
 @pytest.fixture
-def bg_parameter(parameter_dict):
+def bg_parameter(parameter_dict, bg_choices):
     """Parameter based on the parameter_dict"""
     dict_copy = copy.deepcopy(parameter_dict)
     dict_copy['parameters'] = [Parameter(**dict_copy['parameters'][0])]
+    dict_copy['choices'] = bg_choices
     return Parameter(**dict_copy)
 
 
 @pytest.fixture
-def _command_dict(parameter_dict):
-    """Use the command_dict fixture instead."""
+def command_dict(parameter_dict):
+    """A command represented as a dictionary."""
     return {
         'name': 'name',
         'description': 'desc',
@@ -103,15 +122,16 @@ def _command_dict(parameter_dict):
         'form': {},
         'template': '<html></html>',
         'icon_name': 'icon!',
-        'system': None  # TODO: Set this up
+        'system': {'id': system_id}
     }
 
 
 @pytest.fixture
-def _bg_command(_command_dict, bg_parameter):
+def bg_command(command_dict, bg_parameter):
     """Use the bg_command fixture instead."""
-    dict_copy = copy.deepcopy(_command_dict)
+    dict_copy = copy.deepcopy(command_dict)
     dict_copy['parameters'] = [bg_parameter]
+    dict_copy['system'] = System(id=system_id)
     return Command(**dict_copy)
 
 
@@ -143,16 +163,16 @@ def bg_instance(instance_dict, ts_dt):
 
 
 @pytest.fixture
-def system_dict(instance_dict, _command_dict):
+def system_dict(instance_dict, command_dict):
     """A system represented as a dictionary."""
     return {
         'name': 'name',
         'description': 'desc',
         'version': '1.0.0',
-        'id': '584f11af55a38e64799f1234',
+        'id': system_id,
         'max_instances': 1,
         'instances': [instance_dict],
-        'commands': [_command_dict],
+        'commands': [command_dict],
         'icon_name': 'fa-beer',
         'display_name': 'non-offensive',
         'metadata': {'some': 'stuff'}
@@ -160,11 +180,11 @@ def system_dict(instance_dict, _command_dict):
 
 
 @pytest.fixture
-def bg_system(system_dict, bg_instance, _bg_command):
+def bg_system(system_dict, bg_instance, bg_command):
     """A system as a model."""
     dict_copy = copy.deepcopy(system_dict)
     dict_copy['instances'] = [bg_instance]
-    dict_copy['commands'] = [_bg_command]
+    dict_copy['commands'] = [bg_command]
     return System(**dict_copy)
 
 
@@ -188,12 +208,13 @@ def child_request_dict(ts_epoch):
         'error_class': None,
         'metadata': {'child': 'stuff'},
         'has_parent': True,
+        'requester': 'user',
     }
 
 
 @pytest.fixture
-def _child_request(child_request_dict, ts_dt):
-    """Use child_request instead."""
+def child_request(child_request_dict, ts_dt):
+    """A child request as a model."""
     dict_copy = copy.deepcopy(child_request_dict)
     dict_copy['created_at'] = ts_dt
     dict_copy['updated_at'] = ts_dt
@@ -221,12 +242,13 @@ def parent_request_dict(ts_epoch):
         'error_class': None,
         'metadata': {'parent': 'stuff'},
         'has_parent': False,
+        'requester': 'user',
     }
 
 
 @pytest.fixture
-def _parent_request(parent_request_dict, ts_dt):
-    """Use parent_request instead."""
+def parent_request(parent_request_dict, ts_dt):
+    """A parent request as a model."""
     dict_copy = copy.deepcopy(parent_request_dict)
     dict_copy['created_at'] = ts_dt
     dict_copy['updated_at'] = ts_dt
@@ -275,15 +297,16 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         'error_class': 'ValueError',
         'metadata': {'request': 'stuff'},
         'has_parent': True,
+        'requester': 'user',
     }
 
 
 @pytest.fixture
-def bg_request(request_dict, _parent_request, _child_request, ts_dt):
+def bg_request(request_dict, parent_request, child_request, ts_dt):
     """A request as a model."""
     dict_copy = copy.deepcopy(request_dict)
-    dict_copy['parent'] = _parent_request
-    dict_copy['children'] = [_child_request]
+    dict_copy['parent'] = parent_request
+    dict_copy['children'] = [child_request]
     dict_copy['created_at'] = ts_dt
     dict_copy['updated_at'] = ts_dt
     return Request(**dict_copy)
@@ -397,6 +420,56 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
+def principal_dict(role_dict):
+    return {
+        'id': '58542eb571afd47ead90d25f',
+        'username': 'admin',
+        'roles': [role_dict],
+        'permissions': ['bg-all'],
+        'preferences': {'theme': 'dark'},
+    }
+
+
+@pytest.fixture
+def bg_principal(principal_dict, bg_role):
+    dict_copy = copy.deepcopy(principal_dict)
+    dict_copy['roles'] = [bg_role]
+    return Principal(**dict_copy)
+
+
+@pytest.fixture
+def nested_role_dict():
+    return {
+        'id': '58542eb571afd47ead90d26c',
+        'name': 'bg-anonymous',
+        'roles': [],
+        'permissions': ['bg-request-read'],
+    }
+
+
+@pytest.fixture
+def bg_nested_role(nested_role_dict):
+    return Role(**nested_role_dict)
+
+
+@pytest.fixture
+def role_dict(nested_role_dict):
+    return {
+        'id': '58542eb571afd47ead90d26f',
+        'name': 'bg-admin',
+        'roles': [nested_role_dict],
+        'permissions': ['bg-all'],
+    }
+
+
+@pytest.fixture
+def bg_role(role_dict, bg_nested_role):
+    dict_copy = copy.deepcopy(role_dict)
+    dict_copy['roles'] = [bg_nested_role]
+    return Role(**dict_copy)
+
+
+@pytest.fixture
 def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
     """A date job represented as a dictionary."""
     return {
@@ -460,35 +533,6 @@ def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger,
     dict_copy['trigger'] = bg_interval_trigger
     dict_copy['request_template'] = bg_request_template
     return Job(**dict_copy)
-
-
-@pytest.fixture
-def bg_command(_bg_command, bg_system):
-    """A comand as a model."""
-    _bg_command.system = bg_system
-    return _bg_command
-
-
-@pytest.fixture
-def command_dict(_command_dict, bg_system):
-    """A command represented as a dictionary."""
-    dict_copy = copy.deepcopy(_command_dict)
-    dict_copy['system'] = {'id': bg_system.id}
-    return dict_copy
-
-
-@pytest.fixture
-def child_request(_child_request, bg_request):
-    """A child request as a model."""
-    _child_request.parent = bg_request
-    return _child_request
-
-
-@pytest.fixture
-def parent_request(_parent_request, bg_request):
-    """A parent request as a model."""
-    _parent_request.children = [bg_request]
-    return _parent_request
 
 
 @pytest.fixture

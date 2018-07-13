@@ -1,12 +1,29 @@
 from enum import Enum
 
 import six
+
 from brewtils.errors import RequestStatusTransitionError
 
-__all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
-           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue',
-           'Job', 'RequestTemplate', 'DateTrigger', 'CronTrigger',
-           'IntervalTrigger']
+__all__ = [
+    'System',
+    'Instance',
+    'Command',
+    'Parameter',
+    'Request',
+    'PatchOperation',
+    'Choices',
+    'LoggingConfig',
+    'Event',
+    'Queue',
+    'Principal',
+    'Role',
+    'RefreshToken',
+    'Job',
+    'RequestTemplate',
+    'DateTrigger',
+    'CronTrigger',
+    'IntervalTrigger',
+]
 
 
 class Events(Enum):
@@ -246,7 +263,7 @@ class Request(RequestTemplate):
     def __init__(self, system=None, system_version=None, instance_name=None, command=None,
                  id=None, parent=None, children=None, parameters=None, comment=None, output=None,
                  output_type=None, status=None, command_type=None, created_at=None,
-                 error_class=None, metadata=None, updated_at=None, has_parent=None):
+                 error_class=None, metadata=None, updated_at=None, has_parent=None, requester=None):
 
         super(Request, self).__init__(
             system=system,
@@ -268,6 +285,7 @@ class Request(RequestTemplate):
         self.updated_at = updated_at
         self.error_class = error_class
         self.has_parent = has_parent
+        self.requester = requester
 
     def __repr__(self):
         return ('<Request: command=%s, status=%s, '
@@ -536,6 +554,56 @@ class Queue(object):
 
     def __repr__(self):
         return '<Queue: name=%s, size=%s>' % (self.name, self.size)
+
+
+class Principal(object):
+
+    def __init__(self, id=None, username=None, roles=None, permissions=None,
+                 preferences=None):
+        self.id = id
+        self.username = username
+        self.roles = roles
+        self.permissions = permissions
+        self.preferences = preferences
+
+    def __str__(self):
+        return '%s' % self.username
+
+    def __repr__(self):
+        return ('<Principal: username=%s, roles=%s, permissions=%s>' %
+                (self.username, self.roles, self.permissions))
+
+
+class Role(object):
+
+    def __init__(self, id=None, name=None, roles=None, permissions=None):
+        self.id = id
+        self.name = name
+        self.roles = roles
+        self.permissions = permissions
+
+    def __str__(self):
+        return '%s' % self.name
+
+    def __repr__(self):
+        return ('<Role: name=%s, roles=%s, permissions=%s>' %
+                (self.name, self.roles, self.permissions))
+
+
+class RefreshToken(object):
+
+    def __init__(self, id=None, issued=None, expires=None, payload=None):
+        self.id = id
+        self.issued = issued
+        self.expires = expires
+        self.payload = payload or {}
+
+    def __str__(self):
+        return '%s' % self.payload
+
+    def __repr__(self):
+        return ('<RefreshToken: issued=%s, expires=%s, payload=%s>' %
+                (self.issued, self.expires, self.payload))
 
 
 class Job(object):

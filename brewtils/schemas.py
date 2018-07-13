@@ -6,10 +6,24 @@ from marshmallow import Schema, post_dump, post_load, pre_load, fields
 from marshmallow.utils import UTC
 from marshmallow_polyfield import PolyField
 
-__all__ = ['SystemSchema', 'InstanceSchema', 'CommandSchema', 'ParameterSchema',
-           'RequestSchema', 'PatchSchema', 'LoggingConfigSchema', 'EventSchema',
-           'QueueSchema', 'JobSchema', 'DateTriggerSchema',
-           'IntervalTriggerSchema', 'CronTriggerSchema']
+__all__ = [
+    'SystemSchema',
+    'InstanceSchema',
+    'CommandSchema',
+    'ParameterSchema',
+    'RequestSchema',
+    'PatchSchema',
+    'LoggingConfigSchema',
+    'EventSchema',
+    'QueueSchema',
+    'PrincipalSchema',
+    'RoleSchema',
+    'RefreshTokenSchema',
+    'JobSchema',
+    'DateTriggerSchema',
+    'IntervalTriggerSchema',
+    'CronTriggerSchema'
+]
 
 
 class DateTime(fields.DateTime):
@@ -157,6 +171,7 @@ class RequestSchema(RequestTemplateSchema):
     created_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
     updated_at = DateTime(allow_none=True, format='epoch', example='1500065932000')
     has_parent = fields.Bool(allow_none=True)
+    requester = fields.String(allow_none=True)
 
 
 class StatusInfoSchema(BaseSchema):
@@ -209,6 +224,31 @@ class QueueSchema(BaseSchema):
     system_id = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
     size = fields.Integer(allow_none=True)
+
+
+class PrincipalSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    username = fields.Str(allow_none=True)
+    roles = fields.Nested('RoleSchema', many=True, allow_none=True)
+    permissions = fields.List(fields.Str(), allow_none=True)
+    preferences = fields.Dict(allow_none=True)
+
+
+class RoleSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    roles = fields.Nested('self', many=True, allow_none=True)
+    permissions = fields.List(fields.Str(), allow_none=True)
+
+
+class RefreshTokenSchema(BaseSchema):
+
+    id = fields.Str(allow_none=True)
+    issued = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    expires = DateTime(allow_none=True, format='epoch', example='1500065932000')
+    payload = fields.Dict()
 
 
 class DateTriggerSchema(BaseSchema):

@@ -4,6 +4,7 @@ lark-parser
 marshmallow
 marshmallow-polyfield
 pika
+pyjwt
 requests
 simplejson
 six

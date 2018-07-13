@@ -114,13 +114,33 @@ class SystemClient(object):
     :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
     :param raise_on_error: Raises an error if the request ends in an error state.
+    :param username: Username for Beergarden authentication
+    :param password: Password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
-    def __init__(self, bg_host=None, bg_port=None, system_name=None, version_constraint='latest',
-                 default_instance='default', always_update=False, timeout=None, max_delay=30,
-                 api_version=None, ssl_enabled=False, ca_cert=None, blocking=True,
-                 max_concurrent=None, client_cert=None, url_prefix=None, ca_verify=True,
-                 raise_on_error=False, **kwargs):
+    def __init__(
+            self,
+            bg_host=None,
+            bg_port=None,
+            system_name=None,
+            version_constraint='latest',
+            default_instance='default',
+            always_update=False,
+            timeout=None,
+            max_delay=30,
+            api_version=None,
+            ssl_enabled=False,
+            ca_cert=None,
+            blocking=True,
+            max_concurrent=None,
+            client_cert=None,
+            url_prefix=None,
+            ca_verify=True,
+            raise_on_error=False,
+            **kwargs
+    ):
         self._system_name = system_name
         self._version_constraint = version_constraint
         self._default_instance = default_instance
@@ -143,10 +163,17 @@ class SystemClient(object):
             max_concurrent = (cpu_count() or 1) * 5
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
-        self._easy_client = EasyClient(bg_host=self._bg_host, bg_port=self._bg_port,
-                                       ssl_enabled=ssl_enabled, api_version=api_version,
-                                       ca_cert=ca_cert, client_cert=client_cert,
-                                       url_prefix=url_prefix, ca_verify=ca_verify)
+        self._easy_client = EasyClient(
+            bg_host=self._bg_host,
+            bg_port=self._bg_port,
+            ssl_enabled=ssl_enabled,
+            api_version=api_version,
+            ca_cert=ca_cert,
+            client_cert=client_cert,
+            url_prefix=url_prefix,
+            ca_verify=ca_verify,
+            **kwargs
+        )
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""

@@ -14,12 +14,14 @@ import warnings
 
 import pytest
 from marshmallow.exceptions import MarshmallowError
-
 from brewtils.models import System
 from brewtils.schema_parser import SchemaParser, BrewmasterSchemaParser
-from test.utils.comparable import assert_parameter_equal, assert_command_equal, \
-    assert_system_equal, assert_instance_equal, assert_request_equal, assert_patch_equal, \
-    assert_logging_config_equal, assert_event_equal, assert_queue_equal, assert_job_equal
+from test.utils.comparable import (
+    assert_parameter_equal, assert_command_equal, assert_system_equal,
+    assert_instance_equal, assert_request_equal, assert_patch_equal,
+    assert_logging_config_equal, assert_event_equal, assert_queue_equal,
+    assert_principal_equal, assert_role_equal, assert_job_equal
+)
 
 
 @pytest.mark.parametrize('data,kwargs,error', [
@@ -52,13 +54,12 @@ def test_no_modify(system_dict):
     assert system_copy == system_dict
 
 
-@pytest.mark.parametrize('method,data,kwargs,assertion,assert_kwargs,expected', [
+@pytest.mark.parametrize('method,data,kwargs,assertion,expected', [
     (
         'parse_system',
         {},
         {'from_string': False},
         assert_system_equal,
-        {},
         System(),
     ),
     (
@@ -66,7 +67,6 @@ def test_no_modify(system_dict):
         '{}',
         {'from_string': True},
         assert_system_equal,
-        {},
         System(),
     ),
     (
@@ -74,7 +74,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('system_dict'),
         {},
         assert_system_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_system'),
     ),
     (
@@ -82,7 +81,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('instance_dict'),
         {},
         assert_instance_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_instance'),
     ),
     (
@@ -90,7 +88,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('command_dict'),
         {},
         assert_command_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_command'),
     ),
     (
@@ -98,7 +95,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('parameter_dict'),
         {},
         assert_parameter_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_parameter'),
     ),
     (
@@ -106,7 +102,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('request_dict'),
         {},
         assert_request_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_request'),
     ),
     (
@@ -114,7 +109,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('logging_config_dict'),
         {},
         assert_logging_config_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_logging_config'),
     ),
     (
@@ -122,7 +116,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('event_dict'),
         {},
         assert_event_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_event'),
     ),
     (
@@ -130,15 +123,27 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('queue_dict'),
         {},
         assert_queue_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_queue'),
+    ),
+    (
+        'parse_principal',
+        pytest.lazy_fixture('principal_dict'),
+        {},
+        assert_principal_equal,
+        pytest.lazy_fixture('bg_principal'),
+    ),
+    (
+        'parse_role',
+        pytest.lazy_fixture('role_dict'),
+        {},
+        assert_role_equal,
+        pytest.lazy_fixture('bg_role'),
     ),
     (
         'parse_job',
         pytest.lazy_fixture('job_dict'),
         {},
         assert_job_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_job'),
     ),
     (
@@ -146,7 +151,6 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('cron_job_dict'),
         {},
         assert_job_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_cron_job'),
     ),
     (
@@ -154,14 +158,13 @@ def test_no_modify(system_dict):
         pytest.lazy_fixture('interval_job_dict'),
         {},
         assert_job_equal,
-        {'deep': True},
         pytest.lazy_fixture('bg_interval_job'),
     ),
 ])
-def test_parse(method, data, kwargs, assertion, assert_kwargs, expected):
+def test_parse(method, data, kwargs, assertion, expected):
     parser = SchemaParser()
     actual = getattr(parser, method)(data, **kwargs)
-    assertion(expected, actual, **assert_kwargs)
+    assertion(expected, actual)
 
 
 @pytest.mark.parametrize('data,kwargs', [
@@ -239,6 +242,18 @@ def test_parse_patch_many(patch_many_dict, bg_patch1, bg_patch2):
         pytest.lazy_fixture('bg_queue'),
         {'to_string': False},
         pytest.lazy_fixture('queue_dict')
+    ),
+    (
+        'serialize_principal',
+        pytest.lazy_fixture('bg_principal'),
+        {'to_string': False},
+        pytest.lazy_fixture('principal_dict')
+    ),
+    (
+        'serialize_role',
+        pytest.lazy_fixture('bg_role'),
+        {'to_string': False},
+        pytest.lazy_fixture('role_dict')
     ),
     (
         'serialize_job',

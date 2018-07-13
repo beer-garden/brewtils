@@ -4,8 +4,10 @@ import pytest
 from mock import Mock, PropertyMock
 
 from brewtils.errors import ModelValidationError, RequestStatusTransitionError
-from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
-    Choices, LoggingConfig, Event, Queue, RequestTemplate
+from brewtils.models import (
+    Command, Instance, Parameter, PatchOperation, Request, System, Choices,
+    LoggingConfig, Event, Queue, Principal, Role, RequestTemplate
+)
 
 
 class CommandTest(unittest.TestCase):
@@ -507,33 +509,64 @@ class LoggingConfigTest(unittest.TestCase):
         self.assertEqual(log_config.formatters['stdout'], {"format": "%(message)s"})
 
 
-class EventTest(unittest.TestCase):
+class TestEvent(object):
 
-    def test_str(self):
-        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'},
-                      metadata={})
-        self.assertEqual('%s: %s, %s' % (event.name, event.payload, event.metadata), str(event))
+    @pytest.fixture
+    def event(self):
+        return Event(name='REQUEST_CREATED', error=False,
+                     payload={'request': 'request'}, metadata={})
 
-    def test_repr(self):
-        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'},
-                      metadata={})
-        self.assertEqual('<Event: name=%s, error=%s, payload=%s, metadata=%s>' %
-                         (event.name, event.error, event.payload, event.metadata), repr(event))
+    def test_str(self, event):
+        assert str(event) == "REQUEST_CREATED: {'request': 'request'}, {}"
+
+    def test_repr(self, event):
+        assert repr(event) == "<Event: name=REQUEST_CREATED, error=False, "\
+                              "payload={'request': 'request'}, metadata={}>"
 
 
-class QueueTest(unittest.TestCase):
+class TestQueue(object):
 
-    def test_str(self):
-        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
-                      instance='default', system_id='1234',
-                      display='foo.1-0-0.default', size=3)
-        self.assertEqual('%s: %s' % (queue.name, queue.size), str(queue))
+    @pytest.fixture
+    def queue(self):
+        return Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
+                     instance='default', system_id='1234',
+                     display='foo.1-0-0.default', size=3)
 
-    def test_repr(self):
-        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
-                      instance='default', system_id='1234',
-                      display='foo.1-0-0.default', size=3)
-        self.assertEqual('<Queue: name=echo.1-0-0.default, size=3>', repr(queue))
+    def test_str(self, queue):
+        assert str(queue) == 'echo.1-0-0.default: 3'
+
+    def test_repr(self, queue):
+        assert repr(queue) == '<Queue: name=echo.1-0-0.default, size=3>'
+
+
+class TestPrincipal(object):
+
+    @pytest.fixture
+    def principal(self):
+        return Principal(username='admin', roles=['bg-admin'],
+                         permissions=['bg-all'])
+
+    def test_str(self, principal):
+        assert str(principal) == 'admin'
+
+    def test_repr(self, principal):
+        assert repr(principal) == "<Principal: username=admin, " \
+                                  "roles=['bg-admin'], permissions=['bg-all']>"
+
+
+class TestRole(object):
+
+    @pytest.fixture
+    def role(self):
+        return Role(name='bg-admin', roles=['bg-anonymous'],
+                    permissions=['bg-all'])
+
+    def test_str(self, role):
+        assert str(role) == 'bg-admin'
+
+    def test_repr(self, role):
+        assert repr(role) == "<Role: name=bg-admin, roles=['bg-anonymous'], " \
+                             "permissions=['bg-all']>"
 
 
 @pytest.mark.parametrize('model,str_expected,repr_expected', [

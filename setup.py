@@ -30,6 +30,7 @@ setup(
         'marshmallow-polyfield<4',
         'pika<0.12',
         'requests<3',
+        'pyjwt<2',
         'simplejson<4',
         'six<2',
         'wrapt<2',

@@ -2,8 +2,10 @@ import pytest
 from mock import Mock
 
 from brewtils.models import System
-from brewtils.schemas import DateTime, BaseSchema, SystemSchema, serialize_trigger_selector, \
+from brewtils.schemas import (
+    DateTime, BaseSchema, SystemSchema, serialize_trigger_selector,
     deserialize_trigger_selector
+)
 
 
 def test_make_object():

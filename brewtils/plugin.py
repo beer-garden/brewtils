@@ -14,11 +14,11 @@ import brewtils
 from brewtils.errors import ValidationError, RequestProcessingError, \
     DiscardMessageException, RepublishRequestException, RestConnectionError, \
     PluginValidationError, RestClientError, parse_exception_as_json
+from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
-from brewtils.log import DEFAULT_LOGGING_CONFIG
 
 request_context = threading.local()
 
@@ -113,6 +113,10 @@ class PluginBase(object):
     :param int starting_timeout: Initial time to wait before the first retry.
     :param int max_instances: Maximum number of instances allowed for the system.
     :param bool ca_verify: Verify server certificate when making a request.
+    :param str username: The username for Beergarden authentication
+    :param str password: The password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
     def __init__(self, client, bg_host=None, bg_port=None, ssl_enabled=None, ca_cert=None,
@@ -129,14 +133,16 @@ class PluginBase(object):
             self.logger = logging.getLogger(__name__)
             self._custom_logger = False
 
-        connection_parameters = brewtils.get_bg_connection_parameters(
+        connection_parameters = brewtils.get_connection_info(
             bg_host=bg_host,
             bg_port=bg_port,
             ssl_enabled=ssl_enabled,
             ca_cert=ca_cert,
             client_cert=client_cert,
             url_prefix=bg_url_prefix,
-            ca_verify=kwargs.get('ca_verify', None)
+            ca_verify=kwargs.get('ca_verify', None),
+            username=kwargs.get('username', None),
+            password=kwargs.get('password', None),
         )
         self.bg_host = connection_parameters['bg_host']
         self.bg_port = connection_parameters['bg_port']

@@ -1,8 +1,7 @@
 import copy
 import os
-import pytest
 
-from mock import Mock, patch
+import pytest
 from yapconf.exceptions import YapconfItemNotFound
 
 import brewtils
@@ -11,25 +10,24 @@ from brewtils.errors import ValidationError
 from brewtils.rest.easy_client import EasyClient
 
 
-@pytest.fixture
-def params():
-    return {
-        'bg_host': 'bg_host',
-        'bg_port': 1234,
-        'ssl_enabled': False,
-        'api_version': None,
-        'ca_cert': 'ca_cert',
-        'client_cert': 'client_cert',
-        'url_prefix': '/beer/',
-        'ca_verify': True,
-        'username': None,
-        'password': None,
-        'access_token': None,
-        'refresh_token': None,
-    }
-
-
 class TestBrewtils(object):
+
+    @pytest.fixture
+    def params(self):
+        return {
+            'bg_host': 'bg_host',
+            'bg_port': 1234,
+            'ssl_enabled': False,
+            'api_version': None,
+            'ca_cert': 'ca_cert',
+            'client_cert': 'client_cert',
+            'url_prefix': '/beer/',
+            'ca_verify': True,
+            'username': None,
+            'password': None,
+            'access_token': None,
+            'refresh_token': None,
+        }
 
     def setup_method(self):
         self.safe_copy = os.environ.copy()
@@ -48,6 +46,24 @@ class TestBrewtils(object):
 
         config = brewtils.load_config([])
         assert config.bg_host == 'the_host'
+
+    def test_load_config_extra_spec(self):
+        # Still always need a host
+        os.environ['BG_HOST'] = 'the_host'
+
+        spec = {
+            "some_parameter": {
+                "type": "str",
+                "description": "Another required parameter",
+            },
+        }
+
+        config = brewtils.load_config(merge_specification=spec,
+                                      some_parameter='param')
+        assert config.some_parameter == 'param'
+
+        with pytest.raises(YapconfItemNotFound):
+            brewtils.load_config(merge_specification=spec)
 
     def test_get_easy_client(self):
         client = brewtils.get_easy_client(host='bg_host')
@@ -91,15 +107,6 @@ class TestBrewtils(object):
     def test_get_connection_info_no_host(self):
         with pytest.raises(ValidationError):
             brewtils.get_connection_info()
-
-    def test_get_connection_info_no_something(self):
-
-        with patch('brewtils.spec') as mock_spec:
-            mock_spec.load_config.side_effect = YapconfItemNotFound(
-                'message', Mock(item=Mock(name='bg_port')))
-
-            with pytest.raises(YapconfItemNotFound):
-                brewtils.get_connection_info()
 
     def test_normalize_url_prefix(self, params):
         os.environ['BG_WEB_HOST'] = 'bg_host'

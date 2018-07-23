@@ -4,12 +4,12 @@ from yapconf import YapconfSpec
 from yapconf.exceptions import YapconfItemNotFound
 
 from brewtils.decorators import command, parameter, system
-from brewtils.plugin import RemotePlugin
 from brewtils.errors import ValidationError
+from brewtils.plugin import RemotePlugin
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.system_client import SystemClient
-from .specification import SPECIFICATION
 from ._version import __version__ as generated_version
+from .specification import SPECIFICATION
 
 __all__ = [
     'command',
@@ -19,19 +19,19 @@ __all__ = [
     'SystemClient',
     'get_easy_client',
     'get_bg_connection_parameters',
-    'get_connection_info'
+    'get_connection_info',
+    'load_config',
 ]
 
 __version__ = generated_version
-
-spec = YapconfSpec(SPECIFICATION, env_prefix='BG_')
 
 
 def get_easy_client(**kwargs):
     """Easy way to get an EasyClient
 
-    The benefit to this method over creating an EasyClient directly is that this method will also
-    search the environment for parameters. Kwargs passed to this method will take priority, however.
+    The benefit to this method over creating an EasyClient directly is that
+    this method will also search the environment for parameters. Kwargs passed
+    to this method will take priority, however.
 
     Args:
         **kwargs: Options for configuring the EasyClient
@@ -48,14 +48,15 @@ def get_easy_client(**kwargs):
 
 
 def get_connection_info(cli_args=None, **kwargs):
-    """Convenience wrapper around ``load_config`` that returns only connection parameters
+    """Wrapper around ``load_config`` that returns only connection parameters
 
     Args:
-        cli_args (list, optional): List of command line arguments for configuration loading
+        cli_args (list, optional): List of command line arguments for
+            configuration loading
         **kwargs: Additional configuration overrides
 
     Returns:
-        :dict: Parameters needed to make a connection to beergarden
+        :dict: Parameters needed to make a connection to Beergarden
     """
     config = load_config(cli_args=cli_args, **kwargs)
 
@@ -66,10 +67,15 @@ def get_connection_info(cli_args=None, **kwargs):
     )}
 
 
-def load_config(cli_args=None, **kwargs):
+def load_config(
+        cli_args=None,
+        merge_specification=None,
+        **kwargs
+):
     """Load configuration using Yapconf
 
-    Configuation will be loaded from these sources, with earlier sources having higher priority:
+    Configuration will be loaded from these sources, with earlier sources having
+    higher priority:
 
         1. ``**kwargs`` passed to this method
         2. ``cli_args`` passed to this method
@@ -77,24 +83,33 @@ def load_config(cli_args=None, **kwargs):
         4. Default values in the brewtils specification
 
     Args:
-        cli_args (list, optional): List of command line arguments for configuration loading
+        cli_args (list, optional): List of command line arguments for
+            configuration loading
+        merge_specification (dict, optional): Specification that will be merged
+            with the brewtils specification before loading the configuration
         **kwargs: Additional configuration overrides
 
     Returns:
         :obj:`box.Box`: The resolved configuration object
     """
+    spec_source = merge_specification or {}
+    spec_source.update(SPECIFICATION)
+    spec = YapconfSpec(spec_source, env_prefix='BG_')
+
     sources = []
 
     if kwargs:
         # Do a little kwarg massaging for backwards compatibility
         if 'bg_host' not in kwargs and 'host' in kwargs:
-            warnings.warn("brewtils.load_config called with 'host' keyword argument. This name "
-                          "will be removed in version 3.0, please use 'bg_host' instead.",
+            warnings.warn("brewtils.load_config called with 'host' keyword "
+                          "argument. This name will be removed in version 3.0, "
+                          "please use 'bg_host' instead.",
                           DeprecationWarning, stacklevel=2)
             kwargs['bg_host'] = kwargs.pop('host')
         if 'bg_port' not in kwargs and 'port' in kwargs:
-            warnings.warn("brewtils.load_config called with 'port' keyword argument. This name "
-                          "will be removed in version 3.0, please use 'bg_port' instead.",
+            warnings.warn("brewtils.load_config called with 'port' keyword "
+                          "argument. This name will be removed in version 3.0, "
+                          "please use 'bg_port' instead.",
                           DeprecationWarning, stacklevel=2)
             kwargs['bg_port'] = kwargs.pop('port')
 
@@ -114,9 +129,11 @@ def load_config(cli_args=None, **kwargs):
         config = spec.load_config(*sources)
     except YapconfItemNotFound as ex:
         if ex.item.name == 'bg_host':
-            raise ValidationError('Unable to create a plugin without a beer-garden host. '
-                                  'Please specify one on the command line (--bg-host), '
-                                  'in the environment (BG_HOST), or in kwargs (bg_host)')
+            raise ValidationError('Unable to create a plugin without a '
+                                  'beer-garden host. Please specify one on the '
+                                  'command line (--bg-host), in the '
+                                  'environment (BG_HOST), or in kwargs '
+                                  '(bg_host)')
         raise
 
     # Make sure the url_prefix is normal

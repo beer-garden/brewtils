@@ -1,4 +1,5 @@
 import warnings
+from argparse import ArgumentParser
 
 from yapconf import YapconfSpec
 from yapconf.exceptions import YapconfItemNotFound
@@ -47,18 +48,69 @@ def get_easy_client(**kwargs):
     return EasyClient(logger=logger, parser=parser, **get_connection_info(**kwargs))
 
 
-def get_connection_info(cli_args=None, **kwargs):
+def get_argument_parser():
+    """Get an ArgumentParser pre-populated with Brewtils arguments
+
+    This is helpful if you're expecting additional command line arguments to
+    a plugin startup script.
+
+    This enables doing something like:
+
+        def main():
+            parser = get_argument_parser()
+            parser.add_argument('positional_arg')
+
+            parsed_args = parser.parse_args(sys.argv[1:])
+
+            # Now you can use the extra argument
+            client = MyClient(parsed_args.positional_arg)
+
+            # But you'll need to be careful when using the 'normal' Brewtils
+            # configuration loading methods:
+
+            # Option 1: Tell Brewtils about your customized parser
+            connection = get_connection_info(cli_args=sys.argv[1:],
+                                             argument_parser=parser)
+
+            # Option 2: Use the parsed CLI as a dictionary
+            connection = get_connection_info(**vars(parsed_args))
+
+            # Now specify connection kwargs like normal
+            plugin = RemotePlugin(client, name=...
+                                  **connection)
+
+    IMPORTANT: Note that in both cases the returned `connection` object WILL NOT
+    contain your new value. Both options just prevent normal CLI parsing from
+    failing on the unknown argument.
+
+    Returns:
+        :ArgumentParser: Argument parser with Brewtils arguments loaded
+    """
+    parser = ArgumentParser()
+
+    YapconfSpec(SPECIFICATION).add_arguments(parser)
+
+    return parser
+
+
+def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
     """Wrapper around ``load_config`` that returns only connection parameters
 
     Args:
         cli_args (list, optional): List of command line arguments for
             configuration loading
+        argument_parser (ArgumentParser, optional): Argument parser to use when
+            parsing cli_args. Supplying this allows adding additional arguments
+            prior to loading the configuration. This can be useful if your
+            startup script takes additional arguments.
         **kwargs: Additional configuration overrides
 
     Returns:
         :dict: Parameters needed to make a connection to Beergarden
     """
-    config = load_config(cli_args=cli_args, **kwargs)
+    config = load_config(cli_args=cli_args,
+                         argument_parser=argument_parser,
+                         **kwargs)
 
     return {key: config[key] for key in (
         'bg_host', 'bg_port', 'ssl_enabled', 'api_version', 'ca_cert',
@@ -69,6 +121,7 @@ def get_connection_info(cli_args=None, **kwargs):
 
 def load_config(
         cli_args=None,
+        argument_parser=None,
         merge_specification=None,
         **kwargs
 ):
@@ -85,6 +138,10 @@ def load_config(
     Args:
         cli_args (list, optional): List of command line arguments for
             configuration loading
+        argument_parser (ArgumentParser, optional): Argument parser to use when
+            parsing cli_args. Supplying this allows adding additional arguments
+            prior to loading the configuration. This can be useful if your
+            startup script takes additional arguments.
         merge_specification (dict, optional): Specification that will be merged
             with the brewtils specification before loading the configuration
         **kwargs: Additional configuration overrides
@@ -116,11 +173,10 @@ def load_config(
         sources.append(('kwargs', kwargs))
 
     if cli_args:
-        from argparse import ArgumentParser
+        argument_parser = argument_parser or ArgumentParser()
 
-        parser = ArgumentParser()
-        spec.add_arguments(parser)
-        parsed_args = parser.parse_args(cli_args)
+        spec.add_arguments(argument_parser)
+        parsed_args = argument_parser.parse_args(cli_args)
         sources.append(('cli_args', vars(parsed_args)))
 
     sources.append('ENVIRONMENT')

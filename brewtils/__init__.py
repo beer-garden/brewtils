@@ -141,7 +141,8 @@ def load_config(
         argument_parser (ArgumentParser, optional): Argument parser to use when
             parsing cli_args. Supplying this allows adding additional arguments
             prior to loading the configuration. This can be useful if your
-            startup script takes additional arguments.
+            startup script takes additional arguments. See get_argument_parser
+            for additional information.
         merge_specification (dict, optional): Specification that will be merged
             with the brewtils specification before loading the configuration
         **kwargs: Additional configuration overrides
@@ -173,9 +174,10 @@ def load_config(
         sources.append(('kwargs', kwargs))
 
     if cli_args:
-        argument_parser = argument_parser or ArgumentParser()
+        if not argument_parser:
+            argument_parser = ArgumentParser()
+            spec.add_arguments(argument_parser)
 
-        spec.add_arguments(argument_parser)
         parsed_args = argument_parser.parse_args(cli_args)
         sources.append(('cli_args', vars(parsed_args)))
 

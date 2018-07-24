@@ -41,7 +41,7 @@ class TestBrewtils(object):
         config = brewtils.load_config(cli_args)
         assert config.bg_host == 'the_host'
 
-    def test_load_config_cli_custom_argument_parser(self):
+    def test_load_config_cli_custom_argument_parser_vars(self):
         parser = brewtils.get_argument_parser()
         parser.add_argument('some_parameter')
 
@@ -49,6 +49,18 @@ class TestBrewtils(object):
         parsed_args = parser.parse_args(cli_args)
 
         config = brewtils.load_config(**vars(parsed_args))
+        assert config.bg_host == 'the_host'
+        assert parsed_args.some_parameter == 'param'
+        assert 'some_parameter' not in config
+
+    def test_load_config_cli_custom_argument_parser_cli(self):
+        parser = brewtils.get_argument_parser()
+        parser.add_argument('some_parameter')
+
+        cli_args = ['param', '--bg-host', 'the_host']
+        parsed_args = parser.parse_args(cli_args)
+
+        config = brewtils.load_config(cli_args=cli_args, argument_parser=parser)
         assert config.bg_host == 'the_host'
         assert parsed_args.some_parameter == 'param'
         assert 'some_parameter' not in config

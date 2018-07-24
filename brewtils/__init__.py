@@ -19,9 +19,10 @@ __all__ = [
     'RemotePlugin',
     'SystemClient',
     'get_easy_client',
-    'get_bg_connection_parameters',
+    'get_argument_parser',
     'get_connection_info',
     'load_config',
+    'get_bg_connection_parameters',
 ]
 
 __version__ = generated_version
@@ -54,7 +55,7 @@ def get_argument_parser():
     This is helpful if you're expecting additional command line arguments to
     a plugin startup script.
 
-    This enables doing something like:
+    This enables doing something like::
 
         def main():
             parser = get_argument_parser()
@@ -79,9 +80,9 @@ def get_argument_parser():
             plugin = RemotePlugin(client, name=...
                                   **connection)
 
-    IMPORTANT: Note that in both cases the returned `connection` object WILL NOT
-    contain your new value. Both options just prevent normal CLI parsing from
-    failing on the unknown argument.
+    IMPORTANT: Note that in both cases the returned ``connection`` object **will
+    not** contain your new value. Both options just prevent normal CLI parsing
+    from failing on the unknown argument.
 
     Returns:
         :ArgumentParser: Argument parser with Brewtils arguments loaded

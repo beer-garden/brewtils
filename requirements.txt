@@ -24,24 +24,27 @@ jinja2==2.10              # via sphinx
 lark-parser==0.5.6
 markupsafe==1.0           # via jinja2
 marshmallow==2.15.3
+marshmallow-polyfield==3.2
 mccabe==0.6.1             # via flake8
 mock==2.0.0
 more-itertools==4.2.0     # via pytest
 packaging==17.1           # via sphinx
 pathtools==0.1.2          # via watchdog
 pbr==4.0.4                # via mock
-pika==0.11.2
+pika==0.12.0
 pkginfo==1.4.2            # via twine
 pluggy==0.6.0             # via pytest, tox
 py==1.5.3                 # via pytest, tox
 pycodestyle==2.3.1        # via flake8
 pyflakes==1.6.0           # via flake8
 pygments==2.2.0           # via sphinx
+pyjwt==1.6.4
 pyparsing==2.2.0          # via packaging
 pytest==3.6.1
+pytest-lazy-fixture==0.4.0
 python-box==3.2.0         # via yapconf
 pytz==2018.4
-pyyaml==3.12              # via watchdog
+pyyaml==3.13              # via watchdog
 requests-toolbelt==0.8.0  # via twine
 requests==2.19.1
 simplejson==3.15.0

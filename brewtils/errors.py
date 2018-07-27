@@ -152,6 +152,16 @@ class NotFoundError(RestClientError):
     pass
 
 
+class RequestForbidden(RestClientError):
+    """Error indicating a 403 was raised on the server"""
+    pass
+
+
+class AuthorizationRequired(RestClientError):
+    """Error indicating a 401 was raised on the server"""
+    pass
+
+
 # Alias old names
 BrewmasterModelError = ModelError
 BrewmasterModelValidationError = ModelValidationError

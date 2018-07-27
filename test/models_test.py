@@ -1,10 +1,13 @@
 import unittest
 
+import pytest
 from mock import Mock, PropertyMock
 
 from brewtils.errors import ModelValidationError, RequestStatusTransitionError
-from brewtils.models import Command, Instance, Parameter, PatchOperation, Request, System, \
-    Choices, LoggingConfig, Event, Queue
+from brewtils.models import (
+    Command, Instance, Parameter, PatchOperation, Request, System, Choices,
+    LoggingConfig, Event, Queue, Principal, Role, RequestTemplate
+)
 
 
 class CommandTest(unittest.TestCase):
@@ -237,6 +240,17 @@ class ParameterTest(unittest.TestCase):
         p1 = Parameter(key='foo', description='bar', type='Boolean', optional=False,
                        parameters=[nested_parameter1])
         self.assertFalse(p1.is_different(p1))
+
+
+class RequestTemplateTest(unittest.TestCase):
+
+    def test_str(self):
+        self.assertEqual('command', str(RequestTemplate(command='command')))
+
+    def test_repr(self):
+        request = RequestTemplate(command='command', system='system')
+        self.assertNotEqual(-1, repr(request).find('name'))
+        self.assertNotEqual(-1, repr(request).find('system'))
 
 
 class RequestTest(unittest.TestCase):
@@ -495,30 +509,88 @@ class LoggingConfigTest(unittest.TestCase):
         self.assertEqual(log_config.formatters['stdout'], {"format": "%(message)s"})
 
 
-class EventTest(unittest.TestCase):
+class TestEvent(object):
 
-    def test_str(self):
-        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'},
-                      metadata={})
-        self.assertEqual('%s: %s, %s' % (event.name, event.payload, event.metadata), str(event))
+    @pytest.fixture
+    def event(self):
+        return Event(name='REQUEST_CREATED', error=False,
+                     payload={'request': 'request'}, metadata={})
 
-    def test_repr(self):
-        event = Event(name='REQUEST_CREATED', error=False, payload={'request': 'request'},
-                      metadata={})
-        self.assertEqual('<Event: name=%s, error=%s, payload=%s, metadata=%s>' %
-                         (event.name, event.error, event.payload, event.metadata), repr(event))
+    def test_str(self, event):
+        assert str(event) == "REQUEST_CREATED: {'request': 'request'}, {}"
+
+    def test_repr(self, event):
+        assert repr(event) == "<Event: name=REQUEST_CREATED, error=False, "\
+                              "payload={'request': 'request'}, metadata={}>"
 
 
-class QueueTest(unittest.TestCase):
+class TestQueue(object):
 
-    def test_str(self):
-        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
-                      instance='default', system_id='1234',
-                      display='foo.1-0-0.default', size=3)
-        self.assertEqual('%s: %s' % (queue.name, queue.size), str(queue))
+    @pytest.fixture
+    def queue(self):
+        return Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
+                     instance='default', system_id='1234',
+                     display='foo.1-0-0.default', size=3)
 
-    def test_repr(self):
-        queue = Queue(name='echo.1-0-0.default', system='echo', version='1.0.0',
-                      instance='default', system_id='1234',
-                      display='foo.1-0-0.default', size=3)
-        self.assertEqual('<Queue: name=echo.1-0-0.default, size=3>', repr(queue))
+    def test_str(self, queue):
+        assert str(queue) == 'echo.1-0-0.default: 3'
+
+    def test_repr(self, queue):
+        assert repr(queue) == '<Queue: name=echo.1-0-0.default, size=3>'
+
+
+class TestPrincipal(object):
+
+    @pytest.fixture
+    def principal(self):
+        return Principal(username='admin', roles=['bg-admin'],
+                         permissions=['bg-all'])
+
+    def test_str(self, principal):
+        assert str(principal) == 'admin'
+
+    def test_repr(self, principal):
+        assert repr(principal) == "<Principal: username=admin, " \
+                                  "roles=['bg-admin'], permissions=['bg-all']>"
+
+
+class TestRole(object):
+
+    @pytest.fixture
+    def role(self):
+        return Role(name='bg-admin', roles=['bg-anonymous'],
+                    permissions=['bg-all'])
+
+    def test_str(self, role):
+        assert str(role) == 'bg-admin'
+
+    def test_repr(self, role):
+        assert repr(role) == "<Role: name=bg-admin, roles=['bg-anonymous'], " \
+                             "permissions=['bg-all']>"
+
+
+@pytest.mark.parametrize('model,str_expected,repr_expected', [
+    (
+        pytest.lazy_fixture('bg_job'),
+        'job_name: job_id',
+        '<Job: name=job_name, id=job_id>'
+    ),
+    (
+        pytest.lazy_fixture('bg_date_trigger'),
+        '<DateTrigger: run_date=2016-01-01 00:00:00>',
+        '<DateTrigger: run_date=2016-01-01 00:00:00>',
+    ),
+    (
+        pytest.lazy_fixture('bg_interval_trigger'),
+        '<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>',
+        '<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>',
+    ),
+    (
+        pytest.lazy_fixture('bg_cron_trigger'),
+        '<CronTrigger: */1 */1 */1 */1 */1>',
+        '<CronTrigger: */1 */1 */1 */1 */1>',
+    ),
+])
+def test_str(model, str_expected, repr_expected):
+    assert str(model) == str_expected
+    assert repr(model) == repr_expected

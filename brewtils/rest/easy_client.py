@@ -1,9 +1,11 @@
 import logging
 import warnings
 
-from brewtils.errors import (FetchError, ValidationError, SaveError,
-                             DeleteError, RestConnectionError, NotFoundError,
-                             ConflictError, RestError, WaitExceededError)
+import requests.exceptions
+
+from brewtils.errors import (
+    FetchError, ValidationError, SaveError, DeleteError, RestConnectionError,
+    NotFoundError, ConflictError, RestError, WaitExceededError)
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
@@ -25,20 +27,61 @@ class EasyClient(object):
     :param logger: The logger to use. If None one will be created.
     :param url_prefix: beer-garden REST API URL Prefix.
     :param ca_verify: Flag indicating whether to verify server certificate when making a request.
+    :param username: Username for Beergarden authentication
+    :param password: Password for Beergarden authentication
+    :param access_token: Access token for Beergarden authentication
+    :param refresh_token: Refresh token for Beergarden authentication
     """
 
-    def __init__(self, bg_host=None, bg_port=None, ssl_enabled=False, api_version=None,
-                 ca_cert=None, client_cert=None, parser=None, logger=None, url_prefix=None,
-                 ca_verify=True, **kwargs):
-
+    def __init__(
+            self,
+            bg_host=None,
+            bg_port=None,
+            ssl_enabled=False,
+            api_version=None,
+            ca_cert=None,
+            client_cert=None,
+            parser=None,
+            logger=None,
+            url_prefix=None,
+            ca_verify=True,
+            **kwargs
+    ):
         bg_host = bg_host or kwargs.get('host')
         bg_port = bg_port or kwargs.get('port')
 
         self.logger = logger or logging.getLogger(__name__)
         self.parser = parser or SchemaParser()
-        self.client = RestClient(bg_host=bg_host, bg_port=bg_port, ssl_enabled=ssl_enabled,
-                                 api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
-                                 url_prefix=url_prefix, ca_verify=ca_verify)
+
+        self.client = RestClient(
+            bg_host=bg_host, bg_port=bg_port, ssl_enabled=ssl_enabled,
+            api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
+            url_prefix=url_prefix, ca_verify=ca_verify,
+            **kwargs
+        )
+
+    def can_connect(self):
+        """Determine if Beergarden is responding to requests.
+
+        Returns:
+            A bool indicating if the connection attempt was successful. Will
+            return False only if a ConnectionError is raised during the attempt.
+            Any other exception will be re-raised.
+
+        Raises:
+            requests.exceptions.RequestException:
+                The connection attempt resulted in an exception that indicates
+                something other than a basic connection error. For example,
+                an error with certificate verification.
+        """
+        try:
+            self.client.get_config()
+        except requests.exceptions.ConnectionError as ex:
+            if type(ex) == requests.exceptions.ConnectionError:
+                return False
+            raise
+
+        return True
 
     def get_version(self, **kwargs):
         response = self.client.get_version(**kwargs)
@@ -371,6 +414,86 @@ class EasyClient(object):
             return True
         else:
             self._handle_response_failure(response)
+
+    def find_jobs(self, **kwargs):
+        """Find jobs using keyword arguments as search parameters
+
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            List of jobs.
+        """
+        response = self.client.get_jobs(**kwargs)
+
+        if response.ok:
+            return self.parser.parse_job(response.json(), many=True)
+        else:
+            self._handle_response_failure(response, default_exc=FetchError)
+
+    def create_job(self, job):
+        """Create a new job by POSTing
+
+        Args:
+            job: The job to create
+
+        Returns:
+            The job creation response.
+        """
+        json_job = self.parser.serialize_job(job)
+        response = self.client.post_jobs(json_job)
+
+        if response.ok:
+            return self.parser.parse_job(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=SaveError)
+
+    def remove_job(self, job_id):
+        """Remove a job by ID.
+
+        Args:
+            job_id: The ID of the job to remove.
+
+        Returns:
+            True if successful, raises an error otherwise.
+
+        """
+        response = self.client.delete_job(job_id)
+        if response.ok:
+            return True
+        else:
+            self._handle_response_failure(response, default_exc=DeleteError)
+
+    def pause_job(self, job_id):
+        """Pause a Job by ID.
+
+        Args:
+            job_id: The ID of the job to pause.
+
+        Returns:
+            A copy of the job.
+        """
+        self._patch_job(job_id, [PatchOperation('update', '/status', 'PAUSED')])
+
+    def _patch_job(self, job_id, operations):
+        response = self.client.patch_job(
+            job_id, self.parser.serialize_patch(operations, many=True)
+        )
+        if response.ok:
+            return self.parser.parse_job(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=SaveError)
+
+    def resume_job(self, job_id):
+        """Resume a job by ID.
+
+        Args:
+            job_id: The ID of the job to resume.
+
+        Returns:
+            A copy of the job.
+        """
+        self._patch_job(job_id, [PatchOperation('update', '/status', 'RUNNING')])
 
     @staticmethod
     def _handle_response_failure(response, default_exc=RestError, raise_404=True):

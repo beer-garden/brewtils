@@ -1,36 +1,36 @@
-import unittest
-
+import pytest
 from mock import Mock
 
 from brewtils.stoppable_thread import StoppableThread
 
 
-class StoppableThreadTest(unittest.TestCase):
+class TestStoppableThread(object):
 
-    def setUp(self):
-        self.thread = StoppableThread()
+    @pytest.fixture
+    def thread(self):
+        return StoppableThread()
 
-    def test_init_stop_not_set(self):
-        self.assertFalse(self.thread._stop_event.isSet())
+    def test_init_stop_not_set(self, thread):
+        assert thread._stop_event.isSet() is False
 
     def test_init_logger_passed_in(self):
         fake_logger = Mock()
         t = StoppableThread(logger=fake_logger)
-        self.assertEqual(t.logger, fake_logger)
+        assert t.logger == fake_logger
 
-    def test_stop(self):
-        self.thread.stop()
-        self.assertTrue(self.thread._stop_event.isSet())
+    def test_stop(self, thread):
+        thread.stop()
+        assert thread._stop_event.isSet() is True
 
-    def test_stopped_true(self):
-        self.thread._stop_event.set()
-        self.assertTrue(self.thread.stopped())
+    def test_stopped_true(self, thread):
+        thread._stop_event.set()
+        assert thread.stopped() is True
 
-    def test_stopped_false(self):
-        self.assertFalse(self.thread.stopped())
+    def test_stopped_false(self, thread):
+        assert thread.stopped() is False
 
-    def test_wait(self):
+    def test_wait(self, thread):
         event_mock = Mock()
-        self.thread._stop_event = event_mock
-        self.thread.wait(1)
+        thread._stop_event = event_mock
+        thread.wait(1)
         event_mock.wait.assert_called_once_with(1)

@@ -1,10 +1,29 @@
 from enum import Enum
 
 import six
+
 from brewtils.errors import RequestStatusTransitionError
 
-__all__ = ['System', 'Instance', 'Command', 'Parameter', 'Request',
-           'PatchOperation', 'Choices', 'LoggingConfig', 'Event', 'Queue']
+__all__ = [
+    'System',
+    'Instance',
+    'Command',
+    'Parameter',
+    'Request',
+    'PatchOperation',
+    'Choices',
+    'LoggingConfig',
+    'Event',
+    'Queue',
+    'Principal',
+    'Role',
+    'RefreshToken',
+    'Job',
+    'RequestTemplate',
+    'DateTrigger',
+    'CronTrigger',
+    'IntervalTrigger',
+]
 
 
 class Events(Enum):
@@ -200,7 +219,39 @@ class Parameter(object):
         return False
 
 
-class Request(object):
+class RequestTemplate(object):
+
+    schema = 'RequestTemplateSchema'
+
+    def __init__(
+            self,
+            system=None,
+            system_version=None,
+            instance_name=None,
+            command=None,
+            parameters=None,
+            comment=None,
+            metadata=None,
+    ):
+        self.system = system
+        self.system_version = system_version
+        self.instance_name = instance_name
+        self.command = command
+        self.parameters = parameters
+        self.comment = comment
+        self.metadata = metadata or {}
+
+    def __str__(self):
+        return self.command
+
+    def __repr__(self):
+        return (
+            '<RequestTemplate: command=%s, system=%s, system_version=%s, instance_name=%s>' %
+            (self.command, self.system, self.system_version, self.instance_name)
+        )
+
+
+class Request(RequestTemplate):
 
     schema = 'RequestSchema'
 
@@ -212,17 +263,20 @@ class Request(object):
     def __init__(self, system=None, system_version=None, instance_name=None, command=None,
                  id=None, parent=None, children=None, parameters=None, comment=None, output=None,
                  output_type=None, status=None, command_type=None, created_at=None,
-                 error_class=None, metadata=None, updated_at=None, has_parent=None):
+                 error_class=None, metadata=None, updated_at=None, has_parent=None, requester=None):
 
-        self.system = system
-        self.system_version = system_version
-        self.instance_name = instance_name
-        self.command = command
+        super(Request, self).__init__(
+            system=system,
+            system_version=system_version,
+            instance_name=instance_name,
+            command=command,
+            parameters=parameters,
+            comment=comment,
+            metadata=metadata
+        )
         self.id = id
         self.parent = parent
         self.children = children
-        self.parameters = parameters
-        self.comment = comment
         self.output = output
         self.output_type = output_type
         self._status = status
@@ -230,11 +284,8 @@ class Request(object):
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class
-        self.metadata = metadata or {}
         self.has_parent = has_parent
-
-    def __str__(self):
-        return self.command
+        self.requester = requester
 
     def __repr__(self):
         return ('<Request: command=%s, status=%s, '
@@ -503,3 +554,183 @@ class Queue(object):
 
     def __repr__(self):
         return '<Queue: name=%s, size=%s>' % (self.name, self.size)
+
+
+class Principal(object):
+
+    def __init__(self, id=None, username=None, roles=None, permissions=None,
+                 preferences=None):
+        self.id = id
+        self.username = username
+        self.roles = roles
+        self.permissions = permissions
+        self.preferences = preferences
+
+    def __str__(self):
+        return '%s' % self.username
+
+    def __repr__(self):
+        return ('<Principal: username=%s, roles=%s, permissions=%s>' %
+                (self.username, self.roles, self.permissions))
+
+
+class Role(object):
+
+    def __init__(self, id=None, name=None, roles=None, permissions=None):
+        self.id = id
+        self.name = name
+        self.roles = roles
+        self.permissions = permissions
+
+    def __str__(self):
+        return '%s' % self.name
+
+    def __repr__(self):
+        return ('<Role: name=%s, roles=%s, permissions=%s>' %
+                (self.name, self.roles, self.permissions))
+
+
+class RefreshToken(object):
+
+    def __init__(self, id=None, issued=None, expires=None, payload=None):
+        self.id = id
+        self.issued = issued
+        self.expires = expires
+        self.payload = payload or {}
+
+    def __str__(self):
+        return '%s' % self.payload
+
+    def __repr__(self):
+        return ('<RefreshToken: issued=%s, expires=%s, payload=%s>' %
+                (self.issued, self.expires, self.payload))
+
+
+class Job(object):
+
+    TRIGGER_TYPES = {'interval', 'date', 'cron'}
+    STATUS_TYPES = {'RUNNING', 'PAUSED'}
+    schema = 'JobSchema'
+
+    def __init__(
+            self,
+            id=None,
+            name=None,
+            trigger_type=None,
+            trigger=None,
+            request_template=None,
+            misfire_grace_time=None,
+            coalesce=None,
+            next_run_time=None,
+            success_count=None,
+            error_count=None,
+            status=None,
+    ):
+        self.id = id
+        self.name = name
+        self.trigger_type = trigger_type
+        self.trigger = trigger
+        self.request_template = request_template
+        self.misfire_grace_time = misfire_grace_time
+        self.coalesce = coalesce
+        self.next_run_time = next_run_time
+        self.success_count = success_count
+        self.error_count = error_count
+        self.status = status
+
+    def __str__(self):
+        return '%s: %s' % (self.name, self.id)
+
+    def __repr__(self):
+        return '<Job: name=%s, id=%s>' % (self.name, self.id)
+
+
+class DateTrigger(object):
+    schema = 'DateTriggerSchema'
+
+    def __init__(self, run_date=None, timezone=None):
+        self.run_date = run_date
+        self.timezone = timezone
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return '<DateTrigger: run_date=%s>' % self.run_date
+
+
+class IntervalTrigger(object):
+    schema = 'IntervalTriggerSchema'
+
+    def __init__(
+            self,
+            weeks=None,
+            days=None,
+            hours=None,
+            minutes=None,
+            seconds=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+            jitter=None,
+    ):
+        self.weeks = weeks
+        self.days = days
+        self.hours = hours
+        self.minutes = minutes
+        self.seconds = seconds
+        self.start_date = start_date
+        self.end_date = end_date
+        self.timezone = timezone
+        self.jitter = jitter
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return (
+            '<IntervalTrigger: weeks=%d, days=%d, hours=%d, '
+            'minutes=%d, seconds=%d>' %
+            (self.weeks, self.days, self.hours, self.minutes, self.seconds)
+        )
+
+
+class CronTrigger(object):
+    schema = 'CronTriggerSchema'
+
+    def __init__(
+            self,
+            year=None,
+            month=None,
+            day=None,
+            week=None,
+            day_of_week=None,
+            hour=None,
+            minute=None,
+            second=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+            jitter=None,
+    ):
+        self.year = year
+        self.month = month
+        self.day = day
+        self.week = week
+        self.day_of_week = day_of_week
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        self.start_date = start_date
+        self.end_date = end_date
+        self.timezone = timezone
+        self.jitter = jitter
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return (
+            '<CronTrigger: %s %s %s %s %s>' %
+            (self.minute, self.hour, self.day, self.month, self.day)
+        )

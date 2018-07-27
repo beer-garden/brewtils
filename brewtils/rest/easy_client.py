@@ -304,18 +304,18 @@ class EasyClient(object):
 
         Args:
             request: New request definition
+            kwargs: Extra request parameters
 
         Keyword Args:
-            wait: Wait for request to complete
-            max_wait: Maximum seconds to wait
+            blocking: Wait for request to complete
+            timeout: Maximum seconds to wait
 
         Returns:
             Response to the request
         """
         json_request = self.parser.serialize_request(request)
-        params = {k: v for k, v in kwargs.items() if k in ['wait', 'max_wait']}
 
-        response = self.client.post_requests(json_request, **params)
+        response = self.client.post_requests(json_request, **kwargs)
 
         if response.ok:
             return self.parser.parse_request(response.json())

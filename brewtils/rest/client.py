@@ -272,19 +272,18 @@ class RestClient(object):
 
         Args:
             payload: New request definition
+            kwargs: Extra request parameters
 
         Keyword Args:
-            wait: Wait for request to complete
-            max_wait: Maximum seconds to wait
+            blocking: Wait for request to complete
+            timeout: Maximum seconds to wait
 
         Returns:
             Response to the request
         """
-        params = {k: v for k, v in kwargs.items() if k in ['wait', 'max_wait']}
-
         return self.session.post(self.request_url, data=payload,
                                  headers=self.JSON_HEADERS,
-                                 params=params)
+                                 params=kwargs)
 
     @enable_auth
     def patch_request(self, request_id, payload):

@@ -233,16 +233,18 @@ class SystemClient(object):
         :return: If the SystemClient was created with blocking=True a completed request object,
             otherwise a Future that will return the Request when it completes.
         """
-        extra_params = {}
-        for k, v in kwargs.items():
-            if k in ['_wait', '_max_wait']:
-                extra_params[k[1:]] = v
+        # Need to pop here, otherwise we'll try to send as a request parameter
+        raise_on_error = kwargs.pop('_raise_on_error', self._raise_on_error)
+        blocking = kwargs.pop('_blocking', self._blocking)
+        timeout = kwargs.pop('_timeout', self._timeout)
 
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
         try:
             request = self._construct_bg_request(**kwargs)
-            request = self._easy_client.create_request(request, **extra_params)
+            request = self._easy_client.create_request(request,
+                                                       blocking=blocking,
+                                                       timeout=timeout)
         except ValidationError:
             if self._system and self._version_constraint == 'latest':
                 old_version = self._system.version
@@ -254,13 +256,16 @@ class SystemClient(object):
                     return self.send_bg_request(**kwargs)
             raise
 
-        if self._blocking:
-            return self._wait_for_request(request,
-                                          kwargs.get('_raise_on_error', self._raise_on_error))
-        else:
+        # If not blocking just return the future
+        if not blocking:
             return self._thread_pool.submit(self._wait_for_request,
-                                            request,
-                                            kwargs.get('_raise_on_error', self._raise_on_error))
+                                            request, raise_on_error)
+
+        # At this point the request will be complete so check for error
+        if raise_on_error and request.status == 'ERROR':
+            raise RequestFailedError(request)
+
+        return request
 
     def load_bg_system(self):
         """Query beer-garden for a System definition
@@ -339,10 +344,6 @@ class SystemClient(object):
         comment = kwargs.pop('_comment', None)
         output_type = kwargs.pop('_output_type', None)
         metadata = kwargs.pop('_metadata', {})
-
-        # Need to pop these so they aren't included as request params
-        kwargs.pop('_wait', None)
-        kwargs.pop('_max_wait', None)
 
         parent = self._get_parent_for_request()
 

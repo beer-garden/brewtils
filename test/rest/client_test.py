@@ -1,225 +1,235 @@
-import unittest
 import warnings
 
-from mock import patch, Mock
+import pytest
+from mock import Mock
 
-from brewtils.rest.client import RestClient, BrewmasterRestClient
 import brewtils.rest
+from brewtils.rest.client import RestClient, BrewmasterRestClient
 
 
-class RestClientTest(unittest.TestCase):
+class TestRestClient(object):
 
-    def setUp(self):
-        self.session_mock = Mock()
+    @pytest.fixture
+    def url_prefix(self):
+        return brewtils.rest.normalize_url_prefix('beer')
 
-        self.url_prefix = "beer"
-        self.url_prefix = brewtils.rest.normalize_url_prefix(self.url_prefix)
+    @pytest.fixture
+    def session_mock(self):
+        return Mock(name='session mock')
 
-        self.client_version_1 = RestClient(bg_host='host', bg_port=80, api_version=1,
-                                           url_prefix=self.url_prefix)
-        self.client_version_1.session = self.session_mock
+    @pytest.fixture
+    def client(self, session_mock, url_prefix):
+        client = RestClient(bg_host='host', bg_port=80, api_version=1,
+                            url_prefix=url_prefix)
+        client.session = session_mock
 
-    def test_old_positional_args(self):
-        test_client = RestClient('host', 80, api_version=1, url_prefix=self.url_prefix)
-        self.assertEqual(test_client.version_url, self.client_version_1.version_url)
+        return client
 
-    def test_no_host_or_port(self):
-        self.assertRaises(ValueError, RestClient, bg_port=80)
-        self.assertRaises(ValueError, RestClient, bg_host='host')
+    @pytest.fixture
+    def ssl_client(self, session_mock, url_prefix):
+        client = RestClient(bg_host='host', bg_port=80, api_version=1,
+                            url_prefix=url_prefix, ssl_enabled=True)
+        client.session = session_mock
 
-    def test_non_versioned_uris(self):
-        client = RestClient('host', 80, url_prefix=self.url_prefix)
-        self.assertEqual(client.version_url, 'http://host:80' + self.url_prefix + 'version')
-        self.assertEqual(client.config_url, 'http://host:80' + self.url_prefix + 'config')
+        return client
 
-    def test_version_1_uris(self):
-        ssl = RestClient('host', 80, ssl_enabled=True, api_version=1, url_prefix=self.url_prefix)
-        non_ssl = RestClient('host', 80, ssl_enabled=False, api_version=1,
-                             url_prefix=self.url_prefix)
+    def test_old_positional_args(self, client, url_prefix):
+        test_client = RestClient('host', 80, api_version=1, url_prefix=url_prefix)
+        assert test_client.version_url == client.version_url
 
-        self.assertEqual(ssl.system_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/systems/')
-        self.assertEqual(ssl.instance_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/instances/')
-        self.assertEqual(ssl.command_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/commands/')
-        self.assertEqual(ssl.request_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/requests/')
-        self.assertEqual(ssl.queue_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/queues/')
-        self.assertEqual(ssl.logging_config_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/config/logging/')
-        self.assertEqual(non_ssl.system_url,
-                         'http://host:80' + self.url_prefix + 'api/v1/systems/')
-        self.assertEqual(non_ssl.instance_url,
-                         'http://host:80' + self.url_prefix + 'api/v1/instances/')
-        self.assertEqual(non_ssl.command_url,
-                         'http://host:80' + self.url_prefix + 'api/v1/commands/')
-        self.assertEqual(non_ssl.request_url,
-                         'http://host:80' + self.url_prefix + 'api/v1/requests/')
-        self.assertEqual(non_ssl.queue_url,
-                         'http://host:80' + self.url_prefix + 'api/v1/queues/')
-        self.assertEqual(ssl.logging_config_url,
-                         'https://host:80' + self.url_prefix + 'api/v1/config/logging/')
+    @pytest.mark.parametrize('kwargs', [
+        ({'bg_host': 'host'}),
+        ({'bg_port': 80}),
+        ({'bg_host': 'host', 'bg_port': 80, 'api_version': -1}),
+    ])
+    def test_bad_args(self, kwargs):
+        with pytest.raises(ValueError):
+            RestClient(**kwargs)
 
-    def test_init_invalid_api_version(self):
-        self.assertRaises(ValueError, RestClient, 'host', 80, api_version=-1)
+    def test_non_versioned_uris(self, client, url_prefix):
+        assert client.version_url == 'http://host:80' + url_prefix + 'version'
+        assert client.config_url == 'http://host:80' + url_prefix + 'config'
 
-    def test_get_version_1(self):
-        self.client_version_1.get_version(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.version_url,
-                                                 params={'key': 'value'})
+    @pytest.fixture(params=['system_url'])
+    def urls(self, client):
+        return client.param
 
-    def test_get_logging_config_1(self):
-        self.client_version_1.get_logging_config(system_name="system_name")
-        self.session_mock.get.assert_called_with(self.client_version_1.logging_config_url,
-                                                 params={"system_name": "system_name"})
+    @pytest.mark.parametrize('the_client,url,expected', [
+        (pytest.lazy_fixture('client'), 'system_url', 'http://host:80%sapi/v1/systems/'),
+        (pytest.lazy_fixture('client'), 'instance_url', 'http://host:80%sapi/v1/instances/'),
+        (pytest.lazy_fixture('client'), 'command_url', 'http://host:80%sapi/v1/commands/'),
+        (pytest.lazy_fixture('client'), 'request_url', 'http://host:80%sapi/v1/requests/'),
+        (pytest.lazy_fixture('client'), 'queue_url', 'http://host:80%sapi/v1/queues/'),
+        (pytest.lazy_fixture('client'), 'logging_config_url',
+            'http://host:80%sapi/v1/config/logging/'),
+        (pytest.lazy_fixture('ssl_client'), 'system_url', 'https://host:80%sapi/v1/systems/'),
+        (pytest.lazy_fixture('ssl_client'), 'instance_url', 'https://host:80%sapi/v1/instances/'),
+        (pytest.lazy_fixture('ssl_client'), 'command_url', 'https://host:80%sapi/v1/commands/'),
+        (pytest.lazy_fixture('ssl_client'), 'request_url', 'https://host:80%sapi/v1/requests/'),
+        (pytest.lazy_fixture('ssl_client'), 'queue_url', 'https://host:80%sapi/v1/queues/'),
+        (pytest.lazy_fixture('ssl_client'), 'logging_config_url',
+            'https://host:80%sapi/v1/config/logging/'),
+    ])
+    def test_version_1_uri(self, url_prefix, the_client, url, expected):
+        assert getattr(the_client, url) == expected % url_prefix
 
-    def test_get_systems_1(self):
-        self.client_version_1.get_systems(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.system_url,
-                                                 params={'key': 'value'})
+    @pytest.mark.parametrize('method,params,verb,url', [
+        ('get_version', {'key': 'value'}, 'get', 'version_url'),
+        ('get_logging_config', {'system_name': 'system_name'}, 'get', 'logging_config_url'),
+        ('get_systems', {'key': 'value'}, 'get', 'system_url'),
+    ])
+    def test_version_1_gets(self, client, session_mock, method, params, verb, url):
+        # Invoke the method
+        getattr(client, method)(**params)
 
-    def test_get_system_1(self):
-        self.client_version_1.get_system('id')
-        self.session_mock.get.assert_called_with(self.client_version_1.system_url + 'id',
-                                                 params={})
+        # Make sure the call is correct
+        getattr(session_mock, verb).assert_called_once_with(getattr(client, url),
+                                                            params=params)
 
-    def test_get_system_2(self):
-        self.client_version_1.get_system('id', key="value")
-        self.session_mock.get.assert_called_with(self.client_version_1.system_url + 'id',
-                                                 params={"key": "value"})
+    def test_get_system_1(self, client, session_mock):
+        client.get_system('id')
+        session_mock.get.assert_called_with(client.system_url + 'id', params={})
 
-    def test_post_systems_1(self):
-        self.client_version_1.post_systems(payload='payload')
-        self.session_mock.post.assert_called_with(self.client_version_1.system_url, data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS)
+    def test_get_system_2(self, client, session_mock):
+        client.get_system('id', key="value")
+        session_mock.get.assert_called_with(client.system_url + 'id',
+                                            params={"key": "value"})
 
-    def test_patch_system(self):
-        self.client_version_1.patch_system('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.system_url + 'id',
-                                                   data='payload',
-                                                   headers=self.client_version_1.JSON_HEADERS)
+    def test_post_systems_1(self, client, session_mock):
+        client.post_systems(payload='payload')
+        session_mock.post.assert_called_with(client.system_url, data='payload',
+                                             headers=client.JSON_HEADERS)
 
-    def test_delete_system_1(self):
-        self.client_version_1.delete_system('id')
-        self.session_mock.delete.assert_called_with(self.client_version_1.system_url + 'id')
+    def test_patch_system(self, client, session_mock):
+        client.patch_system('id', payload='payload')
+        session_mock.patch.assert_called_with(client.system_url + 'id',
+                                              data='payload',
+                                              headers=client.JSON_HEADERS)
 
-    def test_patch_instance_1(self):
-        self.client_version_1.patch_instance('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.instance_url + 'id',
-                                                   data='payload',
-                                                   headers=self.client_version_1.JSON_HEADERS)
+    def test_delete_system_1(self, client, session_mock):
+        client.delete_system('id')
+        session_mock.delete.assert_called_with(client.system_url + 'id')
 
-    def test_get_commands_1(self):
-        self.client_version_1.get_commands()
-        self.session_mock.get.assert_called_with(self.client_version_1.command_url)
+    def test_patch_instance_1(self, client, session_mock):
+        client.patch_instance('id', payload='payload')
+        session_mock.patch.assert_called_with(client.instance_url + 'id',
+                                              data='payload',
+                                              headers=client.JSON_HEADERS)
 
-    def test_get_command_1(self):
-        self.client_version_1.get_command(command_id='id')
-        self.session_mock.get.assert_called_with(self.client_version_1.command_url + 'id')
+    def test_get_commands_1(self, client, session_mock):
+        client.get_commands()
+        session_mock.get.assert_called_with(client.command_url)
 
-    def test_get_requests(self,):
-        self.client_version_1.get_requests(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.request_url,
-                                                 params={'key': 'value'})
+    def test_get_command_1(self, client, session_mock):
+        client.get_command(command_id='id')
+        session_mock.get.assert_called_with(client.command_url + 'id')
 
-    def test_get_request(self):
-        self.client_version_1.get_request(request_id='id')
-        self.session_mock.get.assert_called_with(self.client_version_1.request_url + 'id')
+    def test_get_requests(self, client, session_mock):
+        client.get_requests(key='value')
+        session_mock.get.assert_called_with(client.request_url,
+                                            params={'key': 'value'})
 
-    def test_post_requests(self):
-        self.client_version_1.post_requests(payload='payload')
-        self.session_mock.post.assert_called_with(self.client_version_1.request_url,
-                                                  data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS,
-                                                  params={})
+    def test_get_request(self, client, session_mock):
+        client.get_request(request_id='id')
+        session_mock.get.assert_called_with(client.request_url + 'id')
 
-    def test_patch_request(self):
-        self.client_version_1.patch_request('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.request_url + 'id',
-                                                   data='payload',
-                                                   headers=self.client_version_1.JSON_HEADERS)
+    def test_post_requests(self, client, session_mock):
+        client.post_requests(payload='payload')
+        session_mock.post.assert_called_with(client.request_url,
+                                             data='payload',
+                                             headers=client.JSON_HEADERS,
+                                             params={})
 
-    def test_post_event(self):
-        self.client_version_1.post_event(payload='payload')
-        self.session_mock.post.assert_called_with(self.client_version_1.event_url, data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS,
-                                                  params=None)
+    def test_patch_request(self, client, session_mock):
+        client.patch_request('id', payload='payload')
+        session_mock.patch.assert_called_with(client.request_url + 'id',
+                                              data='payload',
+                                              headers=client.JSON_HEADERS)
 
-    def test_post_event_specific_publisher(self):
-        self.client_version_1.post_event(payload='payload', publishers=['pika'])
-        self.session_mock.post.assert_called_with(self.client_version_1.event_url, data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS,
-                                                  params={'publisher': ['pika']})
+    def test_post_event(self, client, session_mock):
+        client.post_event(payload='payload')
+        session_mock.post.assert_called_with(client.event_url, data='payload',
+                                             headers=client.JSON_HEADERS,
+                                             params=None)
 
-    def test_get_queues(self):
-        self.client_version_1.get_queues()
-        self.session_mock.get.assert_called_with(self.client_version_1.queue_url)
+    def test_post_event_specific_publisher(self, client, session_mock):
+        client.post_event(payload='payload', publishers=['pika'])
+        session_mock.post.assert_called_with(client.event_url, data='payload',
+                                             headers=client.JSON_HEADERS,
+                                             params={'publisher': ['pika']})
 
-    def test_delete_queues(self):
-        self.client_version_1.delete_queues()
-        self.session_mock.delete.assert_called_with(self.client_version_1.queue_url)
+    def test_get_queues(self, client, session_mock):
+        client.get_queues()
+        session_mock.get.assert_called_with(client.queue_url)
 
-    def test_delete_queue(self):
-        self.client_version_1.delete_queue('queue_name')
-        self.session_mock.delete.assert_called_with(self.client_version_1.queue_url + 'queue_name')
+    def test_delete_queues(self, client, session_mock):
+        client.delete_queues()
+        session_mock.delete.assert_called_with(client.queue_url)
+
+    def test_delete_queue(self, client, session_mock):
+        client.delete_queue('queue_name')
+        session_mock.delete.assert_called_with(client.queue_url + 'queue_name')
+
+    def test_get_jobs(self, client, session_mock):
+        client.get_jobs(key='value')
+        session_mock.get.assert_called_with(client.job_url,
+                                            params={'key': 'value'})
+
+    def test_get_job(self, client, session_mock):
+        client.get_job(job_id='id')
+        session_mock.get.assert_called_with(client.job_url + 'id')
+
+    def test_post_jobs(self, client, session_mock):
+        client.post_jobs(payload='payload')
+        session_mock.post.assert_called_with(client.job_url,
+                                             data='payload',
+                                             headers=client.JSON_HEADERS)
+
+    def test_patch_job(self, client, session_mock):
+        client.patch_job('id', payload='payload')
+        session_mock.patch.assert_called_with(client.job_url + 'id',
+                                              data='payload',
+                                              headers=client.JSON_HEADERS)
+
+    def test_delete_job(self, client, session_mock):
+        client.delete_job(job_id='id')
+        session_mock.delete.assert_called_with(client.job_url + 'id')
 
     def test_session_client_cert(self):
-        self.client_version_1 = RestClient('host', 80, api_version=1, client_cert='/path/to/cert')
-        self.assertEqual(self.client_version_1.session.cert, '/path/to/cert')
+        client = RestClient(bg_host='host', bg_port=80, api_version=1,
+                            client_cert='/path/to/cert')
+        assert client.session.cert == '/path/to/cert'
 
     def test_session_ca_cert(self):
-        self.client_version_1 = RestClient('host', 80, api_version=1, ca_cert='/path/to/ca/cert')
-        self.assertEqual(self.client_version_1.session.verify, '/path/to/ca/cert')
+        client = RestClient(bg_host='host', bg_port=80, api_version=1,
+                            ca_cert='/path/to/ca/cert')
+        assert client.session.verify == '/path/to/ca/cert'
 
     def test_session_no_ca_cert(self):
-        self.client_version_1 = RestClient('host', 80, api_version=1)
-        self.assertTrue(self.client_version_1.session.verify)
+        client = RestClient(bg_host='host', bg_port=80, api_version=1)
+        assert client.session.verify is True
 
-    @patch('brewtils.rest.client.urllib3')
-    def test_session_no_ca_verify(self, urllib_mock):
-        self.client_version_1 = RestClient('host', 80, api_version=1, ca_verify=False)
-        self.assertFalse(self.client_version_1.session.verify)
-        self.assertTrue(urllib_mock.disable_warnings.called)
+    def test_session_no_ca_verify(self, monkeypatch):
+        urllib_mock = Mock()
+        monkeypatch.setattr(brewtils.rest.client, 'urllib3', urllib_mock)
 
-    def test_get_jobs(self,):
-        self.client_version_1.get_jobs(key='value')
-        self.session_mock.get.assert_called_with(self.client_version_1.job_url,
-                                                 params={'key': 'value'})
-
-    def test_get_job(self):
-        self.client_version_1.get_job(job_id='id')
-        self.session_mock.get.assert_called_with(self.client_version_1.job_url + 'id')
-
-    def test_post_jobs(self):
-        self.client_version_1.post_jobs(payload='payload')
-        self.session_mock.post.assert_called_with(self.client_version_1.job_url,
-                                                  data='payload',
-                                                  headers=self.client_version_1.JSON_HEADERS)
-
-    def test_patch_job(self):
-        self.client_version_1.patch_job('id', payload='payload')
-        self.session_mock.patch.assert_called_with(self.client_version_1.job_url + 'id',
-                                                   data='payload',
-                                                   headers=self.client_version_1.JSON_HEADERS)
-
-    def test_delete_job(self):
-        self.client_version_1.delete_job(job_id='id')
-        self.session_mock.delete.assert_called_with(self.client_version_1.job_url + 'id')
+        client = RestClient(bg_host='host', bg_port=80, api_version=1,
+                            ca_verify=False)
+        assert client.session.verify is False
+        assert urllib_mock.disable_warnings.called is True
 
 
-class BrewmasterRestClientTest(unittest.TestCase):
+class TestBrewmasterRestClient(object):
 
     def test_deprecation(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
 
             BrewmasterRestClient('host', 'port')
-            self.assertEqual(1, len(w))
+            assert len(w) == 1
 
             warning = w[0]
-            self.assertEqual(warning.category, DeprecationWarning)
-            self.assertIn("'BrewmasterRestClient'", str(warning))
-            self.assertIn("'RestClient'", str(warning))
-            self.assertIn('3.0', str(warning))
+            assert warning.category == DeprecationWarning
+            assert "'BrewmasterRestClient'" in str(warning)
+            assert "'RestClient'" in str(warning)
+            assert "3.0" in str(warning)

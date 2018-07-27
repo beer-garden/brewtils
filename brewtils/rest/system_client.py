@@ -1,12 +1,13 @@
 import logging
-import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
 
-from brewtils.errors import ConnectionTimeoutError, FetchError, ValidationError, \
-    RequestFailedError
+import time
+
+from brewtils.errors import (
+    FetchError, TimeoutExceededError, RequestFailedError, ValidationError)
 from brewtils.models import Request
 from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
@@ -297,8 +298,8 @@ class SystemClient(object):
         while request.status not in Request.COMPLETED_STATUSES:
 
             if self._timeout and total_wait_time > self._timeout:
-                raise ConnectionTimeoutError("Timeout waiting for request '%s' to complete" %
-                                             str(request))
+                raise TimeoutExceededError("Timeout waiting for request '%s' "
+                                           "to complete" % str(request))
 
             time.sleep(delay_time)
             total_wait_time += delay_time

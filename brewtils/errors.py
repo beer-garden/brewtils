@@ -106,11 +106,6 @@ class RestConnectionError(RestServerError):
     pass
 
 
-class ConnectionTimeoutError(RestServerError):
-    """Error Indicating a Timeout was reached while performing a request"""
-    pass
-
-
 class FetchError(RestError):
     """Error Indicating a server Error occurred performing a GET"""
     pass
@@ -131,7 +126,7 @@ class DeleteError(RestServerError):
     pass
 
 
-class WaitExceededError(RestClientError):
+class TimeoutExceededError(RestClientError):
     """Error indicating a timeout occurred waiting for a request to complete"""
     pass
 
@@ -163,6 +158,9 @@ class AuthorizationRequired(RestClientError):
 
 
 # Alias old names
+WaitExceededError = TimeoutExceededError
+ConnectionTimeoutError = TimeoutExceededError
+
 BrewmasterModelError = ModelError
 BrewmasterModelValidationError = ModelValidationError
 BrewmasterRestError = RestError

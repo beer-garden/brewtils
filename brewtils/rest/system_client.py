@@ -259,11 +259,11 @@ class SystemClient(object):
         # If not blocking just return the future
         if not blocking:
             return self._thread_pool.submit(self._wait_for_request,
-                                            request, raise_on_error)
+                                            request, raise_on_error, timeout)
 
         # Brew-view before 2.4 doesn't support the blocking flag, so make sure
         # the request is actually complete before returning
-        request = self._wait_for_request(request, raise_on_error)
+        request = self._wait_for_request(request, raise_on_error, timeout)
 
         return request
 
@@ -295,14 +295,14 @@ class SystemClient(object):
         self._commands = {command.name: command for command in self._system.commands}
         self._loaded = True
 
-    def _wait_for_request(self, request, raise_on_error):
+    def _wait_for_request(self, request, raise_on_error, timeout):
         """Poll the server until the request is completed or errors"""
 
         delay_time = 0.5
         total_wait_time = 0
         while request.status not in Request.COMPLETED_STATUSES:
 
-            if self._timeout and total_wait_time > self._timeout:
+            if timeout and total_wait_time > timeout:
                 raise TimeoutExceededError("Timeout waiting for request '%s' "
                                            "to complete" % str(request))
 

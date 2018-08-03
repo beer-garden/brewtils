@@ -261,9 +261,9 @@ class SystemClient(object):
             return self._thread_pool.submit(self._wait_for_request,
                                             request, raise_on_error)
 
-        # At this point the request will be complete so check for error
-        if raise_on_error and request.status == 'ERROR':
-            raise RequestFailedError(request)
+        # Brew-view before 2.4 doesn't support the blocking flag, so make sure
+        # the request is actually complete before returning
+        request = self._wait_for_request(request, raise_on_error)
 
         return request
 

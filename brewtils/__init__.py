@@ -6,7 +6,7 @@ from yapconf.exceptions import YapconfItemNotFound
 
 from brewtils.decorators import command, parameter, system
 from brewtils.errors import ValidationError
-from brewtils.plugin import RemotePlugin
+from brewtils.plugin import Plugin, RemotePlugin
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.system_client import SystemClient
 from ._version import __version__ as generated_version
@@ -16,6 +16,7 @@ __all__ = [
     'command',
     'parameter',
     'system',
+    'Plugin',
     'RemotePlugin',
     'SystemClient',
     'get_easy_client',

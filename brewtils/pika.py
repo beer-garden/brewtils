@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import ssl as pyssl
 
 from pika import ConnectionParameters, PlainCredentials, SSLOptions

@@ -18,7 +18,7 @@ setup(
     name='brewtils',
     version=find_version(),
     description='Utilities for building and running beer-garden Systems',
-    url=' ',
+    url='https://beer-garden.io/',
     author='The beer-garden Team',
     author_email=' ',
     license='MIT',

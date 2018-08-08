@@ -23,7 +23,7 @@ from brewtils.schema_parser import SchemaParser
 request_context = threading.local()
 
 
-class PluginBase(object):
+class Plugin(object):
     """A beer-garden Plugin.
 
     This class represents a beer-garden Plugin - a continuously-running process that can receive
@@ -660,5 +660,8 @@ class PluginBase(object):
             return str(output)
 
 
-class RemotePlugin(PluginBase):
+PluginBase = Plugin
+
+
+class RemotePlugin(Plugin):
     pass

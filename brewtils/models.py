@@ -14,6 +14,7 @@ __all__ = [
     'Choices',
     'LoggingConfig',
     'Event',
+    'Events',
     'Queue',
     'Principal',
     'Role',

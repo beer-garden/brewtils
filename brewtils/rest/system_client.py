@@ -263,9 +263,7 @@ class SystemClient(object):
 
         # Brew-view before 2.4 doesn't support the blocking flag, so make sure
         # the request is actually complete before returning
-        request = self._wait_for_request(request, raise_on_error, timeout)
-
-        return request
+        return self._wait_for_request(request, raise_on_error, timeout)
 
     def load_bg_system(self):
         """Query beer-garden for a System definition

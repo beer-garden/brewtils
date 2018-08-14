@@ -267,13 +267,23 @@ class RestClient(object):
         return self.session.get(self.request_url + request_id)
 
     @enable_auth
-    def post_requests(self, payload):
+    def post_requests(self, payload, **kwargs):
         """Performs a POST on the Request URL
 
-        :param payload: New request definition
-        :return: Response to the request
+        Args:
+            payload: New request definition
+            kwargs: Extra request parameters
+
+        Keyword Args:
+            blocking: Wait for request to complete
+            timeout: Maximum seconds to wait
+
+        Returns:
+            Response to the request
         """
-        return self.session.post(self.request_url, data=payload, headers=self.JSON_HEADERS)
+        return self.session.post(self.request_url, data=payload,
+                                 headers=self.JSON_HEADERS,
+                                 params=kwargs)
 
     @enable_auth
     def patch_request(self, request_id, payload):

@@ -1,12 +1,13 @@
 import logging
-import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
 
-from brewtils.errors import ConnectionTimeoutError, FetchError, ValidationError, \
-    RequestFailedError
+import time
+
+from brewtils.errors import (
+    FetchError, TimeoutExceededError, RequestFailedError, ValidationError)
 from brewtils.models import Request
 from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
@@ -232,11 +233,18 @@ class SystemClient(object):
         :return: If the SystemClient was created with blocking=True a completed request object,
             otherwise a Future that will return the Request when it completes.
         """
+        # Need to pop here, otherwise we'll try to send as a request parameter
+        raise_on_error = kwargs.pop('_raise_on_error', self._raise_on_error)
+        blocking = kwargs.pop('_blocking', self._blocking)
+        timeout = kwargs.pop('_timeout', self._timeout)
 
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
         try:
-            request = self._easy_client.create_request(self._construct_bg_request(**kwargs))
+            request = self._construct_bg_request(**kwargs)
+            request = self._easy_client.create_request(request,
+                                                       blocking=blocking,
+                                                       timeout=timeout)
         except ValidationError:
             if self._system and self._version_constraint == 'latest':
                 old_version = self._system.version
@@ -248,13 +256,14 @@ class SystemClient(object):
                     return self.send_bg_request(**kwargs)
             raise
 
-        if self._blocking:
-            return self._wait_for_request(request,
-                                          kwargs.get('_raise_on_error', self._raise_on_error))
-        else:
+        # If not blocking just return the future
+        if not blocking:
             return self._thread_pool.submit(self._wait_for_request,
-                                            request,
-                                            kwargs.get('_raise_on_error', self._raise_on_error))
+                                            request, raise_on_error, timeout)
+
+        # Brew-view before 2.4 doesn't support the blocking flag, so make sure
+        # the request is actually complete before returning
+        return self._wait_for_request(request, raise_on_error, timeout)
 
     def load_bg_system(self):
         """Query beer-garden for a System definition
@@ -284,16 +293,16 @@ class SystemClient(object):
         self._commands = {command.name: command for command in self._system.commands}
         self._loaded = True
 
-    def _wait_for_request(self, request, raise_on_error):
+    def _wait_for_request(self, request, raise_on_error, timeout):
         """Poll the server until the request is completed or errors"""
 
         delay_time = 0.5
         total_wait_time = 0
         while request.status not in Request.COMPLETED_STATUSES:
 
-            if self._timeout and total_wait_time > self._timeout:
-                raise ConnectionTimeoutError("Timeout waiting for request '%s' to complete" %
-                                             str(request))
+            if timeout and total_wait_time > timeout:
+                raise TimeoutExceededError("Timeout waiting for request '%s' "
+                                           "to complete" % str(request))
 
             time.sleep(delay_time)
             total_wait_time += delay_time

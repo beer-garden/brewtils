@@ -5,7 +5,7 @@ import requests.exceptions
 
 from brewtils.errors import (
     FetchError, ValidationError, SaveError, DeleteError, RestConnectionError,
-    NotFoundError, ConflictError, RestError)
+    NotFoundError, ConflictError, RestError, WaitExceededError)
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
@@ -299,14 +299,23 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=FetchError,
                                           raise_404=False)
 
-    def create_request(self, request):
+    def create_request(self, request, **kwargs):
         """Create a new request by POSTing
 
-        :param request: The request to create
-        :return: The response
+        Args:
+            request: New request definition
+            kwargs: Extra request parameters
+
+        Keyword Args:
+            blocking: Wait for request to complete
+            timeout: Maximum seconds to wait
+
+        Returns:
+            Response to the request
         """
         json_request = self.parser.serialize_request(request)
-        response = self.client.post_requests(json_request)
+
+        response = self.client.post_requests(json_request, **kwargs)
 
         if response.ok:
             return self.parser.parse_request(response.json())
@@ -493,6 +502,8 @@ class EasyClient(object):
                 raise NotFoundError(response.json())
             else:
                 return None
+        elif response.status_code == 408:
+            raise WaitExceededError(response.json())
         elif response.status_code == 409:
             raise ConflictError(response.json())
         elif 400 <= response.status_code < 500:

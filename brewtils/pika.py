@@ -18,7 +18,7 @@ class ClientBase(object):
             heartbeat_interval=3600,
             virtual_host='/',
             exchange='beer_garden',
-            ssl=None
+            ssl=None,
     ):
 
         self._host = host
@@ -48,13 +48,16 @@ class ClientBase(object):
         if virtual_host == '/':
             virtual_host = ''
 
-        return 'amqp%s://%s:%s@%s:%s/%s' % \
-               ('s' if self._ssl_enabled else '',
+        return (
+            'amqp%s://%s:%s@%s:%s/%s' % (
+                's' if self._ssl_enabled else '',
                 self._conn_params.credentials.username,
                 self._conn_params.credentials.password,
                 self._conn_params.host,
                 self._conn_params.port,
-                virtual_host)
+                virtual_host,
+            )
+        )
 
     def connection_parameters(self, **kwargs):
         """Get ``ConnectionParameters`` associated with this client
@@ -68,16 +71,18 @@ class ClientBase(object):
         Returns:
             :obj:`pika.ConnectionParameters`: Generated ConnectionParameters object
         """
-        credentials = PlainCredentials(username=kwargs.get('user', self._user),
-                                       password=kwargs.get('password', self._password))
+        credentials = PlainCredentials(
+            username=kwargs.get('user', self._user),
+            password=kwargs.get('password', self._password),
+        )
 
-        return ConnectionParameters(host=kwargs.get('host', self._host),
-                                    port=kwargs.get('port', self._port),
-                                    ssl=kwargs.get('ssl_enabled', self._ssl_enabled),
-                                    ssl_options=kwargs.get('ssl_options', self._ssl_options),
-                                    virtual_host=kwargs.get('virtual_host', self._virtual_host),
-                                    connection_attempts=kwargs.get('connection_attempts',
-                                                                   self._connection_attempts),
-                                    heartbeat_interval=kwargs.get('heartbeat_interval',
-                                                                  self._heartbeat_interval),
-                                    credentials=credentials)
+        return ConnectionParameters(
+            host=kwargs.get('host', self._host),
+            port=kwargs.get('port', self._port),
+            ssl=kwargs.get('ssl_enabled', self._ssl_enabled),
+            ssl_options=kwargs.get('ssl_options', self._ssl_options),
+            virtual_host=kwargs.get('virtual_host', self._virtual_host),
+            connection_attempts=kwargs.get('connection_attempts', self._connection_attempts),
+            heartbeat_interval=kwargs.get('heartbeat_interval', self._heartbeat_interval),
+            credentials=credentials,
+        )

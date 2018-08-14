@@ -46,8 +46,8 @@ class RequestConsumer(threading.Thread):
             panic_event=None,
             logger=None,
             thread_name=None,
-            **kwargs):
-
+            **kwargs
+    ):
         self._connection = None
         self._channel = None
         self._consumer_tag = None
@@ -203,8 +203,9 @@ class RequestConsumer(threading.Thread):
             except AMQPConnectionError as ex:
                 if 0 <= self._max_connect_retries <= retries:
                     raise ex
-                self.logger.warning("Error attempting to connect, waiting %s "
-                                    "seconds and attempting again" % time_to_wait)
+                self.logger.warning(
+                    "Error attempting to connect, waiting %s seconds and "
+                    "attempting again" % time_to_wait)
                 self.shutdown_event.wait(time_to_wait)
                 time_to_wait = min(time_to_wait * 2, self._max_connect_backoff)
                 retries += 1

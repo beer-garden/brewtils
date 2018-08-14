@@ -161,21 +161,24 @@ class PluginBase(object):
         self.metadata = metadata or {}
 
         self.instance = None
-        self.amq_params = None
+        self.queue_connection_params = None
         self.admin_consumer = None
         self.request_consumer = None
         self.connection_poll_thread = None
         self.client = client
         self.shutdown_event = threading.Event()
         self.parser = parser or SchemaParser()
-        self.system = self._setup_system(client, self.instance_name, system,
-                                         name, description, version, icon_name,
-                                         self.metadata,
-                                         kwargs.pop("display_name", None),
-                                         kwargs.get('max_instances', None))
-        self.unique_name = ('%s[%s]-%s' % (self.system.name,
-                                           self.instance_name,
-                                           self.system.version))
+
+        self.system = self._setup_system(
+            client, self.instance_name, system, name, description, version,
+            icon_name, self.metadata, kwargs.get("display_name", None),
+            kwargs.get('max_instances', None),
+        )
+
+        self.unique_name = (
+            '%s[%s]-%s' %
+            (self.system.name, self.instance_name, self.system.version)
+        )
 
         # Tightly manage when we're in an 'error' state, aka Brew-view is down
         self.brew_view_error_condition = threading.Condition()
@@ -184,8 +187,8 @@ class PluginBase(object):
         self.pool = ThreadPoolExecutor(max_workers=self.max_concurrent)
         self.admin_pool = ThreadPoolExecutor(max_workers=1)
 
-        self.bm_client = EasyClient(logger=self.logger, parser=self.parser,
-                                    **connection_parameters)
+        self.bm_client = EasyClient(
+            logger=self.logger, parser=self.parser, **connection_parameters)
 
     def run(self):
         # Let Beergarden know about our system and instance
@@ -364,9 +367,9 @@ class PluginBase(object):
 
         self.instance = self.bm_client.initialize_instance(instance_id)
 
-        self.amq_params = self.instance.queue_info.get('connection', None)
-        if self.amq_params and self.amq_params.get('ssl', None):
-            self.amq_params['ssl'].update({
+        self.queue_connection_params = self.instance.queue_info.get('connection', None)
+        if self.queue_connection_params and self.queue_connection_params.get('ssl', None):
+            self.queue_connection_params['ssl'].update({
                 'ca_cert': self.ca_cert,
                 'ca_verify': self.ca_verify,
                 'client_cert': self.client_cert,
@@ -403,24 +406,24 @@ class PluginBase(object):
     def _create_standard_consumer(self):
         return RequestConsumer(
             thread_name='Request Consumer',
-            connection_info=self.amq_params,
+            connection_info=self.queue_connection_params,
             amqp_url=self.instance.queue_info.get('url', None),
             queue_name=self.instance.queue_info['request']['name'],
             on_message_callback=self.process_request_message,
             panic_event=self.shutdown_event,
-            max_concurrent=self.max_concurrent
+            max_concurrent=self.max_concurrent,
         )
 
     def _create_admin_consumer(self):
         return RequestConsumer(
             thread_name='Admin Consumer',
-            connection_info=self.amq_params,
+            connection_info=self.queue_connection_params,
             amqp_url=self.instance.queue_info.get('url', None),
             queue_name=self.instance.queue_info['admin']['name'],
             on_message_callback=self.process_admin_message,
             panic_event=self.shutdown_event,
             max_concurrent=1,
-            logger=logging.getLogger('brewtils.admin_consumer')
+            logger=logging.getLogger('brewtils.admin_consumer'),
         )
 
     def _create_connection_poll_thread(self):

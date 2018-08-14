@@ -161,10 +161,10 @@ class RestClient(object):
     def get_config(self, **kwargs):
         """Perform a GET to the config URL
 
-        :param kwargs: Parameters to be used in the GET request
+        :param kwargs: Passed to underlying Requests method
         :return: The request response
         """
-        return self.session.get(self.config_url, params=kwargs)
+        return self.session.get(self.config_url, **kwargs)
 
     @enable_auth
     def get_logging_config(self, **kwargs):

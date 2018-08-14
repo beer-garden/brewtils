@@ -60,8 +60,11 @@ class EasyClient(object):
             **kwargs
         )
 
-    def can_connect(self):
-        """Determine if Beergarden is responding to requests.
+    def can_connect(self, **kwargs):
+        """Determine if the Beergarden server is responding.
+
+        Kwargs:
+            Arguments passed to the underlying Requests method
 
         Returns:
             A bool indicating if the connection attempt was successful. Will
@@ -75,7 +78,7 @@ class EasyClient(object):
                 an error with certificate verification.
         """
         try:
-            self.client.get_config()
+            self.client.get_config(**kwargs)
         except requests.exceptions.ConnectionError as ex:
             if type(ex) == requests.exceptions.ConnectionError:
                 return False

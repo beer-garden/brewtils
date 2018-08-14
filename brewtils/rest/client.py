@@ -158,15 +158,13 @@ class RestClient(object):
         return self.session.get(self.version_url, params=kwargs)
 
     @enable_auth
-    def get_config(self, http_timeout=None, **kwargs):
+    def get_config(self, **kwargs):
         """Perform a GET to the config URL
 
-        :param http_timeout: Timeout passed to underlying HTTP session
-        :param kwargs: Parameters to be used in the GET request
+        :param kwargs: Passed to underlying Requests method
         :return: The request response
         """
-        return self.session.get(self.config_url,
-                                timeout=http_timeout, params=kwargs)
+        return self.session.get(self.config_url, **kwargs)
 
     @enable_auth
     def get_logging_config(self, **kwargs):

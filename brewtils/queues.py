@@ -1,12 +1,10 @@
-from __future__ import absolute_import
-
 import ssl as pyssl
 
 from pika import ConnectionParameters, PlainCredentials, SSLOptions
 
 
-class ClientBase(object):
-    """Base class for connection to RabbitMQ."""
+class PikaClient(object):
+    """Base class for connecting to RabbitMQ using Pika"""
 
     def __init__(
             self,
@@ -20,7 +18,6 @@ class ClientBase(object):
             exchange='beer_garden',
             ssl=None,
     ):
-
         self._host = host
         self._port = port
         self._user = user
@@ -37,7 +34,7 @@ class ClientBase(object):
             verify_mode=pyssl.CERT_REQUIRED if ssl.get('ca_verify') else pyssl.CERT_NONE,
         )
 
-        # Save off the 'normal' connection params so they don't need to be constructed every time
+        # Save the 'normal' params so they don't need to be reconstructed
         self._conn_params = self.connection_parameters()
 
     @property
@@ -62,14 +59,15 @@ class ClientBase(object):
     def connection_parameters(self, **kwargs):
         """Get ``ConnectionParameters`` associated with this client
 
-        Will construct a ``ConnectionParameters`` object using parameters passed at initialization
-        as defaults. Any parameters passed in \*\*kwargs will override initialization parameters.
+        Will construct a ``ConnectionParameters`` object using parameters
+        passed at initialization as defaults. Any parameters passed in
+        \*\*kwargs will override initialization parameters.
 
         Args:
             **kwargs: Overrides for specific parameters
 
         Returns:
-            :obj:`pika.ConnectionParameters`: Generated ConnectionParameters object
+            :obj:`pika.ConnectionParameters`: ConnectionParameters object
         """
         credentials = PlainCredentials(
             username=kwargs.get('user', self._user),
@@ -82,7 +80,9 @@ class ClientBase(object):
             ssl=kwargs.get('ssl_enabled', self._ssl_enabled),
             ssl_options=kwargs.get('ssl_options', self._ssl_options),
             virtual_host=kwargs.get('virtual_host', self._virtual_host),
-            connection_attempts=kwargs.get('connection_attempts', self._connection_attempts),
-            heartbeat_interval=kwargs.get('heartbeat_interval', self._heartbeat_interval),
+            connection_attempts=kwargs.get(
+                'connection_attempts', self._connection_attempts),
+            heartbeat_interval=kwargs.get(
+                'heartbeat_interval', self._heartbeat_interval),
             credentials=credentials,
         )

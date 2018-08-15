@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import threading
 from functools import partial
@@ -8,7 +6,7 @@ import pika
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.pika import ClientBase
+from brewtils.queues import PikaClient
 from brewtils.schema_parser import SchemaParser
 
 
@@ -62,7 +60,7 @@ class RequestConsumer(threading.Thread):
         self.shutdown_event = threading.Event()
 
         if kwargs.get("connection_info", None):
-            pika_base = ClientBase(**kwargs['connection_info'])
+            pika_base = PikaClient(**kwargs['connection_info'])
             self._connection_parameters = pika_base.connection_parameters()
         else:
             self._connection_parameters = pika.URLParameters(amqp_url)

@@ -6,6 +6,7 @@ import pika
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
+from brewtils.queues import PikaClient
 from brewtils.schema_parser import SchemaParser
 
 
@@ -35,22 +36,34 @@ class RequestConsumer(threading.Thread):
     :param int max_concurrent: Maximum number of requests to process concurrently
     """
 
-    def __init__(self, amqp_url, queue_name, on_message_callback, panic_event,
-                 logger=None, thread_name=None, **kwargs):
-
+    def __init__(
+            self,
+            amqp_url=None,
+            queue_name=None,
+            on_message_callback=None,
+            panic_event=None,
+            logger=None,
+            thread_name=None,
+            **kwargs
+    ):
         self._connection = None
         self._channel = None
         self._consumer_tag = None
 
-        self._url = amqp_url
         self._queue_name = queue_name
         self._on_message_callback = on_message_callback
         self._panic_event = panic_event
-        self._max_connect_retries = kwargs.pop("max_connect_retries", -1)
-        self._max_connect_backoff = kwargs.pop("max_connect_backoff", 30)
-        self._max_concurrent = kwargs.pop("max_concurrent", 1)
+        self._max_connect_retries = kwargs.get("max_connect_retries", -1)
+        self._max_connect_backoff = kwargs.get("max_connect_backoff", 30)
+        self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
         self.shutdown_event = threading.Event()
+
+        if kwargs.get("connection_info", None):
+            pika_base = PikaClient(**kwargs['connection_info'])
+            self._connection_parameters = pika_base.connection_parameters()
+        else:
+            self._connection_parameters = pika.URLParameters(amqp_url)
 
         super(RequestConsumer, self).__init__(name=thread_name)
 
@@ -95,7 +108,7 @@ class RequestConsumer(threading.Thread):
         :param pika.channel.Channel channel: The channel object
         :param pika.Spec.Basic.Deliver basic_deliver: basic_deliver method
         :param pika.Spec.BasicProperties properties: properties
-        :param str|unicode body: The message body
+        :param bytes body: The message body
         """
         self.logger.debug("Received message #%s from %s on channel %s: %s",
                           basic_deliver.delivery_tag, properties.app_id,
@@ -140,7 +153,7 @@ class RequestConsumer(threading.Thread):
 
             if isinstance(future_ex, RepublishRequestException):
                 try:
-                    with pika.BlockingConnection(pika.URLParameters(self._url)) as conn:
+                    with pika.BlockingConnection(self._connection_parameters) as conn:
                         headers = future_ex.headers
                         headers.update({'request_id': future_ex.request.id})
                         props = pika.BasicProperties(app_id='beer-garden',
@@ -177,18 +190,20 @@ class RequestConsumer(threading.Thread):
 
         :rtype: pika.SelectConnection
         """
-        self.logger.debug('Connecting to %s' % self._url)
         time_to_wait = 0.1
         retries = 0
         while not self.shutdown_event.is_set():
             try:
-                return pika.SelectConnection(pika.URLParameters(self._url), self.on_connection_open,
-                                             stop_ioloop_on_close=False)
+                return pika.SelectConnection(
+                    self._connection_parameters,
+                    self.on_connection_open,
+                    stop_ioloop_on_close=False)
             except AMQPConnectionError as ex:
                 if 0 <= self._max_connect_retries <= retries:
                     raise ex
-                self.logger.warning("Error attempting to connect to %s" % self._url)
-                self.logger.warning("Waiting %s seconds and attempting again" % time_to_wait)
+                self.logger.warning(
+                    "Error attempting to connect, waiting %s seconds and "
+                    "attempting again" % time_to_wait)
                 self.shutdown_event.wait(time_to_wait)
                 time_to_wait = min(time_to_wait * 2, self._max_connect_backoff)
                 retries += 1

@@ -124,7 +124,6 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
 def load_config(
         cli_args=None,
         argument_parser=None,
-        merge_specification=None,
         **kwargs
 ):
     """Load configuration using Yapconf
@@ -145,16 +144,12 @@ def load_config(
             prior to loading the configuration. This can be useful if your
             startup script takes additional arguments. See get_argument_parser
             for additional information.
-        merge_specification (dict, optional): Specification that will be merged
-            with the brewtils specification before loading the configuration
         **kwargs: Additional configuration overrides
 
     Returns:
         :obj:`box.Box`: The resolved configuration object
     """
-    spec_source = merge_specification or {}
-    spec_source.update(SPECIFICATION)
-    spec = YapconfSpec(spec_source, env_prefix='BG_')
+    spec = YapconfSpec(SPECIFICATION, env_prefix='BG_')
 
     sources = []
 

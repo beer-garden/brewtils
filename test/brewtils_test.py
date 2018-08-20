@@ -2,7 +2,6 @@ import copy
 import os
 
 import pytest
-from yapconf.exceptions import YapconfItemNotFound
 
 import brewtils
 import brewtils.rest
@@ -70,24 +69,6 @@ class TestBrewtils(object):
 
         config = brewtils.load_config([])
         assert config.bg_host == 'the_host'
-
-    def test_load_config_extra_spec(self):
-        # Still always need a host
-        os.environ['BG_HOST'] = 'the_host'
-
-        spec = {
-            "some_parameter": {
-                "type": "str",
-                "description": "Another required parameter",
-            },
-        }
-
-        config = brewtils.load_config(merge_specification=spec,
-                                      some_parameter='param')
-        assert config.some_parameter == 'param'
-
-        with pytest.raises(YapconfItemNotFound):
-            brewtils.load_config(merge_specification=spec)
 
     def test_get_easy_client(self):
         client = brewtils.get_easy_client(host='bg_host')

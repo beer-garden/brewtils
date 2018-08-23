@@ -540,8 +540,16 @@ class Queue(object):
 
     schema = 'QueueSchema'
 
-    def __init__(self, name=None, system=None, version=None, instance=None, system_id=None,
-                 display=None, size=None):
+    def __init__(
+            self,
+            name=None,
+            system=None,
+            version=None,
+            instance=None,
+            system_id=None,
+            display=None,
+            size=None
+    ):
         self.name = name
         self.system = system
         self.version = version
@@ -559,8 +567,14 @@ class Queue(object):
 
 class Principal(object):
 
-    def __init__(self, id=None, username=None, roles=None, permissions=None,
-                 preferences=None):
+    def __init__(
+            self,
+            id=None,
+            username=None,
+            roles=None,
+            permissions=None,
+            preferences=None,
+    ):
         self.id = id
         self.username = username
         self.roles = roles
@@ -577,9 +591,17 @@ class Principal(object):
 
 class Role(object):
 
-    def __init__(self, id=None, name=None, roles=None, permissions=None):
+    def __init__(
+            self,
+            id=None,
+            name=None,
+            description=None,
+            roles=None,
+            permissions=None
+    ):
         self.id = id
         self.name = name
+        self.description = description
         self.roles = roles
         self.permissions = permissions
 

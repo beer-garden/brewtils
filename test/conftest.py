@@ -442,6 +442,7 @@ def nested_role_dict():
     return {
         'id': '58542eb571afd47ead90d26c',
         'name': 'bg-anonymous',
+        'description': 'The anonymous role',
         'roles': [],
         'permissions': ['bg-request-read'],
     }
@@ -457,6 +458,7 @@ def role_dict(nested_role_dict):
     return {
         'id': '58542eb571afd47ead90d26f',
         'name': 'bg-admin',
+        'description': 'The admin role',
         'roles': [nested_role_dict],
         'permissions': ['bg-all'],
     }

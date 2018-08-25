@@ -498,6 +498,26 @@ class EasyClient(object):
         """
         self._patch_job(job_id, [PatchOperation('update', '/status', 'RUNNING')])
 
+    def who_am_i(self):
+        """Find the user represented by the current set of credentials
+
+        :return: The current user
+        """
+        return self.get_user(self.client.username or 'anonymous')
+
+    def get_user(self, user_identifier):
+        """Find a specific user using username or ID
+
+        :param user_identifier: ID or username of User
+        :return: A User
+        """
+        response = self.client.get_user(user_identifier)
+
+        if response.ok:
+            return self.parser.parse_principal(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=FetchError)
+
     @staticmethod
     def _handle_response_failure(response, default_exc=RestError, raise_404=True):
         if response.status_code == 404:

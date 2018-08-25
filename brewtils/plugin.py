@@ -615,7 +615,16 @@ class Plugin(object):
             else:
                 return 5 if multithreaded else 1
         else:
-            return max_concurrent or 1
+            if max_concurrent is None:
+                warnings.warn(
+                    "Creating a plugin without setting max_concurrent - the default is currently "
+                    "1, which results in a single-threaded plugin. Due to the possibility of "
+                    "deadlocks this default will change in 3.0 to a value greater than 1. If this "
+                    "plugin must be single-threaded please specify max_concurrent=1 going forward.",
+                    FutureWarning, stacklevel=2)
+                return 1
+
+            return max_concurrent
 
     def _setup_system(self, client, inst_name, system, name, description, version, icon_name,
                       metadata, display_name, max_instances):

@@ -143,6 +143,7 @@ class RestClient(object):
             self.logging_config_url = self.base_url + 'api/v1/config/logging/'
             self.job_url = self.base_url + 'api/v1/jobs/'
             self.token_url = self.base_url + 'api/v1/tokens/'
+            self.user_url = self.base_url + 'api/v1/users/'
 
             self.event_url = self.base_url + 'api/vbeta/events/'
         else:
@@ -376,6 +377,15 @@ class RestClient(object):
         :return: Response to the request
         """
         return self.session.delete(self.job_url + job_id)
+
+    @enable_auth
+    def get_user(self, user_identifier):
+        """Performs a GET on the specific User URL
+
+        :return: Response to the request
+        :param user_identifier: ID or username of User
+        """
+        return self.session.get(self.user_url + user_identifier)
 
     def get_tokens(self, username=None, password=None):
         """Use a username and password to get access and refresh tokens

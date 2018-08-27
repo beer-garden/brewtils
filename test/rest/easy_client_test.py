@@ -4,8 +4,9 @@ import warnings
 import requests.exceptions
 from mock import ANY, Mock, patch
 
-from brewtils.errors import FetchError, ValidationError, SaveError, \
-    DeleteError, RestConnectionError, NotFoundError, ConflictError, RestError
+from brewtils.errors import (
+    FetchError, ValidationError, SaveError, DeleteError, RestConnectionError,
+    NotFoundError, ConflictError, RestError, WaitExceededError)
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
 
@@ -14,19 +15,22 @@ class EasyClientTest(unittest.TestCase):
 
     def setUp(self):
         self.parser = Mock()
-        self.client = EasyClient(host='localhost', port='3000', api_version=1, parser=self.parser)
-        self.fake_success_response = Mock(ok=True, status_code=200,
-                                          json=Mock(return_value='payload'))
-        self.fake_server_error_response = Mock(ok=False, status_code=500,
-                                               json=Mock(return_value='payload'))
-        self.fake_connection_error_response = Mock(ok=False, status_code=503,
-                                                   json=Mock(return_value='payload'))
-        self.fake_client_error_response = Mock(ok=False, status_code=400,
-                                               json=Mock(return_value='payload'))
-        self.fake_not_found_error_response = Mock(ok=False, status_code=404,
-                                                  json=Mock(return_value='payload'))
-        self.fake_conflict_error_response = Mock(ok=False, status_code=409,
-                                                 json=Mock(return_value='payload'))
+        self.client = EasyClient(
+            host='localhost', port='3000', api_version=1, parser=self.parser)
+        self.fake_success_response = Mock(
+            ok=True, status_code=200, json=Mock(return_value='payload'))
+        self.fake_client_error_response = Mock(
+            ok=False, status_code=400, json=Mock(return_value='payload'))
+        self.fake_not_found_error_response = Mock(
+            ok=False, status_code=404, json=Mock(return_value='payload'))
+        self.fake_wait_exceeded_response = Mock(
+            ok=False, status_code=408, json=Mock(return_value='payload'))
+        self.fake_conflict_error_response = Mock(
+            ok=False, status_code=409, json=Mock(return_value='payload'))
+        self.fake_server_error_response = Mock(
+            ok=False, status_code=500, json=Mock(return_value='payload'))
+        self.fake_connection_error_response = Mock(
+            ok=False, status_code=503, json=Mock(return_value='payload'))
 
     @patch('brewtils.rest.client.RestClient.get_config', Mock())
     def test_can_connect_success(self):
@@ -458,18 +462,17 @@ class EasyClientTest(unittest.TestCase):
         self.parser.parse_request.assert_called_with('payload')
 
     @patch('brewtils.rest.client.RestClient.post_requests')
-    def test_create_request_client_error(self, mock_post):
+    def test_create_request_errors(self, mock_post):
         mock_post.return_value = self.fake_client_error_response
         self.assertRaises(ValidationError, self.client.create_request, 'request')
 
-    @patch('brewtils.rest.client.RestClient.post_requests')
-    def test_create_request_server_error(self, mock_post):
+        mock_post.return_value = self.fake_wait_exceeded_response
+        self.assertRaises(WaitExceededError, self.client.create_request, 'request')
+
         mock_post.return_value = self.fake_server_error_response
         self.assertRaises(SaveError, self.client.create_request, 'request')
 
-    @patch('brewtils.rest.client.RestClient.post_requests')
-    def test_create_request_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
+        mock_post.return_value = self.fake_connection_error_response
         self.assertRaises(RestConnectionError, self.client.create_request, 'request')
 
     # Update request
@@ -643,6 +646,26 @@ class EasyClientTest(unittest.TestCase):
         MockPatch.assert_called_with('update', '/status', 'RUNNING')
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
         self.parser.parse_job.assert_called_with('payload')
+
+    # Users
+    @patch('brewtils.rest.client.RestClient.get_user')
+    def test_who_am_i(self, mock_get):
+        self.client.who_am_i()
+        mock_get.assert_called_with('anonymous')
+
+    @patch('brewtils.rest.client.RestClient.get_user')
+    def test_get_user(self, mock_get):
+        mock_get.return_value = self.fake_success_response
+        self.client.get_user('identifier')
+        self.assertTrue(self.parser.parse_principal.called)
+
+    @patch('brewtils.rest.client.RestClient.get_user')
+    def test_get_user_errors(self, mock_get):
+        mock_get.return_value = self.fake_client_error_response
+        self.assertRaises(ValidationError, self.client.get_user, 'identifier')
+
+        mock_get.return_value = self.fake_not_found_error_response
+        self.assertRaises(NotFoundError, self.client.get_user, 'identifier')
 
 
 class BrewmasterEasyClientTest(unittest.TestCase):

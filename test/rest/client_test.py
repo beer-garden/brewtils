@@ -1,7 +1,8 @@
+import json
 import warnings
 
 import pytest
-from mock import Mock
+from mock import Mock, MagicMock, ANY
 
 import brewtils.rest
 from brewtils.rest.client import RestClient, BrewmasterRestClient
@@ -15,7 +16,7 @@ class TestRestClient(object):
 
     @pytest.fixture
     def session_mock(self):
-        return Mock(name='session mock')
+        return MagicMock(name='session mock')
 
     @pytest.fixture
     def client(self, session_mock, url_prefix):
@@ -62,6 +63,9 @@ class TestRestClient(object):
         (pytest.lazy_fixture('client'), 'queue_url', 'http://host:80%sapi/v1/queues/'),
         (pytest.lazy_fixture('client'), 'logging_config_url',
             'http://host:80%sapi/v1/config/logging/'),
+        (pytest.lazy_fixture('client'), 'job_url', 'http://host:80%sapi/v1/jobs/'),
+        (pytest.lazy_fixture('client'), 'token_url', 'http://host:80%sapi/v1/tokens/'),
+        (pytest.lazy_fixture('client'), 'user_url', 'http://host:80%sapi/v1/users/'),
         (pytest.lazy_fixture('ssl_client'), 'system_url', 'https://host:80%sapi/v1/systems/'),
         (pytest.lazy_fixture('ssl_client'), 'instance_url', 'https://host:80%sapi/v1/instances/'),
         (pytest.lazy_fixture('ssl_client'), 'command_url', 'https://host:80%sapi/v1/commands/'),
@@ -69,6 +73,9 @@ class TestRestClient(object):
         (pytest.lazy_fixture('ssl_client'), 'queue_url', 'https://host:80%sapi/v1/queues/'),
         (pytest.lazy_fixture('ssl_client'), 'logging_config_url',
             'https://host:80%sapi/v1/config/logging/'),
+        (pytest.lazy_fixture('ssl_client'), 'job_url', 'https://host:80%sapi/v1/jobs/'),
+        (pytest.lazy_fixture('ssl_client'), 'token_url', 'https://host:80%sapi/v1/tokens/'),
+        (pytest.lazy_fixture('ssl_client'), 'user_url', 'https://host:80%sapi/v1/users/'),
     ])
     def test_version_1_uri(self, url_prefix, the_client, url, expected):
         assert getattr(the_client, url) == expected % url_prefix
@@ -85,6 +92,10 @@ class TestRestClient(object):
         # Make sure the call is correct
         getattr(session_mock, verb).assert_called_once_with(getattr(client, url),
                                                             params=params)
+
+    def test_get_config(self, client, session_mock):
+        client.get_config()
+        session_mock.get.assert_called_with(client.config_url)
 
     def test_get_system_1(self, client, session_mock):
         client.get_system('id')
@@ -194,6 +205,31 @@ class TestRestClient(object):
     def test_delete_job(self, client, session_mock):
         client.delete_job(job_id='id')
         session_mock.delete.assert_called_with(client.job_url + 'id')
+
+    def test_get_user(self, client, session_mock):
+        client.get_user('id')
+        session_mock.get.assert_called_with(client.user_url + 'id')
+
+    def test_get_tokens(self, client, session_mock):
+        response = Mock(ok=True)
+        response.json.return_value = {'token': 'token', 'refresh': 'refresh'}
+        session_mock.post.return_value = response
+        kwargs = {"username": "admin", "password": "secret"}
+
+        client.get_tokens(**kwargs)
+        session_mock.post.assert_called_with(
+            client.token_url, data=json.dumps(kwargs), headers=ANY)
+        assert client.access_token == 'token'
+        assert client.refresh_token == 'refresh'
+
+    def test_refresh(self, client, session_mock):
+        response = Mock(ok=True)
+        response.json.return_value = {'token': 'new_token'}
+        session_mock.get.return_value = response
+
+        client.refresh(refresh_token='refresh')
+        session_mock.get.assert_called_with(client.token_url + 'refresh')
+        assert client.access_token == 'new_token'
 
     def test_session_client_cert(self):
         client = RestClient(bg_host='host', bg_port=80, api_version=1,

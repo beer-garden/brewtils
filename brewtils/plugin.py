@@ -617,10 +617,9 @@ class Plugin(object):
         else:
             if max_concurrent is None:
                 warnings.warn(
-                    "Creating a plugin without setting max_concurrent - the default is currently "
-                    "1, which results in a single-threaded plugin. Due to the possibility of "
-                    "deadlocks this default will change in 3.0 to a value greater than 1. If this "
-                    "plugin must be single-threaded please specify max_concurrent=1 going forward.",
+                    "Heads up - in 3.0 the default plugin behavior is changing from handling "
+                    "requests one at a time to handling multiple at once. If this plugin needs to "
+                    "maintain the old behavior just set max_concurrent=1 when creating the plugin.",
                     FutureWarning, stacklevel=2)
                 return 1
 

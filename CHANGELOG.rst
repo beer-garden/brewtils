@@ -1,5 +1,26 @@
 Brewtils Changelog
 ==================
+
+2.4.0
+-----
+Date: 09/5/18
+
+New Features
+^^^^^^^^^^^^
+- Added job scheduling capability (beer-garden/#10)
+- Added support for authentication / users (beer-garden/#35)
+- Plugins will load log level from the environment (bartender/#4)
+- RestClient now exposes ``base_url`` (#58)
+- SystemClient can wait for a request to complete instead of polling (#54)
+- Allowing custom argument parser when loading configuration (#67)
+- Support for TLS connections to RabbitMQ (#74)
+- Warning for future change to plugin max_concurrent default value (#79)
+- Added methods ``get_config`` to RestClient, ``can_connect`` to EasyClient
+
+Other Changes
+^^^^^^^^^
+- Renamed PluginBase to Plugin (old name is aliased)
+
 2.3.7
 -----
 Date: 07/11/18

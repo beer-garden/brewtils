@@ -25,6 +25,10 @@ Other Changes
 -----
 Date: 07/11/18
 
+New Features
+^^^^^^^^^^^^
+- Current request can be accessed using ``self._current_request`` (beer-garden/#78)
+
 Bug Fixes
 ^^^^^^^^^
 - Updating import problem from lark-parser #61

@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.4.1
+-----
+Date: 09/11/18
+
+Other Changes
+^^^^^^^^^
+- Changed Plugin warning type so it won't be displayed by default
+
 2.4.0
 -----
 Date: 09/5/18

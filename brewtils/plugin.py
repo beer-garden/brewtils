@@ -620,7 +620,7 @@ class Plugin(object):
                     "Heads up - in 3.0 the default plugin behavior is changing from handling "
                     "requests one at a time to handling multiple at once. If this plugin needs to "
                     "maintain the old behavior just set max_concurrent=1 when creating the plugin.",
-                    FutureWarning, stacklevel=2)
+                    PendingDeprecationWarning, stacklevel=2)
                 return 1
 
             return max_concurrent

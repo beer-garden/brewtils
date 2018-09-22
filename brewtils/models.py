@@ -128,12 +128,23 @@ class Instance(object):
 
     schema = 'InstanceSchema'
 
-    INSTANCE_STATUSES = {'INITIALIZING', 'RUNNING', 'PAUSED', 'STOPPED', 'DEAD', 'UNRESPONSIVE',
-                         'STARTING', 'STOPPING', 'UNKNOWN'}
+    INSTANCE_STATUSES = {
+        'INITIALIZING', 'RUNNING', 'PAUSED', 'STOPPED', 'DEAD', 'UNRESPONSIVE',
+        'STARTING', 'STOPPING', 'UNKNOWN'
+    }
 
-    def __init__(self, name=None, description=None, id=None, status=None, status_info=None,
-                 queue_type=None, queue_info=None, icon_name=None, metadata=None):
-
+    def __init__(
+            self,
+            name=None,
+            description=None,
+            id=None,
+            status=None,
+            status_info=None,
+            queue_type=None,
+            queue_info=None,
+            icon_name=None,
+            metadata=None
+    ):
         self.name = name
         self.description = description
         self.id = id
@@ -158,7 +169,14 @@ class Choices(object):
     TYPES = ('static', 'url', 'command')
     DISPLAYS = ('select', 'typeahead')
 
-    def __init__(self, type=None, display=None, value=None, strict=None, details=None):
+    def __init__(
+            self,
+            type=None,
+            display=None,
+            value=None,
+            strict=None,
+            details=None
+    ):
         self.type = type
         self.strict = strict
         self.value = value
@@ -169,7 +187,8 @@ class Choices(object):
         return self.value.__str__()
 
     def __repr__(self):
-        return '<Choices: type=%s, display=%s, value=%s>' % (self.type, self.display, self.value)
+        return '<Choices: type=%s, display=%s, value=%s>' % (
+            self.type, self.display, self.value)
 
 
 class Parameter(object):
@@ -179,10 +198,23 @@ class Parameter(object):
     TYPES = ("String", "Integer", "Float", "Boolean", "Any", "Dictionary", "Date", "DateTime")
     FORM_INPUT_TYPES = ("textarea",)
 
-    def __init__(self, key, type=None, multi=None, display_name=None, optional=None, default=None,
-                 description=None, choices=None, parameters=None, nullable=None, maximum=None,
-                 minimum=None, regex=None, form_input_type=None):
-
+    def __init__(
+            self,
+            key,
+            type=None,
+            multi=None,
+            display_name=None,
+            optional=None,
+            default=None,
+            description=None,
+            choices=None,
+            parameters=None,
+            nullable=None,
+            maximum=None,
+            minimum=None,
+            regex=None,
+            form_input_type=None
+    ):
         self.key = key
         self.type = type
         self.multi = multi
@@ -202,9 +234,8 @@ class Parameter(object):
         return self.key
 
     def __repr__(self):
-        return '<Parameter: key=%s, type=%s, description=%s>' % (self.key,
-                                                                 self.type,
-                                                                 self.description)
+        return '<Parameter: key=%s, type=%s, description=%s>' % (
+            self.key, self.type, self.description)
 
     def is_different(self, other):
         if not type(other) is type(self):
@@ -257,10 +288,10 @@ class RequestTemplate(object):
         return self.command
 
     def __repr__(self):
-        return (
-            '<RequestTemplate: command=%s, system=%s, system_version=%s, instance_name=%s>' %
+        return \
+            '<RequestTemplate: command=%s, system=%s, system_version=%s, ' \
+            'instance_name=%s>' % \
             (self.command, self.system, self.system_version, self.instance_name)
-        )
 
 
 class Request(RequestTemplate):
@@ -272,11 +303,28 @@ class Request(RequestTemplate):
     COMMAND_TYPES = ('ACTION', 'INFO', 'EPHEMERAL')
     OUTPUT_TYPES = ('STRING', 'JSON', 'XML', 'HTML')
 
-    def __init__(self, system=None, system_version=None, instance_name=None, command=None,
-                 id=None, parent=None, children=None, parameters=None, comment=None, output=None,
-                 output_type=None, status=None, command_type=None, created_at=None,
-                 error_class=None, metadata=None, updated_at=None, has_parent=None, requester=None):
-
+    def __init__(
+            self,
+            system=None,
+            system_version=None,
+            instance_name=None,
+            command=None,
+            id=None,
+            parent=None,
+            children=None,
+            parameters=None,
+            comment=None,
+            output=None,
+            output_type=None,
+            status=None,
+            command_type=None,
+            created_at=None,
+            error_class=None,
+            metadata=None,
+            updated_at=None,
+            has_parent=None,
+            requester=None
+    ):
         super(Request, self).__init__(
             system=system,
             system_version=system_version,
@@ -300,9 +348,12 @@ class Request(RequestTemplate):
         self.requester = requester
 
     def __repr__(self):
-        return ('<Request: command=%s, status=%s, '
-                'system=%s, system_version=%s, instance_name=%s>' %
-                (self.command, self.status, self.system, self.system_version, self.instance_name))
+        return (
+            '<Request: command=%s, status=%s, system=%s, system_version=%s, '
+            'instance_name=%s>' %
+            (self.command, self.status, self.system, self.system_version,
+             self.instance_name)
+        )
 
     @property
     def status(self):
@@ -319,16 +370,18 @@ class Request(RequestTemplate):
     @status.setter
     def status(self, value):
         if self._status in self.COMPLETED_STATUSES:
-            raise RequestStatusTransitionError("Status for a request cannot be updated once "
-                                               "it has been completed. Current status: {0} "
-                                               "Requested status: {1}".format(self.status, value))
+            raise RequestStatusTransitionError(
+                "Status for a request cannot be updated once it has been "
+                "completed. Current status: {0} Requested status: {1}"
+                .format(self.status, value))
 
         elif (self._status == 'IN_PROGRESS' and
               value not in self.COMPLETED_STATUSES + ('IN_PROGRESS', )):
-            raise RequestStatusTransitionError("A request cannot go from IN_PROGRESS to "
-                                               "a non-completed status. Completed statuses are "
-                                               "{0}. You requested: {1}"
-                                               .format(self.COMPLETED_STATUSES, value))
+            raise RequestStatusTransitionError(
+                "A request cannot go from IN_PROGRESS to a non-completed "
+                "status. Completed statuses are {0}. You requested: {1}"
+                .format(self.COMPLETED_STATUSES, value))
+
         self._status = value
 
 
@@ -336,9 +389,19 @@ class System(object):
 
     schema = 'SystemSchema'
 
-    def __init__(self, name=None, description=None, version=None, id=None, max_instances=None,
-                 instances=None, commands=None, icon_name=None, display_name=None, metadata=None):
-
+    def __init__(
+            self,
+            name=None,
+            description=None,
+            version=None,
+            id=None,
+            max_instances=None,
+            instances=None,
+            commands=None,
+            icon_name=None,
+            display_name=None,
+            metadata=None
+    ):
         self.name = name
         self.description = description
         self.version = version
@@ -425,7 +488,8 @@ class PatchOperation(object):
         return '%s, %s, %s' % (self.operation, self.path, self.value)
 
     def __repr__(self):
-        return '<Patch: operation=%s, path=%s, value=%s>' % (self.operation, self.path, self.value)
+        return '<Patch: operation=%s, path=%s, value=%s>' % (
+            self.operation, self.path, self.value)
 
 
 class LoggingConfig(object):
@@ -442,7 +506,13 @@ class LoggingConfig(object):
         "formatter": "default"
     }
 
-    def __init__(self, level=None, handlers=None, formatters=None, loggers=None):
+    def __init__(
+            self,
+            level=None,
+            handlers=None,
+            formatters=None,
+            loggers=None
+    ):
         self.level = level
         self.handlers = handlers
         self.formatters = formatters
@@ -485,7 +555,8 @@ class LoggingConfig(object):
         handlers = self._generate_handlers(specific_logger.get("handlers"))
         formatters = self._generate_formatters(specific_logger.get("formatters", {}))
 
-        return LoggingConfig(level=level, handlers=handlers, formatters=formatters)
+        return LoggingConfig(
+            level=level, handlers=handlers, formatters=formatters)
 
     def _generate_handlers(self, specific_handlers):
 
@@ -520,19 +591,26 @@ class LoggingConfig(object):
         return formatters
 
     def __str__(self):
-        return '%s, %s, %s' % (self.level, self.handler_names, self.formatter_names)
+        return '%s, %s, %s' % (
+            self.level, self.handler_names, self.formatter_names)
 
     def __repr__(self):
-        return '<LoggingConfig: level=%s, handlers=%s, formatters=%s' % (self.level,
-                                                                         self.handler_names,
-                                                                         self.formatter_names)
+        return '<LoggingConfig: level=%s, handlers=%s, formatters=%s' % (
+            self.level, self.handler_names, self.formatter_names)
 
 
 class Event(object):
 
     schema = 'EventSchema'
 
-    def __init__(self, name=None, payload=None, error=None, metadata=None, timestamp=None):
+    def __init__(
+            self,
+            name=None,
+            payload=None,
+            error=None,
+            metadata=None,
+            timestamp=None
+    ):
         self.name = name
         self.payload = payload
         self.error = error
@@ -543,8 +621,8 @@ class Event(object):
         return '%s: %s, %s' % (self.name, self.payload, self.metadata)
 
     def __repr__(self):
-        return ('<Event: name=%s, error=%s, payload=%s, metadata=%s>' %
-                (self.name, self.error, self.payload, self.metadata))
+        return '<Event: name=%s, error=%s, payload=%s, metadata=%s>' % (
+            self.name, self.error, self.payload, self.metadata)
 
 
 class Queue(object):
@@ -620,8 +698,8 @@ class Role(object):
         return '%s' % self.name
 
     def __repr__(self):
-        return ('<Role: name=%s, roles=%s, permissions=%s>' %
-                (self.name, self.roles, self.permissions))
+        return '<Role: name=%s, roles=%s, permissions=%s>' % (
+            self.name, self.roles, self.permissions)
 
 
 class RefreshToken(object):
@@ -636,8 +714,8 @@ class RefreshToken(object):
         return '%s' % self.payload
 
     def __repr__(self):
-        return ('<RefreshToken: issued=%s, expires=%s, payload=%s>' %
-                (self.issued, self.expires, self.payload))
+        return '<RefreshToken: issued=%s, expires=%s, payload=%s>' % (
+            self.issued, self.expires, self.payload)
 
 
 class Job(object):

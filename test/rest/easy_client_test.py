@@ -3,14 +3,92 @@
 import unittest
 import warnings
 
+import pytest
 import requests.exceptions
 from mock import ANY, Mock, patch
+from pytest import param
+from pytest_lazyfixture import lazy_fixture
 
 from brewtils.errors import (
     FetchError, ValidationError, SaveError, DeleteError, RestConnectionError,
     NotFoundError, ConflictError, RestError, WaitExceededError)
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
+
+
+class TestEasyClient(object):
+
+    @pytest.fixture
+    def parser(self):
+        return Mock()
+
+    @pytest.fixture
+    def rest_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def client(self, parser, rest_client):
+        client = EasyClient(
+            host='localhost', port='3000', api_version=1, parser=parser
+        )
+        client.client = rest_client
+        return client
+
+    @pytest.fixture
+    def success(self):
+        return Mock(ok=True, status_code=200, json=Mock(return_value='payload'))
+
+    @pytest.fixture
+    def client_error(self):
+        return Mock(ok=False, status_code=400, json=Mock(return_value='payload'))
+
+    @pytest.fixture
+    def not_found(self):
+        return Mock(ok=False, status_code=404, json=Mock(return_value='payload'))
+
+    @pytest.fixture
+    def wait_exceeded(self):
+        return Mock(ok=False, status_code=408, json=Mock(return_value='payload'))
+
+    @pytest.fixture
+    def conflict(self):
+        return Mock(ok=False, status_code=409, json=Mock(return_value='payload'))
+
+    @pytest.fixture
+    def server_error(self):
+        return Mock(ok=False, status_code=500, json=Mock(return_value='payload'))
+
+    @pytest.fixture
+    def connection_error(self):
+        return Mock(ok=False, status_code=503, json=Mock(return_value='payload'))
+
+    def test_connect(self, client):
+        assert client.can_connect()
+
+    def test_connect_fail(self, client, rest_client):
+        rest_client.get_config.side_effect = requests.exceptions.ConnectionError
+        assert not client.can_connect()
+
+    def test_connect_error(self, client, rest_client):
+        rest_client.get_config.side_effect = requests.exceptions.SSLError
+        with pytest.raises(requests.exceptions.SSLError):
+            client.can_connect()
+
+    def test_get_version(self, client, rest_client, success):
+        rest_client.get_version.return_value = success
+        assert client.get_version() == success
+
+    def test_get_version_error(self, client, rest_client, server_error):
+        rest_client.get_version.return_value = server_error
+        with pytest.raises(FetchError):
+            client.get_version()
+
+    def test_get_logging_config(self, client, rest_client, parser, success):
+        rest_client.get_logging_config.return_value = success
+
+        output = client.get_logging_config('system')
+        parser.parse_logging_config.assert_called_with(success.json.return_value)
+        assert output == parser.parse_logging_config.return_value
 
 
 class EasyClientTest(unittest.TestCase):
@@ -33,48 +111,6 @@ class EasyClientTest(unittest.TestCase):
             ok=False, status_code=500, json=Mock(return_value='payload'))
         self.fake_connection_error_response = Mock(
             ok=False, status_code=503, json=Mock(return_value='payload'))
-
-    @patch('brewtils.rest.client.RestClient.get_config', Mock())
-    def test_can_connect_success(self):
-        self.assertTrue(self.client.can_connect())
-
-    @patch('brewtils.rest.client.RestClient.get_config')
-    def test_can_connect_failure(self, get_mock):
-        get_mock.side_effect = requests.exceptions.ConnectionError
-        self.assertFalse(self.client.can_connect())
-
-    @patch('brewtils.rest.client.RestClient.get_config')
-    def test_can_connect_error(self, get_mock):
-        get_mock.side_effect = requests.exceptions.SSLError
-        self.assertRaises(requests.exceptions.SSLError, self.client.can_connect)
-
-    @patch('brewtils.rest.client.RestClient.get_version')
-    def test_get_version(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-
-        self.assertEqual(self.fake_success_response, self.client.get_version())
-        mock_get.assert_called()
-
-    @patch('brewtils.rest.client.RestClient.get_version')
-    def test_get_version_error(self, mock_get):
-        mock_get.return_value = self.fake_server_error_response
-
-        self.assertRaises(FetchError, self.client.get_version)
-        mock_get.assert_called()
-
-    @patch('brewtils.rest.client.RestClient.get_version')
-    def test_get_version_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.get_version)
-
-    @patch('brewtils.rest.client.RestClient.get_logging_config')
-    def test_get_logging_config(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.parser.parse_logging_config = Mock(return_value='logging_config')
-
-        self.assertEqual('logging_config', self.client.get_logging_config('system_name'))
-        self.parser.parse_logging_config.assert_called_with('payload')
-        mock_get.assert_called()
 
     @patch('brewtils.rest.client.RestClient.get_logging_config')
     def test_get_logging_config_connection_error(self, request_mock):

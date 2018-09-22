@@ -1,7 +1,8 @@
 import sys
 import unittest
 
-from mock import Mock, PropertyMock, call, patch
+import pytest
+from mock import Mock, call, patch
 
 import brewtils.decorators
 from brewtils.decorators import system, command, parameter, _resolve_display_modifiers
@@ -13,293 +14,181 @@ if sys.version_info > (3,):
     builtins_path = 'builtins'
 
 
-class SystemTest(unittest.TestCase):
+class TestSystem(object):
 
-    def test_system(self):
+    @pytest.fixture
+    def system(self):
         @system
-        class A(object):
+        class SystemClass(object):
             @command
             def foo(self):
                 pass
 
-        a = A()
-        self.assertEqual(len(a._commands), 1)
-        self.assertEqual(a._commands[0].name, 'foo')
+        return SystemClass
+
+    def test_system(self, system):
+        assert 1 == len(system._commands)
+        assert 'foo' == system._commands[0].name
 
 
-class ParameterTest(unittest.TestCase):
+class TestParameter(object):
 
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_parameter_no_command_call_generate(self, mock_generate):
-        mock_name = PropertyMock(return_value='command1')
-        mock_command = Mock()
-        type(mock_command).name = mock_name
-        mock_param = Mock(choices=None)
-        mock_command.get_parameter_by_key = Mock(return_value=mock_param)
-        mock_generate.return_value = mock_command
+    @pytest.fixture
+    def cmd(self):
+        def _cmd(_, foo):
+            return foo
+        return _cmd
 
-        @parameter(key='foo')
-        def foo(self, foo):
-            pass
+    def test_no_command_decorator(self, cmd):
+        assert not hasattr(cmd, '_command')
+        parameter(cmd, key='foo')
+        assert hasattr(cmd, '_command')
 
-        mock_generate.assert_called_once()
+    def test_no_key(self, cmd):
+        with pytest.raises(PluginParamError):
+            parameter(cmd)
 
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_parameter_no_key(self, mock_generate):
-        mock_name = PropertyMock(return_value='command1')
-        mock_command = Mock()
-        type(mock_command).name = mock_name
-        mock_param = Mock()
-        mock_command.get_parameter_by_key = Mock(return_value=mock_param)
-        mock_generate.return_value = mock_command
+    def test_wrong_key(self, cmd):
+        with pytest.raises(PluginParamError):
+            parameter(cmd, key='bar')
 
-        with self.assertRaises(PluginParamError):
-            @parameter()
-            def foo(self, x):
-                pass
+    @pytest.mark.parametrize('t,expected', [
+        (str, 'String'),
+        (int, 'Integer'),
+        (float, 'Float'),
+        (bool, 'Boolean'),
+        (dict, 'Dictionary'),
+        ('String', 'String'),
+        ('Integer', 'Integer'),
+        ('Float', 'Float'),
+        ('Boolean', 'Boolean'),
+        ('Dictionary', 'Dictionary'),
+        ('Any', 'Any'),
+    ])
+    def test_types(self, cmd, t, expected):
+        wrapped = parameter(cmd, key='foo', type=t)
+        assert expected == wrapped._command.get_parameter_by_key('foo').type
 
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_parameter_bad_key(self, mock_generate):
-        mock_name = PropertyMock(return_value='command1')
-        mock_command = Mock()
-        type(mock_command).name = mock_name
-        mock_command.get_parameter_by_key = Mock(return_value=None)
-        mock_generate.return_value = mock_command
+    def test_values(self, cmd):
+        wrapped = parameter(
+            cmd, key='foo', type='Integer', multi=True, description='Mutant',
+            display_name='Professor X', optional=True, default='Charles'
+        )
+        param = wrapped._command.get_parameter_by_key('foo')
 
-        with self.assertRaises(PluginParamError):
-            @parameter(key='y')
-            def foo(self, x):
-                pass
+        assert param.key == 'foo'
+        assert param.display_name == 'Professor X'
+        assert param.description == 'Mutant'
+        assert param.optional is True
+        assert param.multi is True
 
-    def test_parameter_types(self):
+    @pytest.mark.parametrize('choices,expected', [
+        (
+            ['1', '2', '3'],
+            {
+                'type': 'static',
+                'value': ['1', '2', '3'],
+                'display':'select',
+                'strict': True,
+            }
+        ),
+        (
+            list(range(100)),
+            {
+                'type': 'static',
+                'value': list(range(100)),
+                'display': 'typeahead',
+                'strict': True,
+            }
+        ),
+        (
+            {'value': [1, 2, 3]},
+            {
+                'type': 'static',
+                'value': [1, 2, 3],
+                'display': 'select',
+                'strict': True,
+            }
+        ),
+        (
+            {'value': {'a': [1, 2], 'b': [3, 4]}, 'key_reference': '${y}'},
+            {
+                'type': 'static',
+                'value': {'a': [1, 2], 'b': [3, 4]},
+                'display': 'select',
+                'strict': True,
+                'details': {'key_reference': 'y'},
+            }
+        ),
+        (
+            'http://myhost:1234',
+            {
+                'type': 'url',
+                'value': 'http://myhost:1234',
+                'display': 'typeahead',
+                'strict': True,
+                'details': {'address': 'http://myhost:1234', 'args': []},
+            }
+        ),
+        (
+            'my_command',
+            {
+                'type': 'command',
+                'value': 'my_command',
+                'display': 'typeahead',
+                'strict': True,
+                'details': {'name': 'my_command', 'args': []},
+            }
+        ),
+        (
+            {'type': 'command', 'value': {'command': 'my_command'}},
+            {
+                'type': 'command',
+                'value': {'command': 'my_command'},
+                'display': 'select',
+                'strict': True,
+                'details': {'name': 'my_command', 'args': []},
+            }
+        ),
+    ])
+    def test_choices(self, cmd, choices, expected):
+        wrapped = parameter(cmd, key='foo', choices=choices)
+        param = wrapped._command.get_parameter_by_key('foo')
 
-        for t, expected in [
-            (str, 'String'),
-            (int, 'Integer'),
-            (float, 'Float'),
-            (bool, 'Boolean'),
-            (dict, 'Dictionary'),
-            ('String', 'String'),
-            ('Integer', 'Integer'),
-            ('Float', 'Float'),
-            ('Boolean', 'Boolean'),
-            ('Dictionary', 'Dictionary'),
-            ('Any', 'Any'),
-        ]:
+        assert param.choices.type == expected['type']
+        assert param.choices.value == expected['value']
+        assert param.choices.display == expected['display']
+        assert param.choices.strict == expected['strict']
+        assert param.choices.details == expected.get('details', {})
 
-            @system
-            class MyClass(object):
+    @pytest.mark.parametrize('choices', [
+        # No value
+        {'type': 'static', 'display': 'select'},
 
-                @parameter(key='x', type=t)
-                def foo(self, x):
-                    pass
+        # Invalid type
+        {'type': 'Invalid Type', 'value': [1, 2, 3], 'display': 'select'},
 
-            c = MyClass()
-            self.assertEqual(c._commands[0].get_parameter_by_key('x').type,
-                             expected)
+        # Invalid display
+        {'type': 'static', 'value': [1, 2, 3], 'display': 'Invalid display'},
 
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_parameter_set_param_values(self, mock_generate):
-        mock_param = Mock(key='x')
-        mock_generate.return_value = Command('command1', parameters=[mock_param])
+        # Command value invalid type
+        {'type': 'command', 'value': [1, 2, 3]},
 
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
-                   optional=True, default='Charles',
-                   description='Mutant', choices={'type': 'static', 'value': ['1', '2', '3']})
-        def foo(self, x):
-            pass
+        # Static value invalid type
+        {'type': 'static', 'value': 'This should not be a string'},
 
-        self.assertEqual(mock_param.key, 'x')
-        self.assertEqual(mock_param.multi, True)
-        self.assertEqual(mock_param.display_name, 'Professor X')
-        self.assertEqual(mock_param.optional, True)
-        self.assertEqual(mock_param.default, 'Charles')
-        self.assertEqual(mock_param.description, 'Mutant')
-        self.assertEqual(mock_param.choices.type, 'static')
-        self.assertEqual(mock_param.choices.value, ['1', '2', '3'])
-        self.assertEqual(mock_param.choices.display, 'select')
-        self.assertEqual(mock_param.choices.strict, True)
+        # No key reference
+        {'type': 'static', 'value': {"a": [1, 2, 3]}},
 
-    def test_parameter_set_choices_list_small(self):
+        # Parse error
+        {'type': 'command', 'value': 'bad_def(x='},
 
-        @parameter(key='x', choices=['1', '2', '3'])
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'static')
-        self.assertEqual(p.choices.value, ['1', '2', '3'])
-        self.assertEqual(p.choices.display, 'select')
-        self.assertEqual(p.choices.strict, True)
-
-    def test_parameter_set_choices_display_based_on_size(self):
-
-        big_choices = [i for i in range(1000)]
-
-        @parameter(key='x', choices=big_choices)
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'static')
-        self.assertEqual(p.choices.value, big_choices)
-        self.assertEqual(p.choices.display, 'typeahead')
-        self.assertEqual(p.choices.strict, True)
-
-    def test_parameter_choices_is_dictionary_no_value_provided(self):
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'static', 'display': 'select'})
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_invalid_type(self):
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'INVALID_TYPE', 'value': [1, 2, 3],
-                                         'display': 'select'})
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_invalid_display(self):
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'static', 'value': [1, 2, 3],
-                                         'display': 'INVALID_DISPLAY'})
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_with_just_value_list(self):
-
-        @parameter(key='x', choices={'value': [1, 2, 3]})
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'static')
-        self.assertEqual(p.choices.value, [1, 2, 3])
-        self.assertEqual(p.choices.display, 'select')
-        self.assertEqual(p.choices.strict, True)
-
-    def test_parameter_choices_with_value_dict(self):
-
-        @parameter(key='y')
-        @parameter(key='x', choices={'value': {'a': [1, 2, 3], 'b': [4, 5, 6]},
-                                     'key_reference': '${y}'})
-        def foo(self, x, y):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 2)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'static')
-        self.assertEqual(p.choices.value, {'a': [1, 2, 3], 'b': [4, 5, 6]})
-        self.assertEqual(p.choices.display, 'select')
-        self.assertEqual(p.choices.strict, True)
-        self.assertEqual(p.choices.details['key_reference'], 'y')
-
-    def test_parameter_choices_value_as_url_string(self):
-
-        @parameter(key='x', choices='http://myhost:1234')
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'url')
-        self.assertEqual(p.choices.value, 'http://myhost:1234')
-        self.assertEqual(p.choices.display, 'typeahead')
-        self.assertEqual(p.choices.strict, True)
-
-    def test_parameter_choices_value_as_command_string(self):
-
-        @parameter(key='x', choices='my_command')
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'command')
-        self.assertEqual(p.choices.value, 'my_command')
-        self.assertEqual(p.choices.display, 'typeahead')
-        self.assertEqual(p.choices.strict, True)
-
-    def test_parameter_choices_value_as_command_dict(self):
-
-        @parameter(key='x', choices={'type': 'command', 'value': {'command': 'my_command'}})
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.choices.type, 'command')
-        self.assertEqual(p.choices.display, 'select')
-        self.assertEqual(p.choices.strict, True)
-        self.assertEqual(p.choices.details['name'], 'my_command')
-
-    def test_parameter_choices_set_display_static_greater_than_50(self):
-
-        @parameter(key='x', choices={'type': 'static', 'value': list(range(51))})
-        def foo(self, x):
-            pass
-
-        self.assertEqual(foo._command.parameters[0].choices.display, 'typeahead')
-
-    def test_parameter_choices_set_display_static_less_than_50(self):
-
-        @parameter(key='x', choices={'type': 'static', 'value': list(range(49))})
-        def foo(self, x):
-            pass
-
-        self.assertEqual(foo._command.parameters[0].choices.display, 'select')
-
-    def test_parameter_invalid_choices(self):
-
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices=1)
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_url_value_mismatch(self):
-
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'command', 'value': [1, 2, 3]})
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_static_value_mismatch(self):
-
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'static', 'value': 'THIS_SHOULD_NOT_BE_A_STRING'})
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_dictionary_no_key_reference(self):
-
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'static', 'value': {"a": [1, 2, 3]}})
-            def foo(self, x):
-                pass
-
-    def test_parameter_choices_parse_error(self):
-
-        with self.assertRaises(PluginParamError):
-            @parameter(key='x', choices={'type': 'command', 'value': 'bad_def(x='})
-            def foo(self, x):
-                pass
+        # Just wrong
+        1,
+    ])
+    def test_choices_error(self, cmd, choices):
+        with pytest.raises(PluginParamError):
+            parameter(cmd, key='foo', choices=choices)
 
 
 class CommandTest(unittest.TestCase):

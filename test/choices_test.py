@@ -1,4 +1,4 @@
-import unittest
+import pytest
 
 try:
     from lark import ParseError
@@ -8,76 +8,106 @@ except ImportError:
 from brewtils.choices import parse
 
 
-class ChoicesTest(unittest.TestCase):
+class TestChoices(object):
 
-    def test_func_parse_success(self):
-        parse('function_name', parse_as='func')
-        parse('function_name()', parse_as='func')
-        parse('function_name(single=${arg})', parse_as='func')
-        parse('function_name(single=${arg}, another=${arg})', parse_as='func')
-        parse('function_name(single_param=${arg_param}, another=${arg})', parse_as='func')
+    @pytest.mark.parametrize('input_string, expected', [
+        ('f', {'name': 'f', 'args': []}),
+        ('f()', {'name': 'f', 'args': []}),
+        ('f(single=${arg})', {'name': 'f', 'args': [('single', 'arg')]}),
+        (
+            'f(single=${arg}, another=${arg})',
+            {'name': 'f', 'args': [('single', 'arg'), ('another', 'arg')]}
+        ),
+        (
+            'f(first=${arg_param}, another=${arg})',
+            {'name': 'f', 'args': [('first', 'arg_param'), ('another', 'arg')]}
+        ),
+    ])
+    def test_parse_func(self, input_string, expected):
+        assert expected == parse(input_string, parse_as='func')
 
-    def test_func_parse_error(self):
-        self.assertRaises(ParseError, parse, '', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=arg)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=$arg)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=${arg)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=$arg})', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=${arg},)', parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=$arg, another=$arg)',
-                          parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=${arg}, another=$arg)',
-                          parse_as='func')
-        self.assertRaises(ParseError, parse, 'function_name(single=${arg}, another=${arg}',
-                          parse_as='func')
+    @pytest.mark.parametrize('input_string', [
+        '',
+        'f(',
+        'f(single)',
+        'f(single=)',
+        'f(single=arg)',
+        'f(single=$arg)',
+        'f(single=${arg)',
+        'f(single=$arg})',
+        'f(single=${arg},)',
+        'f(single=$arg, another=$arg)',
+        'f(single=${arg}, another=$arg)',
+        'f(single=${arg}, another=${arg}',
+    ])
+    def test_parse_func_error(self, input_string):
+        with pytest.raises(ParseError):
+            parse(input_string, parse_as='func')
 
-    def test_url_parse_success(self):
-        parse('http://address', parse_as='url')
-        parse('https://address', parse_as='url')
-        parse('http://address:1234', parse_as='url')
-        parse('https://address:1234', parse_as='url')
-        parse('https://address:1234?param1=${arg}', parse_as='url')
-        parse('https://address:1234?param_1=${arg}&param_2=${arg2}', parse_as='url')
+    @pytest.mark.parametrize('input_string, expected', [
+        ('http://bg', {'address': 'http://bg', 'args': []}),
+        ('http://bg:1234', {'address': 'http://bg:1234', 'args': []}),
+        ('https://bg', {'address': 'https://bg', 'args': []}),
+        ('https://bg:1234', {'address': 'https://bg:1234', 'args': []}),
+        (
+            'https://bg:1234?p1=${arg}',
+            {'address': 'https://bg:1234', 'args': [('p1', 'arg')]}
+        ),
+        (
+            'https://bg?p1=${arg}&p2=${arg2}',
+            {'address': 'https://bg', 'args': [('p1', 'arg'), ('p2', 'arg2')]}
+        ),
+    ])
+    def test_parse_url(self, input_string, expected):
+        assert expected == parse(input_string, parse_as='url')
 
-    def test_url_parse_error(self):
-        self.assertRaises(ParseError, parse, '', parse_as='url')
-        self.assertRaises(ParseError, parse, 'htp://address', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=literal', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=$arg', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=', parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=arg2',
-                          parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=$arg2',
-                          parse_as='url')
-        self.assertRaises(ParseError, parse, 'http://address?param=${arg}&param_2=${arg2',
-                          parse_as='url')
+    @pytest.mark.parametrize('input_string', [
+        '',
+        'htp://address',
+        'http://address?',
+        'http://address?param',
+        'http://address?param=',
+        'http://address?param=literal',
+        'http://address?param=$arg',
+        'http://address?param=${arg',
+        'http://address?param=${arg}&',
+        'http://address?param=${arg}&param_2',
+        'http://address?param=${arg}&param_2=',
+        'http://address?param=${arg}&param_2=arg2',
+        'http://address?param=${arg}&param_2=$arg2',
+        'http://address?param=${arg}&param_2=${arg2',
+    ])
+    def test_parse_url_error(self, input_string):
+        with pytest.raises(ParseError):
+            parse(input_string, parse_as='url')
 
-    def test_reference_parse_success(self):
-        self.assertEqual('index', parse('${index}', parse_as='reference'))
+    def test_parse_reference(self):
+        assert 'index' == parse('${index}', parse_as='reference')
 
-    def test_reference_parse_error(self):
-        self.assertRaises(ParseError, parse, '', parse_as='reference')
-        self.assertRaises(ParseError, parse, '$', parse_as='reference')
-        self.assertRaises(ParseError, parse, '${', parse_as='reference')
-        self.assertRaises(ParseError, parse, '$}', parse_as='reference')
-        self.assertRaises(ParseError, parse, '${}', parse_as='reference')
-        self.assertRaises(ParseError, parse, '{index}', parse_as='reference')
-        self.assertRaises(ParseError, parse, '$index}', parse_as='reference')
-        self.assertRaises(ParseError, parse, '${index', parse_as='reference')
-        self.assertRaises(ParseError, parse, 'a${index}', parse_as='reference')
-        self.assertRaises(ParseError, parse, '${index}a', parse_as='reference')
-        self.assertRaises(ParseError, parse, '${index} ${index2}', parse_as='reference')
+    @pytest.mark.parametrize('input_string', [
+        '',
+        '$',
+        '${',
+        '$}',
+        '${}',
+        '{index}',
+        '$index}',
+        '${index',
+        'a${index}',
+        '${index}a',
+        '${index} ${index2}',
+    ])
+    def test_parse_reference_error(self, input_string):
+        with pytest.raises(ParseError):
+            parse(input_string, parse_as='reference')
 
-    def test_parse_unknown_parse_as(self):
-        self.assertIn('address', parse('http://address'))
-        self.assertIn('name', parse('function'))
-        self.assertRaises(ParseError, parse, '')
+    def test_parse_empty(self):
+        with pytest.raises(ParseError):
+            parse('')
+
+    @pytest.mark.parametrize('input_string, expected', [
+        ('http://address', {'address': 'http://address', 'args': []}),
+        ('f', {'name': 'f', 'args': []}),
+    ])
+    def test_parse_no_hint(self, input_string, expected):
+        assert expected == parse(input_string)

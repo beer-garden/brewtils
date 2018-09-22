@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 SPECIFICATION = {
     "bg_host": {
         "type": "str",

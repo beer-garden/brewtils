@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 
 def normalize_url_prefix(url_prefix):
 

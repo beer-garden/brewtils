@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals
 # Doing this because marshmallow uses unicode when it serializes things to dictionaries
 

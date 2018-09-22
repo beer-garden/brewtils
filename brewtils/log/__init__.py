@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Brewtils Logging Utilities
 
 This module is for setting up your plugins logging correctly.

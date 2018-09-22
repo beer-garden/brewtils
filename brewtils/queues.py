@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import ssl as pyssl
 
 from pika import ConnectionParameters, PlainCredentials, SSLOptions

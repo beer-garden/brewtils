@@ -52,9 +52,20 @@ class Command(object):
     COMMAND_TYPES = ('ACTION', 'INFO', 'EPHEMERAL')
     OUTPUT_TYPES = ('STRING', 'JSON', 'XML', 'HTML')
 
-    def __init__(self, name, description=None, id=None, parameters=None, command_type=None,
-                 output_type=None, schema=None, form=None, template=None, icon_name=None,
-                 system=None):
+    def __init__(
+            self,
+            name=None,
+            description=None,
+            id=None,
+            parameters=None,
+            command_type=None,
+            output_type=None,
+            schema=None,
+            form=None,
+            template=None,
+            icon_name=None,
+            system=None
+    ):
         self.name = name
         self.description = description
         self.id = id

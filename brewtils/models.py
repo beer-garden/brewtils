@@ -451,14 +451,14 @@ class LoggingConfig(object):
     @property
     def handler_names(self):
         if self.handlers:
-            return self.handlers.keys()
+            return set(self.handlers)
         else:
             return None
 
     @property
     def formatter_names(self):
         if self.formatters:
-            return self.formatters.keys()
+            return set(self.formatters)
         else:
             return None
 

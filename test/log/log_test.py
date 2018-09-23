@@ -1,60 +1,65 @@
 # -*- coding: utf-8 -*-
 
-import unittest
+import pytest
+from mock import Mock
 
-from mock import Mock, patch
-
-from brewtils.log import setup_logger, get_python_logging_config, convert_logging_config, \
-    DEFAULT_HANDLERS, DEFAULT_FORMATTERS
+from brewtils.log import (
+    setup_logger, get_python_logging_config, convert_logging_config,
+    DEFAULT_HANDLERS, DEFAULT_FORMATTERS)
 from brewtils.models import LoggingConfig
 
 
-class LogTest(unittest.TestCase):
+class TestLog(object):
 
-    def setUp(self):
-        self.params = {
+    @pytest.fixture
+    def params(self):
+        return {
             'bg_host': 'bg_host',
             'bg_port': 1234,
             'system_name': 'system_name',
             'ca_cert': 'ca_cert',
             'client_cert': 'client_cert',
-            'ssl_enabled': False
+            'ssl_enabled': False,
         }
 
-    @patch('brewtils.log.get_python_logging_config', Mock(return_value={}))
-    @patch('brewtils.log.logging.config.dictConfig')
-    def test_setup_logger(self, dict_config_mock):
-        setup_logger(**self.params)
-        dict_config_mock.assert_called_with({})
+    def test_setup_logger(self, params, monkeypatch):
+        log_conf = Mock()
+        monkeypatch.setattr('brewtils.log.get_python_logging_config', log_conf)
 
-    @patch('brewtils.get_easy_client')
-    @patch('brewtils.log.convert_logging_config', Mock(return_value="python_logging_config"))
-    def test_get_python_logging_config(self, get_client_mock):
-        mock_client = Mock(get_logging_config=Mock(return_value="logging_config"))
-        get_client_mock.return_value = mock_client
-        self.assertEqual("python_logging_config", get_python_logging_config(**self.params))
+        conf_mock = Mock()
+        monkeypatch.setattr('brewtils.log.logging.config.dictConfig', conf_mock)
 
-    def test_convert_logging_config_all_overrides(self):
-        handlers = {"handler1": {}, "handler2": {}}
+        setup_logger(**params)
+        conf_mock.assert_called_once_with(log_conf.return_value)
+
+    def test_get_python_logging_config(self, params, monkeypatch):
+        monkeypatch.setattr('brewtils.get_easy_client', Mock())
+
+        convert_mock = Mock(return_value='config')
+        monkeypatch.setattr('brewtils.log.convert_logging_config', convert_mock)
+
+        assert 'config' == get_python_logging_config(**params)
+
+    def test_convert_logging_config(self):
+        handlers = {"hand1": {}, "handler2": {}}
         formatters = {"formatter1": {}, "formatter2": {}}
-        logging_config = LoggingConfig(level="level", handlers=handlers,
-                                       formatters=formatters)
-        python_config = convert_logging_config(logging_config)
-        self.assertEqual(python_config['handlers'], handlers)
-        self.assertEqual(python_config['formatters'], formatters)
-        self.assertTrue('root' in python_config)
-        root_logger = python_config['root']
-        self.assertTrue('level' in root_logger)
-        self.assertTrue('handlers' in root_logger)
-        self.assertEqual(root_logger['level'], 'level')
-        self.assertEqual(sorted(root_logger['handlers']), ['handler1', 'handler2'])
 
-    def test_convert_logging_config_no_overrides(self):
-        logging_config = LoggingConfig(level="level", handlers={}, formatters={})
-        python_config = convert_logging_config(logging_config)
-        self.assertEqual(python_config['handlers'], DEFAULT_HANDLERS)
-        self.assertEqual(python_config['formatters'], DEFAULT_FORMATTERS)
+        log_config = LoggingConfig(
+            level="level", handlers=handlers, formatters=formatters)
 
+        python_config = convert_logging_config(log_config)
 
-if __name__ == '__main__':
-    unittest.main()
+        assert python_config['handlers'] == handlers
+        assert python_config['formatters'] == formatters
+        assert 'root' in python_config
+
+        assert 'level' in python_config['root']
+        assert 'handlers' in python_config['root']
+        assert 'level' == python_config['root']['level']
+        assert set(handlers) == set(python_config['root']['handlers'])
+
+    def test_convert_logging_config_default(self):
+        log_config = LoggingConfig(level="level", handlers={}, formatters={})
+        python_config = convert_logging_config(log_config)
+        assert python_config['handlers'] == DEFAULT_HANDLERS
+        assert python_config['formatters'] == DEFAULT_FORMATTERS

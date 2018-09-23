@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import sys
-
 import pytest
 from mock import Mock, call, patch
+from pytest_lazyfixture import lazy_fixture
 
 import brewtils.decorators
-from brewtils.decorators import system, command, parameter, _resolve_display_modifiers
+from brewtils.decorators import (
+    system, command, parameter, parameters, _resolve_display_modifiers)
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
 from test.utils.comparable import assert_parameter_equal
@@ -322,6 +322,53 @@ class TestParameter(object):
     def test_choices_error(self, cmd, choices):
         with pytest.raises(PluginParamError):
             parameter(cmd, key='foo', choices=choices)
+
+
+class TestParameters(object):
+
+    def test_parameters_wrapper(self, cmd, param_definition, wrap_functions):
+        test_mock = Mock()
+        wrapped = parameters([param_definition], cmd)
+
+        assert wrapped(self, test_mock) == test_mock
+
+    def test_equivalence(self, param_definition):
+        # We need two separate copies of _cmd here so just invoke cwd() directly
+        func1 = parameter(cmd(), **param_definition)
+        func2 = parameters([param_definition], cmd())
+
+        assert_parameter_equal(
+            func1._command.parameters[0], func2._command.parameters[0]
+        )
+
+    def test_decorator_equivalence(self, param_definition):
+
+        @parameter(**param_definition)
+        def func1(_, foo):
+            return foo
+
+        @parameters([param_definition])
+        def func2(_, foo):
+            return foo
+
+        assert_parameter_equal(
+            func1._command.parameters[0], func2._command.parameters[0]
+        )
+
+    @pytest.mark.parametrize('args', [
+        [],
+        [1],
+        [1, 2],
+        [1, 2, 3],
+        lazy_fixture('cmd'),
+    ])
+    def test_bad_arguments(self, args):
+        # Can't put lazy fixture in a list inside of parametrize...
+        if not isinstance(args, list):
+            args = [args]
+
+        with pytest.raises(PluginParamError):
+            parameters(*args)
 
 
 class TestCommand(object):

@@ -21,7 +21,15 @@ from brewtils.choices import parse
 from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter, Choices
 
-__all__ = ['system', 'parameter', 'command', 'command_registrar', 'plugin_param', 'register']
+__all__ = [
+    'system',
+    'parameter',
+    'parameters',
+    'command',
+    'command_registrar',
+    'plugin_param',
+    'register',
+]
 
 
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,
@@ -149,13 +157,16 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
     :return: The decorated function.
     """
     if _wrapped is None:
-        return functools.partial(parameter, key=key, type=type, multi=multi,
-                                 display_name=display_name, optional=optional, default=default,
-                                 description=description, choices=choices, nullable=nullable,
-                                 maximum=maximum, minimum=minimum, regex=regex, is_kwarg=is_kwarg,
-                                 model=model, form_input_type=form_input_type)
+        return functools.partial(
+            parameter,
+            key=key, type=type, multi=multi, display_name=display_name,
+            optional=optional, default=default, description=description,
+            choices=choices, nullable=nullable, maximum=maximum,
+            minimum=minimum, regex=regex, is_kwarg=is_kwarg, model=model,
+            form_input_type=form_input_type,
+        )
 
-    # First see if this method already has a command object associated. If not, create one.
+    # Create a command object if one isn't already associated
     cmd = getattr(_wrapped, '_command', None)
     if not cmd:
         cmd = _generate_command_from_function(_wrapped)
@@ -166,18 +177,20 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
         raise PluginParamError("Found a parameter definition without a key for "
                                "command '%s'" % cmd.name)
 
-    # If the command doesn't already have a parameter with this key then the method doesn't have
-    # an explicit keyword argument with <key> as the name. That's only OK if this parameter is
-    # meant to be part of the **kwargs.
+    # If the command doesn't already have a parameter with this key then the
+    # method doesn't have an explicit keyword argument with <key> as the name.
+    # That's only OK if this parameter is meant to be part of the **kwargs.
     param = cmd.get_parameter_by_key(key)
     if param is None:
         if is_kwarg:
             param = Parameter(key=key, optional=False)
             cmd.parameters.append(param)
         else:
-            raise PluginParamError(("Parameter '%s' was not an explicit keyword argument for "
-                                    "command '%s' and was not marked as part of kwargs "
-                                    "(should is_kwarg be True?)") % (key, cmd.name))
+            raise PluginParamError(
+                "Parameter '%s' was not an explicit keyword argument for "
+                "command '%s' and was not marked as part of kwargs (should "
+                "is_kwarg be True?)" % (key, cmd.name)
+            )
 
     # Update parameter definition with the plugin_param arguments
     param.type = _format_type(param.type if type is None else type)
@@ -200,9 +213,8 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
         param.type = 'Dictionary'
         param.parameters = _generate_nested_params(model)
 
-        # If the model is not nullable and does not have a default defined we will try
-        # to generate a default using
-        # the defaults defined on the model parameters
+        # If the model is not nullable and does not have a default we will try
+        # to generate a one using the defaults defined on the model parameters
         if not param.nullable and not param.default:
             param.default = {}
             for nested_param in param.parameters:
@@ -214,6 +226,56 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
         return _double_wrapped(*_args, **_kwargs)
 
     return wrapper(_wrapped)
+
+
+def parameters(*args):
+    """Specify multiple Parameter definitions at once
+
+    This can be useful for commands which have a large number of complicated
+    parameters but aren't good candidates for a Model.
+
+    .. code-block:: python
+
+        @parameter(**params[cmd1][param1])
+        @parameter(**params[cmd1][param2])
+        @parameter(**params[cmd1][param3])
+        def cmd1(self, **kwargs):
+            pass
+
+    Can become:
+
+    .. code-block:: python
+
+        @parameters(params[cmd1])
+        def cmd1(self, **kwargs):
+            pass
+
+    Args:
+        *args (list): Positional arguments
+            The first (and only) positional argument must be a list containing
+            dictionaries that describe parameters.
+
+    Returns:
+        func: The decorated function
+    """
+    if len(args) == 1:
+        if not isinstance(args[0], list):
+            raise PluginParamError('@parameters argument must be a list')
+        return functools.partial(parameters, args[0])
+    elif len(args) != 2:
+        raise PluginParamError('@parameters takes a single argument')
+
+    if not isinstance(args[1], types.FunctionType):
+        raise PluginParamError('@parameters must be applied to a function')
+
+    for param in args[0]:
+        parameter(args[1], **param)
+
+    @wrapt.decorator(enabled=_wrap_functions)
+    def wrapper(_double_wrapped, _, _args, _kwargs):
+        return _double_wrapped(*_args, **_kwargs)
+
+    return wrapper(args[1])
 
 
 def _update_func_command(func_command, generated_command):

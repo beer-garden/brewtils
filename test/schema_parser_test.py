@@ -1,19 +1,13 @@
+# Need this for better failure comparisons
 from __future__ import unicode_literals
-# Doing this because marshmallow uses unicode when it serializes things to dictionaries
-
-# Detailed explanation:
-# When everything works (the dictionary comparisons are good) it's fine, but if there's a
-# problem (like a new field was added to the data model and not to the test object here) then
-# the diff output between the two dictionaries will be enormous (because the serialized keys are
-# unicode and the literals in this file aren't). It's kind of weird that there's a 'difference'
-# that doesn't fail the comparison but does show up in the diff if the comparison fails, but
-# that's the way it is :/
 
 import copy
 import warnings
 
 import pytest
 from marshmallow.exceptions import MarshmallowError
+from pytest_lazyfixture import lazy_fixture
+
 from brewtils.models import System
 from brewtils.schema_parser import SchemaParser, BrewmasterSchemaParser
 from test.utils.comparable import (
@@ -71,94 +65,94 @@ def test_no_modify(system_dict):
     ),
     (
         'parse_system',
-        pytest.lazy_fixture('system_dict'),
+        lazy_fixture('system_dict'),
         {},
         assert_system_equal,
-        pytest.lazy_fixture('bg_system'),
+        lazy_fixture('bg_system'),
     ),
     (
         'parse_instance',
-        pytest.lazy_fixture('instance_dict'),
+        lazy_fixture('instance_dict'),
         {},
         assert_instance_equal,
-        pytest.lazy_fixture('bg_instance'),
+        lazy_fixture('bg_instance'),
     ),
     (
         'parse_command',
-        pytest.lazy_fixture('command_dict'),
+        lazy_fixture('command_dict'),
         {},
         assert_command_equal,
-        pytest.lazy_fixture('bg_command'),
+        lazy_fixture('bg_command'),
     ),
     (
         'parse_parameter',
-        pytest.lazy_fixture('parameter_dict'),
+        lazy_fixture('parameter_dict'),
         {},
         assert_parameter_equal,
-        pytest.lazy_fixture('bg_parameter'),
+        lazy_fixture('bg_parameter'),
     ),
     (
         'parse_request',
-        pytest.lazy_fixture('request_dict'),
+        lazy_fixture('request_dict'),
         {},
         assert_request_equal,
-        pytest.lazy_fixture('bg_request'),
+        lazy_fixture('bg_request'),
     ),
     (
         'parse_logging_config',
-        pytest.lazy_fixture('logging_config_dict'),
+        lazy_fixture('logging_config_dict'),
         {},
         assert_logging_config_equal,
-        pytest.lazy_fixture('bg_logging_config'),
+        lazy_fixture('bg_logging_config'),
     ),
     (
         'parse_event',
-        pytest.lazy_fixture('event_dict'),
+        lazy_fixture('event_dict'),
         {},
         assert_event_equal,
-        pytest.lazy_fixture('bg_event'),
+        lazy_fixture('bg_event'),
     ),
     (
         'parse_queue',
-        pytest.lazy_fixture('queue_dict'),
+        lazy_fixture('queue_dict'),
         {},
         assert_queue_equal,
-        pytest.lazy_fixture('bg_queue'),
+        lazy_fixture('bg_queue'),
     ),
     (
         'parse_principal',
-        pytest.lazy_fixture('principal_dict'),
+        lazy_fixture('principal_dict'),
         {},
         assert_principal_equal,
-        pytest.lazy_fixture('bg_principal'),
+        lazy_fixture('bg_principal'),
     ),
     (
         'parse_role',
-        pytest.lazy_fixture('role_dict'),
+        lazy_fixture('role_dict'),
         {},
         assert_role_equal,
-        pytest.lazy_fixture('bg_role'),
+        lazy_fixture('bg_role'),
     ),
     (
         'parse_job',
-        pytest.lazy_fixture('job_dict'),
+        lazy_fixture('job_dict'),
         {},
         assert_job_equal,
-        pytest.lazy_fixture('bg_job'),
+        lazy_fixture('bg_job'),
     ),
     (
         'parse_job',
-        pytest.lazy_fixture('cron_job_dict'),
+        lazy_fixture('cron_job_dict'),
         {},
         assert_job_equal,
-        pytest.lazy_fixture('bg_cron_job'),
+        lazy_fixture('bg_cron_job'),
     ),
     (
         'parse_job',
-        pytest.lazy_fixture('interval_job_dict'),
+        lazy_fixture('interval_job_dict'),
         {},
         assert_job_equal,
-        pytest.lazy_fixture('bg_interval_job'),
+        lazy_fixture('bg_interval_job'),
     ),
 ])
 def test_parse(method, data, kwargs, assertion, expected):
@@ -168,9 +162,9 @@ def test_parse(method, data, kwargs, assertion, expected):
 
 
 @pytest.mark.parametrize('data,kwargs', [
-    (pytest.lazy_fixture('patch_dict'), {}),
-    (pytest.lazy_fixture('patch_dict'), {'many': False}),
-    (pytest.lazy_fixture('patch_no_envelop_dict'), {}),
+    (lazy_fixture('patch_dict'), {}),
+    (lazy_fixture('patch_dict'), {'many': False}),
+    (lazy_fixture('patch_no_envelop_dict'), {}),
 ])
 def test_parse_patch(bg_patch1, data, kwargs):
     parser = SchemaParser()
@@ -191,87 +185,87 @@ def test_parse_patch_many(patch_many_dict, bg_patch1, bg_patch2):
 @pytest.mark.parametrize('method,data,kwargs,expected', [
     (
         'serialize_system',
-        pytest.lazy_fixture('bg_system'),
+        lazy_fixture('bg_system'),
         {'to_string': False},
-        pytest.lazy_fixture('system_dict')
+        lazy_fixture('system_dict')
     ),
     (
         'serialize_instance',
-        pytest.lazy_fixture('bg_instance'),
+        lazy_fixture('bg_instance'),
         {'to_string': False},
-        pytest.lazy_fixture('instance_dict')
+        lazy_fixture('instance_dict')
     ),
     (
         'serialize_command',
-        pytest.lazy_fixture('bg_command'),
+        lazy_fixture('bg_command'),
         {'to_string': False},
-        pytest.lazy_fixture('command_dict')
+        lazy_fixture('command_dict')
     ),
     (
         'serialize_parameter',
-        pytest.lazy_fixture('bg_parameter'),
+        lazy_fixture('bg_parameter'),
         {'to_string': False},
-        pytest.lazy_fixture('parameter_dict')
+        lazy_fixture('parameter_dict')
     ),
     (
         'serialize_request',
-        pytest.lazy_fixture('bg_request'),
+        lazy_fixture('bg_request'),
         {'to_string': False},
-        pytest.lazy_fixture('request_dict')
+        lazy_fixture('request_dict')
     ),
     (
         'serialize_patch',
-        pytest.lazy_fixture('bg_patch1'),
+        lazy_fixture('bg_patch1'),
         {'to_string': False},
-        pytest.lazy_fixture('patch_dict')
+        lazy_fixture('patch_dict')
     ),
     (
         'serialize_logging_config',
-        pytest.lazy_fixture('bg_logging_config'),
+        lazy_fixture('bg_logging_config'),
         {'to_string': False},
-        pytest.lazy_fixture('logging_config_dict')
+        lazy_fixture('logging_config_dict')
     ),
     (
         'serialize_event',
-        pytest.lazy_fixture('bg_event'),
+        lazy_fixture('bg_event'),
         {'to_string': False},
-        pytest.lazy_fixture('event_dict')
+        lazy_fixture('event_dict')
     ),
     (
         'serialize_queue',
-        pytest.lazy_fixture('bg_queue'),
+        lazy_fixture('bg_queue'),
         {'to_string': False},
-        pytest.lazy_fixture('queue_dict')
+        lazy_fixture('queue_dict')
     ),
     (
         'serialize_principal',
-        pytest.lazy_fixture('bg_principal'),
+        lazy_fixture('bg_principal'),
         {'to_string': False},
-        pytest.lazy_fixture('principal_dict')
+        lazy_fixture('principal_dict')
     ),
     (
         'serialize_role',
-        pytest.lazy_fixture('bg_role'),
+        lazy_fixture('bg_role'),
         {'to_string': False},
-        pytest.lazy_fixture('role_dict')
+        lazy_fixture('role_dict')
     ),
     (
         'serialize_job',
-        pytest.lazy_fixture('bg_job'),
+        lazy_fixture('bg_job'),
         {'to_string': False},
-        pytest.lazy_fixture('job_dict')
+        lazy_fixture('job_dict')
     ),
     (
         'serialize_job',
-        pytest.lazy_fixture('bg_cron_job'),
+        lazy_fixture('bg_cron_job'),
         {'to_string': False},
-        pytest.lazy_fixture('cron_job_dict')
+        lazy_fixture('cron_job_dict')
     ),
     (
         'serialize_job',
-        pytest.lazy_fixture('bg_interval_job'),
+        lazy_fixture('bg_interval_job'),
         {'to_string': False},
-        pytest.lazy_fixture('interval_job_dict')
+        lazy_fixture('interval_job_dict')
     ),
 ])
 def test_serialize(method, data, kwargs, expected):

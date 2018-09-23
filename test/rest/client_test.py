@@ -55,30 +55,33 @@ class TestRestClient(object):
     def urls(self, client):
         return client.param
 
-    @pytest.mark.parametrize('the_client,url,expected', [
-        (pytest.lazy_fixture('client'), 'system_url', 'http://host:80%sapi/v1/systems/'),
-        (pytest.lazy_fixture('client'), 'instance_url', 'http://host:80%sapi/v1/instances/'),
-        (pytest.lazy_fixture('client'), 'command_url', 'http://host:80%sapi/v1/commands/'),
-        (pytest.lazy_fixture('client'), 'request_url', 'http://host:80%sapi/v1/requests/'),
-        (pytest.lazy_fixture('client'), 'queue_url', 'http://host:80%sapi/v1/queues/'),
-        (pytest.lazy_fixture('client'), 'logging_config_url',
-            'http://host:80%sapi/v1/config/logging/'),
-        (pytest.lazy_fixture('client'), 'job_url', 'http://host:80%sapi/v1/jobs/'),
-        (pytest.lazy_fixture('client'), 'token_url', 'http://host:80%sapi/v1/tokens/'),
-        (pytest.lazy_fixture('client'), 'user_url', 'http://host:80%sapi/v1/users/'),
-        (pytest.lazy_fixture('ssl_client'), 'system_url', 'https://host:80%sapi/v1/systems/'),
-        (pytest.lazy_fixture('ssl_client'), 'instance_url', 'https://host:80%sapi/v1/instances/'),
-        (pytest.lazy_fixture('ssl_client'), 'command_url', 'https://host:80%sapi/v1/commands/'),
-        (pytest.lazy_fixture('ssl_client'), 'request_url', 'https://host:80%sapi/v1/requests/'),
-        (pytest.lazy_fixture('ssl_client'), 'queue_url', 'https://host:80%sapi/v1/queues/'),
-        (pytest.lazy_fixture('ssl_client'), 'logging_config_url',
-            'https://host:80%sapi/v1/config/logging/'),
-        (pytest.lazy_fixture('ssl_client'), 'job_url', 'https://host:80%sapi/v1/jobs/'),
-        (pytest.lazy_fixture('ssl_client'), 'token_url', 'https://host:80%sapi/v1/tokens/'),
-        (pytest.lazy_fixture('ssl_client'), 'user_url', 'https://host:80%sapi/v1/users/'),
+    @pytest.mark.parametrize('url,expected', [
+        ('system_url', 'http://host:80%sapi/v1/systems/'),
+        ('instance_url', 'http://host:80%sapi/v1/instances/'),
+        ('command_url', 'http://host:80%sapi/v1/commands/'),
+        ('request_url', 'http://host:80%sapi/v1/requests/'),
+        ('queue_url', 'http://host:80%sapi/v1/queues/'),
+        ('logging_config_url', 'http://host:80%sapi/v1/config/logging/'),
+        ('job_url', 'http://host:80%sapi/v1/jobs/'),
+        ('token_url', 'http://host:80%sapi/v1/tokens/'),
+        ('user_url', 'http://host:80%sapi/v1/users/'),
     ])
-    def test_version_1_uri(self, url_prefix, the_client, url, expected):
-        assert getattr(the_client, url) == expected % url_prefix
+    def test_version_1_uri(self, url_prefix, client, url, expected):
+        assert getattr(client, url) == expected % url_prefix
+
+    @pytest.mark.parametrize('url,expected', [
+        ('system_url', 'https://host:80%sapi/v1/systems/'),
+        ('instance_url', 'https://host:80%sapi/v1/instances/'),
+        ('command_url', 'https://host:80%sapi/v1/commands/'),
+        ('request_url', 'https://host:80%sapi/v1/requests/'),
+        ('queue_url', 'https://host:80%sapi/v1/queues/'),
+        ('logging_config_url', 'https://host:80%sapi/v1/config/logging/'),
+        ('job_url', 'https://host:80%sapi/v1/jobs/'),
+        ('token_url', 'https://host:80%sapi/v1/tokens/'),
+        ('user_url', 'https://host:80%sapi/v1/users/'),
+    ])
+    def test_version_1_uri_ssl(self, url_prefix, ssl_client, url, expected):
+        assert getattr(ssl_client, url) == expected % url_prefix
 
     @pytest.mark.parametrize('method,params,verb,url', [
         ('get_version', {'key': 'value'}, 'get', 'version_url'),

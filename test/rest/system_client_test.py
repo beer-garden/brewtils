@@ -3,6 +3,7 @@ from concurrent.futures import wait
 
 import pytest
 from mock import call, Mock, PropertyMock
+from pytest_lazyfixture import lazy_fixture
 
 import brewtils.rest
 from brewtils.errors import (FetchError, RequestFailedError,
@@ -91,9 +92,9 @@ class TestSystemClient(object):
             client.command_3()
 
     @pytest.mark.parametrize('constraint,systems', [
-        ('1.0.0', pytest.lazy_fixture('system_1')),
-        ('latest', pytest.lazy_fixture('system_1')),
-        (None, pytest.lazy_fixture('system_1')),
+        ('1.0.0', lazy_fixture('system_1')),
+        ('latest', lazy_fixture('system_1')),
+        (None, lazy_fixture('system_1')),
         pytest.param('1.0.0', None, marks=pytest.mark.xfail(raises=FetchError)),
     ])
     def test_load_bg_system(self, client, easy_client, system_1, constraint, systems):

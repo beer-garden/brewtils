@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 
 from six import string_types

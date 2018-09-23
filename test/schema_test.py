@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pytest
 from mock import Mock
 from pytest_lazyfixture import lazy_fixture

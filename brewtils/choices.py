@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from lark import Lark, Transformer
 
 # Lark added some new errors in later versions

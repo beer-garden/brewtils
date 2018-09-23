@@ -1,5 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import unittest
+
 from mock import Mock, patch
+
 from brewtils.log import setup_logger, get_python_logging_config, convert_logging_config, \
     DEFAULT_HANDLERS, DEFAULT_FORMATTERS
 from brewtils.models import LoggingConfig

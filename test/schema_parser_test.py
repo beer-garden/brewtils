@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Need this for better failure comparisons
 from __future__ import unicode_literals
 

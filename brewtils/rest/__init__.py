@@ -1,17 +1,28 @@
+# -*- coding: utf-8 -*-
+
 
 def normalize_url_prefix(url_prefix):
+    """Enforce a consistent URL representation
 
-    # Regex to find everything between the / / in the url
-    # Should cover all cases
-    # url_prefix -------- base_url
-    # None                http://localhost:2337/
-    # ''                  http://localhost:2337/
-    # '/'                 http://localhost:2337/
-    # 'example'           http://localhost:2337/example/
-    # '/example'          http://localhost:2337/example/
-    # 'example/'          http://localhost:2337/example/
-    # '/example/'         http://localhost:2337/example/
+    The normalized prefix will begin and end with '/'. If there is no prefix
+    the normalized form will be '/'.
 
+    Examples:
+        INPUT       NORMALIZED
+        None            '/'
+        ''              '/'
+        '/'             '/'
+        'example'       '/example/'
+        '/example'      '/example/'
+        'example/'      '/example/'
+        '/example/'     '/example/'
+
+    Args:
+        url_prefix (str): The prefix
+
+    Returns:
+        str: The normalized prefix
+    """
     if url_prefix in (None, '/', ''):
         return '/'
 

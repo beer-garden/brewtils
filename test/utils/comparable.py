@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
+
 from functools import partial
+
 from brewtils.models import (
     System, Command, Instance, Parameter, Request, PatchOperation,
     LoggingConfig, Event, Queue, Choices, Principal, Role, Job, IntervalTrigger,

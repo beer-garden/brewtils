@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import warnings
 from concurrent.futures import wait
 

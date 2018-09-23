@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys
-
 import pytest
 from mock import Mock, call, patch
 

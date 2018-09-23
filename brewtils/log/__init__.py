@@ -32,9 +32,10 @@ Example:
         plugin.run()
 """
 
-import logging.config
 import copy
+import logging.config
 import os
+
 import brewtils
 
 # Loggers to always use. These are things that generally,
@@ -131,8 +132,11 @@ def get_python_logging_config(
         dict: The logging configuration for the specified system
     """
     client = brewtils.get_easy_client(
-        host=bg_host, port=bg_port, ssl_enabled=ssl_enabled, ca_cert=ca_cert,
-        client_cert=client_cert
+        host=bg_host,
+        port=bg_port,
+        ssl_enabled=ssl_enabled,
+        ca_cert=ca_cert,
+        client_cert=client_cert,
     )
 
     logging_config = client.get_logging_config(system_name=system_name)
@@ -165,7 +169,7 @@ def convert_logging_config(logging_config):
 
     config_to_return['root'] = {
         "level": logging_config.level,
-        "handlers": list(config_to_return['handlers'].keys())
+        "handlers": list(config_to_return['handlers'])
     }
 
     return config_to_return

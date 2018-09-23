@@ -9,7 +9,8 @@ from mock import Mock, call, patch
 import brewtils.decorators
 from brewtils.decorators import system, command, parameter, _resolve_display_modifiers
 from brewtils.errors import PluginParamError
-from brewtils.models import Command, Parameter
+from brewtils.models import Parameter
+from test.utils.comparable import assert_parameter_equal
 
 builtins_path = '__builtin__'
 if sys.version_info > (3,):
@@ -31,6 +32,7 @@ def sys():
 @pytest.fixture
 def cmd():
     def _cmd(_, foo):
+        """Docstring"""
         return foo
     return _cmd
 
@@ -38,9 +40,21 @@ def cmd():
 @pytest.fixture
 def param_definition():
     return {
-        'key': 'foo', 'type': 'Integer', 'optional': True, 'default': 'Charles',
-        'description': 'Mutant', 'display_name': 'Professor X', 'multi': True,
+        'key': 'foo',
+        'type': 'String',
+        'description': 'Mutant',
+        'default': 'Charles',
+        'display_name': 'Professor X',
+        'optional': True,
+        'multi': True,
     }
+
+
+@pytest.fixture(params=[True, False])
+def wrap_functions(request):
+    brewtils.decorators._wrap_functions = request.param
+    yield
+    brewtils.decorators._wrap_functions = False
 
 
 class TestSystem(object):
@@ -51,6 +65,28 @@ class TestSystem(object):
 
 
 class TestParameter(object):
+
+    @pytest.fixture
+    def param_1(self):
+        return Parameter(
+            key='key1', type='Integer', multi=False, display_name='x',
+            optional=True, default=1, description='key1',
+        )
+
+    @pytest.fixture
+    def param_2(self):
+        return Parameter(
+            key='key2', type='String', multi=False, display_name='y',
+            optional=False, default='100', description='key2',
+        )
+
+    @pytest.fixture
+    def my_model(self, param_1, param_2):
+
+        class MyModel:
+            parameters = [param_1, param_2]
+
+        return MyModel
 
     def test_no_command_decorator(self, cmd):
         assert not hasattr(cmd, '_command')
@@ -86,11 +122,103 @@ class TestParameter(object):
         wrapped = parameter(cmd, **param_definition)
         param = wrapped._command.get_parameter_by_key('foo')
 
-        assert param.key == 'foo'
-        assert param.display_name == 'Professor X'
-        assert param.description == 'Mutant'
-        assert param.optional is True
-        assert param.multi is True
+        assert_parameter_equal(param, Parameter(**param_definition))
+
+    def test_parameter_wrapper(self, cmd, param_definition, wrap_functions):
+        test_mock = Mock()
+        wrapped = parameter(cmd, **param_definition)
+
+        assert wrapped(self, test_mock) == test_mock
+
+    @pytest.mark.parametrize('default', [
+        None,
+        1,
+        'bar',
+        [],
+        ['bar'],
+        {},
+        {'bar'},
+        {'foo': 'bar'},
+    ])
+    def test_defaults(self, cmd, default):
+        wrapped = parameter(cmd, key='foo', default=default)
+        assert wrapped._command.get_parameter_by_key('foo').default == default
+
+    def test_is_kwarg(self, param_definition):
+
+        @parameter(is_kwarg=True, **param_definition)
+        def cmd(_, **kwargs):
+            return kwargs
+
+        param = cmd._command.get_parameter_by_key('foo')
+        assert_parameter_equal(param, Parameter(**param_definition))
+
+    @pytest.mark.parametrize('default,expected', [
+        (None, {'key1': 1, 'key2': '100'}),
+        ({'key1', 123}, {'key1', 123}),
+    ])
+    def test_model(self, my_model, param_1, param_2, default, expected):
+
+        @parameter(key='foo', model=my_model, default=default)
+        def cmd(_, foo):
+            return foo
+
+        model_param = cmd._command.get_parameter_by_key('foo')
+
+        assert model_param.key == 'foo'
+        assert model_param.type == 'Dictionary'
+        assert len(model_param.parameters) == 2
+        assert model_param.default == expected
+
+        assert_parameter_equal(model_param.parameters[0], param_1)
+        assert_parameter_equal(model_param.parameters[1], param_2)
+
+    def test_deep_nesting(self):
+
+        class MyNestedModel:
+            parameters = [
+                Parameter(
+                    key='key2', type='String', multi=False, display_name='y',
+                    optional=False, default='100', description='key2')
+            ]
+
+        class MyModel:
+            parameters = [
+                Parameter(
+                    key='key1', multi=False, display_name='x', optional=True,
+                    description='key1', parameters=[MyNestedModel],
+                    default="xval")
+            ]
+
+        @parameter(key='nested_complex', model=MyModel)
+        def foo(_, nested_complex):
+            return nested_complex
+
+        assert hasattr(foo, '_command')
+        assert len(foo._command.parameters) == 1
+
+        assert foo._command.parameters[0].key == 'nested_complex'
+        assert foo._command.parameters[0].type == 'Dictionary'
+        assert len(foo._command.parameters[0].parameters) == 1
+
+        nested_param = foo._command.parameters[0].parameters[0]
+        assert nested_param.key == 'key1'
+        assert nested_param.type == 'Dictionary'
+        assert nested_param.multi is False
+        assert nested_param.display_name == 'x'
+        assert nested_param.optional is True
+        assert nested_param.description == 'key1'
+        assert len(nested_param.parameters) == 1
+
+        double_nested = nested_param.parameters[0]
+        assert double_nested.key == 'key2'
+        assert double_nested.type == 'String'
+        assert double_nested.multi is False
+        assert double_nested.display_name == 'y'
+        assert double_nested.optional is False
+        assert double_nested.default == '100'
+        assert double_nested.description == 'key2'
+        assert len(double_nested.parameters) == 0
 
     @pytest.mark.parametrize('choices,expected', [
         (
@@ -201,408 +329,138 @@ class TestParameter(object):
             parameter(cmd, key='foo', choices=choices)
 
 
-class CommandTest(unittest.TestCase):
+class TestCommand(object):
 
-    @patch('brewtils.decorators._generate_command_from_function', Mock())
-    def test_command_no_wrapper(self):
-        flag = False
+    @pytest.fixture
+    def func_mock(self):
+        code_mock = Mock(
+            co_varnames=["var1"],
+            co_argcount=1,
+            spec=["co_varnames", "co_argcount"],
+        )
 
-        @command
-        def foo(x):
-            return x
+        return Mock(
+            __name__="__name__",
+            __doc__="__doc__",
+            __code__=code_mock,
+            __defaults__=["default1"],
+            func_code=code_mock,
+            func_defaults=["default1"],
+            spec=["__name__", "__doc__", "__code__", "__defaults__"],
+        )
 
-        self.assertEqual(flag, foo(flag))
+    @pytest.mark.parametrize('wrap', [True, False])
+    def test_command_function(self, cmd, wrap):
+        brewtils.decorators._wrap_functions = wrap
+        command(cmd)
 
-    @patch('brewtils.decorators._generate_command_from_function', Mock())
-    def test_command_wrapper(self):
-        flag = False
-        brewtils.decorators._wrap_functions = True
+        assert cmd(self, 'input') == 'input'
 
-        @command
-        def foo(x):
-            return x
+    def test_command_wrapper(self, cmd, wrap_functions):
+        test_mock = Mock()
+        wrapped = command(cmd)
 
-        self.assertEqual(flag, foo(flag))
+        assert wrapped(self, test_mock) == test_mock
 
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_command_no_command_yet(self, mock_generate):
-        command_mock = Mock()
-        mock_generate.return_value = command_mock
+    def test_generate_command(self, cmd):
+        assert not hasattr(cmd, '_command')
+        command(cmd)
 
-        @command
-        def foo(self):
-            pass
+        assert hasattr(cmd, '_command')
+        assert cmd._command.name == '_cmd'
+        assert cmd._command.description == 'Docstring'
+        assert len(cmd._command.parameters) == 1
 
-        mock_generate.assert_called_once()
-        self.assertEqual(foo._command, command_mock)
-
-    @patch('brewtils.decorators._generate_command_from_function')
-    @patch('brewtils.decorators._update_func_command')
-    def test_command_update_command(self, mock_update, mock_generate):
-        command1 = Mock()
-        command2 = Mock()
-        mock_generate.side_effect = [command1, command2]
-
-        @command
-        @command
-        def foo(self):
-            pass
-
-        mock_update.assert_called_with(command1, command2)
-
-    @patch('brewtils.decorators._generate_params_from_function')
-    def test_command_generate_command_from_function(self, mock_generate):
-        mock_generate.return_value = []
+    def test_generate_params(self):
 
         @command
-        def foo(self):
-            """This is a doc"""
-            pass
+        def _cmd(_, x, y='some_default'):
+            return x, y
 
-        mock_generate.assert_called_once()
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.name, 'foo')
-        self.assertEqual(c.description, 'This is a doc')
-        self.assertEqual(c.parameters, [])
+        param_x = _cmd._command.get_parameter_by_key('x')
+        param_y = _cmd._command.get_parameter_by_key('y')
 
-    @patch('brewtils.decorators._generate_params_from_function', Mock())
-    def test_command_overwrite_description(self):
+        assert param_x.key == 'x'
+        assert param_x.default is None
+        assert param_x.optional is False
+
+        assert param_y.key == 'y'
+        assert param_y.default == 'some_default'
+        assert param_y.optional is True
+
+    def test_update(self, cmd):
+        command(
+            cmd,
+            command_type='ACTION', description='desc1', output_type='XML'
+        )
+        command(
+            cmd,
+            command_type='INFO', description='desc2', output_type='JSON'
+        )
+
+        assert cmd._command.name == '_cmd'
+        assert cmd._command.command_type == 'INFO'
+        assert cmd._command.description == 'desc2'
+        assert cmd._command.output_type == 'JSON'
+
+    def test_generate_command_python2(self, func_mock):
+        # Apparently Python 2 adds some extra stuff
+        func_mock.func_name = 'func_name'
+        func_mock.func_doc = 'func_doc'
+
+        command(func_mock)
+        assert 'func_name' == func_mock._command.name
+        assert 'func_doc' == func_mock._command.description
+
+    def test_generate_command_python3(self, func_mock):
+        command(func_mock)
+        assert '__name__' == func_mock._command.name
+        assert '__doc__' == func_mock._command.description
+
+    def test_overwrite_docstring(self):
         new_description = 'So descriptive'
 
         @command(description=new_description)
-        def foo(self):
+        def _cmd(_):
             """This is a doc"""
             pass
 
-        self.assertEqual(foo._command.description, new_description)
+        assert _cmd._command.description == new_description
 
-    def test_command_generate_command_from_function_py2_compatibility(self):
-        py2_code_mock = Mock(co_varnames=["var1"], co_argcount=1,
-                             spec=["co_varnames", "co_argcount"])
-        py2_method_mock = Mock(func_name="func_name", func_doc="func_doc",
-                               __name__="__name__", __doc__="__doc__",
-                               func_code=py2_code_mock, func_defaults=["default1"],
-                               __code__=py2_code_mock, __defaults__=["default1"],
-                               spec=["func_name", "func_doc", "func_code", "func_defaults"])
-        command(py2_method_mock)
-        c = py2_method_mock._command
-        self.assertEqual(c.name, "func_name")
-        self.assertEqual(c.description, "func_doc")
 
-    def test_command_generate_command_from_function_py3_compatibility(self):
-        py3_code_mock = Mock(co_varnames=["var1"], co_argcount=1,
-                             spec=["co_varnames", "co_argcount"])
-        py3_method_mock = Mock(__name__="__name__", __doc__="__doc__",
-                               func_code=py3_code_mock, func_defaults=["default1"],
-                               __code__=py3_code_mock, __defaults__=["default1"],
-                               spec=["__name__", "__doc__", "__code__", "__defaults__"])
-        command(py3_method_mock)
-        c = py3_method_mock._command
-        self.assertEqual(c.name, "__name__")
-        self.assertEqual(c.description, "__doc__")
+class TestDecoratorCombinations(object):
 
-    def test_command_generate_params_from_function_with_extra_variables(self):
+    def test_command_then_parameter(self, cmd, param_definition):
 
-        @command
-        def foo(self, x, y='some_default'):
-            pass
+        @parameter(**param_definition)
+        @command(command_type='INFO', output_type='JSON')
+        def _cmd(_, foo):
+            return foo
 
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 2)
+        assert hasattr(_cmd, '_command')
+        assert _cmd._command.name == '_cmd'
+        assert _cmd._command.command_type == 'INFO'
+        assert _cmd._command.output_type == 'JSON'
+        assert len(_cmd._command.parameters) == 1
 
-    def test_command_generate_params_from_function(self):
-        @command
-        def foo(self, x, y='some_default'):
-            pass
+        assert_parameter_equal(
+            _cmd._command.parameters[0], Parameter(**param_definition))
 
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 2)
-        x = c.get_parameter_by_key('x')
-        y = c.get_parameter_by_key('y')
-        self.assertIsNotNone(x)
-        self.assertIsNotNone(y)
-
-        self.assertEqual(x.key, 'x')
-        self.assertEqual(x.default, None)
-        self.assertEqual(x.optional, False)
-
-        self.assertEqual(y.key, 'y')
-        self.assertEqual(y.default, 'some_default')
-        self.assertEqual(y.optional, True)
-
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_command_update_func_replace_command_attrs(self, mock_generate):
-        c1 = Command(name='command1', description='command1 desc', parameters=[])
-        c2 = Command(name='command2', description='command2 desc', parameters=[])
-
-        mock_generate.side_effect = [c1, c2]
-
-        @command
-        @command
-        def foo(self):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.name, 'command2')
-        self.assertEqual(c.description, 'command2 desc')
-        self.assertEqual(c.command_type, 'ACTION')
-        self.assertEqual(c.output_type, 'STRING')
-
-    @patch('brewtils.decorators._generate_command_from_function')
-    def test_command_update_func_command_type(self, mock_generate):
-        c1 = Command(name='command1', description='command1 desc', parameters=[])
-        c2 = Command(name='command2', description='command2 desc', parameters=[])
-
-        mock_generate.side_effect = [c1, c2]
+    def test_parameter_then_command(self, cmd, param_definition):
 
         @command(command_type='INFO', output_type='JSON')
-        @command(command_type='ACTION', output_type='XML')
-        def foo(self):
-            pass
+        @parameter(**param_definition)
+        def _cmd(_, foo):
+            return foo
 
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.name, 'command2')
-        self.assertEqual(c.description, 'command2 desc')
-        self.assertEqual(c.command_type, 'INFO')
-        self.assertEqual(c.output_type, 'JSON')
+        assert hasattr(_cmd, '_command')
+        assert _cmd._command.name == '_cmd'
+        assert _cmd._command.command_type == 'INFO'
+        assert _cmd._command.output_type == 'JSON'
+        assert len(_cmd._command.parameters) == 1
 
-    def test_parameter_no_wrapper(self):
-        flag = False
-
-        @parameter(key='x')
-        def foo(self, x):
-            return x
-
-        self.assertEqual(flag, foo(self, flag))
-
-    def test_parameter_wrapper(self):
-        flag = False
-        brewtils.decorators._wrap_functions = True
-
-        @parameter(key='x')
-        def foo(self, x):
-            return x
-
-        self.assertEqual(flag, foo(self, flag))
-
-    def test_parameter_default_empty_list(self):
-
-        @parameter(key='x', default=[])
-        def foo(self, x):
-            return x
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.default, [])
-
-    def test_parameter_is_kwarg(self):
-        @parameter(key='x', type='Integer', display_name="Professor X", optional=True,
-                   default="Charles",
-                   description="cool psychic guy.", multi=False, is_kwarg=True)
-        def foo(self, **kwargs):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.key, 'x')
-        self.assertEqual(p.type, 'Integer')
-        self.assertEqual(p.multi, False)
-        self.assertEqual(p.display_name, 'Professor X')
-        self.assertEqual(p.optional, True)
-        self.assertEqual(p.default, 'Charles')
-        self.assertEqual(p.description, 'cool psychic guy.')
-
-    def test_command_do_not_override_parameter(self):
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
-                   optional=True, default='Charles',
-                   description='I dont know')
-        @command
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.key, 'x')
-        self.assertEqual(p.type, 'Integer')
-        self.assertEqual(p.multi, True)
-        self.assertEqual(p.display_name, 'Professor X')
-        self.assertEqual(p.optional, True)
-        self.assertEqual(p.default, 'Charles')
-        self.assertEqual(p.description, 'I dont know')
-
-    def test_command_after_parameter_check_command_type(self):
-        @command(command_type='INFO')
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
-                   optional=True, default='Charles',
-                   description='I dont know')
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.command_type, 'INFO')
-
-    def test_command_before_parameter_check_command_type(self):
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
-                   optional=True, default='Charles',
-                   description='I dont know')
-        @command(command_type='INFO')
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.command_type, 'INFO')
-
-    def test_command_after_parameter_check_output_type(self):
-        @command(output_type='JSON')
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
-                   optional=True, default='Charles',
-                   description='I dont know')
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.output_type, 'JSON')
-
-    def test_command_before_parameter_check_output_type(self):
-        @parameter(key='x', type='Integer', multi=True, display_name='Professor X',
-                   optional=True, default='Charles',
-                   description='I dont know')
-        @command(output_type='JSON')
-        def foo(self, x):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(c.output_type, 'JSON')
-
-    def test_parameters_with_nested_model(self):
-
-        class MyModel:
-            parameters = [
-                Parameter(key='key1', type='Integer', multi=False, display_name='x',
-                          optional=True, default=1,
-                          description='key1', choices={'type': 'static', 'value': [1, 2]}),
-                Parameter(key='key2', type='String', multi=False, display_name='y',
-                          optional=False, default='100',
-                          description='key2', choices=['a', 'b', 'c'])
-            ]
-
-        @parameter(key='complex', model=MyModel)
-        def foo(self, complex):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.key, 'complex')
-        self.assertEqual(p.type, 'Dictionary')
-        self.assertEqual(p.default, {'key1': 1, 'key2': '100'})
-        self.assertEqual(len(p.parameters), 2)
-
-        np1 = p.parameters[0]
-        self.assertEqual(np1.key, 'key1')
-        self.assertEqual(np1.type, 'Integer')
-        self.assertEqual(np1.multi, False)
-        self.assertEqual(np1.display_name, 'x')
-        self.assertEqual(np1.optional, True)
-        self.assertEqual(np1.default, 1)
-        self.assertEqual(np1.description, 'key1')
-        self.assertEqual(np1.choices.type, 'static')
-        self.assertEqual(np1.choices.value, [1, 2])
-        self.assertEqual(np1.choices.display, 'select')
-        self.assertEqual(np1.choices.strict, True)
-
-        np2 = p.parameters[1]
-        self.assertEqual(np2.key, 'key2')
-        self.assertEqual(np2.type, 'String')
-        self.assertEqual(np2.multi, False)
-        self.assertEqual(np2.display_name, 'y')
-        self.assertEqual(np2.optional, False)
-        self.assertEqual(np2.default, '100')
-        self.assertEqual(np2.description, 'key2')
-        self.assertEqual(np2.choices.type, 'static')
-        self.assertEqual(np2.choices.value, ['a', 'b', 'c'])
-        self.assertEqual(np2.choices.display, 'select')
-        self.assertEqual(np2.choices.strict, True)
-
-    def test_parameters_with_nested_model_with_default(self):
-        class MyModel:
-            parameters = [
-                Parameter(key='key1', type='Integer', multi=False, display_name='x',
-                          optional=True, default=1,
-                          description='key1'),
-                Parameter(key='key2', type='String', multi=False, display_name='y',
-                          optional=False, default='100',
-                          description='key2')
-            ]
-
-        @parameter(key='complex', model=MyModel, default={'key1': 123})
-        def foo(self, complex):
-            pass
-
-        p = foo._command.parameters[0]
-        self.assertEqual(p.key, 'complex')
-        self.assertEqual(p.type, 'Dictionary')
-        self.assertEqual(p.default, {'key1': 123})
-
-    def test_parameters_deep_nesting(self):
-
-        class MyNestedModel:
-            parameters = [
-                Parameter(key='key2', type='String', multi=False, display_name='y',
-                          optional=False, default='100',
-                          description='key2')
-            ]
-
-        class MyModel:
-            parameters = [
-                Parameter(key='key1', multi=False, display_name='x', optional=True,
-                          description='key1',
-                          parameters=[MyNestedModel], default="xval")
-            ]
-
-        @parameter(key='nested_complex', model=MyModel)
-        def foo(self, nested_complex):
-            pass
-
-        self.assertEqual(hasattr(foo, '_command'), True)
-        c = foo._command
-        self.assertEqual(len(c.parameters), 1)
-        p = c.parameters[0]
-        self.assertEqual(p.key, 'nested_complex')
-        self.assertEqual(p.type, 'Dictionary')
-        self.assertEqual(len(p.parameters), 1)
-        np1 = p.parameters[0]
-        self.assertEqual(np1.key, 'key1')
-        self.assertEqual(np1.type, 'Dictionary')
-        self.assertEqual(np1.multi, False)
-        self.assertEqual(np1.display_name, 'x')
-        self.assertEqual(np1.optional, True)
-        self.assertEqual(np1.description, 'key1')
-        self.assertEqual(len(np1.parameters), 1)
-        np2 = np1.parameters[0]
-        self.assertEqual(np2.key, 'key2')
-        self.assertEqual(np2.type, 'String')
-        self.assertEqual(np2.multi, False)
-        self.assertEqual(np2.display_name, 'y')
-        self.assertEqual(np2.optional, False)
-        self.assertEqual(np2.default, '100')
-        self.assertEqual(np2.description, 'key2')
+        assert_parameter_equal(
+            _cmd._command.parameters[0], Parameter(**param_definition))
 
 
 class ResolveModfiersTester(unittest.TestCase):

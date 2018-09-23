@@ -5,10 +5,12 @@ import inspect
 import json
 import os
 import types
+from io import open
 
 import requests
 import six
 import wrapt
+
 try:
     from lark import ParseError
 except ImportError:

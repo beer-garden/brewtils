@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import unittest
 
 import pytest
 from mock import Mock, call, patch
@@ -11,10 +10,6 @@ from brewtils.decorators import system, command, parameter, _resolve_display_mod
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
 from test.utils.comparable import assert_parameter_equal
-
-builtins_path = '__builtin__'
-if sys.version_info > (3,):
-    builtins_path = 'builtins'
 
 
 @pytest.fixture
@@ -463,103 +458,92 @@ class TestDecoratorCombinations(object):
             _cmd._command.parameters[0], Parameter(**param_definition))
 
 
-class ResolveModfiersTester(unittest.TestCase):
+class TestResolveModifiers(object):
 
-    def setUp(self):
-        json_patcher = patch('brewtils.decorators.json')
-        self.addCleanup(json_patcher.stop)
-        self.json_patch = json_patcher.start()
+    @pytest.mark.parametrize('args', [
+        {'schema': None, 'form': None, 'template': None},
+        {'schema': {}, 'form': {}, 'template': None},
+        {'schema': {}, 'form': {'type': 'fieldset', 'items': []}, 'template': None},
+    ])
+    def test_identity(self, args):
+        assert args == _resolve_display_modifiers(Mock(), Mock(), **args)
 
-        requests_patcher = patch('brewtils.decorators.requests')
-        self.addCleanup(requests_patcher.stop)
-        self.requests_patch = requests_patcher.start()
+    @pytest.mark.parametrize('field,args,expected', [
+        ('form', {'form': []}, {'type': 'fieldset', 'items': []},),
+        ('template', {'template': '<html>'}, '<html>',),
+    ])
+    def test_aspects(self, field, args, expected):
+        assert expected == _resolve_display_modifiers(
+            Mock(), Mock(), **args
+        ).get(field)
 
-    def test_none(self):
-        args = {'schema': None, 'form': None, 'template': None}
-        self.assertEqual(args, _resolve_display_modifiers(Mock, Mock(), **args))
+    @pytest.mark.parametrize('args', [
+        {'template': {}},
+        {'schema': ''},
+        {'form': ''},
+        {'schema': 123},
+        {'form': 123},
+        {'template': 123},
+    ])
+    def test_type_errors(self, args):
+        with pytest.raises(PluginParamError):
+            _resolve_display_modifiers(Mock(), Mock(), **args)
 
-    def test_dicts(self):
-        args = {'schema': {}, 'form': {}, 'template': None}
-        self.assertEqual(args, _resolve_display_modifiers(Mock, Mock(), **args))
+    def test_load_url(self, monkeypatch):
+        args = {
+            'schema': 'http://test/schema',
+            'form': 'http://test/form',
+            'template': 'http://test/template'
+        }
 
-    def test_form_list(self):
-        self.assertEqual({'type': 'fieldset', 'items': []},
-                         _resolve_display_modifiers(Mock, Mock(), form=[])['form'])
-
-    def test_raw_template_string(self):
-        self.assertEqual('<html>', _resolve_display_modifiers(Mock(), Mock(),
-                                                              template='<html>').get('template'))
-
-    def test_load_url(self):
-        args = {'schema': 'http://test/schema', 'form': 'http://test/form',
-                'template': 'http://test/template'}
+        requests_mock = Mock()
+        requests_mock.get.return_value.text = '{}'
+        monkeypatch.setattr('brewtils.decorators.requests', requests_mock)
 
         _resolve_display_modifiers(Mock(), Mock(), **args)
-        self.requests_patch.get.assert_has_calls([call(args['schema']), call(args['form']),
-                                                  call(args['template'])],
-                                                 any_order=True)
+        requests_mock.get.assert_has_calls([
+            call(args['schema']),
+            call(args['form']),
+            call(args['template'])
+        ], any_order=True)
 
-    @patch('brewtils.decorators.inspect')
-    def test_absolute_path(self, inspect_mock):
-        args = {'schema': '/abs/path/schema.json', 'form': '/abs/path/form.json',
-                'template': '/abs/path/template.html'}
+    @pytest.mark.parametrize('args,expected', [
+        ({'schema': '/abs/path/schema.json'}, '/abs/path/schema.json'),
+        ({'schema': '../rel/schema.json'}, '/abs/test/rel/schema.json'),
+    ])
+    def test_load_file(self, monkeypatch, args, expected):
+        inspect_mock = Mock()
         inspect_mock.getfile.return_value = '/abs/test/dir/client.py'
+        monkeypatch.setattr('brewtils.decorators.inspect', inspect_mock)
 
-        with patch(builtins_path + '.open') as open_mock:
+        with patch('brewtils.decorators.open') as op_mock:
+            op_mock.return_value.__enter__.return_value.read.return_value = '{}'
             _resolve_display_modifiers(Mock(), Mock(), **args)
-            open_mock.assert_has_calls([call(args['schema'], 'r'), call(args['form'], 'r'),
-                                        call(args['template'], 'r')], any_order=True)
 
-    @patch('brewtils.decorators.inspect')
-    def test_relative_path(self, inspect_mock):
-        args = {'schema': '../rel/schema.json', 'form': '../rel/form.json',
-                'template': '../rel/template.html'}
-        inspect_mock.getfile.return_value = '/abs/test/dir/client.py'
+        op_mock.assert_called_once_with(expected, 'r')
 
-        # DON'T PUT BREAKPOINTS INSIDE THIS CONTEXT MANAGER! PYCHARM WILL SCREW THINGS UP!
-        with patch(builtins_path + '.open') as open_mock:
+    @pytest.mark.parametrize('args', [
+        {'schema': 'http://test'},
+        {'form': 'http://test'},
+        {'template': 'http://test'},
+    ])
+    def test_url_resolve_error(self, monkeypatch, args):
+        requests_mock = Mock()
+        requests_mock.get.side_effect = Exception
+        monkeypatch.setattr('brewtils.decorators.requests', requests_mock)
+
+        with pytest.raises(PluginParamError):
             _resolve_display_modifiers(Mock(), Mock(), **args)
-            open_mock.assert_has_calls([call('/abs/test/rel/schema.json', 'r'),
-                                        call('/abs/test/rel/form.json', 'r'),
-                                        call('/abs/test/rel/template.html', 'r')], any_order=True)
 
-    @patch('brewtils.decorators.inspect')
-    def test_json_parsing(self, inspect_mock):
-        inspect_mock.getfile.return_value = '/abs/test/dir/client.py'
+    @pytest.mark.parametrize('args', [
+        {'schema': './test'},
+        {'form': './test'},
+        {'template': './test'},
+    ])
+    def test_file_resolve_error(self, monkeypatch, args):
+        open_mock = Mock()
+        open_mock.side_effect = Exception
+        monkeypatch.setattr('brewtils.decorators.open', open_mock)
 
-        with patch(builtins_path + '.open'):
-            _resolve_display_modifiers(Mock(), Mock(), template='/abs/template.html')
-            self.assertFalse(self.json_patch.loads.called)
-
-            _resolve_display_modifiers(Mock(), Mock(), schema='/abs/schema', form='/abs/form',
-                                       template='/abs/template')
-            self.assertEqual(2, self.json_patch.loads.call_count)
-
-    def test_resolve_errors(self):
-        self.requests_patch.get.side_effect = Exception
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                          schema='http://test')
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                          form='http://test')
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                          template='http://test')
-
-        with patch(builtins_path + '.open') as open_mock:
-            open_mock.side_effect = Exception
-            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                              schema='./test')
-            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                              form='./test')
-            self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                              template='./test')
-
-    def test_type_errors(self):
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock, Mock(), template={})
-
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), schema='')
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), form='')
-
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), schema=123)
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(), form=123)
-        self.assertRaises(PluginParamError, _resolve_display_modifiers, Mock(), Mock(),
-                          template=123)
+        with pytest.raises(PluginParamError):
+            _resolve_display_modifiers(Mock(), Mock(), **args)

@@ -16,7 +16,6 @@ try:
 except ImportError:
     from lark.common import ParseError
 
-import brewtils.plugin
 from brewtils.choices import parse
 from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter, Choices
@@ -40,6 +39,8 @@ def system(cls):
     :param cls: The class to decorated
     :return: The decorated class
     """
+    import brewtils.plugin
+
     commands = []
     for method_name in dir(cls):
         method = getattr(cls, method_name)

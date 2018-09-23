@@ -16,30 +16,41 @@ if sys.version_info > (3,):
     builtins_path = 'builtins'
 
 
+@pytest.fixture
+def sys():
+
+    @system
+    class SystemClass(object):
+        @command
+        def foo(self):
+            pass
+
+    return SystemClass
+
+
+@pytest.fixture
+def cmd():
+    def _cmd(_, foo):
+        return foo
+    return _cmd
+
+
+@pytest.fixture
+def param_definition():
+    return {
+        'key': 'foo', 'type': 'Integer', 'optional': True, 'default': 'Charles',
+        'description': 'Mutant', 'display_name': 'Professor X', 'multi': True,
+    }
+
+
 class TestSystem(object):
 
-    @pytest.fixture
-    def system(self):
-        @system
-        class SystemClass(object):
-            @command
-            def foo(self):
-                pass
-
-        return SystemClass
-
-    def test_system(self, system):
-        assert 1 == len(system._commands)
-        assert 'foo' == system._commands[0].name
+    def test_system(self, sys):
+        assert 1 == len(sys._commands)
+        assert 'foo' == sys._commands[0].name
 
 
 class TestParameter(object):
-
-    @pytest.fixture
-    def cmd(self):
-        def _cmd(_, foo):
-            return foo
-        return _cmd
 
     def test_no_command_decorator(self, cmd):
         assert not hasattr(cmd, '_command')
@@ -71,11 +82,8 @@ class TestParameter(object):
         wrapped = parameter(cmd, key='foo', type=t)
         assert expected == wrapped._command.get_parameter_by_key('foo').type
 
-    def test_values(self, cmd):
-        wrapped = parameter(
-            cmd, key='foo', type='Integer', multi=True, description='Mutant',
-            display_name='Professor X', optional=True, default='Charles'
-        )
+    def test_values(self, cmd, param_definition):
+        wrapped = parameter(cmd, **param_definition)
         param = wrapped._command.get_parameter_by_key('foo')
 
         assert param.key == 'foo'

@@ -227,6 +227,15 @@ class RestClient(object):
         return self.session.delete(self.system_url + system_id)
 
     @enable_auth
+    def get_instance(self, instance_id):
+        """Performs a GET on the System URL
+
+        :param instance_id: ID of instance
+        :return: Response to the request
+        """
+        return self.session.get(self.instance_url + instance_id)
+
+    @enable_auth
     def patch_instance(self, instance_id, payload):
         """Performs a PATCH on the instance URL
 

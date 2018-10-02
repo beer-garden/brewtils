@@ -247,6 +247,15 @@ class RestClient(object):
                                   data=payload, headers=self.JSON_HEADERS)
 
     @enable_auth
+    def delete_instance(self, instance_id):
+        """Performs a DELETE on an Instance URL
+
+        :param instance_id: The ID of the instance to remove
+        :return: Response to the request
+        """
+        return self.session.delete(self.instance_url + instance_id)
+
+    @enable_auth
     def get_commands(self):
         """Performs a GET on the Commands URL"""
         return self.session.get(self.command_url)

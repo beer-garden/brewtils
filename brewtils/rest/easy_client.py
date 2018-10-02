@@ -276,6 +276,18 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=SaveError)
 
+    def remove_instance(self, instance_id):
+        """Remove an instance
+
+        :param instance_id: The ID of the instance
+        :return: The response
+        """
+        response = self.client.delete_instance(instance_id)
+        if response.ok:
+            return True
+        else:
+            self._handle_response_failure(response, default_exc=DeleteError)
+
     def find_unique_request(self, **kwargs):
         """Find a unique request using keyword arguments as search parameters
 

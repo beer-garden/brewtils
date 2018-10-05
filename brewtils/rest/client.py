@@ -9,6 +9,7 @@ from datetime import datetime
 import jwt
 import urllib3
 from requests import Session
+from requests.adapters import HTTPAdapter
 
 from brewtils.rest import normalize_url_prefix
 
@@ -57,6 +58,18 @@ def enable_auth(method):
         return original_response
 
     return wrapper
+
+
+class TimeoutAdapter(HTTPAdapter):
+    """Transport adapter with a default request timeout"""
+
+    def __init__(self, **kwargs):
+        self.timeout = kwargs.pop('timeout', None)
+        super(TimeoutAdapter, self).__init__(**kwargs)
+
+    def send(self, *args, **kwargs):
+        kwargs['timeout'] = kwargs.get('timeout') or self.timeout
+        return super(TimeoutAdapter, self).send(*args, **kwargs)
 
 
 class RestClient(object):
@@ -111,6 +124,8 @@ class RestClient(object):
 
         # Configure the session to use when making requests
         self.session = Session()
+        self.session.mount('http://', TimeoutAdapter(timeout=5))
+        self.session.mount('https://', TimeoutAdapter(timeout=5))
 
         if not ca_verify:
             urllib3.disable_warnings()

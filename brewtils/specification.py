@@ -77,6 +77,6 @@ SPECIFICATION = {
             "plugins to hang indefinitely."
             "Set to -1 to disable (this is a bad idea in production code, see "
             "the Requests documentation).",
-        "default": 30,
+        "default": -1,
     },
 }

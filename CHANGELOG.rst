@@ -1,6 +1,19 @@
 Brewtils Changelog
 ==================
 
+2.4.2
+-----
+Date: 10/7/18
+
+New Features
+^^^^^^^^^^^^
+- Ability to specify a timeout for Beergarden communication (beer-garden/#87)
+- ``parameters`` decorator for cleaner command definitions (beer-garden/#82)
+
+Bug Fixes
+^^^^^^^^^
+- Fixed error when republishing a message to RabbitMQ (beer-garden/#88)
+
 2.4.1
 -----
 Date: 09/11/18

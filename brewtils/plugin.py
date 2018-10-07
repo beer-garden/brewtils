@@ -145,6 +145,7 @@ class Plugin(object):
             ca_verify=kwargs.get('ca_verify', None),
             username=kwargs.get('username', None),
             password=kwargs.get('password', None),
+            client_timeout=kwargs.get('client_timeout', None),
         )
         self.bg_host = connection_parameters['bg_host']
         self.bg_port = connection_parameters['bg_port']

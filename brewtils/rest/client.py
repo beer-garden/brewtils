@@ -92,6 +92,7 @@ class RestClient(object):
     :param password: Password for Beergarden authentication
     :param access_token: Access token for Beergarden authentication
     :param refresh_token: Refresh token for Beergarden authentication
+    :param client_timeout: Max time to will wait for server response
     """
 
     # The Latest Version Currently released
@@ -124,8 +125,13 @@ class RestClient(object):
 
         # Configure the session to use when making requests
         self.session = Session()
-        self.session.mount('http://', TimeoutAdapter(timeout=5))
-        self.session.mount('https://', TimeoutAdapter(timeout=5))
+        timeout = kwargs.get('client_timeout', None)
+        if timeout == -1:
+            timeout = None
+
+        # Having two is kind of strange to me, but this is what Requests does
+        self.session.mount('https://', TimeoutAdapter(timeout=timeout))
+        self.session.mount('http://', TimeoutAdapter(timeout=timeout))
 
         if not ca_verify:
             urllib3.disable_warnings()

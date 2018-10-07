@@ -544,7 +544,7 @@ class Plugin(object):
     def _update_retry_attempt_information(self, headers):
         headers['retry_attempt'] = headers.get('retry_attempt', 0) + 1
         headers['time_to_wait'] = min(
-            headers.get('time_to_wait', self.starting_timeout / 2) * 2,
+            headers.get('time_to_wait', self.starting_timeout // 2) * 2,
             self.max_timeout
         )
 

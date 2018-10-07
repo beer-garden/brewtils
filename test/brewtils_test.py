@@ -28,6 +28,7 @@ class TestBrewtils(object):
             'password': None,
             'access_token': None,
             'refresh_token': None,
+            'client_timeout': -1.0,
         }
 
     def setup_method(self):

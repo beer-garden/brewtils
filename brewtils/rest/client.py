@@ -9,6 +9,7 @@ from datetime import datetime
 import jwt
 import urllib3
 from requests import Session
+from requests.adapters import HTTPAdapter
 
 from brewtils.rest import normalize_url_prefix
 
@@ -59,6 +60,18 @@ def enable_auth(method):
     return wrapper
 
 
+class TimeoutAdapter(HTTPAdapter):
+    """Transport adapter with a default request timeout"""
+
+    def __init__(self, **kwargs):
+        self.timeout = kwargs.pop('timeout', None)
+        super(TimeoutAdapter, self).__init__(**kwargs)
+
+    def send(self, *args, **kwargs):
+        kwargs['timeout'] = kwargs.get('timeout') or self.timeout
+        return super(TimeoutAdapter, self).send(*args, **kwargs)
+
+
 class RestClient(object):
     """Simple Rest Client for communicating to with beer-garden.
 
@@ -79,6 +92,7 @@ class RestClient(object):
     :param password: Password for Beergarden authentication
     :param access_token: Access token for Beergarden authentication
     :param refresh_token: Refresh token for Beergarden authentication
+    :param client_timeout: Max time to will wait for server response
     """
 
     # The Latest Version Currently released
@@ -111,6 +125,13 @@ class RestClient(object):
 
         # Configure the session to use when making requests
         self.session = Session()
+        timeout = kwargs.get('client_timeout', None)
+        if timeout == -1:
+            timeout = None
+
+        # Having two is kind of strange to me, but this is what Requests does
+        self.session.mount('https://', TimeoutAdapter(timeout=timeout))
+        self.session.mount('http://', TimeoutAdapter(timeout=timeout))
 
         if not ca_verify:
             urllib3.disable_warnings()

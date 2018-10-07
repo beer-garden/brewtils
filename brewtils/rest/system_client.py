@@ -121,6 +121,7 @@ class SystemClient(object):
     :param password: Password for Beergarden authentication
     :param access_token: Access token for Beergarden authentication
     :param refresh_token: Refresh token for Beergarden authentication
+    :param client_timeout: Max time to will wait for server response
     """
 
     def __init__(

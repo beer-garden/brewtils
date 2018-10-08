@@ -19,7 +19,7 @@ Bug Fixes
 Date: 09/11/18
 
 Other Changes
-^^^^^^^^^
+^^^^^^^^^^^^^
 - Changed Plugin warning type so it won't be displayed by default
 
 2.4.0
@@ -39,7 +39,7 @@ New Features
 - Added methods ``get_config`` to RestClient, ``can_connect`` to EasyClient
 
 Other Changes
-^^^^^^^^^
+^^^^^^^^^^^^^
 - Renamed PluginBase to Plugin (old name is aliased)
 
 2.3.7

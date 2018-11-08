@@ -4,8 +4,8 @@ import pytest
 from mock import Mock
 
 from brewtils.log import (
-    setup_logger, get_python_logging_config, convert_logging_config,
-    DEFAULT_HANDLERS, DEFAULT_FORMATTERS)
+    configure_logging, setup_logger, get_python_logging_config,
+    convert_logging_config, DEFAULT_HANDLERS, DEFAULT_FORMATTERS)
 from brewtils.models import LoggingConfig
 
 
@@ -21,6 +21,22 @@ class TestLog(object):
             'client_cert': 'client_cert',
             'ssl_enabled': False,
         }
+
+    def test_configure_logging(self, params, monkeypatch):
+        easy_mock = Mock()
+        monkeypatch.setattr('brewtils.get_easy_client', easy_mock)
+
+        convert_mock = Mock()
+        monkeypatch.setattr('brewtils.log.convert_logging_config', convert_mock)
+
+        conf_mock = Mock()
+        monkeypatch.setattr('brewtils.log.logging.config.dictConfig', conf_mock)
+
+        configure_logging(**params)
+        conf_mock.assert_called_once_with(convert_mock.return_value)
+        easy_mock.return_value.get_logging_config.assert_called_once_with(
+            params['system_name']
+        )
 
     def test_setup_logger(self, params, monkeypatch):
         log_conf = Mock()

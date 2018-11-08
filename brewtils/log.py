@@ -1,33 +1,26 @@
 # -*- coding: utf-8 -*-
 """Brewtils Logging Utilities
 
-This module is for setting up your plugins logging correctly.
+This module streamlines loading logging configuration from Beergarden.
 
 Example:
-    In order to use this, you should simply call ``setup_logger`` in the same
-    file where you initialize your plugin sometime before you initialize your
-    Plugin object.
+    To use this just call ``configure_logging`` sometime before you initialize
+    your Plugin object:
 
     .. code-block:: python
 
-        host = 'localhost'
-        port = 2337
-        ssl_enabled = False
-        system_name = 'my_system'
+        from brewtils import configure_logging, get_connection_info, Plugin
 
-        setup_logger(
-            bg_host=host,
-            bg_port=port,
-            system_name=system_name,
-            ssl_enabled=ssl_enabled
-        )
+        # Load BG connection info from environment and command line args
+        connection_info = get_connection_info(sys.argv[1:])
+
+        configure_logging(system_name='systemX', **connection_info)
+
         plugin = Plugin(
             my_client,
-            bg_host=host,
-            bg_port=port,
-            ssl_enabled=ssl_enabled,
-            name=system_name,
-            version="0.0.1"
+            name='systemX,
+            version='0.0.1',
+            **connection_info
         )
         plugin.run()
 """
@@ -90,11 +83,28 @@ DEFAULT_LOGGING_CONFIG = {
 }
 
 
+def configure_logging(system_name=None, **kwargs):
+    """Load and enable a logging configuration from Beergarden
+
+    NOTE: This method will overwrite the current logging configuration.
+
+    Args:
+        system_name: Name of the system to load
+        **kwargs: Beergarden connection parameters
+
+    Returns:
+        None
+    """
+    config = brewtils.get_easy_client(**kwargs).get_logging_config(system_name)
+
+    logging.config.dictConfig(convert_logging_config(config))
+
+
 def setup_logger(
         bg_host, bg_port, system_name,
         ca_cert=None, client_cert=None, ssl_enabled=None
 ):
-    """Sets Python logging to use configuration from Beergarden API
+    """Set Python logging to use configuration from Beergarden API
 
     This method will overwrite the current logging configuration.
 

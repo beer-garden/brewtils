@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import warnings
 
 import pytest
 from mock import Mock
 
 from brewtils.log import (
-    configure_logging, setup_logger, get_python_logging_config,
-    convert_logging_config, DEFAULT_HANDLERS, DEFAULT_FORMATTERS)
+    configure_logging, get_logging_config, convert_logging_config, setup_logger,
+    get_python_logging_config, DEFAULT_HANDLERS, DEFAULT_FORMATTERS)
 from brewtils.models import LoggingConfig
 
 
@@ -38,23 +39,13 @@ class TestLog(object):
             params['system_name']
         )
 
-    def test_setup_logger(self, params, monkeypatch):
-        log_conf = Mock()
-        monkeypatch.setattr('brewtils.log.get_python_logging_config', log_conf)
-
-        conf_mock = Mock()
-        monkeypatch.setattr('brewtils.log.logging.config.dictConfig', conf_mock)
-
-        setup_logger(**params)
-        conf_mock.assert_called_once_with(log_conf.return_value)
-
-    def test_get_python_logging_config(self, params, monkeypatch):
+    def test_get_logging_config(self, params, monkeypatch):
         monkeypatch.setattr('brewtils.get_easy_client', Mock())
 
         convert_mock = Mock(return_value='config')
         monkeypatch.setattr('brewtils.log.convert_logging_config', convert_mock)
 
-        assert 'config' == get_python_logging_config(**params)
+        assert 'config' == get_logging_config(**params)
 
     def test_convert_logging_config(self):
         handlers = {"hand1": {}, "handler2": {}}
@@ -79,3 +70,40 @@ class TestLog(object):
         python_config = convert_logging_config(log_config)
         assert python_config['handlers'] == DEFAULT_HANDLERS
         assert python_config['formatters'] == DEFAULT_FORMATTERS
+
+    def test_setup_logger(self, params, monkeypatch):
+        log_conf = Mock()
+        monkeypatch.setattr('brewtils.log.get_python_logging_config', log_conf)
+
+        conf_mock = Mock()
+        monkeypatch.setattr('brewtils.log.logging.config.dictConfig', conf_mock)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+
+            setup_logger(**params)
+            conf_mock.assert_called_once_with(log_conf.return_value)
+
+            assert len(w) == 1
+
+            warning = w[0]
+            assert warning.category == DeprecationWarning
+            assert "'configure_logging'" in str(warning)
+            assert '4.0' in str(warning)
+
+    def test_get_python_logging_config(self, params, monkeypatch):
+        monkeypatch.setattr('brewtils.get_easy_client', Mock())
+
+        convert_mock = Mock(return_value='config')
+        monkeypatch.setattr('brewtils.log.convert_logging_config', convert_mock)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+
+            assert 'config' == get_python_logging_config(**params)
+            assert len(w) == 1
+
+            warning = w[0]
+            assert warning.category == DeprecationWarning
+            assert "'get_logging_config'" in str(warning)
+            assert '4.0' in str(warning)

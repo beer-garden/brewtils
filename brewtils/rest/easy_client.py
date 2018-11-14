@@ -282,6 +282,9 @@ class EasyClient(object):
         :param instance_id: The ID of the instance
         :return: The response
         """
+        if instance_id is None:
+            raise DeleteError("Cannot delete an instance without an id")
+
         response = self.client.delete_instance(instance_id)
         if response.ok:
             return True

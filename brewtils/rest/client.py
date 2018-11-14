@@ -228,7 +228,7 @@ class RestClient(object):
 
     @enable_auth
     def get_instance(self, instance_id):
-        """Performs a GET on the System URL
+        """Performs a GET on the Instance URL
 
         :param instance_id: ID of instance
         :return: Response to the request

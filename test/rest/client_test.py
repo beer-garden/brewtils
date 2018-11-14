@@ -126,11 +126,19 @@ class TestRestClient(object):
         client.delete_system('id')
         session_mock.delete.assert_called_with(client.system_url + 'id')
 
+    def test_get_instance_1(self, client, session_mock):
+        client.get_instance('id')
+        session_mock.get.assert_called_with(client.instance_url + 'id')
+
     def test_patch_instance_1(self, client, session_mock):
         client.patch_instance('id', payload='payload')
         session_mock.patch.assert_called_with(client.instance_url + 'id',
                                               data='payload',
                                               headers=client.JSON_HEADERS)
+
+    def test_delete_instance_1(self, client, session_mock):
+        client.delete_instance('id')
+        session_mock.delete.assert_called_with(client.instance_url + 'id')
 
     def test_get_commands_1(self, client, session_mock):
         client.get_commands()

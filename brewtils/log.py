@@ -1,33 +1,26 @@
 # -*- coding: utf-8 -*-
 """Brewtils Logging Utilities
 
-This module is for setting up your plugins logging correctly.
+This module streamlines loading logging configuration from Beergarden.
 
 Example:
-    In order to use this, you should simply call ``setup_logger`` in the same
-    file where you initialize your plugin sometime before you initialize your
-    Plugin object.
+    To use this just call ``configure_logging`` sometime before you initialize
+    your Plugin object:
 
     .. code-block:: python
 
-        host = 'localhost'
-        port = 2337
-        ssl_enabled = False
-        system_name = 'my_system'
+        from brewtils import configure_logging, get_connection_info, Plugin
 
-        setup_logger(
-            bg_host=host,
-            bg_port=port,
-            system_name=system_name,
-            ssl_enabled=ssl_enabled
-        )
+        # Load BG connection info from environment and command line args
+        connection_info = get_connection_info(sys.argv[1:])
+
+        configure_logging(system_name='systemX', **connection_info)
+
         plugin = Plugin(
             my_client,
-            bg_host=host,
-            bg_port=port,
-            ssl_enabled=ssl_enabled,
-            name=system_name,
-            version="0.0.1"
+            name='systemX,
+            version='0.0.1',
+            **connection_info
         )
         plugin.run()
 """
@@ -35,6 +28,7 @@ Example:
 import copy
 import logging.config
 import os
+import warnings
 
 import brewtils
 
@@ -90,58 +84,35 @@ DEFAULT_LOGGING_CONFIG = {
 }
 
 
-def setup_logger(
-        bg_host, bg_port, system_name,
-        ca_cert=None, client_cert=None, ssl_enabled=None
-):
-    """Sets Python logging to use configuration from Beergarden API
+def configure_logging(system_name=None, **kwargs):
+    """Load and enable a logging configuration from Beergarden
 
-    This method will overwrite the current logging configuration.
+    NOTE: This method will overwrite the current logging configuration.
 
     Args:
-        bg_host (str): Beergarden host
-        bg_port (int): Beergarden port
-        system_name (str): Name of the system
-        ca_cert (str): Path to CA certificate file
-        client_cert (str): Path to client certificate file
-        ssl_enabled (bool): Use SSL when connection to Beergarden
+        system_name: Name of the system to load
+        **kwargs: Beergarden connection parameters
 
-    Returns: None
+    Returns:
+        None
     """
-    config = get_python_logging_config(
-        bg_host=bg_host, bg_port=bg_port, system_name=system_name,
-        ca_cert=ca_cert, client_cert=client_cert, ssl_enabled=ssl_enabled)
+    config = get_logging_config(system_name=system_name, **kwargs)
     logging.config.dictConfig(config)
 
 
-def get_python_logging_config(
-        bg_host, bg_port, system_name,
-        ca_cert=None, client_cert=None, ssl_enabled=None
-):
-    """Get Beergarden's logging configuration
+def get_logging_config(system_name=None, **kwargs):
+    """Retrieve a logging configuration from Beergarden
 
     Args:
-        bg_host (str): Beergarden host
-        bg_port (int): Beergarden port
-        system_name (str): Name of the system
-        ca_cert (str): Path to CA certificate file
-        client_cert (str): Path to client certificate file
-        ssl_enabled (bool): Use SSL when connection to Beergarden
+        system_name: Name of the system to load
+        **kwargs: Beergarden connection parameters
 
     Returns:
         dict: The logging configuration for the specified system
     """
-    client = brewtils.get_easy_client(
-        host=bg_host,
-        port=bg_port,
-        ssl_enabled=ssl_enabled,
-        ca_cert=ca_cert,
-        client_cert=client_cert,
-    )
+    config = brewtils.get_easy_client(**kwargs).get_logging_config(system_name)
 
-    logging_config = client.get_logging_config(system_name=system_name)
-
-    return convert_logging_config(logging_config)
+    return convert_logging_config(config)
 
 
 def convert_logging_config(logging_config):
@@ -173,3 +144,69 @@ def convert_logging_config(logging_config):
     }
 
     return config_to_return
+
+
+def setup_logger(
+        bg_host, bg_port, system_name,
+        ca_cert=None, client_cert=None, ssl_enabled=None
+):
+    """DEPRECATED: Set Python logging to use configuration from Beergarden API
+
+    This method is deprecated - consider using :func:`configure_logging`
+
+    This method will overwrite the current logging configuration.
+
+    Args:
+        bg_host (str): Beergarden host
+        bg_port (int): Beergarden port
+        system_name (str): Name of the system
+        ca_cert (str): Path to CA certificate file
+        client_cert (str): Path to client certificate file
+        ssl_enabled (bool): Use SSL when connection to Beergarden
+
+    Returns: None
+    """
+    warnings.warn("This function is deprecated and will be removed in version "
+                  "4.0, please consider using 'configure_logging' instead.",
+                  DeprecationWarning, stacklevel=2)
+
+    config = get_python_logging_config(
+        bg_host=bg_host, bg_port=bg_port, system_name=system_name,
+        ca_cert=ca_cert, client_cert=client_cert, ssl_enabled=ssl_enabled)
+    logging.config.dictConfig(config)
+
+
+def get_python_logging_config(
+        bg_host, bg_port, system_name,
+        ca_cert=None, client_cert=None, ssl_enabled=None
+):
+    """DEPRECATED: Get Beergarden's logging configuration
+
+    This method is deprecated - consider using :func:`get_logging_config`
+
+    Args:
+        bg_host (str): Beergarden host
+        bg_port (int): Beergarden port
+        system_name (str): Name of the system
+        ca_cert (str): Path to CA certificate file
+        client_cert (str): Path to client certificate file
+        ssl_enabled (bool): Use SSL when connection to Beergarden
+
+    Returns:
+        dict: The logging configuration for the specified system
+    """
+    warnings.warn("This function is deprecated and will be removed in version "
+                  "4.0, please consider using 'get_logging_config' instead.",
+                  DeprecationWarning, stacklevel=2)
+
+    client = brewtils.get_easy_client(
+        host=bg_host,
+        port=bg_port,
+        ssl_enabled=ssl_enabled,
+        ca_cert=ca_cert,
+        client_cert=client_cert,
+    )
+
+    logging_config = client.get_logging_config(system_name=system_name)
+
+    return convert_logging_config(logging_config)

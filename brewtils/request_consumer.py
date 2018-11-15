@@ -16,7 +16,7 @@ from brewtils.schema_parser import SchemaParser
 class RequestConsumer(threading.Thread):
     """RabbitMQ message consumer
 
-    This consumer is designed to be fault-tolerant - of RabbitMQ closes the
+    This consumer is designed to be fault-tolerant - if RabbitMQ closes the
     connection the consumer will attempt to reopen it. There are limited
     reasons why the connection may be closed from the broker side and usually
     indicates permission related issues or socket timeouts.
@@ -171,7 +171,8 @@ class RequestConsumer(threading.Thread):
                         props = pika.BasicProperties(
                             app_id='beer-garden',
                             content_type='text/plain',
-                            headers=headers, priority=1
+                            headers=headers,
+                            priority=1,
                         )
                         c.channel().basic_publish(
                             exchange=basic_deliver.exchange,

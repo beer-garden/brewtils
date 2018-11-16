@@ -116,7 +116,7 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=RestConnectionError)
 
-    def find_system(self, **kwargs):
+    def find_unique_system(self, **kwargs):
         """Find a unique system
 
         .. note::
@@ -299,7 +299,7 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=SaveError)
 
-    def find_request(self, **kwargs):
+    def find_unique_request(self, **kwargs):
         """Find a unique request
 
         .. note::
@@ -635,10 +635,6 @@ class EasyClient(object):
             raise RestConnectionError(response.json())
         else:
             raise default_exc(response.json())
-
-    # Aliases
-    find_unique_system = find_system
-    find_unique_request = find_request
 
 
 class BrewmasterEasyClient(EasyClient):

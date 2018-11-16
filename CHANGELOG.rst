@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+2.4.3
+-----
+Date: 11/16/18
+
+New Features
+^^^^^^^^^^^^
+- Added instance retrieve and delete methods to clients (#91)
+
+Bug Fixes
+^^^^^^^^^
+- Logging API now respects all connection parameters (#94)
+
 2.4.2
 -----
 Date: 10/7/18
@@ -19,7 +31,7 @@ Bug Fixes
 Date: 09/11/18
 
 Other Changes
-^^^^^^^^^
+^^^^^^^^^^^^^
 - Changed Plugin warning type so it won't be displayed by default
 
 2.4.0
@@ -39,7 +51,7 @@ New Features
 - Added methods ``get_config`` to RestClient, ``can_connect`` to EasyClient
 
 Other Changes
-^^^^^^^^^
+^^^^^^^^^^^^^
 - Renamed PluginBase to Plugin (old name is aliased)
 
 2.3.7

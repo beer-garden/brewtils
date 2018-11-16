@@ -248,6 +248,15 @@ class RestClient(object):
         return self.session.delete(self.system_url + system_id)
 
     @enable_auth
+    def get_instance(self, instance_id):
+        """Performs a GET on the Instance URL
+
+        :param instance_id: ID of instance
+        :return: Response to the request
+        """
+        return self.session.get(self.instance_url + instance_id)
+
+    @enable_auth
     def patch_instance(self, instance_id, payload):
         """Performs a PATCH on the instance URL
 
@@ -257,6 +266,15 @@ class RestClient(object):
         """
         return self.session.patch(self.instance_url + str(instance_id),
                                   data=payload, headers=self.JSON_HEADERS)
+
+    @enable_auth
+    def delete_instance(self, instance_id):
+        """Performs a DELETE on an Instance URL
+
+        :param instance_id: The ID of the instance to remove
+        :return: Response to the request
+        """
+        return self.session.delete(self.instance_url + instance_id)
 
     @enable_auth
     def get_commands(self):

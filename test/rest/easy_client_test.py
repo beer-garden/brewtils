@@ -363,6 +363,35 @@ class EasyClientTest(unittest.TestCase):
         request_mock.return_value = self.fake_connection_error_response
         self.assertRaises(RestConnectionError, self.client.initialize_instance, 'id')
 
+    @patch('brewtils.rest.client.RestClient.get_instance')
+    def test_get_instance_status(self, request_mock):
+        request_mock.return_value = self.fake_success_response
+
+        self.client.get_instance_status('id')
+        self.assertTrue(self.parser.parse_instance.called)
+        request_mock.assert_called_once_with('id')
+
+    @patch('brewtils.rest.client.RestClient.get_instance')
+    def test_get_instance_status_client_error(self, request_mock):
+        request_mock.return_value = self.fake_client_error_response
+
+        self.assertRaises(ValidationError, self.client.get_instance_status, 'id')
+        self.assertFalse(self.parser.parse_instance.called)
+        request_mock.assert_called_once_with('id')
+
+    @patch('brewtils.rest.client.RestClient.get_instance')
+    def test_get_instance_status_server_error(self, request_mock):
+        request_mock.return_value = self.fake_server_error_response
+
+        self.assertRaises(FetchError, self.client.get_instance_status, 'id')
+        self.assertFalse(self.parser.parse_instance.called)
+        request_mock.assert_called_once_with('id')
+
+    @patch('brewtils.rest.client.RestClient.get_instance')
+    def test_get_instance_connection_error(self, request_mock):
+        request_mock.return_value = self.fake_connection_error_response
+        self.assertRaises(RestConnectionError, self.client.get_instance_status, 'id')
+
     @patch('brewtils.rest.client.RestClient.patch_instance')
     def test_update_instance_status(self, request_mock):
         request_mock.return_value = self.fake_success_response
@@ -420,6 +449,31 @@ class EasyClientTest(unittest.TestCase):
     def test_instance_heartbeat_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
         self.assertRaises(RestConnectionError, self.client.instance_heartbeat, 'id')
+
+    @patch('brewtils.rest.client.RestClient.delete_instance')
+    def test_remove_instance(self, mock_delete):
+        mock_delete.return_value = self.fake_success_response
+
+        self.assertTrue(self.client.remove_instance('foo'))
+        mock_delete.assert_called_with('foo')
+
+    @patch('brewtils.rest.client.RestClient.delete_instance')
+    def test_remove_instance_client_error(self, mock_remove):
+        mock_remove.return_value = self.fake_client_error_response
+        self.assertRaises(ValidationError, self.client.remove_instance, 'foo')
+
+    @patch('brewtils.rest.client.RestClient.delete_instance')
+    def test_remove_instance_server_error(self, mock_remove):
+        mock_remove.return_value = self.fake_server_error_response
+        self.assertRaises(DeleteError, self.client.remove_instance, 'foo')
+
+    @patch('brewtils.rest.client.RestClient.delete_instance')
+    def test_remove_instance_connection_error(self, request_mock):
+        request_mock.return_value = self.fake_connection_error_response
+        self.assertRaises(RestConnectionError, self.client.remove_instance, 'foo')
+
+    def test_remove_instance_none(self):
+        self.assertRaises(DeleteError, self.client.remove_instance, None)
 
     # Find requests
     @patch('brewtils.rest.easy_client.EasyClient._find_request_by_id')

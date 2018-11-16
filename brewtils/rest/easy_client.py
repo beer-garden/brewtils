@@ -260,6 +260,22 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=SaveError)
 
+    def get_instance_status(self, instance_id):
+        """Get an instance's status
+
+        Args:
+            instance_id: The Id
+
+        Returns:
+            The status
+        """
+        response = self.client.get_instance(instance_id)
+
+        if response.ok:
+            return self.parser.parse_instance(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=FetchError)
+
     def update_instance_status(self, instance_id, new_status):
         """Update an Instance status
 
@@ -298,6 +314,21 @@ class EasyClient(object):
             return True
         else:
             self._handle_response_failure(response, default_exc=SaveError)
+
+    def remove_instance(self, instance_id):
+        """Remove an instance
+
+        :param instance_id: The ID of the instance
+        :return: The response
+        """
+        if instance_id is None:
+            raise DeleteError("Cannot delete an instance without an id")
+
+        response = self.client.delete_instance(instance_id)
+        if response.ok:
+            return True
+        else:
+            self._handle_response_failure(response, default_exc=DeleteError)
 
     def find_unique_request(self, **kwargs):
         """Find a unique request

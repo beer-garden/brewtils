@@ -47,7 +47,7 @@ python-box==3.2.0         # via yapconf
 pytz==2018.5
 pyyaml==3.13              # via watchdog
 requests-toolbelt==0.8.0  # via twine
-requests==2.19.1
+requests==2.20.1
 scandir==1.8              # via pathlib2
 simplejson==3.16.0
 six==1.11.0

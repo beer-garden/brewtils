@@ -100,8 +100,9 @@ class RequestConsumerTest(unittest.TestCase):
         channel_mock.basic_ack.assert_called_once_with(basic_deliver_mock.delivery_tag)
         self.assertTrue(self.panic_event.set.called)
 
+    @patch('brewtils.request_consumer.BlockingConnection')
     @patch('brewtils.request_consumer.SchemaParser')
-    def test_on_message_callback_complete_exception_republish(self, parser_mock):
+    def test_on_message_callback_complete_exception_republish(self, parser_mock, conn_mock):
         basic_deliver_mock = Mock()
         request_mock = Mock()
         future_exception = RepublishRequestException(request_mock, {})
@@ -111,8 +112,7 @@ class RequestConsumerTest(unittest.TestCase):
         publish_channel_mock = Mock()
         publish_connection_mock = Mock()
         publish_connection_mock.channel.return_value = publish_channel_mock
-        conn = self.pika_patch.BlockingConnection
-        conn.return_value.__enter__.return_value = publish_connection_mock
+        conn_mock.return_value.__enter__.return_value = publish_connection_mock
 
         self.callback_future.set_exception(future_exception)
         self.consumer.on_message_callback_complete(basic_deliver_mock, self.callback_future)

@@ -1,22 +1,12 @@
 brewtils package
 ================
 
-
 Subpackages
 -----------
 
 .. toctree::
 
-    brewtils.log
     brewtils.rest
-
-Module contents
----------------
-
-.. automodule:: brewtils
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 Submodules
 ----------
@@ -45,6 +35,14 @@ brewtils.errors module
     :undoc-members:
     :show-inheritance:
 
+brewtils.log module
+-------------------
+
+.. automodule:: brewtils.log
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 brewtils.models module
 ----------------------
 
@@ -57,6 +55,14 @@ brewtils.plugin module
 ----------------------
 
 .. automodule:: brewtils.plugin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+brewtils.queues module
+----------------------
+
+.. automodule:: brewtils.queues
     :members:
     :undoc-members:
     :show-inheritance:
@@ -101,3 +107,11 @@ brewtils.stoppable\_thread module
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: brewtils
+    :members:
+    :undoc-members:
+    :show-inheritance:

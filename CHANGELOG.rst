@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+2.4.3
+-----
+Date: 11/16/18
+
+New Features
+^^^^^^^^^^^^
+- Added instance retrieve and delete methods to clients (#91)
+
+Bug Fixes
+^^^^^^^^^
+- Logging API now respects all connection parameters (#94)
+
 2.4.2
 -----
 Date: 10/7/18

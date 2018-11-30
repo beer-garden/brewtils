@@ -30,10 +30,11 @@ class PikaClient(object):
         self._exchange = exchange
 
         ssl = ssl or {}
+        mode = pyssl.CERT_REQUIRED if ssl.get('ca_verify') else pyssl.CERT_NONE
         self._ssl_enabled = ssl.get('enabled', False)
         self._ssl_options = SSLOptions(
             cafile=ssl.get('ca_cert', None),
-            verify_mode=pyssl.CERT_REQUIRED if ssl.get('ca_verify') else pyssl.CERT_NONE,
+            verify_mode=mode,
         )
 
         # Save the 'normal' params so they don't need to be reconstructed

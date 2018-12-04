@@ -1,19 +1,159 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
+import logging.config
 import os
+import sys
 import threading
 import unittest
 
-import sys
+import pytest
 from mock import MagicMock, Mock, patch
 from requests import ConnectionError
 
-from brewtils.errors import ValidationError, RequestProcessingError, \
-    DiscardMessageException, RepublishRequestException, PluginValidationError, \
-    RestClientError
+from brewtils.errors import (
+    ValidationError, RequestProcessingError, DiscardMessageException,
+    RepublishRequestException, PluginValidationError, RestClientError,
+)
+from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
-from brewtils.plugin import PluginBase
+from brewtils.plugin import PluginBase, Plugin
+
+
+@pytest.fixture
+def environ():
+    safe_copy = os.environ.copy()
+    yield
+    os.environ = safe_copy
+
+
+@pytest.fixture
+def bm_client(bg_system, bg_instance):
+    return Mock(
+        create_system=Mock(return_value=bg_system),
+        initialize_instance=Mock(return_value=bg_instance),
+    )
+
+
+@pytest.fixture
+def client():
+    return MagicMock(name='client', spec='command', _commands=['command'])
+
+
+@pytest.fixture
+def parser():
+    return Mock()
+
+
+@pytest.fixture
+def plugin(client, bm_client, parser, bg_system, bg_instance):
+    plugin = Plugin(
+        client,
+        bg_host='localhost',
+        system=bg_system,
+        metadata={'foo': 'bar'},
+    )
+    plugin.instance = bg_instance
+    plugin.bm_client = bm_client
+    plugin.parser = parser
+
+    return plugin
+
+
+class TestPluginInit(object):
+
+    def test_init_no_bg_host(self, client):
+        with pytest.raises(ValidationError):
+            Plugin(client)
+
+    @pytest.mark.parametrize('instance_name,expected_unique', [
+        (None, 'name[default]-1.0.0'),
+        ('unique', 'name[unique]-1.0.0'),
+    ])
+    def test_init_with_instance_name_unique_name_check(
+        self, client, bg_system, instance_name, expected_unique,
+    ):
+        plugin = Plugin(
+            client, bg_host='localhost', system=bg_system, instance_name=instance_name
+        )
+
+        assert expected_unique == plugin.unique_name
+
+    def test_init_defaults(self, plugin):
+        assert logging.getLogger('brewtils.plugin') == plugin.logger
+        assert 'default' == plugin.instance_name
+        assert 'localhost' == plugin.bg_host
+        assert 2337 == plugin.bg_port
+        assert plugin.ssl_enabled is True
+        assert plugin.ca_verify is True
+
+    def test_init_default_logger(self, monkeypatch, client):
+        """Test that the default logging configuration is used.
+
+        This needs to be tested separately because pytest (understandably) does some
+        logging configuration before starting tests. Since we only configure logging
+        if there's no prior configuration we have to fake it a little.
+
+        """
+        plugin_logger = logging.getLogger('brewtils.plugin')
+        dict_config = Mock()
+
+        monkeypatch.setattr(plugin_logger, 'root', Mock(handlers=[]))
+        monkeypatch.setattr(logging.config, 'dictConfig', dict_config)
+
+        plugin = Plugin(client, bg_host='localhost')
+        dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
+        assert logging.getLogger('brewtils.plugin') == plugin.logger
+
+    def test_init_kwargs(self, bg_system):
+        logger = Mock()
+
+        plugin = Plugin(
+            client,
+            bg_host='localhost',
+            system=bg_system,
+            ssl_enabled=False,
+            ca_verify=False,
+            logger=logger,
+        )
+
+        assert plugin.ssl_enabled is False
+        assert plugin.ca_verify is False
+        assert logger == plugin.logger
+
+    def test_init_env(self, environ, bg_system):
+        os.environ['BG_HOST'] = 'remotehost'
+        os.environ['BG_PORT'] = '7332'
+        os.environ['BG_SSL_ENABLED'] = 'False'
+        os.environ['BG_CA_VERIFY'] = 'False'
+
+        plugin = Plugin(client, system=bg_system)
+
+        assert 'remotehost' == plugin.bg_host
+        assert 7332 == plugin.bg_port
+        assert plugin.ssl_enabled is False
+        assert plugin.ca_verify is False
+
+    def test_init_conflicts(self, environ, bg_system):
+        os.environ['BG_HOST'] = 'remotehost'
+        os.environ['BG_PORT'] = '7332'
+        os.environ['BG_SSL_ENABLED'] = 'False'
+        os.environ['BG_CA_VERIFY'] = 'False'
+
+        plugin = Plugin(
+            client,
+            bg_host='localhost',
+            bg_port=2337,
+            system=bg_system,
+            ssl_enabled=True,
+            ca_verify=True,
+        )
+
+        assert 'localhost' == plugin.bg_host
+        assert 2337 == plugin.bg_port
+        assert plugin.ssl_enabled is True
+        assert plugin.ca_verify is True
 
 
 class PluginBaseTest(unittest.TestCase):
@@ -44,82 +184,6 @@ class PluginBaseTest(unittest.TestCase):
 
     def tearDown(self):
         os.environ = self.safe_copy
-
-    def test_init_no_bg_host(self):
-        self.assertRaises(ValidationError, PluginBase, self.client)
-
-    def test_init_no_instance_name_unique_name_check(self):
-        self.assertEqual(self.plugin.unique_name, 'test_system[default]-1.0.0')
-
-    def test_init_with_instance_name_unique_name_check(self):
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system,
-                            instance_name='unique')
-        self.assertEqual(plugin.unique_name, 'test_system[unique]-1.0.0')
-
-    @patch('brewtils.plugin.logging.getLogger', Mock(return_value=Mock(root=Mock(handlers=[]))))
-    @patch('brewtils.plugin.logging.config.dictConfig', Mock())
-    def test_init_defaults(self):
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system,
-                            metadata={'foo': 'bar'})
-        self.assertEqual(plugin.instance_name, 'default')
-        self.assertEqual(plugin.bg_host, 'localhost')
-        self.assertEqual(plugin.bg_port, 2337)
-        self.assertEqual(plugin.ssl_enabled, True)
-        self.assertFalse(plugin._custom_logger)
-        self.assertEqual(plugin.ca_verify, True)
-
-    def test_init_not_ssl(self):
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system, ssl_enabled=False)
-        self.assertEqual(plugin.ssl_enabled, False)
-
-    def test_init_ssl_true_env(self):
-        os.environ['BG_SSL_ENABLED'] = 'True'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.ssl_enabled, True)
-
-    def test_init_ssl_false_env(self):
-        os.environ['BG_SSL_ENABLED'] = 'False'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.ssl_enabled, False)
-
-    def test_init_not_ca_verify(self):
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system, ca_verify=False)
-        self.assertEqual(plugin.ca_verify, False)
-
-    def test_init_ca_verify_true_env(self):
-        os.environ['BG_CA_VERIFY'] = 'True'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.ca_verify, True)
-
-    def test_init_ca_verify_false_env(self):
-        os.environ['BG_CA_VERIFY'] = 'False'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.ca_verify, False)
-
-    def test_init_bg_host_env(self):
-        os.environ['BG_WEB_HOST'] = 'envhost'
-        plugin = PluginBase(self.client, system=self.system)
-        self.assertEqual(plugin.bg_host, 'envhost')
-
-    def test_init_bg_host_both(self):
-        os.environ['BG_WEB_HOST'] = 'envhost'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.bg_host, 'localhost')
-
-    def test_init_bg_port_env(self):
-        os.environ['BG_WEB_PORT'] = '4000'
-        plugin = PluginBase(self.client, bg_host='localhost', system=self.system)
-        self.assertEqual(plugin.bg_port, 4000)
-
-    def test_init_bg_port_both(self):
-        os.environ['BG_WEB_PORT'] = '4000'
-        plugin = PluginBase(self.client, bg_host='localhost', bg_port=3000, system=self.system)
-        self.assertEqual(plugin.bg_port, 3000)
-
-    def test_init_custom_logger(self):
-        plugin = PluginBase(self.client, bg_host='localhost', bg_port=3000, system=self.system,
-                            logger=Mock())
-        self.assertTrue(plugin._custom_logger)
 
     @patch('brewtils.plugin.PluginBase._create_connection_poll_thread')
     @patch('brewtils.plugin.PluginBase._create_standard_consumer')

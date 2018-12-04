@@ -168,28 +168,13 @@ class TestPluginInitialize(object):
         assert bm_client.create_system.return_value == plugin.system
         assert bm_client.initialize_instance.return_value == plugin.instance
 
-    def test_system_exists_same_commands(
-        self, plugin, bm_client, bg_system, bg_instance,
-    ):
-        bm_client.update_system.return_value = bg_system
-        bm_client.find_unique_system.return_value = bg_system
-
-        plugin._initialize()
-        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
-        bm_client.update_system.assert_called_once_with(
-            bg_system.id,
-            new_commands=None,
-            metadata=bg_system.metadata,
-            description=bg_system.description,
-            icon_name=bg_system.icon_name,
-            display_name=bg_system.display_name,
-        )
-        assert bm_client.create_system.called is False
-        assert bm_client.create_system.return_value == plugin.system
-        assert bm_client.initialize_instance.return_value == plugin.instance
-
-    def test_system_exists_different_commands(
-        self, plugin, bm_client, bg_system, bg_instance,
+    @pytest.mark.parametrize('current_commands', [
+        [],
+        [Command('test')],
+        [Command('other_test')],
+    ])
+    def test_system_exists(
+        self, plugin, bm_client, bg_system, bg_instance, current_commands,
     ):
         bg_system.commands = [Command('test')]
         bm_client.update_system.return_value = bg_system
@@ -199,6 +184,7 @@ class TestPluginInitialize(object):
             name='test_system',
             version='0.0.1',
             instances=[bg_instance],
+            commands=current_commands,
             metadata={'foo': 'bar'},
         )
         bm_client.find_unique_system.return_value = existing_system

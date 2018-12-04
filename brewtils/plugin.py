@@ -50,15 +50,22 @@ class Plugin(object):
     the Plugin or pass a fully defined System object (but not both). Note that
     some fields are optional::
 
-        PluginBase(name="Test", version="1.0.0", instance_name="default", description="A Test")
+        Plugin(
+            name="Test",
+            version="1.0.0",
+            instance_name="default",
+            description="A Test",
+        )
 
     or::
 
-        the_system = System(name="Test",
-                            version="1.0.0",
-                            instance_name="default,
-                            description="A Test")
-        PluginBase(system=the_system)
+        the_system = System(
+            name="Test",
+            version="1.0.0",
+            instance_name="default,
+            description="A Test",
+        )
+        Plugin(system=the_system)
 
     If passing parameters directly note that these fields are required:
 

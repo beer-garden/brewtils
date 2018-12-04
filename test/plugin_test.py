@@ -156,6 +156,100 @@ class TestPluginInit(object):
         assert plugin.ca_verify is True
 
 
+class TestPluginInitialize(object):
+
+    def test_new_system(self, plugin, bm_client, bg_system, bg_instance):
+        bm_client.find_unique_system.return_value = None
+
+        plugin._initialize()
+        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        bm_client.create_system.assert_called_once_with(bg_system)
+        assert bm_client.update_system.called is False
+        assert bm_client.create_system.return_value == plugin.system
+        assert bm_client.initialize_instance.return_value == plugin.instance
+
+    def test_system_exists_same_commands(
+        self, plugin, bm_client, bg_system, bg_instance,
+    ):
+        bm_client.update_system.return_value = bg_system
+        bm_client.find_unique_system.return_value = bg_system
+
+        plugin._initialize()
+        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        bm_client.update_system.assert_called_once_with(
+            bg_system.id,
+            new_commands=None,
+            metadata=bg_system.metadata,
+            description=bg_system.description,
+            icon_name=bg_system.icon_name,
+            display_name=bg_system.display_name,
+        )
+        assert bm_client.create_system.called is False
+        assert bm_client.create_system.return_value == plugin.system
+        assert bm_client.initialize_instance.return_value == plugin.instance
+
+    def test_system_exists_different_commands(
+        self, plugin, bm_client, bg_system, bg_instance,
+    ):
+        bg_system.commands = [Command('test')]
+        bm_client.update_system.return_value = bg_system
+
+        existing_system = System(
+            id='id',
+            name='test_system',
+            version='0.0.1',
+            instances=[bg_instance],
+            metadata={'foo': 'bar'},
+        )
+        bm_client.find_unique_system.return_value = existing_system
+
+        plugin._initialize()
+        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        bm_client.update_system.assert_called_once_with(
+            existing_system.id,
+            new_commands=bg_system.commands,
+            metadata=bg_system.metadata,
+            description=bg_system.description,
+            icon_name=bg_system.icon_name,
+            display_name=bg_system.display_name,
+        )
+        assert bm_client.create_system.called is False
+        assert bm_client.create_system.return_value == plugin.system
+        assert bm_client.initialize_instance.return_value == plugin.instance
+
+    def test_new_instance(self, plugin, bm_client, bg_system, bg_instance):
+        plugin.instance_name = 'new_instance'
+
+        existing_system = System(
+            id='id',
+            name='test_system',
+            version='0.0.1',
+            instances=[bg_instance],
+            max_instances=2,
+            metadata={'foo': 'bar'},
+        )
+        bm_client.find_unique_system.return_value = existing_system
+
+        plugin._initialize()
+        assert 2 == len(existing_system.instances)
+        assert bm_client.create_system.called is True
+        assert bm_client.update_system.called is True
+
+    def test_initialize_system_new_instance_maximum(self, plugin, bm_client, bg_system):
+        plugin.instance_name = 'new_instance'
+        bm_client.find_unique_system.return_value = bg_system
+
+        with pytest.raises(PluginValidationError):
+            plugin._initialize()
+
+    def test_initialize_unregistered_instance(self, plugin, bm_client, bg_system):
+        bg_system.has_instance = Mock(return_value=False)
+        bm_client.find_unique_system.return_value = None
+
+        with pytest.raises(PluginValidationError):
+            plugin._initialize()
+
+
 class PluginBaseTest(unittest.TestCase):
 
     def setUp(self):
@@ -454,92 +548,6 @@ class PluginBaseTest(unittest.TestCase):
     def test_pre_process_parse_error(self):
         self.parser_mock.parse_request.side_effect = Exception
         self.assertRaises(DiscardMessageException, self.plugin._pre_process, Mock())
-
-    def test_initialize_system_nonexistent(self):
-        self.bm_client_mock.find_unique_system.return_value = None
-
-        self.plugin._initialize()
-        self.bm_client_mock.create_system.assert_called_once_with(self.system)
-        self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
-        self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
-        self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
-
-    def test_initialize_system_exists_same_commands(self):
-        self.bm_client_mock.update_system.return_value = self.system
-        self.bm_client_mock.find_unique_system.return_value = self.system
-
-        self.plugin._initialize()
-        self.assertFalse(self.bm_client_mock.create_system.called)
-        self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
-        self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
-        self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
-
-    def test_initialize_system_exists_different_commands(self):
-        self.system.commands = [Command('test')]
-        self.bm_client_mock.update_system.return_value = self.system
-
-        existing_system = System(id='id', name='test_system', version='1.0.0',
-                                 instances=[self.instance], metadata={'foo': 'bar'})
-        self.bm_client_mock.find_unique_system.return_value = existing_system
-
-        self.plugin._initialize()
-        self.assertFalse(self.bm_client_mock.create_system.called)
-        self.bm_client_mock.update_system.assert_called_once_with(
-            self.instance.id,
-            new_commands=self.system.commands,
-            metadata={"foo": "bar"},
-            description=self.system.description,
-            icon_name=self.system.icon_name,
-            display_name=self.system.display_name
-        )
-        self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
-        self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
-        self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
-
-    def test_initialize_system_new_instance(self):
-        self.plugin.instance_name = 'new_instance'
-
-        existing_system = System(id='id', name='test_system', version='1.0.0',
-                                 instances=[self.instance], max_instances=2,
-                                 metadata={'foo': 'bar'})
-        self.bm_client_mock.find_unique_system.return_value = existing_system
-
-        self.plugin._initialize()
-        self.assertTrue(self.bm_client_mock.create_system.called)
-        self.assertTrue(self.bm_client_mock.update_system.called)
-
-    def test_initialize_system_new_instance_maximum(self):
-        self.plugin.instance_name = 'new_instance'
-        self.bm_client_mock.find_unique_system.return_value = self.system
-
-        self.assertRaises(PluginValidationError, self.plugin._initialize)
-
-    def test_initialize_system_update_metadata(self):
-        self.system.commands = [Command('test')]
-        self.bm_client_mock.update_system.return_value = self.system
-
-        existing_system = System(id='id', name='test_system', version='1.0.0',
-                                 instances=[self.instance],
-                                 metadata={})
-        self.bm_client_mock.find_unique_system.return_value = existing_system
-
-        self.plugin._initialize()
-        self.assertFalse(self.bm_client_mock.create_system.called)
-        self.bm_client_mock.update_system.assert_called_once_with(self.instance.id,
-                                                                  new_commands=self.system.commands,
-                                                                  description=None,
-                                                                  display_name=None,
-                                                                  icon_name=None,
-                                                                  metadata={"foo": "bar"})
-        self.bm_client_mock.initialize_instance.assert_called_once_with(self.instance.id)
-        self.assertEqual(self.plugin.system, self.bm_client_mock.create_system.return_value)
-        self.assertEqual(self.plugin.instance, self.bm_client_mock.initialize_instance.return_value)
-
-    def test_initialize_unregistered_instance(self):
-        self.system.has_instance = Mock(return_value=False)
-        self.bm_client_mock.find_unique_system.return_value = None
-
-        self.assertRaises(PluginValidationError, self.plugin._initialize)
 
     def test_shutdown(self):
         self.plugin.request_consumer = Mock()

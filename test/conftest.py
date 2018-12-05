@@ -49,7 +49,7 @@ def choices_dict():
         'strict': True,
         'type': 'static',
         'value': ['choiceA', 'choiceB'],
-        'details': {}
+        'details': {},
     }
 
 
@@ -96,7 +96,7 @@ def parameter_dict(nested_parameter_dict, choices_dict):
         'maximum': 10,
         'minimum': 1,
         'regex': '.*',
-        'form_input_type': None
+        'form_input_type': None,
     }
 
 
@@ -123,7 +123,7 @@ def command_dict(parameter_dict):
         'form': {},
         'template': '<html></html>',
         'icon_name': 'icon!',
-        'system': {'id': system_id}
+        'system': {'id': system_id},
     }
 
 
@@ -151,7 +151,7 @@ def instance_dict(ts_epoch):
             'url': 'amqp://guest:guest@localhost:5672'
         },
         'status_info': {'heartbeat': ts_epoch},
-        'metadata': {}
+        'metadata': {},
     }
 
 
@@ -176,7 +176,7 @@ def system_dict(instance_dict, command_dict):
         'commands': [command_dict],
         'icon_name': 'fa-beer',
         'display_name': 'non-offensive',
-        'metadata': {'some': 'stuff'}
+        'metadata': {'some': 'stuff'},
     }
 
 
@@ -321,7 +321,7 @@ def patch_dict():
             {
                 'operation': 'replace',
                 'path': '/status',
-                'value': 'RUNNING'
+                'value': 'RUNNING',
             }
         ]
     }
@@ -333,7 +333,7 @@ def patch_many_dict():
     return {
         'operations': [
             {'operation': 'replace', 'path': '/status', 'value': 'RUNNING'},
-            {'operation': 'replace2', 'path': '/status2', 'value': 'RUNNING2'}
+            {'operation': 'replace2', 'path': '/status2', 'value': 'RUNNING2'},
         ]
     }
 
@@ -344,7 +344,7 @@ def patch_no_envelop_dict():
     return {
         'operation': 'replace',
         'path': '/status',
-        'value': 'RUNNING'
+        'value': 'RUNNING',
     }
 
 
@@ -367,10 +367,10 @@ def logging_config_dict():
         'level': 'INFO',
         'handlers': {
             'stdout': {
-                'foo': 'bar'
+                'foo': 'bar',
             }
         },
-        'formatters': {'default': {'format': LoggingConfig.DEFAULT_FORMAT}}
+        'formatters': {'default': {'format': LoggingConfig.DEFAULT_FORMAT}},
     }
 
 
@@ -388,7 +388,7 @@ def event_dict(ts_epoch):
         'error': False,
         'payload': {'id': '58542eb571afd47ead90d25e'},
         'metadata': {'extra': 'info'},
-        'timestamp': ts_epoch
+        'timestamp': ts_epoch,
     }
 
 

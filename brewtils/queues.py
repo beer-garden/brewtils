@@ -19,6 +19,7 @@ class PikaClient(object):
             virtual_host='/',
             exchange='beer_garden',
             ssl=None,
+            blocked_connection_timeout=None,
     ):
         self._host = host
         self._port = port
@@ -26,6 +27,7 @@ class PikaClient(object):
         self._password = password
         self._connection_attempts = connection_attempts
         self._heartbeat_interval = heartbeat_interval
+        self._blocked_connection_timeout = blocked_connection_timeout
         self._virtual_host = virtual_host
         self._exchange = exchange
 
@@ -84,8 +86,13 @@ class PikaClient(object):
             ssl_options=kwargs.get('ssl_options', self._ssl_options),
             virtual_host=kwargs.get('virtual_host', self._virtual_host),
             connection_attempts=kwargs.get(
-                'connection_attempts', self._connection_attempts),
+                'connection_attempts', self._connection_attempts
+            ),
             heartbeat_interval=kwargs.get(
-                'heartbeat_interval', self._heartbeat_interval),
+                'heartbeat_interval', self._heartbeat_interval
+            ),
+            blocked_connection_timeout=kwargs.get(
+                'blocked_connection_timeout', self._blocked_connection_timeout
+            ),
             credentials=credentials,
         )

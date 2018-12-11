@@ -391,11 +391,6 @@ class Plugin(object):
             name=self.system.name, version=self.system.version)
 
         if existing_system:
-            if existing_system.has_different_commands(self.system.commands):
-                new_commands = self.system.commands
-            else:
-                new_commands = None
-
             if not existing_system.has_instance(self.instance_name):
                 if len(existing_system.instances) < existing_system.max_instances:
                     existing_system.instances.append(Instance(name=self.instance_name))
@@ -413,7 +408,7 @@ class Plugin(object):
             # We always update in case the metadata has changed.
             self.system = self.bm_client.update_system(
                 existing_system.id,
-                new_commands=new_commands,
+                new_commands=self.system.commands,
                 metadata=self.system.metadata,
                 description=self.system.description,
                 display_name=self.system.display_name,

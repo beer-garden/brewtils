@@ -692,13 +692,20 @@ class Queue(object):
 
 class Principal(object):
     def __init__(
-        self, id=None, username=None, roles=None, permissions=None, preferences=None
+        self,
+        id=None,
+        username=None,
+        roles=None,
+        permissions=None,
+        preferences=None,
+        metadata=None,
     ):
         self.id = id
         self.username = username
         self.roles = roles
         self.permissions = permissions
         self.preferences = preferences
+        self.metadata = metadata
 
     def __str__(self):
         return "%s" % self.username

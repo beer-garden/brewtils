@@ -9,7 +9,7 @@ import pytz
 from brewtils.models import (
     Parameter, Command, Instance, System, Request, Choices, PatchOperation,
     LoggingConfig, Event, Queue, Principal, Role, Job, CronTrigger,
-    RequestTemplate, IntervalTrigger, DateTrigger
+    RequestTemplate, IntervalTrigger, DateTrigger, StatusInfo,
 )
 
 # This is a little weird, but we have a circular dependency and this makes
@@ -137,7 +137,19 @@ def bg_command(command_dict, bg_parameter):
 
 
 @pytest.fixture
-def instance_dict(ts_epoch):
+def status_dict(ts_epoch):
+    return {
+        'heartbeat': ts_epoch,
+    }
+
+
+@pytest.fixture
+def bg_status(ts_dt):
+    return StatusInfo(heartbeat=ts_dt)
+
+
+@pytest.fixture
+def instance_dict(status_dict):
     """An instance represented as a dictionary."""
     return {
         'id': '584f11af55a38e64799fd1d4',
@@ -150,16 +162,16 @@ def instance_dict(ts_epoch):
             'queue': 'abc[default]-0.0.1',
             'url': 'amqp://guest:guest@localhost:5672'
         },
-        'status_info': {'heartbeat': ts_epoch},
+        'status_info': status_dict,
         'metadata': {},
     }
 
 
 @pytest.fixture
-def bg_instance(instance_dict, ts_dt):
+def bg_instance(instance_dict, bg_status):
     """An instance as a model."""
     dict_copy = copy.deepcopy(instance_dict)
-    dict_copy['status_info']['heartbeat'] = ts_dt
+    dict_copy['status_info'] = bg_status
     return Instance(**dict_copy)
 
 

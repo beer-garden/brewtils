@@ -12,6 +12,7 @@ __all__ = [
     'Command',
     'Parameter',
     'Request',
+    'StatusInfo',
     'PatchOperation',
     'Choices',
     'LoggingConfig',
@@ -475,6 +476,20 @@ class System(object):
                 return True
 
         return False
+
+
+class StatusInfo(object):
+
+    schema = 'StatusInfoSchema'
+
+    def __init__(self, heartbeat=None):
+        self.heartbeat = heartbeat
+
+    def __str__(self):
+        return '%s' % self.heartbeat
+
+    def __repr__(self):
+        return '<StatusInfo: heartbeat=%s>' % self.heartbeat
 
 
 class PatchOperation(object):

@@ -5,7 +5,7 @@ from functools import partial
 from brewtils.models import (
     System, Command, Instance, Parameter, Request, PatchOperation,
     LoggingConfig, Event, Queue, Choices, Principal, Role, Job, IntervalTrigger,
-    DateTrigger, CronTrigger, RequestTemplate
+    DateTrigger, CronTrigger, RequestTemplate, StatusInfo,
 )
 
 __all__ = [
@@ -60,7 +60,7 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
 
 
 # These are the 'simple' models - they don't have any nested models as fields
-assert_instance_equal = partial(_assert_equal, expected_type=Instance)
+assert_status_equal = partial(_assert_equal, expected_type=StatusInfo)
 assert_choices_equal = partial(_assert_equal, expected_type=Choices)
 assert_patch_equal = partial(_assert_equal, expected_type=PatchOperation)
 assert_logging_config_equal = partial(_assert_equal, expected_type=LoggingConfig)
@@ -69,6 +69,12 @@ assert_queue_equal = partial(_assert_equal, expected_type=Queue)
 assert_request_template_equal = partial(_assert_equal, expected_type=RequestTemplate)
 assert_trigger_equal = partial(_assert_equal,
                                expected_type=(CronTrigger, DateTrigger, IntervalTrigger))
+
+
+def assert_instance_equal(obj1, obj2):
+    _assert_equal(obj1, obj2,
+                  expected_type=Instance,
+                  deep_fields={'status_info': assert_status_equal})
 
 
 def assert_command_equal(obj1, obj2):

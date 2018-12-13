@@ -8,7 +8,7 @@ import six
 from brewtils.models import (
     System, Instance, Command, Parameter, Request, PatchOperation, Choices,
     LoggingConfig, Event, Queue, Principal, Role, RefreshToken, Job,
-    RequestTemplate, DateTrigger, CronTrigger, IntervalTrigger
+    RequestTemplate, DateTrigger, CronTrigger, IntervalTrigger, StatusInfo,
 )
 from brewtils.schemas import (
     SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, RequestSchema,
@@ -39,6 +39,7 @@ class SchemaParser(object):
         'DateTriggerSchema': DateTrigger,
         'IntervalTriggerSchema': IntervalTrigger,
         'CronTriggerSchema': CronTrigger,
+        'StatusInfoSchema': StatusInfo,
     }
 
     logger = logging.getLogger(__name__)

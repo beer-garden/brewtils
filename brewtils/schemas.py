@@ -14,6 +14,7 @@ __all__ = [
     'CommandSchema',
     'ParameterSchema',
     'RequestSchema',
+    'StatusInfoSchema',
     'PatchSchema',
     'LoggingConfigSchema',
     'EventSchema',

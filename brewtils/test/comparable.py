@@ -19,17 +19,20 @@ from brewtils.models import (
 )
 
 __all__ = [
-    'assert_parameter_equal',
-    'assert_command_equal',
-    'assert_system_equal',
     'assert_instance_equal',
-    'assert_request_equal',
+    'assert_choices_equal',
     'assert_patch_equal',
     'assert_logging_config_equal',
     'assert_event_equal',
     'assert_queue_equal',
+    'assert_request_template_equal',
+    'assert_trigger_equal',
+    'assert_command_equal',
+    'assert_parameter_equal',
     'assert_principal_equal',
+    'assert_request_equal',
     'assert_role_equal',
+    'assert_system_equal',
     'assert_job_equal',
 ]
 

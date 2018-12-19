@@ -84,7 +84,7 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
                 deep_fields[key](nested1, nested2)
 
 
-def _assert_wrapper(*args, do_raise=False, **kwargs):
+def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
     """Wrapper that will translate AssertionError to a boolean.
 
     This is a safety measure in case these functions are used outside of a testing
@@ -97,10 +97,11 @@ def _assert_wrapper(*args, do_raise=False, **kwargs):
     something nested several levels deep.
 
     Args:
-        *args: Passed through to _assert_equal
-        **kwargs: Passed through to _assert_equal
+        obj1: Passed through to _assert_equal
+        obj2: Passed through to _assert_equal
         do_raise: If True, re-raise any raised AssertionError. This helps with nested
             comparisons.
+        **kwargs: Passed through to _assert_equal
 
     Returns:
         True if the comparison was equal.
@@ -116,7 +117,7 @@ def _assert_wrapper(*args, do_raise=False, **kwargs):
 
     """
     try:
-        _assert_equal(*args, **kwargs)
+        _assert_equal(obj1, obj2, **kwargs)
     except AssertionError:
         if do_raise or hasattr(brewtils.test, '_running_tests'):
             raise

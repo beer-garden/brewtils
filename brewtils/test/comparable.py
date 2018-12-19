@@ -1,7 +1,17 @@
 # -*- coding: utf-8 -*-
+"""Module to simplify model comparisons.
 
+WARNING: This module was created to simplify testing. As such, it's not recommended for
+production use.
+
+ANOTHER WARNING: This module subject to change outside of the normal deprecation cycle.
+
+Seriously, this is a 'use at your own risk' kind of thing.
+
+"""
 from functools import partial
 
+import brewtils.test
 from brewtils.models import (
     System, Command, Instance, Parameter, Request, PatchOperation,
     LoggingConfig, Event, Queue, Choices, Principal, Role, Job, IntervalTrigger,
@@ -25,7 +35,21 @@ __all__ = [
 
 
 def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
+    """Assert that two objects are equal.
 
+    Args:
+        obj1: The first object
+        obj2: The second object
+        expected_type: Both objects will be checked (using isinstance) against this type
+        deep_fields: A dictionary of field name to comparison function
+
+    Returns:
+        None
+
+    Raises:
+        AssertionError: A comparison assertion failed
+
+    """
     if obj1 is None and obj2 is None:
         return
 
@@ -59,48 +83,107 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
                 deep_fields[key](nested1, nested2)
 
 
+def _assert_wrapper(*args, **kwargs):
+    """Wrapper that will translate AssertionError to a boolean.
+
+    This is a safety measure in case these functions are used outside of a testing
+    context. This isn't recommended, but naked asserts are still unacceptable in any
+    packaged code. This method will translate the various comparision functions to a
+    simple boolean return.
+
+    Note that in a testing context the AssertionError is re-raised. This is because it's
+    much more helpful to know the specific assertion that failed, as it could be
+    something nested several levels deep.
+
+    Args:
+        *args:
+        **kwargs:
+
+    Returns:
+
+    """
+    do_raise = kwargs.pop('nested')
+
+    try:
+        _assert_equal(*args, **kwargs)
+    except AssertionError:
+        if do_raise or hasattr(brewtils.test, '_running_tests'):
+            raise
+        return False
+
+    return True
+
+
 # These are the 'simple' models - they don't have any nested models as fields
-assert_instance_equal = partial(_assert_equal, expected_type=Instance)
-assert_choices_equal = partial(_assert_equal, expected_type=Choices)
-assert_patch_equal = partial(_assert_equal, expected_type=PatchOperation)
-assert_logging_config_equal = partial(_assert_equal, expected_type=LoggingConfig)
-assert_event_equal = partial(_assert_equal, expected_type=Event)
-assert_queue_equal = partial(_assert_equal, expected_type=Queue)
-assert_request_template_equal = partial(_assert_equal, expected_type=RequestTemplate)
-assert_trigger_equal = partial(_assert_equal,
-                               expected_type=(CronTrigger, DateTrigger, IntervalTrigger))
+assert_instance_equal = partial(
+    _assert_wrapper, expected_type=Instance, nested=False,
+)
+assert_choices_equal = partial(
+    _assert_wrapper, expected_type=Choices, nested=False,
+)
+assert_patch_equal = partial(
+    _assert_wrapper, expected_type=PatchOperation, nested=False,
+)
+assert_logging_config_equal = partial(
+    _assert_wrapper, expected_type=LoggingConfig, nested=False,
+)
+assert_event_equal = partial(
+    _assert_wrapper, expected_type=Event, nested=False,
+)
+assert_queue_equal = partial(
+    _assert_wrapper, expected_type=Queue, nested=False,
+)
+assert_request_template_equal = partial(
+    _assert_wrapper, expected_type=RequestTemplate, nested=False,
+)
+assert_trigger_equal = partial(
+    _assert_wrapper,
+    expected_type=(CronTrigger, DateTrigger, IntervalTrigger),
+    nested=False,
+)
 
 
-def assert_command_equal(obj1, obj2):
+def assert_command_equal(obj1, obj2, nested=False):
 
     # Command's system field only serializes the system's id
     def compare_system(sys1, sys2):
         assert sys1.id == sys2.id
 
-    _assert_equal(obj1, obj2,
-                  expected_type=Command,
-                  deep_fields={
-                      'parameters': assert_parameter_equal,
-                      'system': compare_system,
-                  })
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=Command,
+        deep_fields={
+            'parameters': partial(assert_parameter_equal, nested=True),
+            'system': compare_system,
+        },
+        nested=nested,
+    )
 
 
-def assert_parameter_equal(obj1, obj2):
-    _assert_equal(obj1, obj2,
-                  expected_type=Parameter,
-                  deep_fields={
-                      'parameters': assert_parameter_equal,
-                      'choices': assert_choices_equal,
-                  })
+def assert_parameter_equal(obj1, obj2, nested=False):
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=Parameter,
+        deep_fields={
+            'parameters': partial(assert_parameter_equal, nested=True),
+            'choices': partial(assert_choices_equal, nested=True),
+        },
+        nested=nested,
+    )
 
 
-def assert_principal_equal(obj1, obj2):
-    _assert_equal(obj1, obj2,
-                  expected_type=Principal,
-                  deep_fields={'roles': assert_role_equal})
+def assert_principal_equal(obj1, obj2, nested=False):
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=Principal,
+        deep_fields={
+            'roles': partial(assert_role_equal, nested=True),
+        },
+        nested=nested,
+    )
 
 
-def assert_request_equal(obj1, obj2):
+def assert_request_equal(obj1, obj2, nested=False):
     """Assert that two requests are 'equal'.
 
     This is the most complicated due to how we serialize parent and children
@@ -119,49 +202,67 @@ def assert_request_equal(obj1, obj2):
 
     # Parent requests will not serialize their children since that's a loop
     def compare_parent(req1, req2):
-        _assert_equal(req1, req2,
-                      expected_type=Request,
-                      deep_fields={
-                          'children': assert_all_none,
-                      })
+        _assert_wrapper(
+            req1, req2,
+            expected_type=Request,
+            deep_fields={
+                'children': assert_all_none,
+            },
+            nested=True,
+        )
 
     # Child requests will not serialize their parent since that's also a loop
     # They also don't serialize their children for performance reasons
     def compare_child(req1, req2):
-        _assert_equal(req1, req2,
-                      expected_type=Request,
-                      deep_fields={
-                          'children': assert_all_none,
-                          'parent': assert_all_none,
-                      })
+        _assert_wrapper(
+            req1, req2,
+            expected_type=Request,
+            deep_fields={
+                'children': assert_all_none,
+                'parent': assert_all_none,
+            },
+            nested=True,
+        )
 
-    _assert_equal(obj1, obj2,
-                  expected_type=Request,
-                  deep_fields={
-                      'children': compare_child,
-                      'parent': compare_parent,
-                  })
-
-
-def assert_role_equal(obj1, obj2):
-    _assert_equal(obj1, obj2,
-                  expected_type=Role,
-                  deep_fields={'roles': assert_role_equal})
-
-
-def assert_system_equal(obj1, obj2):
-    _assert_equal(obj1, obj2,
-                  expected_type=System,
-                  deep_fields={
-                      'commands': assert_command_equal,
-                      'instances': assert_instance_equal,
-                  })
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=Request,
+        deep_fields={
+            'children': compare_child,
+            'parent': compare_parent,
+        },
+        nested=nested,
+    )
 
 
-def assert_job_equal(obj1, obj2):
-    _assert_equal(obj1, obj2,
-                  expected_type=Job,
-                  deep_fields={
-                      'trigger': assert_trigger_equal,
-                      'request_template': assert_request_template_equal,
-                  })
+def assert_role_equal(obj1, obj2, nested=False):
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=Role,
+        deep_fields={'roles': partial(assert_role_equal, nested=True)},
+        nested=nested,
+    )
+
+
+def assert_system_equal(obj1, obj2, nested=False):
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=System,
+        deep_fields={
+            'commands': partial(assert_command_equal, nested=True),
+            'instances': partial(assert_instance_equal, nested=True),
+        },
+        nested=nested,
+    )
+
+
+def assert_job_equal(obj1, obj2, nested=False):
+    return _assert_wrapper(
+        obj1, obj2,
+        expected_type=Job,
+        deep_fields={
+            'trigger': partial(assert_trigger_equal, nested=True),
+            'request_template': partial(assert_request_template_equal, nested=True),
+        },
+        nested=nested,
+    )

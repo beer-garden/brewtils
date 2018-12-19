@@ -34,6 +34,18 @@ __all__ = [
 ]
 
 
+def _assert(condition, message):
+    """Helper to ensure AssertionError is always raised.
+
+    If assertions are disabled (python -O) then using these assertions in production
+    would result in them always returning True, which is Very Bad.
+
+    Using this wrapper here prevents that.
+    """
+    if not condition:
+        raise AssertionError(message)
+
+
 def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
     """Assert that two objects are equal.
 
@@ -56,18 +68,20 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
     deep_fields = deep_fields or {}
 
     if expected_type is not None:
-        assert isinstance(obj1, expected_type), "obj1 was not an %s" % expected_type
-        assert isinstance(obj2, expected_type), "obj2 was not an %s" % expected_type
-    assert type(obj1) is type(obj2), "obj1 and obj2 are not the same type."
+        _assert(isinstance(obj1, expected_type), "obj1 was not an {0}".format(expected_type))
+        _assert(isinstance(obj2, expected_type), "obj2 was not an {0}".format(expected_type))
+    _assert(type(obj1) is type(obj2), "obj1 and obj2 are not the same type.")
 
     for key in obj1.__dict__.keys():
-        assert hasattr(obj1, key), "obj1 does not have an attribute '%s'" % key
-        assert hasattr(obj2, key), "obj2 does not have an attribute '%s'" % key
+        _assert(hasattr(obj1, key), "obj1 does not have an attribute '%s'" % key)
+        _assert(hasattr(obj2, key), "obj2 does not have an attribute '%s'" % key)
 
         if key not in deep_fields.keys():
-            assert getattr(obj1, key) == getattr(obj2, key), \
-                "%s was not the same (%s, %s)" % \
-                (key, getattr(obj1, key), getattr(obj2, key))
+            _assert(
+                getattr(obj1, key) == getattr(obj2, key),
+                "%s was not the same (%s, %s)" %
+                (key, getattr(obj1, key), getattr(obj2, key)),
+            )
         else:
             nested1 = getattr(obj1, key)
             nested2 = getattr(obj2, key)
@@ -75,8 +89,10 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
             if isinstance(nested1, list) and isinstance(nested2, list):
                 l1 = sorted(getattr(obj1, key))
                 l2 = sorted(getattr(obj2, key))
-                assert len(l1) == len(l2), \
-                    "Length of list field %s was different" % key
+                _assert(
+                    len(l1) == len(l2),
+                    "Length of list field %s was different" % key,
+                )
 
                 for item1, item2 in zip(l1, l2):
                     deep_fields[key](item1, item2)
@@ -143,7 +159,7 @@ def assert_command_equal(obj1, obj2, do_raise=False):
 
     # Command's system field only serializes the system's id
     def compare_system(sys1, sys2):
-        assert sys1.id == sys2.id, "System IDs were not equal"
+        _assert(sys1.id == sys2.id, "System IDs were not equal")
 
     return _assert_wrapper(
         obj1, obj2,
@@ -194,7 +210,7 @@ def assert_request_equal(obj1, obj2, do_raise=False):
     """
     def assert_all_none(*args):
         for arg in args:
-            assert arg is None
+            _assert(arg is None, "")
 
     # Parent requests will not serialize their children since that's a loop
     def compare_parent(req1, req2):

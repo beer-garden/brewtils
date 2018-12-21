@@ -231,7 +231,7 @@ def parent_request_dict(ts_epoch):
         'system_version': '1.0.0',
         'instance_name': 'default',
         'command': 'say',
-        'id': '58542eb571afd47ead90d25f',
+        'id': '58542eb571afd47ead90d25d',
         'parent': None,
         'parameters': {},
         'comment': 'bye!',
@@ -382,12 +382,12 @@ def bg_logging_config(logging_config_dict):
 
 
 @pytest.fixture
-def event_dict(ts_epoch):
+def event_dict(ts_epoch, request_dict):
     """An event represented as a dictionary."""
     return {
         'name': 'REQUEST_CREATED',
         'error': False,
-        'payload': {'id': '58542eb571afd47ead90d25e'},
+        'payload': {'id': request_dict['id']},
         'metadata': {'extra': 'info'},
         'timestamp': ts_epoch,
     }
@@ -424,7 +424,7 @@ def bg_queue(queue_dict):
 @pytest.fixture
 def principal_dict(role_dict):
     return {
-        'id': '58542eb571afd47ead90d25f',
+        'id': '58542eb571afd47ead90d24f',
         'username': 'admin',
         'roles': [role_dict],
         'permissions': ['bg-all'],
@@ -478,7 +478,7 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
     """A date job represented as a dictionary."""
     return {
         'name': 'job_name',
-        'id': 'job_id',
+        'id': '58542eb571afd47ead90d26a',
         'trigger_type': 'date',
         'trigger': date_trigger_dict,
         'request_template': request_template_dict,

@@ -9,7 +9,7 @@ from brewtils.decorators import (
     system, command, parameter, parameters, _resolve_display_modifiers)
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
-from test.utils.comparable import assert_parameter_equal
+from brewtils.test.comparable import assert_parameter_equal
 
 
 @pytest.fixture

@@ -482,7 +482,8 @@ class RestClient(object):
             Response object
         """
         refresh_token = refresh_token or self.refresh_token
-        response = self.session.get(self.token_url + refresh_token)
+        body = {"refresh_id": refresh_token}
+        response = self.session.get(self.token_url, data=body)
 
         if response.ok:
             response_data = response.json()

@@ -267,7 +267,9 @@ class TestRestClient(object):
         session_mock.get.return_value = response
 
         client.refresh(refresh_token="refresh")
-        session_mock.get.assert_called_with(client.token_url + "refresh")
+        session_mock.get.assert_called_with(
+            client.token_url, data={"refresh_id": "refresh"}
+        )
         assert client.access_token == "new_token"
 
     def test_session_client_cert(self):

@@ -148,8 +148,23 @@ def instance_dict(ts_epoch):
         'icon_name': 'icon!',
         'queue_type': 'rabbitmq',
         'queue_info': {
-            'queue': 'abc[default]-0.0.1',
-            'url': 'amqp://guest:guest@localhost:5672'
+            'admin': {
+                'name': 'admin.abc.0-0-1.default.ai39fk0ji4',
+                'args': {},
+            },
+            'request': {
+                'name': 'abc.0-0-1.default',
+                'args': {},
+            },
+            'connection': {
+                'host': 'localhost',
+                'port': 5672,
+                'user': 'guest',
+                'password': 'guest',
+                'virtual_host': '/',
+                'ssl': {'enabled': False},
+            },
+            'url': 'amqp://guest:guest@localhost:5672',
         },
         'status_info': {'heartbeat': ts_epoch},
         'metadata': {},

@@ -86,10 +86,11 @@ class TestPluginInit(object):
         assert expected_unique == plugin.unique_name
 
     def test_init_defaults(self, plugin):
-        assert logging.getLogger('brewtils.plugin') == plugin.logger
-        assert 'default' == plugin.instance_name
-        assert 'localhost' == plugin.bg_host
-        assert 2337 == plugin.bg_port
+        assert plugin.logger == logging.getLogger('brewtils.plugin')
+        assert plugin.instance_name == 'default'
+        assert plugin.bg_host == 'localhost'
+        assert plugin.bg_port == 2337
+        assert plugin.bg_url_prefix == '/'
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
 
@@ -116,33 +117,41 @@ class TestPluginInit(object):
 
         plugin = Plugin(
             client,
-            bg_host='localhost',
+            bg_host='host1',
+            bg_port=2338,
+            bg_url_prefix='/beer/',
             system=bg_system,
             ssl_enabled=False,
             ca_verify=False,
             logger=logger,
         )
 
+        assert plugin.bg_host == 'host1'
+        assert plugin.bg_port == 2338
+        assert plugin.bg_url_prefix == '/beer/'
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
-        assert logger == plugin.logger
+        assert plugin.logger == logger
 
     def test_init_env(self, bg_system):
         os.environ['BG_HOST'] = 'remotehost'
         os.environ['BG_PORT'] = '7332'
+        os.environ['BG_URL_PREFIX'] = '/beer/'
         os.environ['BG_SSL_ENABLED'] = 'False'
         os.environ['BG_CA_VERIFY'] = 'False'
 
         plugin = Plugin(client, system=bg_system)
 
-        assert 'remotehost' == plugin.bg_host
-        assert 7332 == plugin.bg_port
+        assert plugin.bg_host == 'remotehost'
+        assert plugin.bg_port == 7332
+        assert plugin.bg_url_prefix == '/beer/'
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
 
     def test_init_conflicts(self, bg_system):
         os.environ['BG_HOST'] = 'remotehost'
         os.environ['BG_PORT'] = '7332'
+        os.environ['BG_URL_PREFIX'] = '/tea/'
         os.environ['BG_SSL_ENABLED'] = 'False'
         os.environ['BG_CA_VERIFY'] = 'False'
 
@@ -150,13 +159,15 @@ class TestPluginInit(object):
             client,
             bg_host='localhost',
             bg_port=2337,
+            bg_url_prefix='/beer/',
             system=bg_system,
             ssl_enabled=True,
             ca_verify=True,
         )
 
-        assert 'localhost' == plugin.bg_host
-        assert 2337 == plugin.bg_port
+        assert plugin.bg_host == 'localhost'
+        assert plugin.bg_port == 2337
+        assert plugin.bg_url_prefix == '/beer/'
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
 

@@ -1,282 +1,339 @@
 # -*- coding: utf-8 -*-
 
-import unittest
 from concurrent.futures import Future
 
-from mock import Mock, patch
+import pytest
+from mock import Mock, MagicMock
 from pika.exceptions import AMQPConnectionError
 
+import brewtils.request_consumer
 from brewtils.errors import DiscardMessageException, RepublishRequestException
 from brewtils.request_consumer import RequestConsumer
 
 
-class RequestConsumerTest(unittest.TestCase):
+@pytest.fixture
+def callback_future():
+    return Future()
 
-    def setUp(self):
-        pika_patcher = patch('brewtils.request_consumer.pika')
-        self.addCleanup(pika_patcher.stop)
-        self.pika_patch = pika_patcher.start()
 
-        self.callback_future = Future()
-        self.callback = Mock(return_value=self.callback_future)
-        self.panic_event = Mock()
-        self.consumer = RequestConsumer('url', 'queue', self.callback, self.panic_event)
+@pytest.fixture
+def callback(callback_future):
+    return Mock(return_value=callback_future)
 
-    @patch('brewtils.request_consumer.RequestConsumer.open_connection')
-    def test_run(self, open_mock):
-        fake_connection = Mock()
-        open_mock.return_value = fake_connection
 
-        self.consumer.run()
-        self.assertEqual(self.consumer._connection, fake_connection)
-        open_mock.assert_called_once_with()
-        fake_connection.ioloop.start.assert_called_once_with()
+@pytest.fixture
+def panic_event():
+    return Mock()
 
-    @patch('brewtils.request_consumer.RequestConsumer.close_channel')
-    def test_stop(self, close_mock):
-        self.consumer.stop()
-        self.assertTrue(self.consumer.shutdown_event.is_set())
-        self.assertTrue(close_mock.called)
 
-    @patch('brewtils.request_consumer.RequestConsumer.on_message_callback_complete')
-    def test_on_message(self, callback_complete_mock):
-        fake_message = Mock()
+@pytest.fixture
+def channel():
+    return Mock()
 
-        props = Mock(headers='headers')
-        self.consumer.on_message(Mock(), Mock(delivery_tag='tag'), props, fake_message)
-        self.callback.assert_called_with(fake_message.decode(), 'headers')
 
-        self.callback_future.set_result(None)
-        self.assertTrue(callback_complete_mock.called)
+@pytest.fixture()
+def connection():
+    return Mock()
 
-    @patch('brewtils.request_consumer.RequestConsumer.on_message_callback_complete')
-    def test_on_message_string(self, callback_complete_mock):
-        fake_message = Mock()
-        fake_message.decode.side_effect = AttributeError
 
-        props = Mock(headers='headers')
-        self.consumer.on_message(Mock(), Mock(delivery_tag='tag'), props, fake_message)
-        self.callback.assert_called_with(fake_message, 'headers')
+@pytest.fixture()
+def reconnection():
+    return Mock()
 
-        self.callback_future.set_result(None)
-        self.assertTrue(callback_complete_mock.called)
 
-    def test_on_message_discard(self):
+@pytest.fixture()
+def select_mock(connection, reconnection):
+    return Mock(side_effect=[connection, reconnection])
+
+
+@pytest.fixture
+def consumer(monkeypatch, connection, channel, callback, panic_event, select_mock):
+    monkeypatch.setattr(brewtils.request_consumer, 'SelectConnection', select_mock)
+
+    consumer = RequestConsumer(
+        thread_name='Request Consumer',
+        connection_info={
+            'host': 'localhost',
+            'port': 5672,
+            'user': 'guest',
+            'password': 'guest',
+            'virtual_host': '/',
+            'ssl': {
+                'enabled': False,
+                'ca_cert': None,
+                'ca_verify': True,
+                'client_cert': None,
+            },
+        },
+        amqp_url='amqp://guest:guest@localhost:5672/',
+        queue_name='echo.1-0-0-dev0.default',
+        on_message_callback=callback,
+        panic_event=panic_event,
+        max_concurrent=1,
+    )
+    consumer._channel = channel
+    return consumer
+
+
+class TestRequestConsumer(object):
+
+    def test_run(self, consumer, connection):
+        consumer.run()
+
+        assert consumer._connection == connection
+        assert connection.ioloop.start.called is True
+
+    def test_stop(self, consumer):
         channel_mock = Mock()
-        basic_deliver_mock = Mock()
-        self.consumer._channel = channel_mock
-        self.callback.side_effect = DiscardMessageException
+        consumer._channel = channel_mock
 
-        self.consumer.on_message(Mock(), basic_deliver_mock, Mock(), Mock())
-        channel_mock.basic_nack.assert_called_once_with(basic_deliver_mock.delivery_tag,
-                                                        requeue=False)
+        consumer.stop()
+        assert consumer.shutdown_event.is_set() is True
+        assert channel_mock.close.called is True
 
-    def test_on_message_unknown_exception(self):
-        channel_mock = Mock()
-        basic_deliver_mock = Mock()
-        self.consumer._channel = channel_mock
-        self.callback.side_effect = ValueError
+    @pytest.mark.parametrize("body,cb_arg", [
+        ('message', 'message'),
+        (b'message', 'message'),
+    ])
+    def test_on_message(self, consumer, callback, callback_future, body, cb_arg):
+        properties = Mock()
+        callback_complete = Mock()
 
-        self.consumer.on_message(Mock(), basic_deliver_mock, Mock(), Mock())
-        channel_mock.basic_nack.assert_called_once_with(basic_deliver_mock.delivery_tag,
-                                                        requeue=True)
+        consumer.on_message_callback_complete = callback_complete
 
-    def test_on_message_callback_complete(self):
-        basic_deliver_mock = Mock()
-        channel_mock = Mock()
-        self.consumer._channel = channel_mock
+        consumer.on_message(Mock(), Mock(), properties, body)
+        callback.assert_called_with(cb_arg, properties.headers)
 
-        self.callback_future.set_result(None)
-        self.consumer.on_message_callback_complete(basic_deliver_mock, self.callback_future)
-        channel_mock.basic_ack.assert_called_once_with(basic_deliver_mock.delivery_tag)
+        callback_future.set_result(None)
+        assert callback_complete.called is True
 
-    def test_on_message_callback_complete_error_on_ack(self):
-        basic_deliver_mock = Mock()
-        channel_mock = Mock(basic_ack=Mock(side_effect=ValueError))
-        self.consumer._channel = channel_mock
+    @pytest.mark.parametrize("ex,requeue", [
+        (DiscardMessageException, False),
+        (ValueError, True),
+    ])
+    def test_on_message_exception(self, consumer, channel, callback, ex, requeue):
+        basic_deliver = Mock()
 
-        self.callback_future.set_result(None)
-        self.consumer.on_message_callback_complete(basic_deliver_mock, self.callback_future)
-        channel_mock.basic_ack.assert_called_once_with(basic_deliver_mock.delivery_tag)
-        self.assertTrue(self.panic_event.set.called)
+        callback.side_effect = ex
 
-    @patch('brewtils.request_consumer.BlockingConnection')
-    @patch('brewtils.request_consumer.SchemaParser')
-    def test_on_message_callback_complete_exception_republish(self, parser_mock, conn_mock):
-        basic_deliver_mock = Mock()
-        request_mock = Mock()
-        future_exception = RepublishRequestException(request_mock, {})
-
-        channel_mock = Mock()
-        self.consumer._channel = channel_mock
-        publish_channel_mock = Mock()
-        publish_connection_mock = Mock()
-        publish_connection_mock.channel.return_value = publish_channel_mock
-        conn_mock.return_value.__enter__.return_value = publish_connection_mock
-
-        self.callback_future.set_exception(future_exception)
-        self.consumer.on_message_callback_complete(basic_deliver_mock, self.callback_future)
-        publish_channel_mock.basic_publish.assert_called_once_with(
-            exchange=basic_deliver_mock.exchange,
-            properties=self.pika_patch.BasicProperties.return_value,
-            routing_key=basic_deliver_mock.routing_key,
-            body=parser_mock.serialize_request.return_value)
-        parser_mock.serialize_request.assert_called_once_with(request_mock)
-        channel_mock.basic_ack.assert_called_once_with(basic_deliver_mock.delivery_tag)
-
-    def test_on_message_callback_complete_exception_republish_failure(self):
-        self.pika_patch.BlockingConnection.side_effect = ValueError
-
-        self.callback_future.set_exception(RepublishRequestException(Mock(), {}))
-        self.consumer.on_message_callback_complete(Mock(), self.callback_future)
-        self.assertTrue(self.panic_event.set.called)
-
-    def test_on_message_callback_complete_exception_discard_message(self):
-        channel_mock = Mock()
-        self.consumer._channel = channel_mock
-        self.pika_patch.BlockingConnection.side_effect = ValueError
-
-        self.callback_future.set_exception(DiscardMessageException())
-        self.consumer.on_message_callback_complete(Mock(), self.callback_future)
-        self.assertFalse(self.panic_event.set.called)
-        self.assertTrue(channel_mock.basic_nack.called)
-
-    def test_on_message_callback_complete_unknown_exception(self):
-        self.callback_future.set_exception(ValueError())
-        self.consumer.on_message_callback_complete(Mock(), self.callback_future)
-        self.assertTrue(self.panic_event.set.called)
-
-    def test_open_connection(self):
-        ret_val = self.consumer.open_connection()
-        self.assertEqual(self.pika_patch.SelectConnection.return_value, ret_val)
-        self.pika_patch.URLParameters.assert_called_with('url')
-        self.pika_patch.SelectConnection.assert_called_with(
-            self.pika_patch.URLParameters.return_value,
-            self.consumer.on_connection_open,
-            stop_ioloop_on_close=False)
-
-    def test_open_connection_shutdown_is_set(self):
-        self.consumer.shutdown_event.set()
-        self.assertIsNone(self.consumer.open_connection())
-        self.assertFalse(self.pika_patch.SelectConnection.called)
-
-    def test_open_connection_error_raised_no_retries(self):
-        self.pika_patch.SelectConnection.side_effect = AMQPConnectionError
-        self.consumer._max_connect_retries = 0
-
-        self.assertRaises(AMQPConnectionError, self.consumer.open_connection)
-
-    def test_open_connection_retry(self):
-        self.pika_patch.SelectConnection.side_effect = [AMQPConnectionError, 'connection']
-        self.assertEqual('connection', self.consumer.open_connection())
-
-    @patch('brewtils.request_consumer.RequestConsumer.open_channel')
-    def test_on_connection_open(self, open_channel_mock):
-        self.consumer._connection = Mock()
-        self.consumer.on_connection_open(Mock())
-        self.consumer._connection.add_on_close_callback.assert_called_once_with(
-            self.consumer.on_connection_closed
-        )
-        open_channel_mock.assert_called_once_with()
-
-    def test_close_connection(self):
-        self.consumer._connection = Mock()
-        self.consumer.close_connection()
-        self.consumer._connection.close.assert_called_with()
-
-    def test_on_connection_closed_shutdown_set(self):
-        self.consumer._connection = Mock()
-        self.consumer._channel = "not none"
-        self.consumer.shutdown_event.set()
-        self.consumer.on_connection_closed(Mock(), 200, 'text')
-        self.consumer._connection.ioloop.stop.assert_called_with()
-
-    def test_on_connection_closed_shutdown_unset(self):
-        self.consumer._connection = Mock()
-        self.consumer._channel = "not none"
-        self.consumer.on_connection_closed(Mock(), 200, 'text')
-        self.consumer._connection.add_timeout.assert_called_with(5, self.consumer.reconnect)
-
-    def test_on_connection_closed_by_server(self):
-        self.consumer._connection = Mock()
-        self.consumer._channel = "not none"
-        self.consumer.on_connection_closed(Mock(), 320, 'text')
-        self.consumer._connection.ioloop.stop.assert_called_with()
-
-    @patch('brewtils.request_consumer.RequestConsumer.open_connection')
-    def test_reconnect_shutting_down(self, open_mock):
-        self.consumer._connection = Mock()
-        self.consumer.shutdown_event.set()
-        self.consumer.reconnect()
-        self.consumer._connection.ioloop.stop.assert_called_with()
-        self.assertFalse(self.consumer._connection.ioloop.start.called)
-        self.assertFalse(open_mock.called)
-
-    @patch('brewtils.request_consumer.RequestConsumer.open_connection')
-    def test_reconnect_not_shutting_down(self, open_mock):
-        old_connection = Mock()
-        self.consumer._connection = old_connection
-        new_connection = Mock()
-        open_mock.return_value = new_connection
-
-        self.consumer.reconnect()
-        old_connection.ioloop.stop.assert_called_once_with()
-        open_mock.assert_called_once_with()
-        new_connection.ioloop.start.assert_called_once_with()
-
-    def test_open_channel(self):
-        self.consumer._connection = Mock()
-        self.consumer.open_channel()
-        self.consumer._connection.channel.assert_called_with(
-            on_open_callback=self.consumer.on_channel_open
+        consumer.on_message(Mock(), basic_deliver, Mock(), Mock())
+        channel.basic_nack.assert_called_once_with(
+            basic_deliver.delivery_tag, requeue=requeue
         )
 
-    @patch('brewtils.request_consumer.RequestConsumer.start_consuming')
-    def test_on_channel_open(self, start_consuming_mock):
-        self.consumer.add_on_channel_close_callback = Mock()
-        fake_channel = Mock()
 
-        self.consumer.on_channel_open(fake_channel)
-        self.assertEqual(self.consumer._channel, fake_channel)
-        fake_channel.add_on_close_callback.assert_called_with(self.consumer.on_channel_closed)
-        start_consuming_mock.assert_called_once_with()
+class TestCallbackComplete(object):
 
-    def test_close_channel(self):
-        self.consumer._channel = Mock()
-        self.consumer.close_channel()
-        self.consumer._channel.close.assert_called_with()
+    def test_success(self, consumer, channel, callback_future):
+        basic_deliver = Mock()
 
-    def test_on_channel_closed(self):
-        self.consumer._connection = Mock()
-        self.consumer.on_channel_closed(1, 200, 'text')
-        self.consumer._connection.close.assert_called_with()
+        callback_future.set_result(None)
+        consumer.on_message_callback_complete(basic_deliver, callback_future)
+        channel.basic_ack.assert_called_once_with(basic_deliver.delivery_tag)
 
-    def test_start_consuming(self):
-        self.consumer._channel = Mock()
-        self.consumer._channel.basic_consume = Mock(return_value='consumer_tag')
+    def test_ack_error(self, consumer, channel, callback_future, panic_event):
+        basic_deliver = Mock()
+        channel.basic_ack.side_effect = ValueError
 
-        self.consumer.start_consuming()
-        self.consumer._channel.add_on_cancel_callback.assert_called_with(
-            self.consumer.on_consumer_cancelled
+        callback_future.set_result(None)
+        consumer.on_message_callback_complete(basic_deliver, callback_future)
+        channel.basic_ack.assert_called_once_with(basic_deliver.delivery_tag)
+        assert panic_event.set.called is True
+
+    def test_republish(
+        self, monkeypatch, consumer, channel, callback_future, bg_request
+    ):
+        basic_deliver = Mock()
+
+        blocking_connection = MagicMock()
+        publish_channel = Mock()
+        publish_connection = MagicMock()
+        publish_connection.channel.return_value = publish_channel
+        blocking_connection.return_value.__enter__.return_value = publish_connection
+        monkeypatch.setattr(
+            brewtils.request_consumer,
+            'BlockingConnection',
+            blocking_connection,
         )
-        self.consumer._channel.basic_qos.assert_called_with(prefetch_count=1)
-        self.consumer._channel.basic_consume.assert_called_with(self.consumer.on_message,
-                                                                queue=self.consumer._queue_name)
-        self.assertEqual(self.consumer._consumer_tag, 'consumer_tag')
 
-    def test_stop_consuming(self):
-        self.consumer._channel = Mock()
-        self.consumer.stop_consuming()
-        self.consumer._channel.basic_cancel.assert_called_with(self.consumer.on_cancelok,
-                                                               self.consumer._consumer_tag)
+        callback_future.set_exception(RepublishRequestException(bg_request, {}))
 
-    @patch('brewtils.request_consumer.RequestConsumer.close_channel')
-    def test_on_consumer_cancelled(self, close_channel_mock):
-        self.consumer._channel = Mock()
-        self.consumer.on_consumer_cancelled('frame')
-        self.assertTrue(close_channel_mock.called)
+        consumer.on_message_callback_complete(basic_deliver, callback_future)
+        channel.basic_ack.assert_called_once_with(basic_deliver.delivery_tag)
+        assert publish_channel.basic_publish.called is True
 
-    @patch('brewtils.request_consumer.RequestConsumer.close_channel')
-    def test_on_cancelok(self, close_channel_mock):
-        self.consumer.on_cancelok('frame')
-        self.assertFalse(close_channel_mock.called)
+        publish_args = publish_channel.basic_publish.call_args[1]
+        assert publish_args['exchange'] == basic_deliver.exchange
+        assert publish_args['routing_key'] == basic_deliver.routing_key
+        assert bg_request.id in publish_args['body']
+
+        publish_props = publish_args['properties']
+        assert publish_props.app_id == 'beer-garden'
+        assert publish_props.content_type == 'text/plain'
+        assert publish_props.priority == 1
+        assert publish_props.headers['request_id'] == bg_request.id
+
+    def test_republish_failure(self, monkeypatch, consumer, callback_future, panic_event):
+        monkeypatch.setattr(
+            brewtils.request_consumer,
+            'BlockingConnection',
+            Mock(side_effect=ValueError),
+        )
+
+        callback_future.set_exception(RepublishRequestException(Mock(), {}))
+        consumer.on_message_callback_complete(Mock(), callback_future)
+        assert panic_event.set.called is True
+
+    def test_discard_message(self, consumer, channel, callback_future, panic_event):
+        callback_future.set_exception(DiscardMessageException())
+        consumer.on_message_callback_complete(Mock(), callback_future)
+        assert channel.basic_nack.called is True
+        assert panic_event.set.called is False
+
+    def test_unknown_exception(self, consumer, callback_future, panic_event):
+        callback_future.set_exception(ValueError())
+        consumer.on_message_callback_complete(Mock(), callback_future)
+        assert panic_event.set.called is True
+
+
+class TestOpenConnection(object):
+
+    def test_success(self, consumer, connection, select_mock):
+        assert consumer.open_connection() == connection
+        assert select_mock.called is True
+
+    def test_shutdown_set(self, consumer, select_mock):
+        consumer.shutdown_event.set()
+        assert consumer.open_connection() is None
+        assert select_mock.called is False
+
+    def test_retry(self, consumer, connection, select_mock):
+        select_mock.side_effect = [AMQPConnectionError, connection]
+        assert consumer.open_connection() == connection
+        assert select_mock.call_count == 2
+
+    def test_no_retries(self, consumer, connection, select_mock):
+        select_mock.side_effect = AMQPConnectionError
+        consumer._max_connect_retries = 0
+
+        with pytest.raises(AMQPConnectionError):
+            consumer.open_connection()
+
+
+def test_on_connection_open(consumer, connection):
+    consumer._connection = connection
+
+    consumer.on_connection_open(Mock())
+    connection.add_on_close_callback.assert_called_once_with(
+        consumer.on_connection_closed
+    )
+    assert connection.channel.called is True
+
+
+def test_close_connection(consumer, connection):
+    consumer._connection = connection
+
+    consumer.close_connection()
+    assert connection.close.called is True
+
+
+class TestOnConnectionClosed(object):
+
+    def test_shutdown_set(self, consumer, connection):
+        consumer._connection = connection
+        consumer.shutdown_event.set()
+
+        consumer.on_connection_closed(Mock(), 200, 'text')
+        assert connection.ioloop.stop.called is True
+        assert consumer._channel is None
+
+    def test_shutdown_unset(self, consumer, connection):
+        consumer._connection = connection
+
+        consumer.on_connection_closed(Mock(), 200, 'text')
+        connection.add_timeout.assert_called_with(5, consumer.reconnect)
+        assert connection.ioloop.stop.called is False
+        assert consumer._channel is None
+
+    def test_closed_by_server(self, consumer, connection):
+        consumer._connection = connection
+
+        consumer.on_connection_closed(Mock(), 320, 'text')
+        assert connection.ioloop.stop.called is True
+        assert consumer._channel is None
+
+
+def test_reconnect_not_shutting_down(consumer, connection, reconnection):
+    # Call run instead of just assigning so we get correct select_mock behavior
+    consumer.run()
+    assert consumer._connection == connection
+
+    consumer.reconnect()
+    assert consumer._connection == reconnection
+    assert connection.ioloop.stop.called is True
+    assert reconnection.ioloop.start.called is True
+
+
+def test_reconnect_shutting_down(consumer, connection, reconnection):
+    # Call run instead of just assigning so we get correct select_mock behavior
+    consumer.run()
+    assert consumer._connection == connection
+
+    consumer.shutdown_event.set()
+    consumer.reconnect()
+    assert consumer._connection != reconnection
+    assert connection.ioloop.stop.called is True
+    assert reconnection.ioloop.start.called is False
+
+
+def test_open_channel(consumer, connection):
+    consumer._connection = connection
+    consumer.open_channel()
+    connection.channel.assert_called_with(on_open_callback=consumer.on_channel_open)
+
+
+def test_on_channel_open(consumer):
+    fake_channel = Mock()
+
+    consumer.on_channel_open(fake_channel)
+    assert consumer._channel == fake_channel
+    fake_channel.add_on_close_callback.assert_called_with(consumer.on_channel_closed)
+
+
+def test_close_channel(consumer, channel):
+    consumer.close_channel()
+    assert channel.close.called is True
+
+
+def test_on_channel_closed(consumer, connection):
+    consumer._connection = connection
+    consumer.on_channel_closed(MagicMock(), 200, 'text')
+    assert connection.close.called is True
+
+
+def test_start_consuming(consumer, channel):
+    consumer.start_consuming()
+    channel.add_on_cancel_callback.assert_called_with(consumer.on_consumer_cancelled)
+    channel.basic_qos.assert_called_with(prefetch_count=1)
+    channel.basic_consume.assert_called_with(
+        consumer.on_message, queue=consumer._queue_name
+    )
+    assert consumer._consumer_tag == channel.basic_consume.return_value
+
+
+def test_stop_consuming(consumer, channel):
+    consumer_tag = Mock()
+    consumer._consumer_tag = consumer_tag
+
+    consumer.stop_consuming()
+    channel.basic_cancel.assert_called_with(consumer.on_cancelok, consumer_tag)
+
+
+def test_on_consumer_cancelled(consumer, channel):
+    consumer.on_consumer_cancelled(Mock())
+    assert channel.close.called is True
+
+
+def test_on_cancelok(consumer):
+    # This doesn't do anything, just make sure it doesn't raise I guess?
+    consumer.on_cancelok(Mock())

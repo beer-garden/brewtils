@@ -485,6 +485,11 @@ class RestClient(object):
         body = {"refresh_id": refresh_token}
         response = self.session.get(self.token_url, data=body)
 
+        # On older versions of the API (2.4.2 and below) the new refresh token
+        # is not available.
+        if response.status_code == 404:
+            response = self.session.get(self.token_url + refresh_token)
+
         if response.ok:
             response_data = response.json()
 

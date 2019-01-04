@@ -172,7 +172,6 @@ class TestPluginInit(object):
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
 
-    @pytest.mark.xfail
     def test_cli(self, client, bg_system):
         args = [
             '--bg-host', 'remotehost',

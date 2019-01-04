@@ -68,7 +68,7 @@ def plugin(client, bm_client, parser, bg_system, bg_instance):
 
 class TestPluginInit(object):
 
-    def test_init_no_bg_host(self, client):
+    def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
             Plugin(client)
 
@@ -85,7 +85,7 @@ class TestPluginInit(object):
 
         assert expected_unique == plugin.unique_name
 
-    def test_init_defaults(self, plugin):
+    def test_defaults(self, plugin):
         assert plugin.logger == logging.getLogger('brewtils.plugin')
         assert plugin.instance_name == 'default'
         assert plugin.bg_host == 'localhost'
@@ -94,7 +94,7 @@ class TestPluginInit(object):
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
 
-    def test_init_default_logger(self, monkeypatch, client):
+    def test_default_logger(self, monkeypatch, client):
         """Test that the default logging configuration is used.
 
         This needs to be tested separately because pytest (understandably) does some
@@ -112,7 +112,7 @@ class TestPluginInit(object):
         dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
         assert logging.getLogger('brewtils.plugin') == plugin.logger
 
-    def test_init_kwargs(self, bg_system):
+    def test_kwargs(self, client, bg_system):
         logger = Mock()
 
         plugin = Plugin(
@@ -133,7 +133,7 @@ class TestPluginInit(object):
         assert plugin.ca_verify is False
         assert plugin.logger == logger
 
-    def test_init_env(self, bg_system):
+    def test_env(self, client, bg_system):
         os.environ['BG_HOST'] = 'remotehost'
         os.environ['BG_PORT'] = '7332'
         os.environ['BG_URL_PREFIX'] = '/beer/'
@@ -148,7 +148,7 @@ class TestPluginInit(object):
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
 
-    def test_init_conflicts(self, bg_system):
+    def test_conflicts(self, client, bg_system):
         os.environ['BG_HOST'] = 'remotehost'
         os.environ['BG_PORT'] = '7332'
         os.environ['BG_URL_PREFIX'] = '/tea/'

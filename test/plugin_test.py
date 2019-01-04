@@ -11,6 +11,7 @@ import pytest
 from mock import MagicMock, Mock
 from requests import ConnectionError
 
+from brewtils import get_connection_info
 from brewtils.errors import (
     ValidationError, RequestProcessingError, DiscardMessageException,
     RepublishRequestException, PluginValidationError, RestClientError,
@@ -170,6 +171,24 @@ class TestPluginInit(object):
         assert plugin.bg_url_prefix == '/beer/'
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
+
+    @pytest.mark.xfail
+    def test_cli(self, client, bg_system):
+        args = [
+            '--bg-host', 'remotehost',
+            '--bg-port', '2338',
+            '--url-prefix', 'beer',
+            '--no-ssl-enabled',
+            '--no-ca-verify',
+        ]
+
+        plugin = Plugin(client, system=bg_system, **get_connection_info(cli_args=args))
+
+        assert plugin.bg_host == 'remotehost'
+        assert plugin.bg_port == 2338
+        assert plugin.bg_url_prefix == '/beer/'
+        assert plugin.ssl_enabled is False
+        assert plugin.ca_verify is False
 
 
 class TestPluginRun(object):

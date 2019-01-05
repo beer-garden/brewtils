@@ -328,7 +328,7 @@ class RequestConsumer(threading.Thread):
         """
         self.logger.debug(
             'Channel %i was closed: (%s) %s' %
-            (channel, reply_code, reply_text))
+            (int(channel), reply_code, reply_text))
         self._connection.close()
 
     def start_consuming(self):

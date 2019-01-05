@@ -481,8 +481,8 @@ class TestRole(object):
 @pytest.mark.parametrize('model,str_expected,repr_expected', [
     (
         lazy_fixture('bg_job'),
-        'job_name: job_id',
-        '<Job: name=job_name, id=job_id>'
+        'job_name: 58542eb571afd47ead90d26a',
+        '<Job: name=job_name, id=58542eb571afd47ead90d26a>'
     ),
     (
         lazy_fixture('bg_date_trigger'),

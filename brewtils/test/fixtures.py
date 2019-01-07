@@ -183,7 +183,7 @@ def bg_instance(instance_dict, ts_dt):
 def system_dict(instance_dict, command_dict, system_id):
     """A system represented as a dictionary."""
     return {
-        'name': 'name',
+        'name': 'system',
         'description': 'desc',
         'version': '1.0.0',
         'id': system_id,

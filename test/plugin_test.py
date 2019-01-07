@@ -73,8 +73,8 @@ class TestPluginInit(object):
             Plugin(client)
 
     @pytest.mark.parametrize('instance_name,expected_unique', [
-        (None, 'name[default]-1.0.0'),
-        ('unique', 'name[unique]-1.0.0'),
+        (None, 'system[default]-1.0.0'),
+        ('unique', 'system[unique]-1.0.0'),
     ])
     def test_init_with_instance_name_unique_name_check(
         self, client, bg_system, instance_name, expected_unique,
@@ -425,7 +425,7 @@ class TestPreProcess(object):
 
     @pytest.mark.parametrize("request_args", [
         # Normal case
-        {"system": "name", "system_version": "1.0.0", "command_type": "ACTION"},
+        {"system": "system", "system_version": "1.0.0", "command_type": "ACTION"},
 
         # Missing or ephemeral command types should succeed even with wrong names
         {"system": "wrong", "system_version": "1.0.0"},

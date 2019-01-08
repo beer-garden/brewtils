@@ -1,13 +1,17 @@
 language: python
 cache: pip
-sudo: required
-dist: xenial
 python:
-  - 3.7
-  - 3.6
-  - 3.5
-  - 3.4
   - 2.7
+  - 3.4
+  - 3.5
+  - 3.6
+# 3.7 requires xenial & sudo
+# Using matrix means we don't require for all versions
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+      sudo: true
 
 stages:
   - lint

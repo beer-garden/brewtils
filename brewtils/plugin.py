@@ -176,7 +176,7 @@ class Plugin(object):
             ssl_enabled=ssl_enabled,
             ca_cert=ca_cert,
             client_cert=client_cert,
-            url_prefix=bg_url_prefix,
+            url_prefix=bg_url_prefix or kwargs.get('url_prefix', None),
             ca_verify=kwargs.get('ca_verify', None),
             username=kwargs.get('username', None),
             password=kwargs.get('password', None),

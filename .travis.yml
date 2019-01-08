@@ -17,7 +17,7 @@ stages:
 jobs:
   include:
     - stage: lint
-      install: "pip install flake8"
+      install: "pip install flake8==3.5.0"
       script: "make lint"
     - stage: test
       install: "make deps"

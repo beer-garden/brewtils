@@ -66,7 +66,7 @@ class PikaClient(object):
 
         Will construct a ``ConnectionParameters`` object using parameters
         passed at initialization as defaults. Any parameters passed in
-        \*\*kwargs will override initialization parameters.
+        kwargs will override initialization parameters.
 
         Args:
             **kwargs: Overrides for specific parameters

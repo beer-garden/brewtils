@@ -1,6 +1,16 @@
 Brewtils Changelog
 ==================
 
+2.4.4
+-----
+Date: 1/7/19
+
+Bug Fixes
+^^^^^^^^^
+- RabbitMQ connections now deal with blocked connections (beer-garden/#203)
+- Plugin will use url_prefix kwarg if bg_url_prefix not given (beer-garden/#186)
+- Always respecting parameter choices definition changes (beer-garden/#58)
+
 2.4.3
 -----
 Date: 11/16/18

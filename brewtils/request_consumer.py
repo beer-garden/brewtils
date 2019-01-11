@@ -4,8 +4,7 @@ import logging
 import threading
 from functools import partial
 
-import pika
-from pika import BlockingConnection
+from pika import BlockingConnection, URLParameters, BasicProperties, SelectConnection
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
@@ -68,7 +67,7 @@ class RequestConsumer(threading.Thread):
             pika_base = PikaClient(**kwargs['connection_info'])
             self._connection_parameters = pika_base.connection_parameters()
         else:
-            self._connection_parameters = pika.URLParameters(amqp_url)
+            self._connection_parameters = URLParameters(amqp_url)
 
         super(RequestConsumer, self).__init__(name=thread_name)
 
@@ -168,7 +167,7 @@ class RequestConsumer(threading.Thread):
                     with BlockingConnection(self._connection_parameters) as c:
                         headers = real_ex.headers
                         headers.update({'request_id': real_ex.request.id})
-                        props = pika.BasicProperties(
+                        props = BasicProperties(
                             app_id='beer-garden',
                             content_type='text/plain',
                             headers=headers,
@@ -211,7 +210,7 @@ class RequestConsumer(threading.Thread):
         retries = 0
         while not self.shutdown_event.is_set():
             try:
-                return pika.SelectConnection(
+                return SelectConnection(
                     self._connection_parameters,
                     self.on_connection_open,
                     stop_ioloop_on_close=False)
@@ -329,7 +328,7 @@ class RequestConsumer(threading.Thread):
         """
         self.logger.debug(
             'Channel %i was closed: (%s) %s' %
-            (channel, reply_code, reply_text))
+            (int(channel), reply_code, reply_text))
         self._connection.close()
 
     def start_consuming(self):

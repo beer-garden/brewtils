@@ -16,7 +16,7 @@ except ImportError:
     LexError = ParseError
 
 
-choices_grammar = """
+choices_grammar = r"""
     func: CNAME [func_args]
     url: ADDRESS [url_args]
     reference: ref

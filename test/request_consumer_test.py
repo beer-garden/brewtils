@@ -48,25 +48,25 @@ def select_mock(connection, reconnection):
 
 @pytest.fixture
 def consumer(monkeypatch, connection, channel, callback, panic_event, select_mock):
-    monkeypatch.setattr(brewtils.request_consumer, 'SelectConnection', select_mock)
+    monkeypatch.setattr(brewtils.request_consumer, "SelectConnection", select_mock)
 
     consumer = RequestConsumer(
-        thread_name='Request Consumer',
+        thread_name="Request Consumer",
         connection_info={
-            'host': 'localhost',
-            'port': 5672,
-            'user': 'guest',
-            'password': 'guest',
-            'virtual_host': '/',
-            'ssl': {
-                'enabled': False,
-                'ca_cert': None,
-                'ca_verify': True,
-                'client_cert': None,
+            "host": "localhost",
+            "port": 5672,
+            "user": "guest",
+            "password": "guest",
+            "virtual_host": "/",
+            "ssl": {
+                "enabled": False,
+                "ca_cert": None,
+                "ca_verify": True,
+                "client_cert": None,
             },
         },
-        amqp_url='amqp://guest:guest@localhost:5672/',
-        queue_name='echo.1-0-0-dev0.default',
+        amqp_url="amqp://guest:guest@localhost:5672/",
+        queue_name="echo.1-0-0-dev0.default",
         on_message_callback=callback,
         panic_event=panic_event,
         max_concurrent=1,
@@ -76,7 +76,6 @@ def consumer(monkeypatch, connection, channel, callback, panic_event, select_moc
 
 
 class TestRequestConsumer(object):
-
     def test_run(self, consumer, connection):
         consumer.run()
 
@@ -91,10 +90,9 @@ class TestRequestConsumer(object):
         assert consumer.shutdown_event.is_set() is True
         assert channel_mock.close.called is True
 
-    @pytest.mark.parametrize("body,cb_arg", [
-        ('message', 'message'),
-        (b'message', 'message'),
-    ])
+    @pytest.mark.parametrize(
+        "body,cb_arg", [("message", "message"), (b"message", "message")]
+    )
     def test_on_message(self, consumer, callback, callback_future, body, cb_arg):
         properties = Mock()
         callback_complete = Mock()
@@ -107,10 +105,9 @@ class TestRequestConsumer(object):
         callback_future.set_result(None)
         assert callback_complete.called is True
 
-    @pytest.mark.parametrize("ex,requeue", [
-        (DiscardMessageException, False),
-        (ValueError, True),
-    ])
+    @pytest.mark.parametrize(
+        "ex,requeue", [(DiscardMessageException, False), (ValueError, True)]
+    )
     def test_on_message_exception(self, consumer, channel, callback, ex, requeue):
         basic_deliver = Mock()
 
@@ -123,7 +120,6 @@ class TestRequestConsumer(object):
 
 
 class TestCallbackComplete(object):
-
     def test_success(self, consumer, channel, callback_future):
         basic_deliver = Mock()
 
@@ -151,9 +147,7 @@ class TestCallbackComplete(object):
         publish_connection.channel.return_value = publish_channel
         blocking_connection.return_value.__enter__.return_value = publish_connection
         monkeypatch.setattr(
-            brewtils.request_consumer,
-            'BlockingConnection',
-            blocking_connection,
+            brewtils.request_consumer, "BlockingConnection", blocking_connection
         )
 
         callback_future.set_exception(RepublishRequestException(bg_request, {}))
@@ -163,20 +157,22 @@ class TestCallbackComplete(object):
         assert publish_channel.basic_publish.called is True
 
         publish_args = publish_channel.basic_publish.call_args[1]
-        assert publish_args['exchange'] == basic_deliver.exchange
-        assert publish_args['routing_key'] == basic_deliver.routing_key
-        assert bg_request.id in publish_args['body']
+        assert publish_args["exchange"] == basic_deliver.exchange
+        assert publish_args["routing_key"] == basic_deliver.routing_key
+        assert bg_request.id in publish_args["body"]
 
-        publish_props = publish_args['properties']
-        assert publish_props.app_id == 'beer-garden'
-        assert publish_props.content_type == 'text/plain'
+        publish_props = publish_args["properties"]
+        assert publish_props.app_id == "beer-garden"
+        assert publish_props.content_type == "text/plain"
         assert publish_props.priority == 1
-        assert publish_props.headers['request_id'] == bg_request.id
+        assert publish_props.headers["request_id"] == bg_request.id
 
-    def test_republish_failure(self, monkeypatch, consumer, callback_future, panic_event):
+    def test_republish_failure(
+        self, monkeypatch, consumer, callback_future, panic_event
+    ):
         monkeypatch.setattr(
             brewtils.request_consumer,
-            'BlockingConnection',
+            "BlockingConnection",
             Mock(side_effect=ValueError),
         )
 
@@ -197,7 +193,6 @@ class TestCallbackComplete(object):
 
 
 class TestOpenConnection(object):
-
     def test_success(self, consumer, connection, select_mock):
         assert consumer.open_connection() == connection
         assert select_mock.called is True
@@ -238,19 +233,18 @@ def test_close_connection(consumer, connection):
 
 
 class TestOnConnectionClosed(object):
-
     def test_shutdown_set(self, consumer, connection):
         consumer._connection = connection
         consumer.shutdown_event.set()
 
-        consumer.on_connection_closed(Mock(), 200, 'text')
+        consumer.on_connection_closed(Mock(), 200, "text")
         assert connection.ioloop.stop.called is True
         assert consumer._channel is None
 
     def test_shutdown_unset(self, consumer, connection):
         consumer._connection = connection
 
-        consumer.on_connection_closed(Mock(), 200, 'text')
+        consumer.on_connection_closed(Mock(), 200, "text")
         connection.add_timeout.assert_called_with(5, consumer.reconnect)
         assert connection.ioloop.stop.called is False
         assert consumer._channel is None
@@ -258,7 +252,7 @@ class TestOnConnectionClosed(object):
     def test_closed_by_server(self, consumer, connection):
         consumer._connection = connection
 
-        consumer.on_connection_closed(Mock(), 320, 'text')
+        consumer.on_connection_closed(Mock(), 320, "text")
         assert connection.ioloop.stop.called is True
         assert consumer._channel is None
 
@@ -307,7 +301,7 @@ def test_close_channel(consumer, channel):
 
 def test_on_channel_closed(consumer, connection):
     consumer._connection = connection
-    consumer.on_channel_closed(MagicMock(), 200, 'text')
+    consumer.on_channel_closed(MagicMock(), 200, "text")
     assert connection.close.called is True
 
 

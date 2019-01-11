@@ -23,19 +23,19 @@ def normalize_url_prefix(url_prefix):
     Returns:
         str: The normalized prefix
     """
-    if url_prefix in (None, '/', ''):
-        return '/'
+    if url_prefix in (None, "/", ""):
+        return "/"
 
     new_url_prefix = ""
 
     # Make string begin with /
     if not url_prefix.startswith("/"):
-        new_url_prefix += '/'
+        new_url_prefix += "/"
 
     new_url_prefix += url_prefix
 
     # Make string end with /
     if not url_prefix.endswith("/"):
-        new_url_prefix += '/'
+        new_url_prefix += "/"
 
     return new_url_prefix

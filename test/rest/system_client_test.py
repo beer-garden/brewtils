@@ -8,73 +8,82 @@ from mock import call, Mock, PropertyMock
 from pytest_lazyfixture import lazy_fixture
 
 import brewtils.rest
-from brewtils.errors import (FetchError, RequestFailedError,
-                             TimeoutExceededError, ValidationError)
+from brewtils.errors import (
+    FetchError,
+    RequestFailedError,
+    TimeoutExceededError,
+    ValidationError,
+)
 from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
 
 
 class TestSystemClient(object):
-
     @pytest.fixture
     def command_1(self):
         mock = Mock()
-        type(mock).name = PropertyMock(return_value='command_1')
+        type(mock).name = PropertyMock(return_value="command_1")
         return mock
 
     @pytest.fixture
     def command_2(self):
         mock = Mock()
-        type(mock).name = PropertyMock(return_value='command_2')
+        type(mock).name = PropertyMock(return_value="command_2")
         return mock
 
     @pytest.fixture
     def system_1(self, command_1, command_2):
-        mock = Mock(version='1.0.0', instance_names=[u'default'],
-                    commands=[command_1, command_2])
-        type(mock).name = PropertyMock(return_value='system')
+        mock = Mock(
+            version="1.0.0",
+            instance_names=[u"default"],
+            commands=[command_1, command_2],
+        )
+        type(mock).name = PropertyMock(return_value="system")
         return mock
 
     @pytest.fixture
     def system_2(self, command_1, command_2):
-        mock = Mock(version='2.0.0', instance_names=[u'default'],
-                    commands=[command_1, command_2])
-        type(mock).name = PropertyMock(return_value='system')
+        mock = Mock(
+            version="2.0.0",
+            instance_names=[u"default"],
+            commands=[command_1, command_2],
+        )
+        type(mock).name = PropertyMock(return_value="system")
         return mock
 
     @pytest.fixture
     def mock_in_progress(self):
-        return Mock(status='IN PROGRESS', output='output')
+        return Mock(status="IN PROGRESS", output="output")
 
     @pytest.fixture
     def mock_success(self):
-        return Mock(status='SUCCESS', output='output')
+        return Mock(status="SUCCESS", output="output")
 
     @pytest.fixture
     def mock_error(self):
-        return Mock(status='ERROR', output='error_output')
+        return Mock(status="ERROR", output="error_output")
 
     @pytest.fixture
     def easy_client(self, system_1):
-        mock = Mock(name='easy_client')
+        mock = Mock(name="easy_client")
         mock.find_unique_system.return_value = system_1
         mock.find_systems.return_value = [system_1]
         return mock
 
     @pytest.fixture
     def client(self):
-        return SystemClient(bg_host='localhost', bg_port=3000,
-                            system_name='system')
+        return SystemClient(bg_host="localhost", bg_port=3000, system_name="system")
 
     @pytest.fixture
     def sleep_patch(self, monkeypatch):
-        mock = Mock(name='sleep mock')
-        monkeypatch.setattr(brewtils.rest.system_client.time, 'sleep', mock)
+        mock = Mock(name="sleep mock")
+        monkeypatch.setattr(brewtils.rest.system_client.time, "sleep", mock)
         return mock
 
     @pytest.fixture(autouse=True)
     def easy_client_patch(self, monkeypatch, easy_client):
-        monkeypatch.setattr(brewtils.rest.system_client, 'EasyClient',
-                            Mock(return_value=easy_client))
+        monkeypatch.setattr(
+            brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
+        )
 
     def test_lazy_system_loading(self, client):
         assert client._loaded is False
@@ -93,12 +102,15 @@ class TestSystemClient(object):
         with pytest.raises(AttributeError):
             client.command_3()
 
-    @pytest.mark.parametrize('constraint,systems', [
-        ('1.0.0', lazy_fixture('system_1')),
-        ('latest', lazy_fixture('system_1')),
-        (None, lazy_fixture('system_1')),
-        pytest.param('1.0.0', None, marks=pytest.mark.xfail(raises=FetchError)),
-    ])
+    @pytest.mark.parametrize(
+        "constraint,systems",
+        [
+            ("1.0.0", lazy_fixture("system_1")),
+            ("latest", lazy_fixture("system_1")),
+            (None, lazy_fixture("system_1")),
+            pytest.param("1.0.0", None, marks=pytest.mark.xfail(raises=FetchError)),
+        ],
+    )
     def test_load_bg_system(self, client, easy_client, system_1, constraint, systems):
         client._version_constraint = constraint
         easy_client.find_unique_system.return_value = systems
@@ -124,19 +136,26 @@ class TestSystemClient(object):
         client.command_1()
         assert easy_client.create_request.call_args[0][0].parent is None
 
-    @pytest.mark.parametrize('context,expected', [
-        (None, None),
-        (Mock(current_request=None), None),
-        (Mock(current_request=Mock(id='1'), bg_host="localhost", bg_port=3000),
-         '1'),
-        (Mock(current_request=Mock(id='1'), bg_host="OTHER_BG", bg_port=3000),
-         None),
-    ])
-    def test_create_request_context(self, monkeypatch, client, easy_client,
-                                    mock_success, context, expected):
+    @pytest.mark.parametrize(
+        "context,expected",
+        [
+            (None, None),
+            (Mock(current_request=None), None),
+            (
+                Mock(current_request=Mock(id="1"), bg_host="localhost", bg_port=3000),
+                "1",
+            ),
+            (
+                Mock(current_request=Mock(id="1"), bg_host="OTHER_BG", bg_port=3000),
+                None,
+            ),
+        ],
+    )
+    def test_create_request_context(
+        self, monkeypatch, client, easy_client, mock_success, context, expected
+    ):
         easy_client.create_request.return_value = mock_success
-        monkeypatch.setattr(brewtils.rest.system_client, 'request_context',
-                            context)
+        monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
 
         client.command_1()
         parent = easy_client.create_request.call_args[0][0].parent
@@ -146,19 +165,23 @@ class TestSystemClient(object):
         else:
             assert parent.id == expected
 
-    @pytest.mark.parametrize('kwargs', [
-        ({'_system_name': '', '_system_version': '', '_instance_name': ''}),
-        ({'_command': '', '_system_version': '', '_instance_name': ''}),
-        ({'_command': '', '_system_name': '', '_instance_name': ''}),
-        ({'_command': '', '_system_name': '', '_system_version': ''}),
-    ])
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            ({"_system_name": "", "_system_version": "", "_instance_name": ""}),
+            ({"_command": "", "_system_version": "", "_instance_name": ""}),
+            ({"_command": "", "_system_name": "", "_instance_name": ""}),
+            ({"_command": "", "_system_name": "", "_system_version": ""}),
+        ],
+    )
     def test_create_request_missing_fields(self, client, kwargs):
         with pytest.raises(ValidationError):
             client._construct_bg_request(**kwargs)
 
-    @pytest.mark.usefixtures('sleep_patch')
-    def test_execute_command_1(self, client, easy_client, mock_success,
-                               mock_in_progress):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_execute_command_1(
+        self, client, easy_client, mock_success, mock_in_progress
+    ):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
@@ -168,9 +191,8 @@ class TestSystemClient(object):
         assert request.status == mock_success.status
         assert request.output == mock_success.output
 
-    @pytest.mark.usefixtures('sleep_patch')
-    def test_execute_command_1_error_raise(self, client, easy_client,
-                                           mock_error):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_execute_command_1_error_raise(self, client, easy_client, mock_error):
         easy_client.create_request.return_value = mock_error
 
         with pytest.raises(RequestFailedError) as ex:
@@ -179,9 +201,10 @@ class TestSystemClient(object):
         assert ex.value.request.status == mock_error.status
         assert ex.value.request.output == mock_error.output
 
-    @pytest.mark.usefixtures('sleep_patch')
-    def test_execute_command_1_error_raise_future(self, client, easy_client,
-                                                  mock_error):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_execute_command_1_error_raise_future(
+        self, client, easy_client, mock_error
+    ):
         easy_client.create_request.return_value = mock_error
 
         future = client.command_1(_blocking=False, _raise_on_error=True)
@@ -192,7 +215,7 @@ class TestSystemClient(object):
         assert ex.value.request.status == mock_error.status
         assert ex.value.request.output == mock_error.output
 
-    @pytest.mark.usefixtures('sleep_patch')
+    @pytest.mark.usefixtures("sleep_patch")
     def test_execute_command_1_error(self, client, easy_client, mock_error):
         easy_client.create_request.return_value = mock_error
 
@@ -201,24 +224,30 @@ class TestSystemClient(object):
         assert request.status == mock_error.status
         assert request.output == mock_error.output
 
-    def test_execute_command_with_delays(self, client, easy_client, sleep_patch,
-                                         mock_success, mock_in_progress):
+    def test_execute_command_with_delays(
+        self, client, easy_client, sleep_patch, mock_success, mock_in_progress
+    ):
         easy_client.create_request.return_value = mock_in_progress
-        easy_client.find_unique_request.side_effect = [mock_in_progress,
-                                                       mock_in_progress,
-                                                       mock_success]
+        easy_client.find_unique_request.side_effect = [
+            mock_in_progress,
+            mock_in_progress,
+            mock_success,
+        ]
 
         client.command_1(_blocking=False).result()
 
         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(2.0)])
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
 
-    def test_execute_with_max_delay(self, client, easy_client, mock_success,
-                                    mock_in_progress, sleep_patch):
+    def test_execute_with_max_delay(
+        self, client, easy_client, mock_success, mock_in_progress, sleep_patch
+    ):
         easy_client.create_request.return_value = mock_in_progress
-        easy_client.find_unique_request.side_effect = [mock_in_progress,
-                                                       mock_in_progress,
-                                                       mock_success]
+        easy_client.find_unique_request.side_effect = [
+            mock_in_progress,
+            mock_in_progress,
+            mock_success,
+        ]
 
         client._max_delay = 1
         client.command_1(_blocking=False).result()
@@ -226,7 +255,7 @@ class TestSystemClient(object):
         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(1.0)])
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
 
-    @pytest.mark.usefixtures('sleep_patch')
+    @pytest.mark.usefixtures("sleep_patch")
     def test_execute_with_timeout(self, client, easy_client, mock_in_progress):
         easy_client.create_request.return_value = mock_in_progress
         easy_client.find_unique_request.return_value = mock_in_progress
@@ -238,9 +267,10 @@ class TestSystemClient(object):
             future.result()
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
 
-    @pytest.mark.usefixtures('sleep_patch')
-    def test_execute_non_blocking_command_1(self, client, easy_client,
-                                            mock_success, mock_in_progress):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_execute_non_blocking_command_1(
+        self, client, easy_client, mock_success, mock_in_progress
+    ):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
@@ -250,9 +280,10 @@ class TestSystemClient(object):
         assert request.status == mock_success.status
         assert request.output == mock_success.output
 
-    @pytest.mark.usefixtures('sleep_patch')
-    def test_execute_non_blocking_multiple_commands(self, client, easy_client,
-                                                    mock_success, mock_in_progress):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_execute_non_blocking_multiple_commands(
+        self, client, easy_client, mock_success, mock_in_progress
+    ):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
@@ -265,9 +296,10 @@ class TestSystemClient(object):
             assert result.status == mock_success.status
             assert result.output == mock_success.output
 
-    @pytest.mark.usefixtures('sleep_patch')
-    def test_execute_non_blocking_multiple_commands_timeout(self, client, easy_client,
-                                                            mock_in_progress):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_execute_non_blocking_multiple_commands_timeout(
+        self, client, easy_client, mock_in_progress
+    ):
         easy_client.find_unique_request.return_value = mock_in_progress
         easy_client.create_request.return_value = mock_in_progress
 
@@ -298,24 +330,25 @@ class TestSystemClient(object):
             client.command_1()
         assert easy_client.create_request.call_count == 1
 
-    def test_retry_send_different_version(self, client, easy_client, system_2, mock_success):
+    def test_retry_send_different_version(
+        self, client, easy_client, system_2, mock_success
+    ):
         client.load_bg_system()
 
         easy_client.find_systems.return_value = [system_2]
         easy_client.create_request.side_effect = [ValidationError, mock_success]
 
         client.command_1()
-        assert client._system.version == '2.0.0'
+        assert client._system.version == "2.0.0"
         assert easy_client.create_request.call_count == 2
 
 
 class TestBrewmasterSystemClient(object):
-
     def test_deprecation(self):
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+            warnings.simplefilter("always")
 
-            BrewmasterSystemClient('host', 'port', 'system')
+            BrewmasterSystemClient("host", "port", "system")
             assert len(w) == 1
 
             warning = w[0]

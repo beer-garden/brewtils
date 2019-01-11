@@ -14,7 +14,6 @@ class CustomException(Exception):
 
 
 class TestErrors(object):
-
     def test_parse_as_json(self):
         e = Exception({"foo": "bar"})
         assert parse_exception_as_json(e) == json.dumps({"foo": "bar"})
@@ -32,30 +31,22 @@ class TestErrors(object):
         expected = {
             "message": str(e),
             "arguments": ["message1", "message2"],
-            "attributes": {}
+            "attributes": {},
         }
         assert json.loads(parse_exception_as_json(e)) == expected
 
     def test_parse_as_json_str_to_str(self):
         e = Exception('"message1"')
-        expected = {
-            "message": str(e),
-            "arguments": ['"message1"'],
-            "attributes": {}
-        }
+        expected = {"message": str(e), "arguments": ['"message1"'], "attributes": {}}
         assert json.loads(parse_exception_as_json(e)) == expected
 
     def test_parse_as_json_int_to_str(self):
-        e = Exception('1')
-        expected = {
-            "message": str(e),
-            "arguments": [1],
-            "attributes": {}
-        }
+        e = Exception("1")
+        expected = {"message": str(e), "arguments": [1], "attributes": {}}
         assert json.loads(parse_exception_as_json(e)) == expected
 
     def test_parse_as_json_custom_exception(self):
-        e1 = CustomException('error1')
+        e1 = CustomException("error1")
         e2 = CustomException(e1)
 
         # On python version 2, errors with custom attributes do not list those
@@ -68,6 +59,6 @@ class TestErrors(object):
         expected = {
             "message": str(e2),
             "arguments": arguments,
-            "attributes": str(e2.__dict__)
+            "attributes": str(e2.__dict__),
         }
         assert json.loads(parse_exception_as_json(e2)) == expected

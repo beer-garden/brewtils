@@ -70,13 +70,12 @@ SPECIFICATION = {
     "client_timeout": {
         "type": "float",
         "description": "Max time RestClient will wait for server response",
-        "long_description":
-            "This setting controls how long the HTTP(s) client will wait "
-            "when opening a connection to Beergarden before aborting."
-            "This prevents some strange Beergarden server state from causing "
-            "plugins to hang indefinitely."
-            "Set to -1 to disable (this is a bad idea in production code, see "
-            "the Requests documentation).",
+        "long_description": "This setting controls how long the HTTP(s) client will wait "
+        "when opening a connection to Beergarden before aborting."
+        "This prevents some strange Beergarden server state from causing "
+        "plugins to hang indefinitely."
+        "Set to -1 to disable (this is a bad idea in production code, see "
+        "the Requests documentation).",
         "default": -1,
     },
 }

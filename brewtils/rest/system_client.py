@@ -9,7 +9,11 @@ from multiprocessing import cpu_count
 import time
 
 from brewtils.errors import (
-    FetchError, TimeoutExceededError, RequestFailedError, ValidationError)
+    FetchError,
+    TimeoutExceededError,
+    RequestFailedError,
+    ValidationError,
+)
 from brewtils.models import Request
 from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
@@ -125,25 +129,25 @@ class SystemClient(object):
     """
 
     def __init__(
-            self,
-            bg_host=None,
-            bg_port=None,
-            system_name=None,
-            version_constraint='latest',
-            default_instance='default',
-            always_update=False,
-            timeout=None,
-            max_delay=30,
-            api_version=None,
-            ssl_enabled=False,
-            ca_cert=None,
-            blocking=True,
-            max_concurrent=None,
-            client_cert=None,
-            url_prefix=None,
-            ca_verify=True,
-            raise_on_error=False,
-            **kwargs
+        self,
+        bg_host=None,
+        bg_port=None,
+        system_name=None,
+        version_constraint="latest",
+        default_instance="default",
+        always_update=False,
+        timeout=None,
+        max_delay=30,
+        api_version=None,
+        ssl_enabled=False,
+        ca_cert=None,
+        blocking=True,
+        max_concurrent=None,
+        client_cert=None,
+        url_prefix=None,
+        ca_verify=True,
+        raise_on_error=False,
+        **kwargs
     ):
         self._system_name = system_name
         self._version_constraint = version_constraint
@@ -153,8 +157,8 @@ class SystemClient(object):
         self._max_delay = max_delay
         self._blocking = blocking
         self._raise_on_error = raise_on_error
-        self._bg_host = bg_host or kwargs.get('host')
-        self._bg_port = bg_port or kwargs.get('port')
+        self._bg_host = bg_host or kwargs.get("host")
+        self._bg_port = bg_port or kwargs.get("port")
         self.logger = logging.getLogger(__name__)
 
         self._loaded = False
@@ -213,14 +217,21 @@ class SystemClient(object):
             self.load_bg_system()
 
         if command_name in self._commands:
-            return partial(self.send_bg_request, _command=command_name,
-                           _system_name=self._system.name, _system_version=self._system.version,
-                           _system_display=self._system.display_name,
-                           _output_type=self._commands[command_name].output_type,
-                           _instance_name=self._default_instance, **kwargs)
+            return partial(
+                self.send_bg_request,
+                _command=command_name,
+                _system_name=self._system.name,
+                _system_version=self._system.version,
+                _system_display=self._system.display_name,
+                _output_type=self._commands[command_name].output_type,
+                _instance_name=self._default_instance,
+                **kwargs
+            )
         else:
-            raise AttributeError("System '%s' version '%s' has no command named '%s'" %
-                                 (self._system.name, self._system.version, command_name))
+            raise AttributeError(
+                "System '%s' version '%s' has no command named '%s'"
+                % (self._system.name, self._system.version, command_name)
+            )
 
     def send_bg_request(self, **kwargs):
         """Actually create a Request and send it to beer-garden
@@ -237,32 +248,33 @@ class SystemClient(object):
             otherwise a Future that will return the Request when it completes.
         """
         # Need to pop here, otherwise we'll try to send as a request parameter
-        raise_on_error = kwargs.pop('_raise_on_error', self._raise_on_error)
-        blocking = kwargs.pop('_blocking', self._blocking)
-        timeout = kwargs.pop('_timeout', self._timeout)
+        raise_on_error = kwargs.pop("_raise_on_error", self._raise_on_error)
+        blocking = kwargs.pop("_blocking", self._blocking)
+        timeout = kwargs.pop("_timeout", self._timeout)
 
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
         try:
             request = self._construct_bg_request(**kwargs)
-            request = self._easy_client.create_request(request,
-                                                       blocking=blocking,
-                                                       timeout=timeout)
+            request = self._easy_client.create_request(
+                request, blocking=blocking, timeout=timeout
+            )
         except ValidationError:
-            if self._system and self._version_constraint == 'latest':
+            if self._system and self._version_constraint == "latest":
                 old_version = self._system.version
 
                 self.load_bg_system()
 
                 if old_version != self._system.version:
-                    kwargs['_system_version'] = self._system.version
+                    kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
             raise
 
         # If not blocking just return the future
         if not blocking:
-            return self._thread_pool.submit(self._wait_for_request,
-                                            request, raise_on_error, timeout)
+            return self._thread_pool.submit(
+                self._wait_for_request, request, raise_on_error, timeout
+            )
 
         # Brew-view before 2.4 doesn't support the blocking flag, so make sure
         # the request is actually complete before returning
@@ -281,17 +293,23 @@ class SystemClient(object):
         :return: None
         """
 
-        if self._version_constraint == 'latest':
+        if self._version_constraint == "latest":
             systems = self._easy_client.find_systems(name=self._system_name)
-            self._system = sorted(systems, key=lambda x: x.version,
-                                  reverse=True)[0] if systems else None
+            self._system = (
+                sorted(systems, key=lambda x: x.version, reverse=True)[0]
+                if systems
+                else None
+            )
         else:
-            self._system = self._easy_client.find_unique_system(name=self._system_name,
-                                                                version=self._version_constraint)
+            self._system = self._easy_client.find_unique_system(
+                name=self._system_name, version=self._version_constraint
+            )
 
         if self._system is None:
-            raise FetchError("Beer-garden has no system named '%s' with a version matching '%s'" %
-                             (self._system_name, self._version_constraint))
+            raise FetchError(
+                "Beer-garden has no system named '%s' with a version matching '%s'"
+                % (self._system_name, self._version_constraint)
+            )
 
         self._commands = {command.name: command for command in self._system.commands}
         self._loaded = True
@@ -304,8 +322,9 @@ class SystemClient(object):
         while request.status not in Request.COMPLETED_STATUSES:
 
             if timeout and total_wait_time > timeout:
-                raise TimeoutExceededError("Timeout waiting for request '%s' "
-                                           "to complete" % str(request))
+                raise TimeoutExceededError(
+                    "Timeout waiting for request '%s' " "to complete" % str(request)
+                )
 
             time.sleep(delay_time)
             total_wait_time += delay_time
@@ -313,23 +332,27 @@ class SystemClient(object):
 
             request = self._easy_client.find_unique_request(id=request.id)
 
-        if raise_on_error and request.status == 'ERROR':
+        if raise_on_error and request.status == "ERROR":
             raise RequestFailedError(request)
 
         return request
 
     def _get_parent_for_request(self):
-        parent = getattr(request_context, 'current_request', None)
+        parent = getattr(request_context, "current_request", None)
         if parent is None:
             return None
 
-        if (request_context.bg_host.upper() != self._bg_host.upper() or
-                request_context.bg_port != self._bg_port):
-            self.logger.warning("A parent request was found, but the destination beer-garden "
-                                "appears to be different than the beer-garden to which this plugin "
-                                "is assigned. Cross-server parent/child requests are not supported "
-                                "at this time. Removing the parent context so the request doesn't "
-                                "fail.")
+        if (
+            request_context.bg_host.upper() != self._bg_host.upper()
+            or request_context.bg_port != self._bg_port
+        ):
+            self.logger.warning(
+                "A parent request was found, but the destination beer-garden "
+                "appears to be different than the beer-garden to which this plugin "
+                "is assigned. Cross-server parent/child requests are not supported "
+                "at this time. Removing the parent context so the request doesn't "
+                "fail."
+            )
             return None
 
         return Request(id=str(parent.id))
@@ -337,36 +360,48 @@ class SystemClient(object):
     def _construct_bg_request(self, **kwargs):
         """Create a request that can be used with EasyClient.create_request"""
 
-        command = kwargs.pop('_command', None)
-        system_name = kwargs.pop('_system_name', None)
-        system_version = kwargs.pop('_system_version', None)
-        system_display = kwargs.pop('_system_display', None)
-        instance_name = kwargs.pop('_instance_name', None)
-        comment = kwargs.pop('_comment', None)
-        output_type = kwargs.pop('_output_type', None)
-        metadata = kwargs.pop('_metadata', {})
+        command = kwargs.pop("_command", None)
+        system_name = kwargs.pop("_system_name", None)
+        system_version = kwargs.pop("_system_version", None)
+        system_display = kwargs.pop("_system_display", None)
+        instance_name = kwargs.pop("_instance_name", None)
+        comment = kwargs.pop("_comment", None)
+        output_type = kwargs.pop("_output_type", None)
+        metadata = kwargs.pop("_metadata", {})
 
         parent = self._get_parent_for_request()
 
         if system_display:
-            metadata['system_display_name'] = system_display
+            metadata["system_display_name"] = system_display
 
         if command is None:
-            raise ValidationError('Unable to send a request with no command')
+            raise ValidationError("Unable to send a request with no command")
         if system_name is None:
-            raise ValidationError('Unable to send a request with no system name')
+            raise ValidationError("Unable to send a request with no system name")
         if system_version is None:
-            raise ValidationError('Unable to send a request with no system version')
+            raise ValidationError("Unable to send a request with no system version")
         if instance_name is None:
-            raise ValidationError('Unable to send a request with no instance name')
+            raise ValidationError("Unable to send a request with no instance name")
 
-        return Request(command=command, system=system_name, system_version=system_version,
-                       instance_name=instance_name, comment=comment, output_type=output_type,
-                       parent=parent, metadata=metadata, parameters=kwargs)
+        return Request(
+            command=command,
+            system=system_name,
+            system_version=system_version,
+            instance_name=instance_name,
+            comment=comment,
+            output_type=output_type,
+            parent=parent,
+            metadata=metadata,
+            parameters=kwargs,
+        )
 
 
 class BrewmasterSystemClient(SystemClient):
     def __init__(self, *args, **kwargs):
-        warnings.warn("Call made to 'BrewmasterSystemClient'. This name will be removed in version "
-                      "3.0, please use 'SystemClient' instead.", DeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "Call made to 'BrewmasterSystemClient'. This name will be removed in version "
+            "3.0, please use 'SystemClient' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super(BrewmasterSystemClient, self).__init__(*args, **kwargs)

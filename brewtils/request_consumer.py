@@ -41,14 +41,14 @@ class RequestConsumer(threading.Thread):
     """
 
     def __init__(
-            self,
-            amqp_url=None,
-            queue_name=None,
-            on_message_callback=None,
-            panic_event=None,
-            logger=None,
-            thread_name=None,
-            **kwargs
+        self,
+        amqp_url=None,
+        queue_name=None,
+        on_message_callback=None,
+        panic_event=None,
+        logger=None,
+        thread_name=None,
+        **kwargs
     ):
         self._connection = None
         self._channel = None
@@ -64,7 +64,7 @@ class RequestConsumer(threading.Thread):
         self.shutdown_event = threading.Event()
 
         if kwargs.get("connection_info", None):
-            pika_base = PikaClient(**kwargs['connection_info'])
+            pika_base = PikaClient(**kwargs["connection_info"])
             self._connection_parameters = pika_base.connection_parameters()
         else:
             self._connection_parameters = URLParameters(amqp_url)
@@ -97,7 +97,7 @@ class RequestConsumer(threading.Thread):
 
         :return:
         """
-        self.logger.debug('Stopping request consumer')
+        self.logger.debug("Stopping request consumer")
         self.shutdown_event.set()
         self.close_channel()
 
@@ -116,9 +116,13 @@ class RequestConsumer(threading.Thread):
         :param pika.Spec.BasicProperties properties: properties
         :param bytes body: The message body
         """
-        self.logger.debug("Received message #%s from %s on channel %s: %s",
-                          basic_deliver.delivery_tag, properties.app_id,
-                          channel.channel_number, body)
+        self.logger.debug(
+            "Received message #%s from %s on channel %s: %s",
+            basic_deliver.delivery_tag,
+            properties.app_id,
+            channel.channel_number,
+            body,
+        )
 
         # Pika gives us bytes, but we want a string to be ok too
         try:
@@ -132,13 +136,17 @@ class RequestConsumer(threading.Thread):
             future.add_done_callback(callback)
         except DiscardMessageException:
             self.logger.debug(
-                'Nacking message %s, not attempting to requeue',
-                basic_deliver.delivery_tag)
+                "Nacking message %s, not attempting to requeue",
+                basic_deliver.delivery_tag,
+            )
             self._channel.basic_nack(basic_deliver.delivery_tag, requeue=False)
         except Exception as ex:
             self.logger.exception(
-                'Exception while trying to schedule message %s, about to nack '
-                'and requeue: %s', basic_deliver.delivery_tag, ex)
+                "Exception while trying to schedule message %s, about to nack "
+                "and requeue: %s",
+                basic_deliver.delivery_tag,
+                ex,
+            )
             self._channel.basic_nack(basic_deliver.delivery_tag, requeue=True)
 
     def on_message_callback_complete(self, basic_deliver, future):
@@ -152,12 +160,12 @@ class RequestConsumer(threading.Thread):
 
         if not future.exception():
             try:
-                self.logger.debug('Acking message %s', delivery_tag)
+                self.logger.debug("Acking message %s", delivery_tag)
                 self._channel.basic_ack(delivery_tag)
             except Exception as ex:
                 self.logger.exception(
-                    'Error acking message %s, about to shut down: %s',
-                    delivery_tag, ex)
+                    "Error acking message %s, about to shut down: %s", delivery_tag, ex
+                )
                 self._panic_event.set()
         else:
             real_ex = future.exception()
@@ -166,10 +174,10 @@ class RequestConsumer(threading.Thread):
                 try:
                     with BlockingConnection(self._connection_parameters) as c:
                         headers = real_ex.headers
-                        headers.update({'request_id': real_ex.request.id})
+                        headers.update({"request_id": real_ex.request.id})
                         props = BasicProperties(
-                            app_id='beer-garden',
-                            content_type='text/plain',
+                            app_id="beer-garden",
+                            content_type="text/plain",
                             headers=headers,
                             priority=1,
                         )
@@ -177,25 +185,31 @@ class RequestConsumer(threading.Thread):
                             exchange=basic_deliver.exchange,
                             properties=props,
                             routing_key=basic_deliver.routing_key,
-                            body=SchemaParser.serialize_request(real_ex.request)
+                            body=SchemaParser.serialize_request(real_ex.request),
                         )
 
                     self._channel.basic_ack(delivery_tag)
                 except Exception as ex:
                     self.logger.exception(
-                        'Error republishing message %s, about to shut down: %s',
-                        delivery_tag, ex)
+                        "Error republishing message %s, about to shut down: %s",
+                        delivery_tag,
+                        ex,
+                    )
                     self._panic_event.set()
             elif isinstance(real_ex, DiscardMessageException):
                 self.logger.info(
-                    'Nacking message %s, not attempting to requeue',
-                    delivery_tag)
+                    "Nacking message %s, not attempting to requeue", delivery_tag
+                )
                 self._channel.basic_nack(delivery_tag, requeue=False)
             else:
                 # If request processing throws anything else we terminate
                 self.logger.exception(
-                    'Unexpected exception during request %s processing, about '
-                    'to shut down: %s', delivery_tag, real_ex, exc_info=False)
+                    "Unexpected exception during request %s processing, about "
+                    "to shut down: %s",
+                    delivery_tag,
+                    real_ex,
+                    exc_info=False,
+                )
                 self._panic_event.set()
 
     def open_connection(self):
@@ -213,13 +227,15 @@ class RequestConsumer(threading.Thread):
                 return SelectConnection(
                     self._connection_parameters,
                     self.on_connection_open,
-                    stop_ioloop_on_close=False)
+                    stop_ioloop_on_close=False,
+                )
             except AMQPConnectionError as ex:
                 if 0 <= self._max_connect_retries <= retries:
                     raise ex
                 self.logger.warning(
                     "Error attempting to connect, waiting %s seconds and "
-                    "attempting again" % time_to_wait)
+                    "attempting again" % time_to_wait
+                )
                 self.shutdown_event.wait(time_to_wait)
                 time_to_wait = min(time_to_wait * 2, self._max_connect_backoff)
                 retries += 1
@@ -253,8 +269,8 @@ class RequestConsumer(threading.Thread):
         :param basestring reply_text: The server provided reply_text if given
         """
         self.logger.debug(
-            'Connection "%s" closed: (%s) %s' %
-            (connection, reply_code, reply_text))
+            'Connection "%s" closed: (%s) %s' % (connection, reply_code, reply_text)
+        )
         self._channel = None
 
         # A 320 is the server forcing the connection to close
@@ -265,9 +281,9 @@ class RequestConsumer(threading.Thread):
             self._connection.ioloop.stop()
         else:
             self.logger.warning(
-                'Connection unexpectedly closed: (%s) %s' %
-                (reply_code, reply_text))
-            self.logger.warning('Attempting to reopen connection in 5 seconds')
+                "Connection unexpectedly closed: (%s) %s" % (reply_code, reply_text)
+            )
+            self.logger.warning("Attempting to reopen connection in 5 seconds")
             self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):
@@ -290,7 +306,7 @@ class RequestConsumer(threading.Thread):
         When RabbitMQ responds that the channel is open, the on_channel_open
         callback will be invoked.
         """
-        self.logger.debug('Opening a new channel')
+        self.logger.debug("Opening a new channel")
         self._connection.channel(on_open_callback=self.on_channel_open)
 
     def on_channel_open(self, channel):
@@ -301,14 +317,14 @@ class RequestConsumer(threading.Thread):
 
         :param pika.channel.Channel channel: The channel object
         """
-        self.logger.debug('Channel opened: %s', channel)
+        self.logger.debug("Channel opened: %s", channel)
         self._channel = channel
         self._channel.add_on_close_callback(self.on_channel_closed)
         self.start_consuming()
 
     def close_channel(self):
         """Cleanly close the channel"""
-        self.logger.debug('Closing the channel')
+        self.logger.debug("Closing the channel")
         self._channel.close()
 
     def on_channel_closed(self, channel, reply_code, reply_text):
@@ -327,8 +343,8 @@ class RequestConsumer(threading.Thread):
         :param str reply_text: The text reason the channel was closed
         """
         self.logger.debug(
-            'Channel %i was closed: (%s) %s' %
-            (int(channel), reply_code, reply_text))
+            "Channel %i was closed: (%s) %s" % (int(channel), reply_code, reply_text)
+        )
         self._connection.close()
 
     def start_consuming(self):
@@ -341,18 +357,19 @@ class RequestConsumer(threading.Thread):
         An on_cancel_callback is registered so that the consumer is notified if
         it is canceled by the broker.
         """
-        self.logger.debug('Issuing consumer related RPC commands')
+        self.logger.debug("Issuing consumer related RPC commands")
 
         self._channel.basic_qos(prefetch_count=self._max_concurrent)
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(
-            self.on_message, queue=self._queue_name)
+            self.on_message, queue=self._queue_name
+        )
 
     def stop_consuming(self):
         """Stop consuming messages"""
         self.logger.debug("Stopping consuming on channel %s", self._channel)
         if self._channel:
-            self.logger.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
+            self.logger.debug("Sending a Basic.Cancel RPC command to RabbitMQ")
             self._channel.basic_cancel(self.on_cancelok, self._consumer_tag)
 
     def on_consumer_cancelled(self, method_frame):
@@ -363,7 +380,8 @@ class RequestConsumer(threading.Thread):
         :param pika.frame.Method method_frame: The Basic.Cancel frame
         """
         self.logger.debug(
-            'Consumer was cancelled remotely, shutting down: %r' % method_frame)
+            "Consumer was cancelled remotely, shutting down: %r" % method_frame
+        )
         if self._channel:
             self.close_channel()
 
@@ -376,4 +394,4 @@ class RequestConsumer(threading.Thread):
         :param pika.frame.Method unused_frame: The Basic.CancelOK frame
         """
         self.logger.debug(unused_frame)
-        self.logger.debug('RabbitMQ acknowledged consumer cancellation')
+        self.logger.debug("RabbitMQ acknowledged consumer cancellation")

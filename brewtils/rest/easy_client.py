@@ -14,26 +14,30 @@ from brewtils.schema_parser import SchemaParser
 
 
 class EasyClient(object):
-    """Client for communicating with beer-garden
+    """Client for simplified communication with Beergarden
 
-    This class provides nice wrappers around the functionality provided by a
-    :py:class:`brewtils.rest.client.RestClient`
+    This class is intended to be a middle ground between the RestClient and
+    SystemClient. It provides a 'cleaner' interface to some common Beergarden
+    operations than is exposed by the lower-level RestClient. On the other hand,
+    the SystemClient is much better for generating Beergarden Requests.
 
-    :param bg_host: beer-garden REST API hostname.
-    :param bg_port: beer-garden REST API port.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
-    :param api_version: The beer-garden REST API version. Will default to the latest version.
-    :param ca_cert: beer-garden REST API server CA certificate.
-    :param client_cert: The client certificate to use when making requests.
-    :param parser: The parser to use. If None will default to an instance of SchemaParser.
-    :param logger: The logger to use. If None one will be created.
-    :param url_prefix: beer-garden REST API URL Prefix.
-    :param ca_verify: Flag indicating whether to verify server certificate when making a request.
-    :param username: Username for Beergarden authentication
-    :param password: Password for Beergarden authentication
-    :param access_token: Access token for Beergarden authentication
-    :param refresh_token: Refresh token for Beergarden authentication
-    :param client_timeout: Max time to will wait for server response
+    Keyword Args:
+        bg_host (str): Beergarden hostname
+        bg_port (int): Beergarden port
+        ssl_enabled (Optional[bool]): Whether to use SSL (HTTP vs HTTPS)
+        api_version (Optional[int]): The REST API version
+        ca_cert (Optional[str]): Path to CA certificate file
+        client_cert (Optional[str]): Path to client certificate file
+        parser (Optional[SchemaParser]): Parser to use
+        logger (Optional[Logger]): Logger to use
+        url_prefix (Optional[str]): Beergarden REST API prefix
+        ca_verify (Optional[bool]): Whether to verify the server cert hostname
+        username (Optional[str]): Username for authentication
+        password (Optional[str]): Password for authentication
+        access_token (Optional[str]): Access token for authentication
+        refresh_token (Optional[str]): Refresh token for authentication
+        client_timeout (Optional[float]): Max time to wait for a server response
+
     """
 
     def __init__(
@@ -96,11 +100,38 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=FetchError)
 
-    def find_unique_system(self, **kwargs):
-        """Find a unique system using keyword arguments as search parameters
+    def get_logging_config(self, system_name):
+        """Get logging configuration for a System
 
-        :param kwargs: Search parameters
-        :return: One system instance
+        Args:
+            system_name (str): The name of the System
+
+        Returns:
+            LoggingConfig: The configuration object
+
+        """
+        response = self.client.get_logging_config(system_name=system_name)
+        if response.ok:
+            return self.parser.parse_logging_config(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=RestConnectionError)
+
+    def find_unique_system(self, **kwargs):
+        """Find a unique system
+
+        .. note::
+            If 'id' is a given keyword argument then all other parameters will
+            be ignored.
+
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            System, None: The System if found, None otherwise
+
+        Raises:
+            FetchError: More than one matching System was found
+
         """
         if 'id' in kwargs:
             return self._find_system_by_id(kwargs.pop('id'), **kwargs)
@@ -111,15 +142,19 @@ class EasyClient(object):
                 return None
 
             if len(systems) > 1:
-                raise FetchError("More than one system found that specifies the given constraints")
+                raise FetchError("More than one matching System found")
 
             return systems[0]
 
     def find_systems(self, **kwargs):
-        """Find systems using keyword arguments as search parameters
+        """Find Systems using keyword arguments as search parameters
 
-        :param kwargs: Search parameters
-        :return: A list of system instances satisfying the given search parameters
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            List[System]: List of Systems matching the search parameters
+
         """
         response = self.client.get_systems(**kwargs)
 
@@ -128,21 +163,15 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=FetchError)
 
-    def _find_system_by_id(self, system_id, **kwargs):
-        """Finds a system by id, convert JSON to a system object and return it"""
-        response = self.client.get_system(system_id, **kwargs)
-
-        if response.ok:
-            return self.parser.parse_system(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=FetchError,
-                                          raise_404=False)
-
     def create_system(self, system):
-        """Create a new system by POSTing
+        """Create a new System
 
-        :param system: The system to create
-        :return: The system creation response
+        Args:
+            system (System): The System to create
+
+        Returns:
+            System: The newly-created system
+
         """
         json_system = self.parser.serialize_system(system)
         response = self.client.post_systems(json_system)
@@ -153,37 +182,39 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=SaveError)
 
     def update_system(self, system_id, new_commands=None, **kwargs):
-        """Update a system by PATCHing
+        """Update a System
 
-        :param system_id: The ID of the system to update
-        :param new_commands: The new commands
+        Args:
+            system_id (str): The System ID
+            new_commands (Optional[List[Command]]): New System commands
 
-        :Keyword Arguments:
-            * *metadata* (``dict``) The updated metadata for the system
-            * *description* (``str``) The updated description for the system
-            * *display_name* (``str``) The updated display_name for the system
-            * *icon_name* (``str``) The updated icon_name for the system
+        Keyword Args:
+            metadata (dict): New System metadata
+            description (str): New System description
+            display_name (str): New System display name
+            icon_name (str) The: New System icon name
 
-        :return: The response
+        Returns:
+            System: The updated system
+
         """
         operations = []
         metadata = kwargs.pop("metadata", {})
 
         if new_commands:
-            operations.append(PatchOperation('replace', '/commands',
-                                             self.parser.serialize_command(new_commands,
-                                                                           to_string=False,
-                                                                           many=True)))
+            commands = self.parser.serialize_command(
+                new_commands, to_string=False, many=True)
+            operations.append(PatchOperation('replace', '/commands', commands))
 
         if metadata:
             operations.append(PatchOperation('update', '/metadata', metadata))
 
-        for attr, value in kwargs.items():
+        for key, value in kwargs.items():
             if value is not None:
-                operations.append(PatchOperation('replace', '/%s' % attr, value))
+                operations.append(PatchOperation('replace', '/%s' % key, value))
 
-        response = self.client.patch_system(system_id, self.parser.serialize_patch(operations,
-                                                                                   many=True))
+        response = self.client.patch_system(
+            system_id, self.parser.serialize_patch(operations, many=True))
 
         if response.ok:
             return self.parser.parse_system(response.json())
@@ -191,39 +222,38 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=SaveError)
 
     def remove_system(self, **kwargs):
-        """Remove a specific system by DELETEing, using keyword arguments as search parameters
+        """Remove a unique System
 
-        :param kwargs: Search parameters
-        :return: The response
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            bool: True if removal was successful
+
+        Raises:
+            FetchError: Couldn't find a System matching given parameters
+
         """
         system = self.find_unique_system(**kwargs)
 
         if system is None:
-            raise FetchError("Could not find system matching the given search parameters")
+            raise FetchError("No matching System found")
 
         return self._remove_system_by_id(system.id)
 
-    def _remove_system_by_id(self, system_id):
-
-        if system_id is None:
-            raise DeleteError("Cannot delete a system without an id")
-
-        response = self.client.delete_system(system_id)
-        if response.ok:
-            return True
-        else:
-            self._handle_response_failure(response, default_exc=DeleteError)
-
     def initialize_instance(self, instance_id):
-        """Start an instance by PATCHing
+        """Start an Instance
 
-        :param instance_id: The ID of the instance to start
-        :return: The start response
+        Args:
+            instance_id (str): The Instance ID
+
+        Returns:
+            Instance: The updated Instance
+
         """
-        response = self.client.patch_instance(instance_id,
-                                              self.parser.serialize_patch(
-                                                  PatchOperation('initialize')
-                                              ))
+        operation = PatchOperation('initialize')
+        response = self.client.patch_instance(
+            instance_id, self.parser.serialize_patch(operation))
 
         if response.ok:
             return self.parser.parse_instance(response.json())
@@ -247,15 +277,19 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=FetchError)
 
     def update_instance_status(self, instance_id, new_status):
-        """Update an instance by PATCHing
+        """Update an Instance status
 
-        :param instance_id: The ID of the instance to start
-        :param new_status: The updated status
-        :return: The start response
+        Args:
+            instance_id (str): The Instance ID
+            new_status (str): The new status
+
+        Returns:
+            Instance: The updated Instance
+
         """
-        payload = PatchOperation('replace', '/status', new_status)
+        operation = PatchOperation('replace', '/status', new_status)
         response = self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(payload))
+            instance_id, self.parser.serialize_patch(operation))
 
         if response.ok:
             return self.parser.parse_instance(response.json())
@@ -263,14 +297,18 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=SaveError)
 
     def instance_heartbeat(self, instance_id):
-        """Send heartbeat for health and status
+        """Send an Instance heartbeat
 
-        :param instance_id: The ID of the instance
-        :return: The response
+        Args:
+            instance_id (str): The Instance ID
+
+        Returns:
+            bool: True if the heartbeat was successful
+
         """
-        payload = PatchOperation('heartbeat')
+        operation = PatchOperation('heartbeat')
         response = self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(payload))
+            instance_id, self.parser.serialize_patch(operation))
 
         if response.ok:
             return True
@@ -293,33 +331,44 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=DeleteError)
 
     def find_unique_request(self, **kwargs):
-        """Find a unique request using keyword arguments as search parameters
+        """Find a unique request
 
         .. note::
-            If 'id' is present in kwargs then all other parameters will be ignored.
+            If 'id' is a given keyword argument then all other parameters will
+            be ignored.
 
-        :param kwargs: Search parameters
-        :return: One request instance
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            Request, None: The Request if found, None otherwise
+
+        Raises:
+            FetchError: More than one matching Request was found
+
         """
         if 'id' in kwargs:
             return self._find_request_by_id(kwargs.pop('id'))
         else:
-            requests = self.find_requests(**kwargs)
+            all_requests = self.find_requests(**kwargs)
 
-            if not requests:
+            if not all_requests:
                 return None
 
-            if len(requests) > 1:
-                raise FetchError("More than one request found that specifies "
-                                 "the given constraints")
+            if len(all_requests) > 1:
+                raise FetchError("More than one matching Request found")
 
-            return requests[0]
+            return all_requests[0]
 
     def find_requests(self, **kwargs):
-        """Find requests using keyword arguments as search parameters
+        """Find Requests using keyword arguments as search parameters
 
-        :param kwargs: Search parameters
-        :return: A list of request instances satisfying the given search parameters
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            List[Request]: List of Systems matching the search parameters
+
         """
         response = self.client.get_requests(**kwargs)
 
@@ -328,29 +377,20 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=FetchError)
 
-    def _find_request_by_id(self, request_id):
-        """Finds a request by id, convert JSON to a request object and return it"""
-        response = self.client.get_request(request_id)
-
-        if response.ok:
-            return self.parser.parse_request(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=FetchError,
-                                          raise_404=False)
-
     def create_request(self, request, **kwargs):
-        """Create a new request by POSTing
+        """Create a new Request
 
         Args:
             request: New request definition
             kwargs: Extra request parameters
 
         Keyword Args:
-            blocking: Wait for request to complete
-            timeout: Maximum seconds to wait
+            blocking (bool): Wait for request to complete before returning
+            timeout (int): Maximum seconds to wait for completion
 
         Returns:
-            Response to the request
+            Request: The newly-created Request
+
         """
         json_request = self.parser.serialize_request(request)
 
@@ -361,14 +401,19 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=SaveError)
 
-    def update_request(self, request_id, status=None, output=None, error_class=None):
-        """Set various fields on a request by PATCHing
+    def update_request(
+            self, request_id, status=None, output=None, error_class=None):
+        """Update a Request
 
-        :param request_id: The ID of the request to update
-        :param status: The new status
-        :param output: The new output
-        :param error_class: The new error class
-        :return: The response
+        Args:
+            request_id (str): The Request ID
+            status (Optional[str]): New Request status
+            output (Optional[str]): New Request output
+            error_class (Optional[str]): New Request error class
+
+        Returns:
+            Response: The updated response
+
         """
         operations = []
 
@@ -379,39 +424,39 @@ class EasyClient(object):
         if error_class:
             operations.append(PatchOperation('replace', '/error_class', error_class))
 
-        response = self.client.patch_request(request_id, self.parser.serialize_patch(operations,
-                                                                                     many=True))
+        response = self.client.patch_request(
+            request_id, self.parser.serialize_patch(operations, many=True))
 
         if response.ok:
             return self.parser.parse_request(response.json())
         else:
             self._handle_response_failure(response, default_exc=SaveError)
 
-    def get_logging_config(self, system_name):
-        """Get the logging configuration for a particular system.
-
-        :param system_name: Name of system
-        :return: LoggingConfig object
-        """
-        response = self.client.get_logging_config(system_name=system_name)
-        if response.ok:
-            return self.parser.parse_logging_config(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=RestConnectionError)
-
     def publish_event(self, *args, **kwargs):
-        """Publish a new event by POSTing
+        """Publish a new event
 
-        :param args: The Event to create
-        :param _publishers: Optional list of specific publishers. If None all publishers will be
-            used.
-        :param kwargs: If no Event is given in the *args, on will be constructed from the kwargs
-        :return: The response
+        Args:
+            *args: If a positional argument is given it's assumed to be an
+                Event and will be used
+            **kwargs: Will be used to construct a new Event to publish if no
+                Event is given in the positional arguments
+
+        Keyword Args:
+            _publishers (Optional[List[str]]): List of publisher names.
+                If given the Event will only be published to the specified
+                publishers. Otherwise all publishers known to Beergarden will
+                be used.
+
+        Returns:
+            bool: True if the publish was successful
+
         """
         publishers = kwargs.pop('_publishers', None)
-        json_event = self.parser.serialize_event(args[0] if args else Event(**kwargs))
 
-        response = self.client.post_event(json_event, publishers=publishers)
+        event = args[0] if args else Event(**kwargs)
+
+        response = self.client.post_event(
+            self.parser.serialize_event(event), publishers=publishers)
 
         if response.ok:
             return True
@@ -431,9 +476,14 @@ class EasyClient(object):
             self._handle_response_failure(response)
 
     def clear_queue(self, queue_name):
-        """Cancel and clear all messages from a queue
+        """Cancel and remove all Requests from a message queue
 
-        :return: The response
+        Args:
+            queue_name (str): The name of the queue to clear
+
+        Returns:
+            bool: True if the clear was successful
+
         """
         response = self.client.delete_queue(queue_name)
 
@@ -443,9 +493,11 @@ class EasyClient(object):
             self._handle_response_failure(response)
 
     def clear_all_queues(self):
-        """Cancel and clear all messages from all queues
+        """Cancel and remove all Requests in all queues
 
-        :return: The response
+        Returns:
+            bool: True if the clear was successful
+
         """
         response = self.client.delete_queues()
 
@@ -455,13 +507,14 @@ class EasyClient(object):
             self._handle_response_failure(response)
 
     def find_jobs(self, **kwargs):
-        """Find jobs using keyword arguments as search parameters
+        """Find Jobs using keyword arguments as search parameters
 
         Args:
             **kwargs: Search parameters
 
         Returns:
-            List of jobs.
+            List[Job]: List of Jobs matching the search parameters
+
         """
         response = self.client.get_jobs(**kwargs)
 
@@ -471,15 +524,16 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=FetchError)
 
     def create_job(self, job):
-        """Create a new job by POSTing
+        """Create a new Job
 
         Args:
-            job: The job to create
+            job (Job): New Job definition
 
         Returns:
-            The job creation response.
+            Job: The newly-created Job
         """
         json_job = self.parser.serialize_job(job)
+
         response = self.client.post_jobs(json_job)
 
         if response.ok:
@@ -488,13 +542,16 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=SaveError)
 
     def remove_job(self, job_id):
-        """Remove a job by ID.
+        """Remove a unique Job
 
         Args:
-            job_id: The ID of the job to remove.
+            job_id (str): The Job ID
 
         Returns:
-            True if successful, raises an error otherwise.
+            bool: True if removal was successful
+
+        Raises:
+            DeleteError: Couldn't remove Job
 
         """
         response = self.client.delete_job(job_id)
@@ -504,15 +561,84 @@ class EasyClient(object):
             self._handle_response_failure(response, default_exc=DeleteError)
 
     def pause_job(self, job_id):
-        """Pause a Job by ID.
+        """Pause a Job
 
         Args:
-            job_id: The ID of the job to pause.
+            job_id (str): The Job ID
 
         Returns:
-            A copy of the job.
+            Job: The updated Job
+
         """
         self._patch_job(job_id, [PatchOperation('update', '/status', 'PAUSED')])
+
+    def resume_job(self, job_id):
+        """Resume a Job
+
+        Args:
+            job_id (str): The Job ID
+
+        Returns:
+            Job: The updated Job
+
+        """
+        self._patch_job(job_id, [PatchOperation('update', '/status', 'RUNNING')])
+
+    def get_user(self, user_identifier):
+        """Find a user
+
+        Args:
+            user_identifier (str): User ID or username
+
+        Returns:
+            Principal: The User
+        """
+        response = self.client.get_user(user_identifier)
+
+        if response.ok:
+            return self.parser.parse_principal(response.json())
+        else:
+            self._handle_response_failure(response, default_exc=FetchError)
+
+    def who_am_i(self):
+        """Find user using the current set of credentials
+
+        Returns:
+            Principal: The User
+
+        """
+        return self.get_user(self.client.username or 'anonymous')
+
+    def _find_system_by_id(self, system_id, **kwargs):
+
+        response = self.client.get_system(system_id, **kwargs)
+
+        if response.ok:
+            return self.parser.parse_system(response.json())
+        else:
+            self._handle_response_failure(
+                response, default_exc=FetchError, raise_404=False)
+
+    def _remove_system_by_id(self, system_id):
+
+        if system_id is None:
+            raise DeleteError("Cannot delete a system without an id")
+
+        response = self.client.delete_system(system_id)
+        if response.ok:
+            return True
+        else:
+            self._handle_response_failure(response, default_exc=DeleteError)
+
+    def _find_request_by_id(self, request_id):
+
+        response = self.client.get_request(request_id)
+
+        if response.ok:
+            return self.parser.parse_request(response.json())
+        else:
+            self._handle_response_failure(
+                response, default_exc=FetchError, raise_404=False)
 
     def _patch_job(self, job_id, operations):
         response = self.client.patch_job(
@@ -522,37 +648,6 @@ class EasyClient(object):
             return self.parser.parse_job(response.json())
         else:
             self._handle_response_failure(response, default_exc=SaveError)
-
-    def resume_job(self, job_id):
-        """Resume a job by ID.
-
-        Args:
-            job_id: The ID of the job to resume.
-
-        Returns:
-            A copy of the job.
-        """
-        self._patch_job(job_id, [PatchOperation('update', '/status', 'RUNNING')])
-
-    def who_am_i(self):
-        """Find the user represented by the current set of credentials
-
-        :return: The current user
-        """
-        return self.get_user(self.client.username or 'anonymous')
-
-    def get_user(self, user_identifier):
-        """Find a specific user using username or ID
-
-        :param user_identifier: ID or username of User
-        :return: A User
-        """
-        response = self.client.get_user(user_identifier)
-
-        if response.ok:
-            return self.parser.parse_principal(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=FetchError)
 
     @staticmethod
     def _handle_response_failure(response, default_exc=RestError, raise_404=True):
@@ -575,7 +670,7 @@ class EasyClient(object):
 
 class BrewmasterEasyClient(EasyClient):
     def __init__(self, *args, **kwargs):
-        warnings.warn("Call made to 'BrewmasterEasyClient'. This name will be removed in version "
-                      "3.0, please use "
-                      "'EasyClient' instead.", DeprecationWarning, stacklevel=2)
+        warnings.warn("Call made to 'BrewmasterEasyClient'. This name will be "
+                      "removed in version 3.0, please use 'EasyClient' "
+                      "instead.", DeprecationWarning, stacklevel=2)
         super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

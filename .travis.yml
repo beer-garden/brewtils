@@ -2,6 +2,7 @@ language: python
 cache: pip
 sudo: required
 dist: xenial
+
 python:
   - '3.7'
   - '3.6'
@@ -24,9 +25,13 @@ jobs:
     - stage: lint
       install: "pip install flake8"
       script: "make lint"
+      after_success: skip
+
     - stage: deploy
       if: tag IS present
+      install: skip
       script: skip
+      after_success: skip
       deploy:
         provider: pypi
         distributions: "sdist bdist_wheel"

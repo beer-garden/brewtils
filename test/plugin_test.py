@@ -13,8 +13,12 @@ from requests import ConnectionError
 
 from brewtils import get_connection_info
 from brewtils.errors import (
-    ValidationError, RequestProcessingError, DiscardMessageException,
-    RepublishRequestException, PluginValidationError, RestClientError,
+    ValidationError,
+    RequestProcessingError,
+    DiscardMessageException,
+    RepublishRequestException,
+    PluginValidationError,
+    RestClientError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
@@ -41,9 +45,7 @@ def bm_client(bg_system, bg_instance):
 @pytest.fixture
 def client():
     return MagicMock(
-        name='client',
-        spec=['command', '_commands'],
-        _commands=['command'],
+        name="client", spec=["command", "_commands"], _commands=["command"]
     )
 
 
@@ -55,10 +57,7 @@ def parser():
 @pytest.fixture
 def plugin(client, bm_client, parser, bg_system, bg_instance):
     plugin = Plugin(
-        client,
-        bg_host='localhost',
-        system=bg_system,
-        metadata={'foo': 'bar'},
+        client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
@@ -68,30 +67,29 @@ def plugin(client, bm_client, parser, bg_system, bg_instance):
 
 
 class TestPluginInit(object):
-
     def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
             Plugin(client)
 
-    @pytest.mark.parametrize('instance_name,expected_unique', [
-        (None, 'system[default]-1.0.0'),
-        ('unique', 'system[unique]-1.0.0'),
-    ])
+    @pytest.mark.parametrize(
+        "instance_name,expected_unique",
+        [(None, "system[default]-1.0.0"), ("unique", "system[unique]-1.0.0")],
+    )
     def test_init_with_instance_name_unique_name_check(
-        self, client, bg_system, instance_name, expected_unique,
+        self, client, bg_system, instance_name, expected_unique
     ):
         plugin = Plugin(
-            client, bg_host='localhost', system=bg_system, instance_name=instance_name
+            client, bg_host="localhost", system=bg_system, instance_name=instance_name
         )
 
         assert expected_unique == plugin.unique_name
 
     def test_defaults(self, plugin):
-        assert plugin.logger == logging.getLogger('brewtils.plugin')
-        assert plugin.instance_name == 'default'
-        assert plugin.bg_host == 'localhost'
+        assert plugin.logger == logging.getLogger("brewtils.plugin")
+        assert plugin.instance_name == "default"
+        assert plugin.bg_host == "localhost"
         assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == '/'
+        assert plugin.bg_url_prefix == "/"
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
 
@@ -103,95 +101,97 @@ class TestPluginInit(object):
         if there's no prior configuration we have to fake it a little.
 
         """
-        plugin_logger = logging.getLogger('brewtils.plugin')
+        plugin_logger = logging.getLogger("brewtils.plugin")
         dict_config = Mock()
 
-        monkeypatch.setattr(plugin_logger, 'root', Mock(handlers=[]))
-        monkeypatch.setattr(logging.config, 'dictConfig', dict_config)
+        monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
 
-        plugin = Plugin(client, bg_host='localhost')
+        plugin = Plugin(client, bg_host="localhost")
         dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
-        assert logging.getLogger('brewtils.plugin') == plugin.logger
+        assert logging.getLogger("brewtils.plugin") == plugin.logger
 
     def test_kwargs(self, client, bg_system):
         logger = Mock()
 
         plugin = Plugin(
             client,
-            bg_host='host1',
+            bg_host="host1",
             bg_port=2338,
-            bg_url_prefix='/beer/',
+            bg_url_prefix="/beer/",
             system=bg_system,
             ssl_enabled=False,
             ca_verify=False,
             logger=logger,
         )
 
-        assert plugin.bg_host == 'host1'
+        assert plugin.bg_host == "host1"
         assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == '/beer/'
+        assert plugin.bg_url_prefix == "/beer/"
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
         assert plugin.logger == logger
 
     def test_env(self, client, bg_system):
-        os.environ['BG_HOST'] = 'remotehost'
-        os.environ['BG_PORT'] = '7332'
-        os.environ['BG_URL_PREFIX'] = '/beer/'
-        os.environ['BG_SSL_ENABLED'] = 'False'
-        os.environ['BG_CA_VERIFY'] = 'False'
+        os.environ["BG_HOST"] = "remotehost"
+        os.environ["BG_PORT"] = "7332"
+        os.environ["BG_URL_PREFIX"] = "/beer/"
+        os.environ["BG_SSL_ENABLED"] = "False"
+        os.environ["BG_CA_VERIFY"] = "False"
 
         plugin = Plugin(client, system=bg_system)
 
-        assert plugin.bg_host == 'remotehost'
+        assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 7332
-        assert plugin.bg_url_prefix == '/beer/'
+        assert plugin.bg_url_prefix == "/beer/"
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
 
     def test_conflicts(self, client, bg_system):
-        os.environ['BG_HOST'] = 'remotehost'
-        os.environ['BG_PORT'] = '7332'
-        os.environ['BG_URL_PREFIX'] = '/tea/'
-        os.environ['BG_SSL_ENABLED'] = 'False'
-        os.environ['BG_CA_VERIFY'] = 'False'
+        os.environ["BG_HOST"] = "remotehost"
+        os.environ["BG_PORT"] = "7332"
+        os.environ["BG_URL_PREFIX"] = "/tea/"
+        os.environ["BG_SSL_ENABLED"] = "False"
+        os.environ["BG_CA_VERIFY"] = "False"
 
         plugin = Plugin(
             client,
-            bg_host='localhost',
+            bg_host="localhost",
             bg_port=2337,
-            bg_url_prefix='/beer/',
+            bg_url_prefix="/beer/",
             system=bg_system,
             ssl_enabled=True,
             ca_verify=True,
         )
 
-        assert plugin.bg_host == 'localhost'
+        assert plugin.bg_host == "localhost"
         assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == '/beer/'
+        assert plugin.bg_url_prefix == "/beer/"
         assert plugin.ssl_enabled is True
         assert plugin.ca_verify is True
 
     def test_cli(self, client, bg_system):
         args = [
-            '--bg-host', 'remotehost',
-            '--bg-port', '2338',
-            '--url-prefix', 'beer',
-            '--no-ssl-enabled',
-            '--no-ca-verify',
+            "--bg-host",
+            "remotehost",
+            "--bg-port",
+            "2338",
+            "--url-prefix",
+            "beer",
+            "--no-ssl-enabled",
+            "--no-ca-verify",
         ]
 
         plugin = Plugin(client, system=bg_system, **get_connection_info(cli_args=args))
 
-        assert plugin.bg_host == 'remotehost'
+        assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == '/beer/'
+        assert plugin.bg_url_prefix == "/beer/"
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
 
 
 class TestPluginRun(object):
-
     @pytest.fixture
     def create_connection_poll(self):
         return Mock()
@@ -260,10 +260,7 @@ class TestPluginRun(object):
         assert admin_mock.start.call_count == 1
         assert request_mock.start.call_count == 1
 
-    @pytest.mark.parametrize('ex', [
-        KeyboardInterrupt,
-        Exception,
-    ])
+    @pytest.mark.parametrize("ex", [KeyboardInterrupt, Exception])
     def test_run_consumers_exception(self, plugin, ex):
         admin_mock = Mock()
         standard_mock = Mock()
@@ -280,7 +277,6 @@ class TestPluginRun(object):
 
 
 class TestProcessMessage(object):
-
     @pytest.fixture
     def update_mock(self):
         return Mock()
@@ -336,10 +332,7 @@ class TestProcessMessage(object):
             "attributes": {},
         }
 
-    @pytest.mark.parametrize("ex_arg", [
-        {"foo": "bar"},
-        json.dumps({"foo": "bar"}),
-    ])
+    @pytest.mark.parametrize("ex_arg", [{"foo": "bar"}, json.dumps({"foo": "bar"})])
     def test_format_json_args(self, plugin, invoke_mock, ex_arg):
         target_mock = Mock()
         request_mock = Mock(is_json=True)
@@ -349,7 +342,6 @@ class TestProcessMessage(object):
         assert json.loads(request_mock.output) == {"foo": "bar"}
 
     def test_invoke_exception_attributes(self, plugin, update_mock, invoke_mock):
-
         class MyError(Exception):
             def __init__(self, foo):
                 self.foo = foo
@@ -378,7 +370,6 @@ class TestProcessMessage(object):
         }
 
     def test_invoke_exception_bad_attributes(self, plugin, update_mock, invoke_mock):
-
         class MyError(Exception):
             def __init__(self, foo):
                 self.foo = foo
@@ -418,13 +409,13 @@ class TestProcessMessage(object):
         plugin.process_request_message(message_mock, {})
         pre_process_mock.assert_called_once_with(message_mock)
         pool_mock.submit.assert_called_once_with(
-            plugin.process_message, client, pre_process_mock.return_value, {},
+            plugin.process_message, client, pre_process_mock.return_value, {}
         )
 
     def test_completed_request_message(self, plugin):
         message_mock = Mock()
         pool_mock = Mock()
-        pre_process_mock = Mock(return_value=Mock(status='SUCCESS'))
+        pre_process_mock = Mock(return_value=Mock(status="SUCCESS"))
 
         plugin.pool = pool_mock
         plugin._pre_process = pre_process_mock
@@ -432,7 +423,7 @@ class TestProcessMessage(object):
         plugin.process_request_message(message_mock, {})
         pre_process_mock.assert_called_once_with(message_mock)
         pool_mock.submit.assert_called_once_with(
-            plugin._update_request, pre_process_mock.return_value, {},
+            plugin._update_request, pre_process_mock.return_value, {}
         )
 
     def test_admin_message(self, plugin):
@@ -446,20 +437,21 @@ class TestProcessMessage(object):
         plugin.process_admin_message(message_mock, {})
         pre_process_mock.assert_called_once_with(message_mock, verify_system=False)
         pool_mock.submit.assert_called_once_with(
-            plugin.process_message, plugin, pre_process_mock.return_value, {},
+            plugin.process_message, plugin, pre_process_mock.return_value, {}
         )
 
 
 class TestPreProcess(object):
-
-    @pytest.mark.parametrize("request_args", [
-        # Normal case
-        {"system": "system", "system_version": "1.0.0", "command_type": "ACTION"},
-
-        # Missing or ephemeral command types should succeed even with wrong names
-        {"system": "wrong", "system_version": "1.0.0"},
-        {"system": "wrong", "system_version": "1.0.0", "command_type": "EPHEMERAL"},
-    ])
+    @pytest.mark.parametrize(
+        "request_args",
+        [
+            # Normal case
+            {"system": "system", "system_version": "1.0.0", "command_type": "ACTION"},
+            # Missing or ephemeral command types should succeed even with wrong names
+            {"system": "wrong", "system_version": "1.0.0"},
+            {"system": "wrong", "system_version": "1.0.0", "command_type": "EPHEMERAL"},
+        ],
+    )
     def test_success(self, plugin, request_args):
         # Need to reset the real parser
         plugin.parser = SchemaParser()
@@ -469,10 +461,13 @@ class TestPreProcess(object):
             SchemaParser.parse_request(request_args),
         )
 
-    @pytest.mark.parametrize("request_args", [
-        # Normal case
-        {"system": "wrong", "system_version": "1.0.0", "command_type": "ACTION"},
-    ])
+    @pytest.mark.parametrize(
+        "request_args",
+        [
+            # Normal case
+            {"system": "wrong", "system_version": "1.0.0", "command_type": "ACTION"}
+        ],
+    )
     def test_wrong_system(self, plugin, request_args):
         # Need to reset the real parser
         plugin.parser = SchemaParser()
@@ -492,7 +487,6 @@ class TestPreProcess(object):
 
 
 class TestInitialize(object):
-
     def test_new_system(self, plugin, bm_client, bg_system, bg_instance):
         bm_client.find_unique_system.return_value = None
 
@@ -503,24 +497,22 @@ class TestInitialize(object):
         assert bm_client.create_system.return_value == plugin.system
         assert bm_client.initialize_instance.return_value == plugin.instance
 
-    @pytest.mark.parametrize('current_commands', [
-        [],
-        [Command('test')],
-        [Command('other_test')],
-    ])
+    @pytest.mark.parametrize(
+        "current_commands", [[], [Command("test")], [Command("other_test")]]
+    )
     def test_system_exists(
-        self, plugin, bm_client, bg_system, bg_instance, current_commands,
+        self, plugin, bm_client, bg_system, bg_instance, current_commands
     ):
-        bg_system.commands = [Command('test')]
+        bg_system.commands = [Command("test")]
         bm_client.update_system.return_value = bg_system
 
         existing_system = System(
-            id='id',
-            name='test_system',
-            version='0.0.1',
+            id="id",
+            name="test_system",
+            version="0.0.1",
             instances=[bg_instance],
             commands=current_commands,
-            metadata={'foo': 'bar'},
+            metadata={"foo": "bar"},
         )
         bm_client.find_unique_system.return_value = existing_system
 
@@ -539,15 +531,15 @@ class TestInitialize(object):
         assert bm_client.initialize_instance.return_value == plugin.instance
 
     def test_new_instance(self, plugin, bm_client, bg_system, bg_instance):
-        plugin.instance_name = 'new_instance'
+        plugin.instance_name = "new_instance"
 
         existing_system = System(
-            id='id',
-            name='test_system',
-            version='0.0.1',
+            id="id",
+            name="test_system",
+            version="0.0.1",
             instances=[bg_instance],
             max_instances=2,
-            metadata={'foo': 'bar'},
+            metadata={"foo": "bar"},
         )
         bm_client.find_unique_system.return_value = existing_system
 
@@ -557,7 +549,7 @@ class TestInitialize(object):
         assert bm_client.update_system.called is True
 
     def test_new_instance_maximum(self, plugin, bm_client, bg_system):
-        plugin.instance_name = 'new_instance'
+        plugin.instance_name = "new_instance"
         bm_client.find_unique_system.return_value = bg_system
 
         with pytest.raises(PluginValidationError):
@@ -584,12 +576,12 @@ def test_shutdown(plugin):
 
 def test_create_request_consumer(plugin, bg_instance):
     consumer = plugin._create_standard_consumer()
-    assert consumer._queue_name == bg_instance.queue_info['request']['name']
+    assert consumer._queue_name == bg_instance.queue_info["request"]["name"]
 
 
 def test_create_admin_consumer(plugin, bg_instance):
     consumer = plugin._create_admin_consumer()
-    assert consumer._queue_name == bg_instance.queue_info['admin']['name']
+    assert consumer._queue_name == bg_instance.queue_info["admin"]["name"]
 
 
 def test_create_connection_poll_thread(plugin):
@@ -599,16 +591,15 @@ def test_create_connection_poll_thread(plugin):
 
 
 class TestInvokeCommand(object):
-
     def test_invoke_admin(self, plugin):
         start_mock = Mock()
         plugin._start = start_mock
 
         request = Request(
-            system='test_system',
-            system_version='1.0.0',
-            command='_start',
-            parameters={'p1': 'param'},
+            system="test_system",
+            system_version="1.0.0",
+            command="_start",
+            parameters={"p1": "param"},
         )
 
         plugin._invoke_command(plugin, request)
@@ -616,26 +607,25 @@ class TestInvokeCommand(object):
 
     def test_invoke_request(self, plugin, client):
         request = Request(
-            system='test_system',
-            system_version='1.0.0',
-            command='command',
-            parameters={'p1': 'param'},
+            system="test_system",
+            system_version="1.0.0",
+            command="command",
+            parameters={"p1": "param"},
         )
 
         plugin._invoke_command(client, request)
         client.command.assert_called_once_with(**request.parameters)
 
-    @pytest.mark.parametrize("command", [
-        "foo",  # Missing attribute
-        "_commands",  # Non-callable attribute
-    ])
+    @pytest.mark.parametrize(
+        "command", ["foo", "_commands"]  # Missing attribute  # Non-callable attribute
+    )
     def test_failure(self, plugin, client, command):
         with pytest.raises(RequestProcessingError):
             plugin._invoke_command(
                 client,
                 Request(
-                    system='name',
-                    system_version='1.0.0',
+                    system="name",
+                    system_version="1.0.0",
                     command=command,
                     parameters={"p1": "param"},
                 ),
@@ -643,17 +633,19 @@ class TestInvokeCommand(object):
 
 
 class TestUpdateRequest(object):
-
     @pytest.mark.parametrize("ephemeral", [False, True])
     def test_success(self, plugin, bm_client, ephemeral):
         plugin._update_request(Mock(is_ephemeral=ephemeral), {})
         assert bm_client.update_request.called is not ephemeral
 
-    @pytest.mark.parametrize("ex,raised,bv_down", [
-        (RestClientError, DiscardMessageException, False),
-        (ConnectionError, RepublishRequestException, True),
-        (ValueError, RepublishRequestException, False),
-    ])
+    @pytest.mark.parametrize(
+        "ex,raised,bv_down",
+        [
+            (RestClientError, DiscardMessageException, False),
+            (ConnectionError, RepublishRequestException, True),
+            (ValueError, RepublishRequestException, False),
+        ],
+    )
     def test_errors(self, plugin, bm_client, bg_request, ex, raised, bv_down):
         bm_client.update_request.side_effect = ex
 
@@ -674,23 +666,23 @@ class TestUpdateRequest(object):
     def test_final_attempt_succeeds(self, plugin, bm_client, bg_request):
         plugin.max_attempts = 1
 
-        plugin._update_request(bg_request, {'retry_attempt': 1, 'time_to_wait': 5})
+        plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 5})
         bm_client.update_request.assert_called_with(
             bg_request.id,
-            status='ERROR',
-            output='We tried to update the request, but '
-                   'it failed too many times. Please check '
-                   'the plugin logs to figure out why the request '
-                   'update failed. It is possible for this request to have '
-                   'succeeded, but we cannot update beer-garden with that '
-                   'information.',
-            error_class='BGGivesUpError',
+            status="ERROR",
+            output="We tried to update the request, but "
+            "it failed too many times. Please check "
+            "the plugin logs to figure out why the request "
+            "update failed. It is possible for this request to have "
+            "succeeded, but we cannot update beer-garden with that "
+            "information.",
+            error_class="BGGivesUpError",
         )
 
     def test_wait_if_in_headers(self, plugin, bg_request):
         plugin.shutdown_event = Mock(wait=Mock(return_value=True))
 
-        plugin._update_request(bg_request, {'retry_attempt': 1, 'time_to_wait': 1})
+        plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 1})
         assert plugin.shutdown_event.wait.called is True
 
     def test_update_request_headers(self, plugin, bm_client, bg_request):
@@ -698,26 +690,25 @@ class TestUpdateRequest(object):
         bm_client.update_request.side_effect = ValueError
 
         with pytest.raises(RepublishRequestException) as ex:
-            plugin._update_request(bg_request, {'retry_attempt': 1, 'time_to_wait': 5})
-        assert ex.value.headers['retry_attempt'] == 2
-        assert ex.value.headers['time_to_wait'] == 10
+            plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 5})
+        assert ex.value.headers["retry_attempt"] == 2
+        assert ex.value.headers["time_to_wait"] == 10
 
     def test_update_request_final_attempt_fails(self, plugin, bm_client, bg_request):
         plugin.max_attempts = 1
         bm_client.update_request.side_effect = ValueError
         with pytest.raises(DiscardMessageException):
-            plugin._update_request(bg_request, {'retry_attempt': 1})
+            plugin._update_request(bg_request, {"retry_attempt": 1})
 
 
 class TestAdminMethods(object):
-
     def test_start(self, plugin, bm_client, bg_instance):
         new_instance = Mock()
         bm_client.update_instance_status.return_value = new_instance
 
         assert plugin._start(Mock())
         bm_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, 'RUNNING',
+            bg_instance.id, "RUNNING"
         )
         assert plugin.instance == new_instance
 
@@ -727,7 +718,7 @@ class TestAdminMethods(object):
 
         assert plugin._stop(Mock())
         bm_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, 'STOPPED',
+            bg_instance.id, "STOPPED"
         )
         assert plugin.instance == new_instance
         assert plugin.shutdown_event.is_set() is True
@@ -736,10 +727,9 @@ class TestAdminMethods(object):
         plugin._status(Mock())
         bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
-    @pytest.mark.parametrize("error,bv_down", [
-        (ConnectionError, True),
-        (ValueError, False),
-    ])
+    @pytest.mark.parametrize(
+        "error,bv_down", [(ConnectionError, True), (ValueError, False)]
+    )
     def test_status_error(self, plugin, bm_client, error, bv_down):
         bm_client.instance_heartbeat.side_effect = error
         with pytest.raises(error):
@@ -752,61 +742,66 @@ class TestAdminMethods(object):
         assert bm_client.instance_heartbeat.called is False
 
 
-@pytest.mark.parametrize("args,expected", [
-    ((None, None), 1),
-    ((True, None), 5),
-    ((False, None), 1),
-    ((None, 4), 4),
-    ((True, 1), 1),
-    ((False, 1), 1),
-    ((True, 4), 4),
-    ((False, 4), 4),
-])
+@pytest.mark.parametrize(
+    "args,expected",
+    [
+        ((None, None), 1),
+        ((True, None), 5),
+        ((False, None), 1),
+        ((None, 4), 4),
+        ((True, 1), 1),
+        ((False, 1), 1),
+        ((True, 4), 4),
+        ((False, 4), 4),
+    ],
+)
 def test_max_concurrent(plugin, args, expected):
     assert plugin._setup_max_concurrent(*args) == expected
 
 
 class TestSetupSystem(object):
-
-    @pytest.mark.parametrize("extra_args", [
-        ('name', '', '', '', {}, None, None),
-        ('', 'description', '', '', {}, None, None),
-        ('', '', 'version', '', {}, None, None),
-        ('', '', '', 'icon name', {}, None, None),
-        ('', '', '', '', {}, "display_name", None),
-    ])
+    @pytest.mark.parametrize(
+        "extra_args",
+        [
+            ("name", "", "", "", {}, None, None),
+            ("", "description", "", "", {}, None, None),
+            ("", "", "version", "", {}, None, None),
+            ("", "", "", "icon name", {}, None, None),
+            ("", "", "", "", {}, "display_name", None),
+        ],
+    )
     def test_extra_params(self, plugin, client, bg_system, extra_args):
         with pytest.raises(ValidationError, match="system creation helper keywords"):
-            plugin._setup_system(client, 'default', bg_system, *extra_args)
+            plugin._setup_system(client, "default", bg_system, *extra_args)
 
     def test_no_instances(self, plugin, client):
-        system = System(name='name', version='1.0.0')
+        system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
             plugin._setup_system(
-                client, 'default', system, '', '', '', '', {}, None, None,
+                client, "default", system, "", "", "", "", {}, None, None
             )
 
     def test_max_instances(self, plugin, client):
         system = System(
-            name='name',
-            version='1.0.0',
-            instances=[Instance(name='1'), Instance(name='2')],
+            name="name",
+            version="1.0.0",
+            instances=[Instance(name="1"), Instance(name="2")],
         )
         new_system = plugin._setup_system(
-            client, 'default', system, '', '', '', '', {}, None, None,
+            client, "default", system, "", "", "", "", {}, None, None
         )
         assert new_system.max_instances == 2
 
     def test_construct_system(self, plugin, client):
         new_system = plugin._setup_system(
             client,
-            'default',
+            "default",
             None,
-            'name',
-            'desc',
-            '1.0.0',
-            'icon',
-            {'foo': 'bar'},
+            "name",
+            "desc",
+            "1.0.0",
+            "icon",
+            {"foo": "bar"},
             "display_name",
             None,
         )
@@ -815,31 +810,31 @@ class TestSetupSystem(object):
         assert new_system.description == "desc"
         assert new_system.version == "1.0.0"
         assert new_system.icon_name == "icon"
-        assert new_system.metadata == {'foo': 'bar'}
+        assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
 
     def test_construct_client_docstring(self, plugin, client):
-        client.__doc__ = 'Description\nSome more stuff'
+        client.__doc__ = "Description\nSome more stuff"
 
         new_system = plugin._setup_system(
-            client, 'default', None, 'name', '', '1.0.0', 'icon', {}, None, None,
+            client, "default", None, "name", "", "1.0.0", "icon", {}, None, None
         )
 
         assert new_system.description == "Description"
 
     def test_construct_from_env(self, plugin, client):
-        os.environ['BG_NAME'] = 'name'
-        os.environ['BG_VERSION'] = '1.0.0'
+        os.environ["BG_NAME"] = "name"
+        os.environ["BG_VERSION"] = "1.0.0"
 
         new_system = plugin._setup_system(
             client,
-            'default',
+            "default",
             None,
             None,
-            'desc',
+            "desc",
             None,
-            'icon',
-            {'foo': 'bar'},
+            "icon",
+            {"foo": "bar"},
             "display_name",
             None,
         )
@@ -848,12 +843,11 @@ class TestSetupSystem(object):
         assert new_system.description == "desc"
         assert new_system.version == "1.0.0"
         assert new_system.icon_name == "icon"
-        assert new_system.metadata == {'foo': 'bar'}
+        assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
 
 
 class TestConnectionPoll(object):
-
     def test_shut_down(self, plugin, bm_client):
         plugin.shutdown_event.set()
         plugin._connection_poll()
@@ -882,14 +876,16 @@ class TestConnectionPoll(object):
         assert plugin.brew_view_down is False
 
 
-@pytest.mark.parametrize("output,expected", [
-    ("foo", "foo"),
-    (u"foo", "foo"),
-    ({"foo": "bar"}, json.dumps({"foo": "bar"})),
-    (["foo", "bar"], json.dumps(["foo", "bar"])),
-
-    # TypeError
-    (Request(command='foo'), str(Request(command='foo'))),
-])
+@pytest.mark.parametrize(
+    "output,expected",
+    [
+        ("foo", "foo"),
+        (u"foo", "foo"),
+        ({"foo": "bar"}, json.dumps({"foo": "bar"})),
+        (["foo", "bar"], json.dumps(["foo", "bar"])),
+        # TypeError
+        (Request(command="foo"), str(Request(command="foo"))),
+    ],
+)
 def test_format(plugin, output, expected):
     assert plugin._format_output(output) == expected

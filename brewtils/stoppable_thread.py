@@ -9,7 +9,7 @@ class StoppableThread(Thread):
     regularly for the stopped() condition."""
 
     def __init__(self, **kwargs):
-        self.logger = kwargs.pop('logger', logging.getLogger(__name__))
+        self.logger = kwargs.pop("logger", logging.getLogger(__name__))
         self._stop_event = Event()
 
         Thread.__init__(self, **kwargs)

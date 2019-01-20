@@ -6,8 +6,16 @@ import warnings
 import requests.exceptions
 
 from brewtils.errors import (
-    FetchError, ValidationError, SaveError, DeleteError, RestConnectionError,
-    NotFoundError, ConflictError, RestError, WaitExceededError)
+    FetchError,
+    ValidationError,
+    SaveError,
+    DeleteError,
+    RestConnectionError,
+    NotFoundError,
+    ConflictError,
+    RestError,
+    WaitExceededError,
+)
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
@@ -41,29 +49,34 @@ class EasyClient(object):
     """
 
     def __init__(
-            self,
-            bg_host=None,
-            bg_port=None,
-            ssl_enabled=False,
-            api_version=None,
-            ca_cert=None,
-            client_cert=None,
-            parser=None,
-            logger=None,
-            url_prefix=None,
-            ca_verify=True,
-            **kwargs
+        self,
+        bg_host=None,
+        bg_port=None,
+        ssl_enabled=False,
+        api_version=None,
+        ca_cert=None,
+        client_cert=None,
+        parser=None,
+        logger=None,
+        url_prefix=None,
+        ca_verify=True,
+        **kwargs
     ):
-        bg_host = bg_host or kwargs.get('host')
-        bg_port = bg_port or kwargs.get('port')
+        bg_host = bg_host or kwargs.get("host")
+        bg_port = bg_port or kwargs.get("port")
 
         self.logger = logger or logging.getLogger(__name__)
         self.parser = parser or SchemaParser()
 
         self.client = RestClient(
-            bg_host=bg_host, bg_port=bg_port, ssl_enabled=ssl_enabled,
-            api_version=api_version, ca_cert=ca_cert, client_cert=client_cert,
-            url_prefix=url_prefix, ca_verify=ca_verify,
+            bg_host=bg_host,
+            bg_port=bg_port,
+            ssl_enabled=ssl_enabled,
+            api_version=api_version,
+            ca_cert=ca_cert,
+            client_cert=client_cert,
+            url_prefix=url_prefix,
+            ca_verify=ca_verify,
             **kwargs
         )
 
@@ -133,8 +146,8 @@ class EasyClient(object):
             FetchError: More than one matching System was found
 
         """
-        if 'id' in kwargs:
-            return self._find_system_by_id(kwargs.pop('id'), **kwargs)
+        if "id" in kwargs:
+            return self._find_system_by_id(kwargs.pop("id"), **kwargs)
         else:
             systems = self.find_systems(**kwargs)
 
@@ -203,18 +216,20 @@ class EasyClient(object):
 
         if new_commands:
             commands = self.parser.serialize_command(
-                new_commands, to_string=False, many=True)
-            operations.append(PatchOperation('replace', '/commands', commands))
+                new_commands, to_string=False, many=True
+            )
+            operations.append(PatchOperation("replace", "/commands", commands))
 
         if metadata:
-            operations.append(PatchOperation('update', '/metadata', metadata))
+            operations.append(PatchOperation("update", "/metadata", metadata))
 
         for key, value in kwargs.items():
             if value is not None:
-                operations.append(PatchOperation('replace', '/%s' % key, value))
+                operations.append(PatchOperation("replace", "/%s" % key, value))
 
         response = self.client.patch_system(
-            system_id, self.parser.serialize_patch(operations, many=True))
+            system_id, self.parser.serialize_patch(operations, many=True)
+        )
 
         if response.ok:
             return self.parser.parse_system(response.json())
@@ -251,9 +266,10 @@ class EasyClient(object):
             Instance: The updated Instance
 
         """
-        operation = PatchOperation('initialize')
+        operation = PatchOperation("initialize")
         response = self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(operation))
+            instance_id, self.parser.serialize_patch(operation)
+        )
 
         if response.ok:
             return self.parser.parse_instance(response.json())
@@ -287,9 +303,10 @@ class EasyClient(object):
             Instance: The updated Instance
 
         """
-        operation = PatchOperation('replace', '/status', new_status)
+        operation = PatchOperation("replace", "/status", new_status)
         response = self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(operation))
+            instance_id, self.parser.serialize_patch(operation)
+        )
 
         if response.ok:
             return self.parser.parse_instance(response.json())
@@ -306,9 +323,10 @@ class EasyClient(object):
             bool: True if the heartbeat was successful
 
         """
-        operation = PatchOperation('heartbeat')
+        operation = PatchOperation("heartbeat")
         response = self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(operation))
+            instance_id, self.parser.serialize_patch(operation)
+        )
 
         if response.ok:
             return True
@@ -347,8 +365,8 @@ class EasyClient(object):
             FetchError: More than one matching Request was found
 
         """
-        if 'id' in kwargs:
-            return self._find_request_by_id(kwargs.pop('id'))
+        if "id" in kwargs:
+            return self._find_request_by_id(kwargs.pop("id"))
         else:
             all_requests = self.find_requests(**kwargs)
 
@@ -401,8 +419,7 @@ class EasyClient(object):
         else:
             self._handle_response_failure(response, default_exc=SaveError)
 
-    def update_request(
-            self, request_id, status=None, output=None, error_class=None):
+    def update_request(self, request_id, status=None, output=None, error_class=None):
         """Update a Request
 
         Args:
@@ -418,14 +435,15 @@ class EasyClient(object):
         operations = []
 
         if status:
-            operations.append(PatchOperation('replace', '/status', status))
+            operations.append(PatchOperation("replace", "/status", status))
         if output:
-            operations.append(PatchOperation('replace', '/output', output))
+            operations.append(PatchOperation("replace", "/output", output))
         if error_class:
-            operations.append(PatchOperation('replace', '/error_class', error_class))
+            operations.append(PatchOperation("replace", "/error_class", error_class))
 
         response = self.client.patch_request(
-            request_id, self.parser.serialize_patch(operations, many=True))
+            request_id, self.parser.serialize_patch(operations, many=True)
+        )
 
         if response.ok:
             return self.parser.parse_request(response.json())
@@ -451,12 +469,13 @@ class EasyClient(object):
             bool: True if the publish was successful
 
         """
-        publishers = kwargs.pop('_publishers', None)
+        publishers = kwargs.pop("_publishers", None)
 
         event = args[0] if args else Event(**kwargs)
 
         response = self.client.post_event(
-            self.parser.serialize_event(event), publishers=publishers)
+            self.parser.serialize_event(event), publishers=publishers
+        )
 
         if response.ok:
             return True
@@ -570,7 +589,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation('update', '/status', 'PAUSED')])
+        self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
 
     def resume_job(self, job_id):
         """Resume a Job
@@ -582,7 +601,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation('update', '/status', 'RUNNING')])
+        self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
     def get_user(self, user_identifier):
         """Find a user
@@ -607,7 +626,7 @@ class EasyClient(object):
             Principal: The User
 
         """
-        return self.get_user(self.client.username or 'anonymous')
+        return self.get_user(self.client.username or "anonymous")
 
     def _find_system_by_id(self, system_id, **kwargs):
 
@@ -617,7 +636,8 @@ class EasyClient(object):
             return self.parser.parse_system(response.json())
         else:
             self._handle_response_failure(
-                response, default_exc=FetchError, raise_404=False)
+                response, default_exc=FetchError, raise_404=False
+            )
 
     def _remove_system_by_id(self, system_id):
 
@@ -638,7 +658,8 @@ class EasyClient(object):
             return self.parser.parse_request(response.json())
         else:
             self._handle_response_failure(
-                response, default_exc=FetchError, raise_404=False)
+                response, default_exc=FetchError, raise_404=False
+            )
 
     def _patch_job(self, job_id, operations):
         response = self.client.patch_job(
@@ -670,7 +691,11 @@ class EasyClient(object):
 
 class BrewmasterEasyClient(EasyClient):
     def __init__(self, *args, **kwargs):
-        warnings.warn("Call made to 'BrewmasterEasyClient'. This name will be "
-                      "removed in version 3.0, please use 'EasyClient' "
-                      "instead.", DeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "Call made to 'BrewmasterEasyClient'. This name will be "
+            "removed in version 3.0, please use 'EasyClient' "
+            "instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

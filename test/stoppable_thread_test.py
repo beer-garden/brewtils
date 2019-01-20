@@ -7,7 +7,6 @@ from brewtils.stoppable_thread import StoppableThread
 
 
 class TestStoppableThread(object):
-
     @pytest.fixture
     def thread(self):
         return StoppableThread()

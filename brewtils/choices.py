@@ -35,27 +35,20 @@ choices_grammar = r"""
 """
 
 parsers = {
-    'func': Lark(choices_grammar, start='func'),
-    'url': Lark(choices_grammar, start='url'),
-    'reference': Lark(choices_grammar, start='reference')
+    "func": Lark(choices_grammar, start="func"),
+    "url": Lark(choices_grammar, start="url"),
+    "reference": Lark(choices_grammar, start="reference"),
 }
 
 
 class FunctionTransformer(Transformer):
-
     @staticmethod
     def func(s):
-        return {
-            'name': str(s[0]),
-            'args': s[1] if len(s) > 1 else []
-        }
+        return {"name": str(s[0]), "args": s[1] if len(s) > 1 else []}
 
     @staticmethod
     def url(s):
-        return {
-            'address': str(s[0]),
-            'args': s[1] if len(s) > 1 else []
-        }
+        return {"address": str(s[0]), "args": s[1] if len(s) > 1 else []}
 
     @staticmethod
     def reference(s):
@@ -78,6 +71,7 @@ def parse(input_string, parse_as=None):
     :return: A dictionary containing the results of the parse
     :raise lark.common.ParseError: The parser was not able to find a valid parsing of `input_string`
     """
+
     def _parse(_input_string, _parser):
         try:
             return FunctionTransformer().transform(_parser.parse(_input_string))

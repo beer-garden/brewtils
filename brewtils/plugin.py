@@ -14,9 +14,15 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.errors import (
-    ValidationError, RequestProcessingError, DiscardMessageException,
-    RepublishRequestException, RestConnectionError, PluginValidationError,
-    RestClientError, parse_exception_as_json)
+    ValidationError,
+    RequestProcessingError,
+    DiscardMessageException,
+    RepublishRequestException,
+    RestConnectionError,
+    PluginValidationError,
+    RestClientError,
+    parse_exception_as_json,
+)
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
@@ -139,26 +145,26 @@ class Plugin(object):
     """
 
     def __init__(
-            self,
-            client,
-            bg_host=None,
-            bg_port=None,
-            ssl_enabled=None,
-            ca_cert=None,
-            client_cert=None,
-            system=None,
-            name=None,
-            description=None,
-            version=None,
-            icon_name=None,
-            instance_name=None,
-            logger=None,
-            parser=None,
-            multithreaded=None,
-            metadata=None,
-            max_concurrent=None,
-            bg_url_prefix=None,
-            **kwargs
+        self,
+        client,
+        bg_host=None,
+        bg_port=None,
+        ssl_enabled=None,
+        ca_cert=None,
+        client_cert=None,
+        system=None,
+        name=None,
+        description=None,
+        version=None,
+        icon_name=None,
+        instance_name=None,
+        logger=None,
+        parser=None,
+        multithreaded=None,
+        metadata=None,
+        max_concurrent=None,
+        bg_url_prefix=None,
+        **kwargs
     ):
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
@@ -176,28 +182,28 @@ class Plugin(object):
             ssl_enabled=ssl_enabled,
             ca_cert=ca_cert,
             client_cert=client_cert,
-            url_prefix=bg_url_prefix or kwargs.get('url_prefix', None),
-            ca_verify=kwargs.get('ca_verify', None),
-            username=kwargs.get('username', None),
-            password=kwargs.get('password', None),
-            client_timeout=kwargs.get('client_timeout', None),
+            url_prefix=bg_url_prefix or kwargs.get("url_prefix", None),
+            ca_verify=kwargs.get("ca_verify", None),
+            username=kwargs.get("username", None),
+            password=kwargs.get("password", None),
+            client_timeout=kwargs.get("client_timeout", None),
         )
-        self.bg_host = connection_parameters['bg_host']
-        self.bg_port = connection_parameters['bg_port']
-        self.ssl_enabled = connection_parameters['ssl_enabled']
-        self.ca_cert = connection_parameters['ca_cert']
-        self.client_cert = connection_parameters['client_cert']
-        self.bg_url_prefix = connection_parameters['url_prefix']
-        self.ca_verify = connection_parameters['ca_verify']
+        self.bg_host = connection_parameters["bg_host"]
+        self.bg_port = connection_parameters["bg_port"]
+        self.ssl_enabled = connection_parameters["ssl_enabled"]
+        self.ca_cert = connection_parameters["ca_cert"]
+        self.client_cert = connection_parameters["client_cert"]
+        self.bg_url_prefix = connection_parameters["url_prefix"]
+        self.ca_verify = connection_parameters["ca_verify"]
 
-        self.max_attempts = kwargs.get('max_attempts', -1)
-        self.max_timeout = kwargs.get('max_timeout', 30)
-        self.starting_timeout = kwargs.get('starting_timeout', 5)
+        self.max_attempts = kwargs.get("max_attempts", -1)
+        self.max_timeout = kwargs.get("max_timeout", 30)
+        self.starting_timeout = kwargs.get("starting_timeout", 5)
 
-        self.max_concurrent = self._setup_max_concurrent(
-            multithreaded, max_concurrent)
+        self.max_concurrent = self._setup_max_concurrent(multithreaded, max_concurrent)
         self.instance_name = instance_name or os.environ.get(
-            'BG_INSTANCE_NAME', 'default')
+            "BG_INSTANCE_NAME", "default"
+        )
         self.metadata = metadata or {}
 
         self.instance = None
@@ -219,12 +225,13 @@ class Plugin(object):
             icon_name,
             self.metadata,
             kwargs.get("display_name", None),
-            kwargs.get('max_instances', None),
+            kwargs.get("max_instances", None),
         )
 
-        self.unique_name = (
-            '%s[%s]-%s' %
-            (self.system.name, self.instance_name, self.system.version)
+        self.unique_name = "%s[%s]-%s" % (
+            self.system.name,
+            self.instance_name,
+            self.system.version,
         )
 
         # Tightly manage when we're in an 'error' state, aka Brew-view is down
@@ -235,7 +242,8 @@ class Plugin(object):
         self.admin_pool = ThreadPoolExecutor(max_workers=1)
 
         self.bm_client = EasyClient(
-            logger=self.logger, parser=self.parser, **connection_parameters)
+            logger=self.logger, parser=self.parser, **connection_parameters
+        )
 
     def run(self):
         # Let Beergarden know about our system and instance
@@ -257,38 +265,44 @@ class Plugin(object):
 
         try:
             while not self.shutdown_event.wait(0.1):
-                if (not self.admin_consumer.isAlive() and
-                        not self.admin_consumer.shutdown_event.is_set()):
+                if (
+                    not self.admin_consumer.isAlive()
+                    and not self.admin_consumer.shutdown_event.is_set()
+                ):
                     self.logger.warning(
-                        "Looks like admin consumer has died - attempting to "
-                        "restart")
+                        "Looks like admin consumer has died - attempting to " "restart"
+                    )
                     self.admin_consumer = self._create_admin_consumer()
                     self.admin_consumer.start()
 
-                if (not self.request_consumer.isAlive() and
-                        not self.request_consumer.shutdown_event.is_set()):
+                if (
+                    not self.request_consumer.isAlive()
+                    and not self.request_consumer.shutdown_event.is_set()
+                ):
                     self.logger.warning(
-                        "Looks like request consumer has died - attempting to"
-                        "restart")
+                        "Looks like request consumer has died - attempting to" "restart"
+                    )
                     self.request_consumer = self._create_standard_consumer()
                     self.request_consumer.start()
 
                 if not self.connection_poll_thread.isAlive():
                     self.logger.warning(
                         "Looks like connection poll thread has died - "
-                        "attempting to restart")
+                        "attempting to restart"
+                    )
                     self.connection_poll_thread = self._create_connection_poll_thread()
                     self.connection_poll_thread.start()
 
-                if (self.request_consumer.shutdown_event.is_set() and
-                        self.admin_consumer.shutdown_event.is_set()):
+                if (
+                    self.request_consumer.shutdown_event.is_set()
+                    and self.admin_consumer.shutdown_event.is_set()
+                ):
                     self.shutdown_event.set()
 
         except KeyboardInterrupt:
             self.logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:
-            self.logger.error(
-                "Event loop terminated unexpectedly - shutting down")
+            self.logger.error("Event loop terminated unexpectedly - shutting down")
             self.logger.exception(ex)
 
         self.logger.debug("About to shut down plugin %s", self.unique_name)
@@ -306,7 +320,7 @@ class Plugin(object):
             `brewtils.request_consumer.RequestConsumer`
         :return: None
         """
-        request.status = 'IN_PROGRESS'
+        request.status = "IN_PROGRESS"
         self._update_request(request, headers)
 
         try:
@@ -321,13 +335,16 @@ class Plugin(object):
             output = self._invoke_command(target, request)
         except Exception as ex:
             self.logger.exception(
-                'Plugin %s raised an exception while processing request %s: %s',
-                self.unique_name, str(request), ex)
-            request.status = 'ERROR'
+                "Plugin %s raised an exception while processing request %s: %s",
+                self.unique_name,
+                str(request),
+                ex,
+            )
+            request.status = "ERROR"
             request.output = self._format_error_output(request, ex)
             request.error_class = type(ex).__name__
         else:
-            request.status = 'SUCCESS'
+            request.status = "SUCCESS"
             request.output = self._format_output(output)
 
         self._update_request(request, headers)
@@ -348,38 +365,41 @@ class Plugin(object):
         if request.status in Request.COMPLETED_STATUSES:
             return self.pool.submit(self._update_request, request, headers)
         else:
-            return self.pool.submit(
-                self.process_message, self.client, request, headers)
+            return self.pool.submit(self.process_message, self.client, request, headers)
 
     def process_admin_message(self, message, headers):
 
         # Admin requests won't have a system, so don't verify it
         request = self._pre_process(message, verify_system=False)
 
-        return self.admin_pool.submit(
-            self.process_message, self, request, headers)
+        return self.admin_pool.submit(self.process_message, self, request, headers)
 
     def _pre_process(self, message, verify_system=True):
 
         if self.shutdown_event.is_set():
             raise RequestProcessingError(
-                'Unable to process message - currently shutting down')
+                "Unable to process message - currently shutting down"
+            )
 
         try:
             request = self.parser.parse_request(message, from_string=True)
         except Exception as ex:
             self.logger.exception(
-                "Unable to parse message body: {0}. Exception: {1}"
-                .format(message, ex))
-            raise DiscardMessageException('Error parsing message body')
+                "Unable to parse message body: {0}. Exception: {1}".format(message, ex)
+            )
+            raise DiscardMessageException("Error parsing message body")
 
-        if (verify_system and
-                request.command_type and
-                request.command_type.upper() != 'EPHEMERAL' and
-                request.system.upper() != self.system.name.upper()):
+        if (
+            verify_system
+            and request.command_type
+            and request.command_type.upper() != "EPHEMERAL"
+            and request.system.upper() != self.system.name.upper()
+        ):
             raise DiscardMessageException(
-                "Received message for a different system {0}"
-                .format(request.system.upper()))
+                "Received message for a different system {0}".format(
+                    request.system.upper()
+                )
+            )
 
         return request
 
@@ -388,7 +408,8 @@ class Plugin(object):
 
         # TODO: We should use self.bm_client.upsert_system once it is supported
         existing_system = self.bm_client.find_unique_system(
-            name=self.system.name, version=self.system.version)
+            name=self.system.name, version=self.system.version
+        )
 
         if existing_system:
             if not existing_system.has_instance(self.instance_name):
@@ -399,10 +420,14 @@ class Plugin(object):
                     raise PluginValidationError(
                         'Unable to create plugin with instance name "%s": '
                         'System "%s[%s]" has an instance limit of %d and '
-                        'existing instances %s' %
-                        (self.instance_name, existing_system.name,
-                         existing_system.version, existing_system.max_instances,
-                         ', '.join(existing_system.instance_names))
+                        "existing instances %s"
+                        % (
+                            self.instance_name,
+                            existing_system.name,
+                            existing_system.version,
+                            existing_system.max_instances,
+                            ", ".join(existing_system.instance_names),
+                        )
                     )
 
             # We always update in case the metadata has changed.
@@ -422,54 +447,57 @@ class Plugin(object):
             instance_id = self.system.get_instance(self.instance_name).id
         else:
             raise PluginValidationError(
-                'Unable to find registered instance with name "%s"' %
-                self.instance_name)
+                'Unable to find registered instance with name "%s"' % self.instance_name
+            )
 
         self.instance = self.bm_client.initialize_instance(instance_id)
 
-        self.queue_connection_params = self.instance.queue_info.get('connection', None)
-        if self.queue_connection_params and self.queue_connection_params.get('ssl', None):
-            self.queue_connection_params['ssl'].update({
-                'ca_cert': self.ca_cert,
-                'ca_verify': self.ca_verify,
-                'client_cert': self.client_cert,
-            })
+        self.queue_connection_params = self.instance.queue_info.get("connection", None)
+        if self.queue_connection_params and self.queue_connection_params.get(
+            "ssl", None
+        ):
+            self.queue_connection_params["ssl"].update(
+                {
+                    "ca_cert": self.ca_cert,
+                    "ca_verify": self.ca_verify,
+                    "client_cert": self.client_cert,
+                }
+            )
 
         self.logger.debug("Plugin %s is initialized", self.unique_name)
 
     def _shutdown(self):
         self.shutdown_event.set()
 
-        self.logger.debug('About to stop message consuming')
+        self.logger.debug("About to stop message consuming")
         self.request_consumer.stop_consuming()
         self.admin_consumer.stop_consuming()
 
-        self.logger.debug('About to wake sleeping request processing threads')
+        self.logger.debug("About to wake sleeping request processing threads")
         with self.brew_view_error_condition:
             self.brew_view_error_condition.notify_all()
 
-        self.logger.debug('Shutting down request processing pool')
+        self.logger.debug("Shutting down request processing pool")
         self.pool.shutdown(wait=True)
-        self.logger.debug('Shutting down admin processing pool')
+        self.logger.debug("Shutting down admin processing pool")
         self.admin_pool.shutdown(wait=True)
 
-        self.logger.debug('Attempting to stop request queue consumer')
+        self.logger.debug("Attempting to stop request queue consumer")
         self.request_consumer.stop()
         self.request_consumer.join()
 
-        self.logger.debug('Attempting to stop admin queue consumer')
+        self.logger.debug("Attempting to stop admin queue consumer")
         self.admin_consumer.stop()
         self.admin_consumer.join()
 
-        self.logger.debug(
-            "Successfully shutdown plugin {0}".format(self.unique_name))
+        self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _create_standard_consumer(self):
         return RequestConsumer(
-            thread_name='Request Consumer',
+            thread_name="Request Consumer",
             connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get('url', None),
-            queue_name=self.instance.queue_info['request']['name'],
+            amqp_url=self.instance.queue_info.get("url", None),
+            queue_name=self.instance.queue_info["request"]["name"],
             on_message_callback=self.process_request_message,
             panic_event=self.shutdown_event,
             max_concurrent=self.max_concurrent,
@@ -477,14 +505,14 @@ class Plugin(object):
 
     def _create_admin_consumer(self):
         return RequestConsumer(
-            thread_name='Admin Consumer',
+            thread_name="Admin Consumer",
             connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get('url', None),
-            queue_name=self.instance.queue_info['admin']['name'],
+            amqp_url=self.instance.queue_info.get("url", None),
+            queue_name=self.instance.queue_info["admin"]["name"],
             on_message_callback=self.process_admin_message,
             panic_event=self.shutdown_event,
             max_concurrent=1,
-            logger=logging.getLogger('brewtils.admin_consumer'),
+            logger=logging.getLogger("brewtils.admin_consumer"),
         )
 
     def _create_connection_poll_thread(self):
@@ -504,8 +532,8 @@ class Plugin(object):
         """
         if not callable(getattr(target, request.command, None)):
             raise RequestProcessingError(
-                "Could not find an implementation of command '%s'" %
-                request.command)
+                "Could not find an implementation of command '%s'" % request.command
+            )
 
         # It's kinda weird that we need to add the object arg only if we're
         # trying to call a function on self. In both cases the function object
@@ -552,14 +580,14 @@ class Plugin(object):
                 else:
                     self.bm_client.update_request(
                         request.id,
-                        status='ERROR',
-                        output='We tried to update the request, but it failed '
-                               'too many times. Please check the plugin logs '
-                               'to figure out why the request update failed. '
-                               'It is possible for this request to have '
-                               'succeeded, but we cannot update beer-garden '
-                               'with that information.',
-                        error_class='BGGivesUpError',
+                        status="ERROR",
+                        output="We tried to update the request, but it failed "
+                        "too many times. Please check the plugin logs "
+                        "to figure out why the request update failed. "
+                        "It is possible for this request to have "
+                        "succeeded, but we cannot update beer-garden "
+                        "with that information.",
+                        error_class="BGGivesUpError",
                     )
             except Exception as ex:
                 self._handle_request_update_failure(request, headers, ex)
@@ -567,10 +595,9 @@ class Plugin(object):
                 sys.stdout.flush()
 
     def _wait_if_not_first_attempt(self, headers):
-        if headers.get('retry_attempt', 0) > 0:
+        if headers.get("retry_attempt", 0) > 0:
             time_to_sleep = min(
-                headers.get('time_to_wait', self.starting_timeout),
-                self.max_timeout,
+                headers.get("time_to_wait", self.starting_timeout), self.max_timeout
             )
             self.shutdown_event.wait(time_to_sleep)
 
@@ -581,17 +608,19 @@ class Plugin(object):
         if isinstance(exc, (RequestsConnectionError, RestConnectionError)):
             self.brew_view_down = True
             self.logger.error(
-                'Error updating request status: {0} exception: {1}'
-                .format(request.id, exc))
+                "Error updating request status: {0} exception: {1}".format(
+                    request.id, exc
+                )
+            )
             raise RepublishRequestException(request, headers)
 
         elif isinstance(exc, RestClientError):
             message = (
-                'Error updating request {0} and it is a client error. Probable '
-                'cause is that this request is already updated. In which case, '
-                'ignore this message. If request {0} did not complete, please '
-                'file an issue. Discarding request to avoid an infinte loop. '
-                'exception: {1}'.format(request.id, exc)
+                "Error updating request {0} and it is a client error. Probable "
+                "cause is that this request is already updated. In which case, "
+                "ignore this message. If request {0} did not complete, please "
+                "file an issue. Discarding request to avoid an infinte loop. "
+                "exception: {1}".format(request.id, exc)
             )
             self.logger.error(message)
             raise DiscardMessageException(message)
@@ -599,10 +628,10 @@ class Plugin(object):
         # Time to discard the message because we've given up
         elif self._should_be_final_attempt(headers):
             message = (
-                'Could not update request {0} even with a known good status, '
-                'output and error_class. We have reached the final attempt and '
-                'will now discard the message. Attempted to process this '
-                'message {1} times'.format(request.id, headers['retry_attempt'])
+                "Could not update request {0} even with a known good status, "
+                "output and error_class. We have reached the final attempt and "
+                "will now discard the message. Attempted to process this "
+                "message {1} times".format(request.id, headers["retry_attempt"])
             )
             self.logger.error(message)
             raise DiscardMessageException(message)
@@ -610,14 +639,15 @@ class Plugin(object):
         else:
             self._update_retry_attempt_information(headers)
             self.logger.exception(
-                'Error updating request (Attempt #{0}: request: {1} exception: '
-                '{2}'.format(headers.get('retry_attempt', 0), request.id, exc))
+                "Error updating request (Attempt #{0}: request: {1} exception: "
+                "{2}".format(headers.get("retry_attempt", 0), request.id, exc)
+            )
             raise RepublishRequestException(request, headers)
 
     def _update_retry_attempt_information(self, headers):
-        headers['retry_attempt'] = headers.get('retry_attempt', 0) + 1
-        headers['time_to_wait'] = min(
-            headers.get('time_to_wait', self.starting_timeout // 2) * 2,
+        headers["retry_attempt"] = headers.get("retry_attempt", 0) + 1
+        headers["time_to_wait"] = min(
+            headers.get("time_to_wait", self.starting_timeout // 2) * 2,
             self.max_timeout,
         )
 
@@ -625,14 +655,15 @@ class Plugin(object):
         if self.max_attempts <= 0:
             return False
 
-        return self.max_attempts <= headers.get('retry_attempt', 0)
+        return self.max_attempts <= headers.get("retry_attempt", 0)
 
     def _wait_for_brew_view_if_down(self, request):
         if self.brew_view_down and not self.shutdown_event.is_set():
             self.logger.warning(
-                'Currently unable to communicate with Brew-view, about to wait '
-                'until connection is reestablished to update request %s',
-                request.id)
+                "Currently unable to communicate with Brew-view, about to wait "
+                "until connection is reestablished to update request %s",
+                request.id,
+            )
             self.brew_view_error_condition.wait()
 
     def _start(self, request):
@@ -642,7 +673,8 @@ class Plugin(object):
         :return: Success output message
         """
         self.instance = self.bm_client.update_instance_status(
-            self.instance.id, 'RUNNING')
+            self.instance.id, "RUNNING"
+        )
 
         return "Successfully started plugin"
 
@@ -654,7 +686,8 @@ class Plugin(object):
         """
         self.shutdown_event.set()
         self.instance = self.bm_client.update_instance_status(
-            self.instance.id, 'STOPPED')
+            self.instance.id, "STOPPED"
+        )
 
         return "Successfully stopped plugin"
 
@@ -679,7 +712,9 @@ class Plugin(object):
             warnings.warn(
                 "Keyword argument 'multithreaded' is deprecated and will be "
                 "removed in version 3.0, please use 'max_concurrent' instead.",
-                DeprecationWarning, stacklevel=2)
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
             # Both multithreaded and max_concurrent kwargs explicitly set
             # check for mutually exclusive settings
@@ -687,11 +722,13 @@ class Plugin(object):
                 if multithreaded is True and max_concurrent == 1:
                     self.logger.warning(
                         "Plugin created with multithreaded=True and "
-                        "max_concurrent=1, ignoring 'multithreaded' argument")
+                        "max_concurrent=1, ignoring 'multithreaded' argument"
+                    )
                 elif multithreaded is False and max_concurrent > 1:
                     self.logger.warning(
                         "Plugin created with multithreaded=False and "
-                        "max_concurrent>1, ignoring 'multithreaded' argument")
+                        "max_concurrent>1, ignoring 'multithreaded' argument"
+                    )
 
                 return max_concurrent
             else:
@@ -703,43 +740,55 @@ class Plugin(object):
                     "from handling requests one at a time to handling multiple "
                     "at once. If this plugin needs to maintain the old "
                     "behavior just set max_concurrent=1 when creating the "
-                    "plugin.", PendingDeprecationWarning, stacklevel=2)
+                    "plugin.",
+                    PendingDeprecationWarning,
+                    stacklevel=2,
+                )
                 return 1
 
             return max_concurrent
 
     def _setup_system(
-            self,
-            client,
-            inst_name,
-            system,
-            name,
-            description,
-            version,
-            icon_name,
-            metadata,
-            display_name,
-            max_instances
+        self,
+        client,
+        inst_name,
+        system,
+        name,
+        description,
+        version,
+        icon_name,
+        metadata,
+        display_name,
+        max_instances,
     ):
         if system:
-            if name or description or version or icon_name or display_name or max_instances:
+            if (
+                name
+                or description
+                or version
+                or icon_name
+                or display_name
+                or max_instances
+            ):
                 raise ValidationError(
                     "Sorry, you can't specify a system as well as system "
                     "creation helper keywords (name, description, version, "
-                    "max_instances, display_name, and icon_name)")
+                    "max_instances, display_name, and icon_name)"
+                )
 
             if not system.instances:
                 raise ValidationError(
                     "Explicit system definition requires explicit instance "
                     "definition (use instances=[Instance(name='default')] for "
-                    "default behavior)")
+                    "default behavior)"
+                )
 
             if not system.max_instances:
                 system.max_instances = len(system.instances)
 
         else:
-            name = name or os.environ.get('BG_NAME', None)
-            version = version or os.environ.get('BG_VERSION', None)
+            name = name or os.environ.get("BG_NAME", None)
+            version = version or os.environ.get("BG_VERSION", None)
 
             if client.__doc__ and not description:
                 description = self.client.__doc__.split("\n")[0]
@@ -767,12 +816,12 @@ class Plugin(object):
                     try:
                         self.bm_client.get_version()
                     except Exception:
-                        self.logger.debug(
-                            'Attempt to reconnect to Brew-view failed')
+                        self.logger.debug("Attempt to reconnect to Brew-view failed")
                     else:
                         self.logger.info(
-                            'Brew-view connection reestablished, about to '
-                            'notify any waiting requests')
+                            "Brew-view connection reestablished, about to "
+                            "notify any waiting requests"
+                        )
                         self.brew_view_down = False
                         self.brew_view_error_condition.notify_all()
 

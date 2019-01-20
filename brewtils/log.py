@@ -44,11 +44,7 @@ DEFAULT_LOGGERS = {
 # formatters, but since users can configure their logging it's better if the
 # formatter has a logical backup.
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-DEFAULT_FORMATTERS = {
-    "default": {
-        "format": DEFAULT_FORMAT
-    }
-}
+DEFAULT_FORMATTERS = {"default": {"format": DEFAULT_FORMAT}}
 
 # A simple default handler. Generally speaking, the API should return
 # handlers, but since users can configure their logging it's better if the
@@ -57,7 +53,7 @@ DEFAULT_HANDLERS = {
     "default": {
         "class": "logging.StreamHandler",
         "formatter": "default",
-        "stream": "ext://sys.stdout"
+        "stream": "ext://sys.stdout",
     }
 }
 
@@ -77,10 +73,7 @@ DEFAULT_LOGGING_CONFIG = {
     "formatters": DEFAULT_FORMATTERS,
     "handlers": DEFAULT_HANDLERS,
     "loggers": DEFAULT_LOGGERS,
-    "root": {
-        "level": os.environ.get("BG_LOG_LEVEL", "INFO"),
-        "handlers": ["default"]
-    }
+    "root": {"level": os.environ.get("BG_LOG_LEVEL", "INFO"), "handlers": ["default"]},
 }
 
 
@@ -130,25 +123,24 @@ def convert_logging_config(logging_config):
         handlers = logging_config.handlers
     else:
         handlers = copy.deepcopy(DEFAULT_HANDLERS)
-    config_to_return['handlers'] = handlers
+    config_to_return["handlers"] = handlers
 
     if logging_config.formatters:
         formatters = logging_config.formatters
     else:
         formatters = copy.deepcopy(DEFAULT_FORMATTERS)
-    config_to_return['formatters'] = formatters
+    config_to_return["formatters"] = formatters
 
-    config_to_return['root'] = {
+    config_to_return["root"] = {
         "level": logging_config.level,
-        "handlers": list(config_to_return['handlers'])
+        "handlers": list(config_to_return["handlers"]),
     }
 
     return config_to_return
 
 
 def setup_logger(
-        bg_host, bg_port, system_name,
-        ca_cert=None, client_cert=None, ssl_enabled=None
+    bg_host, bg_port, system_name, ca_cert=None, client_cert=None, ssl_enabled=None
 ):
     """DEPRECATED: Set Python logging to use configuration from Beergarden API
 
@@ -166,19 +158,26 @@ def setup_logger(
 
     Returns: None
     """
-    warnings.warn("This function is deprecated and will be removed in version "
-                  "4.0, please consider using 'configure_logging' instead.",
-                  DeprecationWarning, stacklevel=2)
+    warnings.warn(
+        "This function is deprecated and will be removed in version "
+        "4.0, please consider using 'configure_logging' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     config = get_python_logging_config(
-        bg_host=bg_host, bg_port=bg_port, system_name=system_name,
-        ca_cert=ca_cert, client_cert=client_cert, ssl_enabled=ssl_enabled)
+        bg_host=bg_host,
+        bg_port=bg_port,
+        system_name=system_name,
+        ca_cert=ca_cert,
+        client_cert=client_cert,
+        ssl_enabled=ssl_enabled,
+    )
     logging.config.dictConfig(config)
 
 
 def get_python_logging_config(
-        bg_host, bg_port, system_name,
-        ca_cert=None, client_cert=None, ssl_enabled=None
+    bg_host, bg_port, system_name, ca_cert=None, client_cert=None, ssl_enabled=None
 ):
     """DEPRECATED: Get Beergarden's logging configuration
 
@@ -195,9 +194,12 @@ def get_python_logging_config(
     Returns:
         dict: The logging configuration for the specified system
     """
-    warnings.warn("This function is deprecated and will be removed in version "
-                  "4.0, please consider using 'get_logging_config' instead.",
-                  DeprecationWarning, stacklevel=2)
+    warnings.warn(
+        "This function is deprecated and will be removed in version "
+        "4.0, please consider using 'get_logging_config' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     client = brewtils.get_easy_client(
         host=bg_host,

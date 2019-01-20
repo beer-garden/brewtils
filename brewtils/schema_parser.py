@@ -6,14 +6,39 @@ import warnings
 import six
 
 from brewtils.models import (
-    System, Instance, Command, Parameter, Request, PatchOperation, Choices,
-    LoggingConfig, Event, Queue, Principal, Role, RefreshToken, Job,
-    RequestTemplate, DateTrigger, CronTrigger, IntervalTrigger
+    System,
+    Instance,
+    Command,
+    Parameter,
+    Request,
+    PatchOperation,
+    Choices,
+    LoggingConfig,
+    Event,
+    Queue,
+    Principal,
+    Role,
+    RefreshToken,
+    Job,
+    RequestTemplate,
+    DateTrigger,
+    CronTrigger,
+    IntervalTrigger,
 )
 from brewtils.schemas import (
-    SystemSchema, InstanceSchema, CommandSchema, ParameterSchema, RequestSchema,
-    PatchSchema, LoggingConfigSchema, EventSchema, QueueSchema, PrincipalSchema,
-    RoleSchema, RefreshTokenSchema, JobSchema
+    SystemSchema,
+    InstanceSchema,
+    CommandSchema,
+    ParameterSchema,
+    RequestSchema,
+    PatchSchema,
+    LoggingConfigSchema,
+    EventSchema,
+    QueueSchema,
+    PrincipalSchema,
+    RoleSchema,
+    RefreshTokenSchema,
+    JobSchema,
 )
 
 
@@ -21,24 +46,24 @@ class SchemaParser(object):
     """Serialize and deserialize Brewtils models"""
 
     _models = {
-        'SystemSchema': System,
-        'InstanceSchema': Instance,
-        'CommandSchema': Command,
-        'ParameterSchema': Parameter,
-        'RequestTemplateSchema': RequestTemplate,
-        'RequestSchema': Request,
-        'PatchSchema': PatchOperation,
-        'ChoicesSchema': Choices,
-        'LoggingConfigSchema': LoggingConfig,
-        'EventSchema': Event,
-        'QueueSchema': Queue,
-        'PrincipalSchema': Principal,
-        'RoleSchema': Role,
-        'RefreshTokenSchema': RefreshToken,
-        'JobSchema': Job,
-        'DateTriggerSchema': DateTrigger,
-        'IntervalTriggerSchema': IntervalTrigger,
-        'CronTriggerSchema': CronTrigger,
+        "SystemSchema": System,
+        "InstanceSchema": Instance,
+        "CommandSchema": Command,
+        "ParameterSchema": Parameter,
+        "RequestTemplateSchema": RequestTemplate,
+        "RequestSchema": Request,
+        "PatchSchema": PatchOperation,
+        "ChoicesSchema": Choices,
+        "LoggingConfigSchema": LoggingConfig,
+        "EventSchema": Event,
+        "QueueSchema": Queue,
+        "PrincipalSchema": Principal,
+        "RoleSchema": Role,
+        "RefreshTokenSchema": RefreshToken,
+        "JobSchema": Job,
+        "DateTriggerSchema": DateTrigger,
+        "IntervalTriggerSchema": IntervalTrigger,
+        "CronTriggerSchema": CronTrigger,
     }
 
     logger = logging.getLogger(__name__)
@@ -64,7 +89,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Instance object
         """
-        return cls._do_parse(instance, InstanceSchema(**kwargs), from_string=from_string)
+        return cls._do_parse(
+            instance, InstanceSchema(**kwargs), from_string=from_string
+        )
 
     @classmethod
     def parse_command(cls, command, from_string=False, **kwargs):
@@ -86,7 +113,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Parameter object
         """
-        return cls._do_parse(parameter, ParameterSchema(**kwargs), from_string=from_string)
+        return cls._do_parse(
+            parameter, ParameterSchema(**kwargs), from_string=from_string
+        )
 
     @classmethod
     def parse_request(cls, request, from_string=False, **kwargs):
@@ -111,12 +140,16 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A PatchOperation object
         """
-        if not kwargs.pop('many', True):
-            cls.logger.warning("A patch object should always be wrapped as a list of objects. "
-                               "Thus, parsing will always return a list. You specified many as "
-                               "False, this is being ignored and a list "
-                               "will be returned anyway.")
-        return cls._do_parse(patch, PatchSchema(many=True, **kwargs), from_string=from_string)
+        if not kwargs.pop("many", True):
+            cls.logger.warning(
+                "A patch object should always be wrapped as a list of objects. "
+                "Thus, parsing will always return a list. You specified many as "
+                "False, this is being ignored and a list "
+                "will be returned anyway."
+            )
+        return cls._do_parse(
+            patch, PatchSchema(many=True, **kwargs), from_string=from_string
+        )
 
     @classmethod
     def parse_logging_config(cls, logging_config, from_string=False, **kwargs):
@@ -130,14 +163,18 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A LoggingConfig object
         """
-        if kwargs.pop('many', False):
-            cls.logger.warning("A logging config object should never be wrapped as a list of "
-                               "objects. Thus, parsing will always return a dict. You specified "
-                               "many as True, this is being ignored and a dict will be returned "
-                               "anyway.")
-        return cls._do_parse(logging_config,
-                             LoggingConfigSchema(many=False, **kwargs),
-                             from_string=from_string)
+        if kwargs.pop("many", False):
+            cls.logger.warning(
+                "A logging config object should never be wrapped as a list of "
+                "objects. Thus, parsing will always return a dict. You specified "
+                "many as True, this is being ignored and a dict will be returned "
+                "anyway."
+            )
+        return cls._do_parse(
+            logging_config,
+            LoggingConfigSchema(many=False, **kwargs),
+            from_string=from_string,
+        )
 
     @classmethod
     def parse_event(cls, event, from_string=False, **kwargs):
@@ -170,7 +207,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Principal object
         """
-        return cls._do_parse(principal, PrincipalSchema(**kwargs), from_string=from_string)
+        return cls._do_parse(
+            principal, PrincipalSchema(**kwargs), from_string=from_string
+        )
 
     @classmethod
     def parse_role(cls, role, from_string=False, **kwargs):
@@ -192,7 +231,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A RefreshToken object
         """
-        return cls._do_parse(refresh_token, RefreshTokenSchema(**kwargs), from_string=from_string)
+        return cls._do_parse(
+            refresh_token, RefreshTokenSchema(**kwargs), from_string=from_string
+        )
 
     @classmethod
     def parse_job(cls, job, from_string=False, **kwargs):
@@ -214,7 +255,7 @@ class SchemaParser(object):
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
 
-        schema.context['models'] = cls._models
+        schema.context["models"] = cls._models
         return schema.loads(data).data if from_string else schema.load(data).data
 
     # Serialization methods
@@ -229,10 +270,10 @@ class SchemaParser(object):
         :return: Serialized representation of system
         """
         if not include_commands:
-            if 'exclude' in kwargs:
-                kwargs['exclude'] += ('commands', )
+            if "exclude" in kwargs:
+                kwargs["exclude"] += ("commands",)
             else:
-                kwargs['exclude'] = ('commands', )
+                kwargs["exclude"] = ("commands",)
 
         return cls._do_serialize(SystemSchema(**kwargs), system, to_string)
 
@@ -300,7 +341,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of logging config
         """
-        return cls._do_serialize(LoggingConfigSchema(**kwargs), logging_config, to_string)
+        return cls._do_serialize(
+            LoggingConfigSchema(**kwargs), logging_config, to_string
+        )
 
     @classmethod
     def serialize_event(cls, event, to_string=True, **kwargs):
@@ -378,7 +421,10 @@ class SchemaParser(object):
 
 class BrewmasterSchemaParser(SchemaParser):
     def __init__(self):
-        warnings.warn("Reference made to 'BrewmasterSchemaParser'. This name will be removed in "
-                      "version 3.0, please use 'SchemaParser' instead.",
-                      DeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "Reference made to 'BrewmasterSchemaParser'. This name will be removed in "
+            "version 3.0, please use 'SchemaParser' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super(BrewmasterSchemaParser, self).__init__()

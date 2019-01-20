@@ -21,13 +21,13 @@ from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter, Choices
 
 __all__ = [
-    'system',
-    'parameter',
-    'parameters',
-    'command',
-    'command_registrar',
-    'plugin_param',
-    'register',
+    "system",
+    "parameter",
+    "parameters",
+    "command",
+    "command_registrar",
+    "plugin_param",
+    "register",
 ]
 
 
@@ -52,18 +52,28 @@ def system(cls):
     commands = []
     for method_name in dir(cls):
         method = getattr(cls, method_name)
-        method_command = getattr(method, '_command', None)
+        method_command = getattr(method, "_command", None)
         if method_command:
             commands.append(method_command)
 
     cls._commands = commands
-    cls._current_request = property(lambda self: brewtils.plugin.request_context.current_request)
+    cls._current_request = property(
+        lambda self: brewtils.plugin.request_context.current_request
+    )
 
     return cls
 
 
-def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=None, form=None,
-            template=None, icon_name=None, description=None):
+def command(
+    _wrapped=None,
+    command_type="ACTION",
+    output_type="STRING",
+    schema=None,
+    form=None,
+    template=None,
+    icon_name=None,
+    description=None,
+):
     """Decorator that marks a function as a beer-garden command
 
     For example:
@@ -86,9 +96,16 @@ def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=N
     :return: The decorated function.
     """
     if _wrapped is None:
-        return functools.partial(command, command_type=command_type, output_type=output_type,
-                                 schema=schema, form=form, template=template, icon_name=icon_name,
-                                 description=description)
+        return functools.partial(
+            command,
+            command_type=command_type,
+            output_type=output_type,
+            schema=schema,
+            form=form,
+            template=template,
+            icon_name=icon_name,
+            description=description,
+        )
 
     generated_command = _generate_command_from_function(_wrapped)
     generated_command.command_type = command_type
@@ -98,13 +115,14 @@ def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=N
     if description:
         generated_command.description = description
 
-    resolved_mod = _resolve_display_modifiers(_wrapped, generated_command.name, schema=schema,
-                                              form=form, template=template)
-    generated_command.schema = resolved_mod['schema']
-    generated_command.form = resolved_mod['form']
-    generated_command.template = resolved_mod['template']
+    resolved_mod = _resolve_display_modifiers(
+        _wrapped, generated_command.name, schema=schema, form=form, template=template
+    )
+    generated_command.schema = resolved_mod["schema"]
+    generated_command.form = resolved_mod["form"]
+    generated_command.template = resolved_mod["template"]
 
-    func_command = getattr(_wrapped, '_command', None)
+    func_command = getattr(_wrapped, "_command", None)
     if func_command:
         _update_func_command(func_command, generated_command)
     else:
@@ -117,9 +135,24 @@ def command(_wrapped=None, command_type='ACTION', output_type='STRING', schema=N
     return wrapper(_wrapped)
 
 
-def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None, optional=None,
-              default=None, description=None, choices=None, nullable=None, maximum=None,
-              minimum=None, regex=None, is_kwarg=None, model=None, form_input_type=None):
+def parameter(
+    _wrapped=None,
+    key=None,
+    type=None,
+    multi=None,
+    display_name=None,
+    optional=None,
+    default=None,
+    description=None,
+    choices=None,
+    nullable=None,
+    maximum=None,
+    minimum=None,
+    regex=None,
+    is_kwarg=None,
+    model=None,
+    form_input_type=None,
+):
     """Decorator that enables Parameter specifications for a beer-garden Command
 
     This decorator is intended to be used when more specification is desired for a Parameter.
@@ -160,23 +193,34 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
     if _wrapped is None:
         return functools.partial(
             parameter,
-            key=key, type=type, multi=multi, display_name=display_name,
-            optional=optional, default=default, description=description,
-            choices=choices, nullable=nullable, maximum=maximum,
-            minimum=minimum, regex=regex, is_kwarg=is_kwarg, model=model,
+            key=key,
+            type=type,
+            multi=multi,
+            display_name=display_name,
+            optional=optional,
+            default=default,
+            description=description,
+            choices=choices,
+            nullable=nullable,
+            maximum=maximum,
+            minimum=minimum,
+            regex=regex,
+            is_kwarg=is_kwarg,
+            model=model,
             form_input_type=form_input_type,
         )
 
     # Create a command object if one isn't already associated
-    cmd = getattr(_wrapped, '_command', None)
+    cmd = getattr(_wrapped, "_command", None)
     if not cmd:
         cmd = _generate_command_from_function(_wrapped)
         _wrapped._command = cmd
 
     # Every parameter needs a key, so stop that right here
     if key is None:
-        raise PluginParamError("Found a parameter definition without a key for "
-                               "command '%s'" % cmd.name)
+        raise PluginParamError(
+            "Found a parameter definition without a key for " "command '%s'" % cmd.name
+        )
 
     # If the command doesn't already have a parameter with this key then the
     # method doesn't have an explicit keyword argument with <key> as the name.
@@ -205,13 +249,15 @@ def parameter(_wrapped=None, key=None, type=None, multi=None, display_name=None,
     param.maximum = param.maximum if maximum is None else maximum
     param.minimum = param.minimum if minimum is None else minimum
     param.regex = param.regex if regex is None else regex
-    param.form_input_type = param.form_input_type if form_input_type is None else form_input_type
+    param.form_input_type = (
+        param.form_input_type if form_input_type is None else form_input_type
+    )
 
     param.choices = _format_choices(param.choices)
 
     # Model is another special case - it requires its own handling
     if model is not None:
-        param.type = 'Dictionary'
+        param.type = "Dictionary"
         param.parameters = _generate_nested_params(model)
 
         # If the model is not nullable and does not have a default we will try
@@ -261,13 +307,13 @@ def parameters(*args):
     """
     if len(args) == 1:
         if not isinstance(args[0], list):
-            raise PluginParamError('@parameters argument must be a list')
+            raise PluginParamError("@parameters argument must be a list")
         return functools.partial(parameters, args[0])
     elif len(args) != 2:
-        raise PluginParamError('@parameters takes a single argument')
+        raise PluginParamError("@parameters takes a single argument")
 
     if not isinstance(args[1], types.FunctionType):
-        raise PluginParamError('@parameters must be applied to a function')
+        raise PluginParamError("@parameters must be applied to a function")
 
     for param in args[0]:
         parameter(args[1], **param)
@@ -305,8 +351,11 @@ def _generate_command_from_function(func):
     else:
         docstring = func.__doc__
 
-    return Command(name=command_name, description=docstring.split('\n')[0] if docstring else None,
-                   parameters=_generate_params_from_function(func))
+    return Command(
+        name=command_name,
+        description=docstring.split("\n")[0] if docstring else None,
+        parameters=_generate_params_from_function(func),
+    )
 
 
 def _generate_params_from_function(func):
@@ -315,7 +364,7 @@ def _generate_params_from_function(func):
     parameters_to_return = []
 
     code = six.get_function_code(func)
-    function_arguments = list(code.co_varnames or [])[:code.co_argcount]
+    function_arguments = list(code.co_varnames or [])[: code.co_argcount]
     function_defaults = list(six.get_function_defaults(func) or [])
 
     while len(function_defaults) != len(function_arguments):
@@ -329,7 +378,9 @@ def _generate_params_from_function(func):
         default = function_defaults[index]
         optional = False if default is None else True
 
-        parameters_to_return.append(Parameter(key=param_name, default=default, optional=optional))
+        parameters_to_return.append(
+            Parameter(key=param_name, default=default, optional=optional)
+        )
 
     return parameters_to_return
 
@@ -354,21 +405,33 @@ def _generate_nested_params(model_class):
 
         nested_parameters = []
         if parameter_definition.parameters:
-            parameter_type = 'Dictionary'
+            parameter_type = "Dictionary"
             for nested_class in parameter_definition.parameters:
                 nested_parameters = _generate_nested_params(nested_class)
 
-        parameters_to_return.append(Parameter(key=key, type=parameter_type, multi=multi,
-                                              display_name=display_name, optional=optional,
-                                              default=default, description=description,
-                                              choices=choices, parameters=nested_parameters,
-                                              nullable=nullable, maximum=maximum, minimum=minimum,
-                                              regex=regex))
+        parameters_to_return.append(
+            Parameter(
+                key=key,
+                type=parameter_type,
+                multi=multi,
+                display_name=display_name,
+                optional=optional,
+                default=default,
+                description=description,
+                choices=choices,
+                parameters=nested_parameters,
+                nullable=nullable,
+                maximum=maximum,
+                minimum=minimum,
+                regex=regex,
+            )
+        )
     return parameters_to_return
 
 
-def _resolve_display_modifiers(wrapped, command_name, schema=None, form=None, template=None):
-
+def _resolve_display_modifiers(
+    wrapped, command_name, schema=None, form=None, template=None
+):
     def _load_from_url(url):
         return json.loads(requests.get(url).text)
 
@@ -376,111 +439,135 @@ def _resolve_display_modifiers(wrapped, command_name, schema=None, form=None, te
         current_dir = os.path.dirname(inspect.getfile(wrapped))
         file_path = os.path.abspath(os.path.join(current_dir, path))
 
-        with open(file_path, 'r') as definition_file:
+        with open(file_path, "r") as definition_file:
             return definition_file.read()
 
     resolved = {}
 
-    for key, value in {'schema': schema, 'form': form, 'template': template}.items():
+    for key, value in {"schema": schema, "form": form, "template": template}.items():
 
         if isinstance(value, six.string_types):
             try:
-                if value.startswith('http'):
+                if value.startswith("http"):
                     resolved[key] = _load_from_url(value)
 
-                elif value.startswith('/') or value.startswith('.'):
+                elif value.startswith("/") or value.startswith("."):
                     loaded_value = _load_from_path(value)
-                    resolved[key] = loaded_value if key == 'template' else json.loads(loaded_value)
+                    resolved[key] = (
+                        loaded_value if key == "template" else json.loads(loaded_value)
+                    )
 
-                elif key == 'template':
+                elif key == "template":
                     resolved[key] = value
 
                 else:
-                    raise PluginParamError("%s specified for command '%s' was not a "
-                                           "definition, file path, or URL" %
-                                           (key, command_name))
+                    raise PluginParamError(
+                        "%s specified for command '%s' was not a "
+                        "definition, file path, or URL" % (key, command_name)
+                    )
             except Exception as ex:
-                raise PluginParamError("Error reading %s definition from '%s' for command "
-                                       "'%s': %s" % (key, value, command_name, ex))
+                raise PluginParamError(
+                    "Error reading %s definition from '%s' for command "
+                    "'%s': %s" % (key, value, command_name, ex)
+                )
 
-        elif value is None or (key in ['schema', 'form'] and isinstance(value, dict)):
+        elif value is None or (key in ["schema", "form"] and isinstance(value, dict)):
             resolved[key] = value
 
-        elif key == 'form' and isinstance(value, list):
-            resolved[key] = {'type': 'fieldset', 'items': value}
+        elif key == "form" and isinstance(value, list):
+            resolved[key] = {"type": "fieldset", "items": value}
 
         else:
-            raise PluginParamError("%s specified for command '%s' was not a definition, "
-                                   "file path, or URL" % (key, command_name))
+            raise PluginParamError(
+                "%s specified for command '%s' was not a definition, "
+                "file path, or URL" % (key, command_name)
+            )
 
     return resolved
 
 
 def _format_type(param_type):
     if param_type == str:
-        return 'String'
+        return "String"
     elif param_type == int:
-        return 'Integer'
+        return "Integer"
     elif param_type == float:
-        return 'Float'
+        return "Float"
     elif param_type == bool:
-        return 'Boolean'
+        return "Boolean"
     elif param_type == dict:
-        return 'Dictionary'
+        return "Dictionary"
     else:
         return param_type
 
 
 def _format_choices(choices):
-
     def determine_display(display_value):
         if isinstance(display_value, six.string_types):
-            return 'typeahead'
+            return "typeahead"
 
-        return 'select' if len(display_value) <= 50 else 'typeahead'
+        return "select" if len(display_value) <= 50 else "typeahead"
 
     def determine_type(type_value):
         if isinstance(type_value, (list, dict)):
-            return 'static'
-        elif type_value.startswith('http'):
-            return 'url'
+            return "static"
+        elif type_value.startswith("http"):
+            return "url"
         else:
-            return 'command'
+            return "command"
 
     if not choices:
         return None
 
     if not isinstance(choices, (list, six.string_types, dict)):
-        raise PluginParamError("Invalid 'choices' provided. Must be a list, dictionary or string.")
+        raise PluginParamError(
+            "Invalid 'choices' provided. Must be a list, dictionary or string."
+        )
 
     elif isinstance(choices, dict):
-        if not choices.get('value'):
-            raise PluginParamError("No 'value' provided for choices. You must at least "
-                                   "provide valid values.")
+        if not choices.get("value"):
+            raise PluginParamError(
+                "No 'value' provided for choices. You must at least "
+                "provide valid values."
+            )
 
-        value = choices.get('value')
-        display = choices.get('display', determine_display(value))
-        choice_type = choices.get('type')
-        strict = choices.get('strict', True)
+        value = choices.get("value")
+        display = choices.get("display", determine_display(value))
+        choice_type = choices.get("type")
+        strict = choices.get("strict", True)
 
         if choice_type is None:
             choice_type = determine_type(value)
         elif choice_type not in Choices.TYPES:
-            raise PluginParamError("Invalid choices type '%s' - Valid type options are %s" %
-                                   (choice_type, Choices.TYPES))
+            raise PluginParamError(
+                "Invalid choices type '%s' - Valid type options are %s"
+                % (choice_type, Choices.TYPES)
+            )
         else:
-            if (choice_type == 'command' and not isinstance(value, (six.string_types, dict))) \
-                    or (choice_type == 'url' and not isinstance(value, six.string_types)) \
-                    or (choice_type == 'static' and not isinstance(value, (list, dict))):
-                allowed_types = {'command': "('string', 'dictionary')", 'url': "('string')",
-                                 'static': "('list', 'dictionary)"}
-                raise PluginParamError("Invalid choices value type '%s' - Valid value types for "
-                                       "choice type '%s' are %s"
-                                       % (type(value), choice_type, allowed_types[choice_type]))
+            if (
+                (
+                    choice_type == "command"
+                    and not isinstance(value, (six.string_types, dict))
+                )
+                or (choice_type == "url" and not isinstance(value, six.string_types))
+                or (choice_type == "static" and not isinstance(value, (list, dict)))
+            ):
+                allowed_types = {
+                    "command": "('string', 'dictionary')",
+                    "url": "('string')",
+                    "static": "('list', 'dictionary)",
+                }
+                raise PluginParamError(
+                    "Invalid choices value type '%s' - Valid value types for "
+                    "choice type '%s' are %s"
+                    % (type(value), choice_type, allowed_types[choice_type])
+                )
 
         if display not in Choices.DISPLAYS:
-            raise PluginParamError("Invalid choices display '%s' - Valid display options are %s" %
-                                   (display, Choices.DISPLAYS))
+            raise PluginParamError(
+                "Invalid choices display '%s' - Valid display options are %s"
+                % (display, Choices.DISPLAYS)
+            )
     else:
         value = choices
         display = determine_display(value)
@@ -488,33 +575,39 @@ def _format_choices(choices):
         strict = True
 
     # Now parse out type-specific aspects
-    unparsed_value = ''
+    unparsed_value = ""
     try:
-        if choice_type == 'command':
+        if choice_type == "command":
             if isinstance(value, six.string_types):
                 unparsed_value = value
             else:
-                unparsed_value = value['command']
+                unparsed_value = value["command"]
 
-            details = parse(unparsed_value, parse_as='func')
-        elif choice_type == 'url':
+            details = parse(unparsed_value, parse_as="func")
+        elif choice_type == "url":
             unparsed_value = value
-            details = parse(unparsed_value, parse_as='url')
+            details = parse(unparsed_value, parse_as="url")
         else:
             if isinstance(value, dict):
-                unparsed_value = choices.get('key_reference')
+                unparsed_value = choices.get("key_reference")
                 if unparsed_value is None:
-                    raise PluginParamError('Specifying a static choices dictionary requires a '
-                                           '"key_reference" field with a reference to another '
-                                           'parameter ("key_reference": "${param_key}")')
+                    raise PluginParamError(
+                        "Specifying a static choices dictionary requires a "
+                        '"key_reference" field with a reference to another '
+                        'parameter ("key_reference": "${param_key}")'
+                    )
 
-                details = {'key_reference': parse(unparsed_value, parse_as='reference')}
+                details = {"key_reference": parse(unparsed_value, parse_as="reference")}
             else:
                 details = {}
     except ParseError:
-        raise PluginParamError("Invalid choices definition - Unable to parse '%s'" % unparsed_value)
+        raise PluginParamError(
+            "Invalid choices definition - Unable to parse '%s'" % unparsed_value
+        )
 
-    return Choices(type=choice_type, display=display, value=value, strict=strict, details=details)
+    return Choices(
+        type=choice_type, display=display, value=value, strict=strict, details=details
+    )
 
 
 # Alias the old names for compatibility

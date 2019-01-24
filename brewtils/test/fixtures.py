@@ -98,7 +98,7 @@ def nested_parameter_dict():
 def parameter_dict(nested_parameter_dict, choices_dict):
     """Non-nested parameter as a dictionary."""
     return {
-        "key": "key",
+        "key": "message",
         "type": "Any",
         "multi": False,
         "display_name": "display",
@@ -128,7 +128,7 @@ def bg_parameter(parameter_dict, bg_choices):
 def command_dict(parameter_dict, system_id):
     """A command represented as a dictionary."""
     return {
-        "name": "name",
+        "name": "speak",
         "description": "desc",
         "id": "123f11af55a38e64799f1234",
         "parameters": [parameter_dict],

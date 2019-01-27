@@ -62,7 +62,7 @@ class DateTime(fields.DateTime):
 
 class BaseSchema(Schema):
     class Meta:
-        if int(marshmallow.__version__.split('.')[0]) > 2:
+        if int(marshmallow.__version__.split(".")[0]) > 2:
             render_module = simplejson
         else:
             json_module = simplejson

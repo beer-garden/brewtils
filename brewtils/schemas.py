@@ -62,10 +62,11 @@ class DateTime(fields.DateTime):
 
 class BaseSchema(Schema):
     class Meta:
-        if int(marshmallow.__version__.split(".")[0]) > 2:
-            render_module = simplejson
-        else:
+        version_nums = marshmallow.__version__.split(".")
+        if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:
             json_module = simplejson
+        else:
+            render_module = simplejson
 
     def __init__(self, strict=True, **kwargs):
         super(BaseSchema, self).__init__(strict=strict, **kwargs)

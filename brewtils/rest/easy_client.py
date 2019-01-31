@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-
 import logging
 import warnings
 
+import functools
 import requests.exceptions
 
 from brewtils.errors import (
@@ -19,6 +19,47 @@ from brewtils.errors import (
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
+
+
+def handle_response_failure(response, default_exc=RestError, raise_404=True):
+    if response.status_code == 404:
+        if raise_404:
+            raise NotFoundError(response.json())
+        else:
+            return None
+    elif response.status_code == 408:
+        raise WaitExceededError(response.json())
+    elif response.status_code == 409:
+        raise ConflictError(response.json())
+    elif 400 <= response.status_code < 500:
+        raise ValidationError(response.json())
+    elif response.status_code == 503:
+        raise RestConnectionError(response.json())
+    else:
+        raise default_exc(response.json())
+
+
+def wrap_response(
+    _wrapped=None, parse_method=None, parse_many=False, default_exc=RestError
+):
+
+    if _wrapped is None:
+        return functools.partial(
+            wrap_response,
+            parse_method=parse_method,
+            parse_many=parse_many,
+            default_exc=default_exc,
+        )
+
+    def wrapper(self, *args, **kwargs):
+        response = _wrapped(self, *args, **kwargs)
+
+        if response.ok:
+            return getattr(self.parser, parse_method)(response.json(), many=parse_many)
+        else:
+            handle_response_failure(response, default_exc=default_exc)
+
+    return wrapper
 
 
 class EasyClient(object):
@@ -111,8 +152,9 @@ class EasyClient(object):
         if response.ok:
             return response
         else:
-            self._handle_response_failure(response, default_exc=FetchError)
+            handle_response_failure(response, default_exc=FetchError)
 
+    @wrap_response(parse_method="parse_logging_config", default_exc=RestConnectionError)
     def get_logging_config(self, system_name):
         """Get logging configuration for a System
 
@@ -123,11 +165,7 @@ class EasyClient(object):
             LoggingConfig: The configuration object
 
         """
-        response = self.client.get_logging_config(system_name=system_name)
-        if response.ok:
-            return self.parser.parse_logging_config(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=RestConnectionError)
+        return self.client.get_logging_config(system_name=system_name)
 
     def find_unique_system(self, **kwargs):
         """Find a unique system
@@ -159,6 +197,7 @@ class EasyClient(object):
 
             return systems[0]
 
+    @wrap_response(parse_method="parse_system", parse_many=True, default_exc=FetchError)
     def find_systems(self, **kwargs):
         """Find Systems using keyword arguments as search parameters
 
@@ -169,13 +208,9 @@ class EasyClient(object):
             List[System]: List of Systems matching the search parameters
 
         """
-        response = self.client.get_systems(**kwargs)
+        return self.client.get_systems(**kwargs)
 
-        if response.ok:
-            return self.parser.parse_system(response.json(), many=True)
-        else:
-            self._handle_response_failure(response, default_exc=FetchError)
-
+    @wrap_response(parse_method="parse_system", parse_many=False, default_exc=SaveError)
     def create_system(self, system):
         """Create a new System
 
@@ -186,14 +221,9 @@ class EasyClient(object):
             System: The newly-created system
 
         """
-        json_system = self.parser.serialize_system(system)
-        response = self.client.post_systems(json_system)
+        return self.client.post_systems(self.parser.serialize_system(system))
 
-        if response.ok:
-            return self.parser.parse_system(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=SaveError)
-
+    @wrap_response(parse_method="parse_system", parse_many=False, default_exc=SaveError)
     def update_system(self, system_id, new_commands=None, **kwargs):
         """Update a System
 
@@ -227,14 +257,9 @@ class EasyClient(object):
             if value is not None:
                 operations.append(PatchOperation("replace", "/%s" % key, value))
 
-        response = self.client.patch_system(
+        return self.client.patch_system(
             system_id, self.parser.serialize_patch(operations, many=True)
         )
-
-        if response.ok:
-            return self.parser.parse_system(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=SaveError)
 
     def remove_system(self, **kwargs):
         """Remove a unique System
@@ -256,6 +281,9 @@ class EasyClient(object):
 
         return self._remove_system_by_id(system.id)
 
+    @wrap_response(
+        parse_method="parse_instance", parse_many=False, default_exc=SaveError
+    )
     def initialize_instance(self, instance_id):
         """Start an Instance
 
@@ -266,16 +294,13 @@ class EasyClient(object):
             Instance: The updated Instance
 
         """
-        operation = PatchOperation("initialize")
-        response = self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(operation)
+        return self.client.patch_instance(
+            instance_id, self.parser.serialize_patch(PatchOperation("initialize"))
         )
 
-        if response.ok:
-            return self.parser.parse_instance(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=SaveError)
-
+    @wrap_response(
+        parse_method="parse_instance", parse_many=False, default_exc=FetchError
+    )
     def get_instance_status(self, instance_id):
         """Get an instance's status
 
@@ -285,12 +310,7 @@ class EasyClient(object):
         Returns:
             The status
         """
-        response = self.client.get_instance(instance_id)
-
-        if response.ok:
-            return self.parser.parse_instance(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=FetchError)
+        return self.client.get_instance(instance_id)
 
     def update_instance_status(self, instance_id, new_status):
         """Update an Instance status
@@ -311,7 +331,7 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_instance(response.json())
         else:
-            self._handle_response_failure(response, default_exc=SaveError)
+            handle_response_failure(response, default_exc=SaveError)
 
     def instance_heartbeat(self, instance_id):
         """Send an Instance heartbeat
@@ -331,7 +351,7 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response, default_exc=SaveError)
+            handle_response_failure(response, default_exc=SaveError)
 
     def remove_instance(self, instance_id):
         """Remove an instance
@@ -346,7 +366,7 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response, default_exc=DeleteError)
+            handle_response_failure(response, default_exc=DeleteError)
 
     def find_unique_request(self, **kwargs):
         """Find a unique request
@@ -378,6 +398,9 @@ class EasyClient(object):
 
             return all_requests[0]
 
+    @wrap_response(
+        parse_method="parse_request", parse_many=True, default_exc=FetchError
+    )
     def find_requests(self, **kwargs):
         """Find Requests using keyword arguments as search parameters
 
@@ -388,13 +411,11 @@ class EasyClient(object):
             List[Request]: List of Systems matching the search parameters
 
         """
-        response = self.client.get_requests(**kwargs)
+        return self.client.get_requests(**kwargs)
 
-        if response.ok:
-            return self.parser.parse_request(response.json(), many=True)
-        else:
-            self._handle_response_failure(response, default_exc=FetchError)
-
+    @wrap_response(
+        parse_method="parse_request", parse_many=False, default_exc=SaveError
+    )
     def create_request(self, request, **kwargs):
         """Create a new Request
 
@@ -410,15 +431,13 @@ class EasyClient(object):
             Request: The newly-created Request
 
         """
-        json_request = self.parser.serialize_request(request)
+        return self.client.post_requests(
+            self.parser.serialize_request(request), **kwargs
+        )
 
-        response = self.client.post_requests(json_request, **kwargs)
-
-        if response.ok:
-            return self.parser.parse_request(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=SaveError)
-
+    @wrap_response(
+        parse_method="parse_request", parse_many=False, default_exc=SaveError
+    )
     def update_request(self, request_id, status=None, output=None, error_class=None):
         """Update a Request
 
@@ -441,14 +460,9 @@ class EasyClient(object):
         if error_class:
             operations.append(PatchOperation("replace", "/error_class", error_class))
 
-        response = self.client.patch_request(
+        return self.client.patch_request(
             request_id, self.parser.serialize_patch(operations, many=True)
         )
-
-        if response.ok:
-            return self.parser.parse_request(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=SaveError)
 
     def publish_event(self, *args, **kwargs):
         """Publish a new event
@@ -480,19 +494,15 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response)
+            handle_response_failure(response)
 
+    @wrap_response(parse_method="parse_queue", parse_many=True)
     def get_queues(self):
         """Retrieve all queue information
 
         :return: The response
         """
-        response = self.client.get_queues()
-
-        if response.ok:
-            return self.parser.parse_queue(response.json(), many=True)
-        else:
-            self._handle_response_failure(response)
+        return self.client.get_queues()
 
     def clear_queue(self, queue_name):
         """Cancel and remove all Requests from a message queue
@@ -509,7 +519,7 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response)
+            handle_response_failure(response)
 
     def clear_all_queues(self):
         """Cancel and remove all Requests in all queues
@@ -523,8 +533,9 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response)
+            handle_response_failure(response)
 
+    @wrap_response(parse_method="parse_job", parse_many=True, default_exc=FetchError)
     def find_jobs(self, **kwargs):
         """Find Jobs using keyword arguments as search parameters
 
@@ -535,13 +546,9 @@ class EasyClient(object):
             List[Job]: List of Jobs matching the search parameters
 
         """
-        response = self.client.get_jobs(**kwargs)
+        return self.client.get_jobs(**kwargs)
 
-        if response.ok:
-            return self.parser.parse_job(response.json(), many=True)
-        else:
-            self._handle_response_failure(response, default_exc=FetchError)
-
+    @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def create_job(self, job):
         """Create a new Job
 
@@ -551,14 +558,7 @@ class EasyClient(object):
         Returns:
             Job: The newly-created Job
         """
-        json_job = self.parser.serialize_job(job)
-
-        response = self.client.post_jobs(json_job)
-
-        if response.ok:
-            return self.parser.parse_job(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=SaveError)
+        return self.client.post_jobs(self.parser.serialize_job(job))
 
     def remove_job(self, job_id):
         """Remove a unique Job
@@ -577,7 +577,7 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response, default_exc=DeleteError)
+            handle_response_failure(response, default_exc=DeleteError)
 
     def pause_job(self, job_id):
         """Pause a Job
@@ -603,6 +603,9 @@ class EasyClient(object):
         """
         self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
+    @wrap_response(
+        parse_method="parse_principal", parse_many=False, default_exc=FetchError
+    )
     def get_user(self, user_identifier):
         """Find a user
 
@@ -612,12 +615,7 @@ class EasyClient(object):
         Returns:
             Principal: The User
         """
-        response = self.client.get_user(user_identifier)
-
-        if response.ok:
-            return self.parser.parse_principal(response.json())
-        else:
-            self._handle_response_failure(response, default_exc=FetchError)
+        return self.client.get_user(user_identifier)
 
     def who_am_i(self):
         """Find user using the current set of credentials
@@ -635,9 +633,7 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_system(response.json())
         else:
-            self._handle_response_failure(
-                response, default_exc=FetchError, raise_404=False
-            )
+            handle_response_failure(response, default_exc=FetchError, raise_404=False)
 
     def _remove_system_by_id(self, system_id):
 
@@ -648,7 +644,7 @@ class EasyClient(object):
         if response.ok:
             return True
         else:
-            self._handle_response_failure(response, default_exc=DeleteError)
+            handle_response_failure(response, default_exc=DeleteError)
 
     def _find_request_by_id(self, request_id):
 
@@ -657,9 +653,7 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_request(response.json())
         else:
-            self._handle_response_failure(
-                response, default_exc=FetchError, raise_404=False
-            )
+            handle_response_failure(response, default_exc=FetchError, raise_404=False)
 
     def _patch_job(self, job_id, operations):
         response = self.client.patch_job(
@@ -668,25 +662,7 @@ class EasyClient(object):
         if response.ok:
             return self.parser.parse_job(response.json())
         else:
-            self._handle_response_failure(response, default_exc=SaveError)
-
-    @staticmethod
-    def _handle_response_failure(response, default_exc=RestError, raise_404=True):
-        if response.status_code == 404:
-            if raise_404:
-                raise NotFoundError(response.json())
-            else:
-                return None
-        elif response.status_code == 408:
-            raise WaitExceededError(response.json())
-        elif response.status_code == 409:
-            raise ConflictError(response.json())
-        elif 400 <= response.status_code < 500:
-            raise ValidationError(response.json())
-        elif response.status_code == 503:
-            raise RestConnectionError(response.json())
-        else:
-            raise default_exc(response.json())
+            handle_response_failure(response, default_exc=SaveError)
 
 
 class BrewmasterEasyClient(EasyClient):

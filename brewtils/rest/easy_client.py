@@ -2,8 +2,8 @@
 import logging
 import warnings
 
-import functools
 import requests.exceptions
+import wrapt
 
 from brewtils.errors import (
     FetchError,
@@ -39,23 +39,15 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         raise default_exc(response.json())
 
 
-def wrap_response(
-    _wrapped=None, parse_method=None, parse_many=False, default_exc=RestError
-):
-
-    if _wrapped is None:
-        return functools.partial(
-            wrap_response,
-            parse_method=parse_method,
-            parse_many=parse_many,
-            default_exc=default_exc,
-        )
-
-    def wrapper(self, *args, **kwargs):
-        response = _wrapped(self, *args, **kwargs)
+def wrap_response(parse_method=None, parse_many=False, default_exc=RestError):
+    @wrapt.decorator
+    def wrapper(wrapped, instance, args, kwargs):
+        response = wrapped(*args, **kwargs)
 
         if response.ok:
-            return getattr(self.parser, parse_method)(response.json(), many=parse_many)
+            return getattr(instance.parser, parse_method)(
+                response.json(), many=parse_many
+            )
         else:
             handle_response_failure(response, default_exc=default_exc)
 

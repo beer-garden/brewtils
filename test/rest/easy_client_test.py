@@ -20,12 +20,13 @@ from brewtils.errors import (
 )
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
+from brewtils.schema_parser import SchemaParser
 
 
 class TestEasyClient(object):
     @pytest.fixture
     def parser(self):
-        return Mock(name="parser")
+        return Mock(name="parser", spec=SchemaParser)
 
     @pytest.fixture
     def rest_client(self):
@@ -100,7 +101,7 @@ class TestEasyClient(object):
 
 class EasyClientTest(unittest.TestCase):
     def setUp(self):
-        self.parser = Mock()
+        self.parser = Mock(name="parser", spec=SchemaParser)
         self.client = EasyClient(
             host="localhost", port="3000", api_version=1, parser=self.parser
         )

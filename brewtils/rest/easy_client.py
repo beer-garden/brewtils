@@ -39,7 +39,9 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         raise default_exc(response.json())
 
 
-def wrap_response(parse_method=None, parse_many=False, default_exc=RestError):
+def wrap_response(
+    parse_method=None, parse_many=False, default_exc=RestError, raise_404=True
+):
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
         response = wrapped(*args, **kwargs)
@@ -49,7 +51,9 @@ def wrap_response(parse_method=None, parse_many=False, default_exc=RestError):
                 response.json(), many=parse_many
             )
         else:
-            handle_response_failure(response, default_exc=default_exc)
+            handle_response_failure(
+                response, default_exc=default_exc, raise_404=raise_404
+            )
 
     return wrapper
 
@@ -618,14 +622,14 @@ class EasyClient(object):
         """
         return self.get_user(self.client.username or "anonymous")
 
+    @wrap_response(
+        parse_method="parse_system",
+        parse_many=False,
+        default_exc=FetchError,
+        raise_404=False,
+    )
     def _find_system_by_id(self, system_id, **kwargs):
-
-        response = self.client.get_system(system_id, **kwargs)
-
-        if response.ok:
-            return self.parser.parse_system(response.json())
-        else:
-            handle_response_failure(response, default_exc=FetchError, raise_404=False)
+        return self.client.get_system(system_id, **kwargs)
 
     def _remove_system_by_id(self, system_id):
 
@@ -638,23 +642,20 @@ class EasyClient(object):
         else:
             handle_response_failure(response, default_exc=DeleteError)
 
+    @wrap_response(
+        parse_method="parse_request",
+        parse_many=False,
+        default_exc=FetchError,
+        raise_404=False,
+    )
     def _find_request_by_id(self, request_id):
+        return self.client.get_request(request_id)
 
-        response = self.client.get_request(request_id)
-
-        if response.ok:
-            return self.parser.parse_request(response.json())
-        else:
-            handle_response_failure(response, default_exc=FetchError, raise_404=False)
-
+    @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def _patch_job(self, job_id, operations):
-        response = self.client.patch_job(
+        return self.client.patch_job(
             job_id, self.parser.serialize_patch(operations, many=True)
         )
-        if response.ok:
-            return self.parser.parse_job(response.json())
-        else:
-            handle_response_failure(response, default_exc=SaveError)
 
 
 class BrewmasterEasyClient(EasyClient):

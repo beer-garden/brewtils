@@ -188,7 +188,7 @@ class EasyClientTest(unittest.TestCase):
         self.parser.parse_system = Mock(return_value="system")
 
         self.assertEqual(self.client._find_system_by_id("id", foo="bar"), "system")
-        self.parser.parse_system.assert_called_with("payload")
+        self.parser.parse_system.assert_called_with("payload", many=False)
         mock_get.assert_called_with("id", foo="bar")
 
     @patch("brewtils.rest.client.RestClient.get_system")
@@ -542,7 +542,7 @@ class EasyClientTest(unittest.TestCase):
         self.parser.parse_request = Mock(return_value="request")
 
         self.assertEqual(self.client._find_request_by_id("id"), "request")
-        self.parser.parse_request.assert_called_with("payload")
+        self.parser.parse_request.assert_called_with("payload", many=False)
         mock_get.assert_called_with("id")
 
     @patch("brewtils.rest.client.RestClient.get_request")
@@ -744,7 +744,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.pause_job("id")
         MockPatch.assert_called_with("update", "/status", "PAUSED")
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_job.assert_called_with("payload")
+        self.parser.parse_job.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.client.RestClient.patch_job")
     def test_pause_job_error(self, mock_patch):
@@ -760,7 +760,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.resume_job("id")
         MockPatch.assert_called_with("update", "/status", "RUNNING")
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_job.assert_called_with("payload")
+        self.parser.parse_job.assert_called_with("payload", many=False)
 
     # Users
     @patch("brewtils.rest.client.RestClient.get_user")

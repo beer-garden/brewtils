@@ -26,7 +26,7 @@ setup(
     package_data={"": ["README.md"]},
     install_requires=[
         "lark-parser<0.7",
-        "marshmallow<4",
+        "marshmallow<3",
         "marshmallow-polyfield<4",
         "pika<0.13",
         "pyjwt<2",

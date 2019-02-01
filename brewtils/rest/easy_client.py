@@ -71,8 +71,8 @@ def wrap_response(
         return_boolean: If True, a successful response will also return True
         parse_method: The response's json will be passed to this method of the SchemaParser
         parse_many: This will be passed as the 'many' parameter when parsing the response
-        default_exc: Will be passed to the handle_response_failure for failed responses
-        raise_404: Will be passed to the handle_response_failure for failed responses
+        default_exc: Will be passed to handle_response_failure for failed responses
+        raise_404: Will be passed to handle_response_failure for failed responses
 
     Returns:
         - True if return_boolean is True and the response status code is 2xx.
@@ -81,7 +81,7 @@ def wrap_response(
 
     Raises:
         RestError: The response has a non-2xx status code. Note that the specific
-            exception raise depends on the response status code and the argument passed
+            exception raised depends on the response status code and the argument passed
             as the default_exc parameter.
 
     """
@@ -202,7 +202,7 @@ class EasyClient(object):
             **kwargs: Extra parameters
 
         Returns:
-            dict: Dictionary with various version information
+            dict: Response object with version information in the body
 
         """
         return self.client.get_version(**kwargs)

@@ -4,6 +4,7 @@ import calendar
 import datetime
 
 import simplejson
+import marshmallow
 from marshmallow import Schema, post_dump, post_load, pre_load, fields
 from marshmallow.utils import UTC
 from marshmallow_polyfield import PolyField
@@ -61,7 +62,11 @@ class DateTime(fields.DateTime):
 
 class BaseSchema(Schema):
     class Meta:
-        json_module = simplejson
+        version_nums = marshmallow.__version__.split(".")
+        if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:
+            json_module = simplejson
+        else:
+            render_module = simplejson
 
     def __init__(self, strict=True, **kwargs):
         super(BaseSchema, self).__init__(strict=strict, **kwargs)

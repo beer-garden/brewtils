@@ -22,6 +22,25 @@ from brewtils.schema_parser import SchemaParser
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
+    """Deal with a response with non-2xx status code
+
+    Args:
+        response: The response object
+        default_exc: The exception to raise if no specific exception is warranted
+        raise_404: If True a response with status code 404 will raise a NotFoundError.
+            If False the method will return None.
+
+    Returns:
+        None - this function will always raise
+
+    Raises:
+        NotFoundError: Status code 404 and raise_404 is True
+        WaitExceededError: Status code 408
+        ConflictError: Status code 409
+        ValidationError: Any other 4xx status codes
+        RestConnectionError: Status code 503
+        default_exc: Any other status code
+    """
     if response.status_code == 404:
         if raise_404:
             raise NotFoundError(response.json())
@@ -46,6 +65,27 @@ def wrap_response(
     default_exc=RestError,
     raise_404=True,
 ):
+    """Decorator to consolidate response parsing and error handling
+
+    Args:
+        return_boolean: If True, a successful response will also return True
+        parse_method: The response's json will be passed to this method of the SchemaParser
+        parse_many: This will be passed as the 'many' parameter when parsing the response
+        default_exc: Will be passed to the handle_response_failure for failed responses
+        raise_404: Will be passed to the handle_response_failure for failed responses
+
+    Returns:
+        - True if return_boolean is True and the response status code is 2xx.
+        - The response object if return_boolean is False and parse_method is ""
+        - A parsed Brewtils model if return_boolean is False and parse_method is defined
+
+    Raises:
+        RestError: The response has a non-2xx status code. Note that the specific
+            exception raise depends on the response status code and the argument passed
+            as the default_exc parameter.
+
+    """
+
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
         response = wrapped(*args, **kwargs)
@@ -143,6 +183,7 @@ class EasyClient(object):
                 The connection attempt resulted in an exception that indicates
                 something other than a basic connection error. For example,
                 an error with certificate verification.
+
         """
         try:
             self.client.get_config(**kwargs)
@@ -155,6 +196,15 @@ class EasyClient(object):
 
     @wrap_response(default_exc=FetchError)
     def get_version(self, **kwargs):
+        """Get Bartender, Brew-view, and API version information
+
+        Args:
+            **kwargs: Extra parameters
+
+        Returns:
+            dict: Dictionary with various version information
+
+        """
         return self.client.get_version(**kwargs)
 
     @wrap_response(parse_method="parse_logging_config", default_exc=RestConnectionError)
@@ -312,6 +362,7 @@ class EasyClient(object):
 
         Returns:
             The status
+
         """
         return self.client.get_instance(instance_id)
 
@@ -599,6 +650,7 @@ class EasyClient(object):
 
         Returns:
             Principal: The User
+
         """
         return self.client.get_user(user_identifier)
 

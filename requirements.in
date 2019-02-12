@@ -1,15 +1,15 @@
 
 # Dependencies
-lark-parser
-marshmallow
-marshmallow-polyfield
-pika
-pyjwt
-requests
-simplejson
-six
-wrapt
-yapconf >= "0.2.1"
+lark-parser < 0.7
+marshmallow < 3
+marshmallow-polyfield < 4
+pika < 0.14
+pyjwt < 2
+requests < 3
+simplejson < 4
+six < 2
+wrapt < 2
+yapconf >= 0.2.1
 enum34 ; python_version < "3.4"
 futures ; python_version < "3.0"
 
@@ -23,7 +23,7 @@ black ; python_version > "3.5"
 coverage
 flake8
 mock
-pytest
+pytest < 4
 pytest-lazy-fixture
 pytz
 tox

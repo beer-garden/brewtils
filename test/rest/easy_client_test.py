@@ -20,12 +20,13 @@ from brewtils.errors import (
 )
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
+from brewtils.schema_parser import SchemaParser
 
 
 class TestEasyClient(object):
     @pytest.fixture
     def parser(self):
-        return Mock()
+        return Mock(name="parser", spec=SchemaParser)
 
     @pytest.fixture
     def rest_client(self):
@@ -39,7 +40,9 @@ class TestEasyClient(object):
 
     @pytest.fixture
     def success(self):
-        return Mock(ok=True, status_code=200, json=Mock(return_value="payload"))
+        return Mock(
+            name="success", ok=True, status_code=200, json=Mock(return_value="payload")
+        )
 
     @pytest.fixture
     def client_error(self):
@@ -90,13 +93,15 @@ class TestEasyClient(object):
         rest_client.get_logging_config.return_value = success
 
         output = client.get_logging_config("system")
-        parser.parse_logging_config.assert_called_with(success.json.return_value)
+        parser.parse_logging_config.assert_called_with(
+            success.json.return_value, many=False
+        )
         assert output == parser.parse_logging_config.return_value
 
 
 class EasyClientTest(unittest.TestCase):
     def setUp(self):
-        self.parser = Mock()
+        self.parser = Mock(name="parser", spec=SchemaParser)
         self.client = EasyClient(
             host="localhost", port="3000", api_version=1, parser=self.parser
         )
@@ -184,7 +189,7 @@ class EasyClientTest(unittest.TestCase):
         self.parser.parse_system = Mock(return_value="system")
 
         self.assertEqual(self.client._find_system_by_id("id", foo="bar"), "system")
-        self.parser.parse_system.assert_called_with("payload")
+        self.parser.parse_system.assert_called_with("payload", many=False)
         mock_get.assert_called_with("id", foo="bar")
 
     @patch("brewtils.rest.client.RestClient.get_system")
@@ -215,7 +220,7 @@ class EasyClientTest(unittest.TestCase):
 
         self.assertEqual("system_response", self.client.create_system("system"))
         self.parser.serialize_system.assert_called_with("system")
-        self.parser.parse_system.assert_called_with("payload")
+        self.parser.parse_system.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.client.RestClient.post_systems")
     def test_create_system_client_error(self, mock_post):
@@ -239,7 +244,7 @@ class EasyClientTest(unittest.TestCase):
         self.parser.serialize_command = Mock(return_value="new_commands")
 
         self.client.update_system("id", new_commands="new_commands")
-        self.parser.parse_system.assert_called_with("payload")
+        self.parser.parse_system.assert_called_with("payload", many=False)
         self.assertEqual(1, mock_patch.call_count)
         payload = mock_patch.call_args[0][1]
         self.assertNotEqual(-1, payload.find("new_commands"))
@@ -254,7 +259,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.update_system("id", new_commands=None, metadata=metadata)
         MockPatch.assert_called_with("update", "/metadata", {"foo": "bar"})
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_system.assert_called_with("payload")
+        self.parser.parse_system.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.easy_client.PatchOperation")
     @patch("brewtils.rest.client.RestClient.patch_system")
@@ -265,7 +270,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.update_system("id", new_commands=None, display_name="foo")
         MockPatch.assert_called_with("replace", "/display_name", "foo")
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_system.assert_called_with("payload")
+        self.parser.parse_system.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.client.RestClient.patch_system")
     def test_update_system_client_error(self, mock_patch):
@@ -538,7 +543,7 @@ class EasyClientTest(unittest.TestCase):
         self.parser.parse_request = Mock(return_value="request")
 
         self.assertEqual(self.client._find_request_by_id("id"), "request")
-        self.parser.parse_request.assert_called_with("payload")
+        self.parser.parse_request.assert_called_with("payload", many=False)
         mock_get.assert_called_with("id")
 
     @patch("brewtils.rest.client.RestClient.get_request")
@@ -569,7 +574,7 @@ class EasyClientTest(unittest.TestCase):
 
         self.assertEqual("request_response", self.client.create_request("request"))
         self.parser.serialize_request.assert_called_with("request")
-        self.parser.parse_request.assert_called_with("payload")
+        self.parser.parse_request.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.client.RestClient.post_requests")
     def test_create_request_errors(self, mock_post):
@@ -593,7 +598,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.update_request(
             "id", status="new_status", output="new_output", error_class="ValueError"
         )
-        self.parser.parse_request.assert_called_with("payload")
+        self.parser.parse_request.assert_called_with("payload", many=False)
         self.assertEqual(1, request_mock.call_count)
         payload = request_mock.call_args[0][1]
         self.assertNotEqual(-1, payload.find("new_status"))
@@ -712,7 +717,7 @@ class EasyClientTest(unittest.TestCase):
 
         self.assertEqual("job_response", self.client.create_job("job"))
         self.parser.serialize_job.assert_called_with("job")
-        self.parser.parse_job.assert_called_with("payload")
+        self.parser.parse_job.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.client.RestClient.post_jobs")
     def test_create_job_error(self, mock_post):
@@ -740,7 +745,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.pause_job("id")
         MockPatch.assert_called_with("update", "/status", "PAUSED")
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_job.assert_called_with("payload")
+        self.parser.parse_job.assert_called_with("payload", many=False)
 
     @patch("brewtils.rest.client.RestClient.patch_job")
     def test_pause_job_error(self, mock_patch):
@@ -756,7 +761,7 @@ class EasyClientTest(unittest.TestCase):
         self.client.resume_job("id")
         MockPatch.assert_called_with("update", "/status", "RUNNING")
         self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_job.assert_called_with("payload")
+        self.parser.parse_job.assert_called_with("payload", many=False)
 
     # Users
     @patch("brewtils.rest.client.RestClient.get_user")

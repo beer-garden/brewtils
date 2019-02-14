@@ -11,6 +11,7 @@ from brewtils.errors import ValidationError
 from brewtils.log import configure_logging
 from brewtils.plugin import Plugin, RemotePlugin
 from brewtils.rest import normalize_url_prefix
+from brewtils.rest.easy_client import EasyClient
 from brewtils.rest.system_client import SystemClient
 from ._version import __version__ as generated_version
 from .specification import SPECIFICATION
@@ -21,6 +22,7 @@ __all__ = [
     "system",
     "Plugin",
     "RemotePlugin",
+    "EasyClient",
     "SystemClient",
     "get_easy_client",
     "get_argument_parser",

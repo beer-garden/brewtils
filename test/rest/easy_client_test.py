@@ -383,33 +383,89 @@ class EasyClientTest(unittest.TestCase):
         self.assertRaises(RestConnectionError, self.client.initialize_instance, "id")
 
     @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status(self, request_mock):
+    def test_get_instance(self, request_mock):
         request_mock.return_value = self.fake_success_response
 
-        self.client.get_instance_status("id")
+        self.client.get_instance("id")
         self.assertTrue(self.parser.parse_instance.called)
         request_mock.assert_called_once_with("id")
 
     @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status_client_error(self, request_mock):
+    def test_get_instance_client_error(self, request_mock):
         request_mock.return_value = self.fake_client_error_response
 
-        self.assertRaises(ValidationError, self.client.get_instance_status, "id")
+        self.assertRaises(ValidationError, self.client.get_instance, "id")
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with("id")
 
     @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status_server_error(self, request_mock):
+    def test_get_instance_server_error(self, request_mock):
         request_mock.return_value = self.fake_server_error_response
 
-        self.assertRaises(FetchError, self.client.get_instance_status, "id")
+        self.assertRaises(FetchError, self.client.get_instance, "id")
         self.assertFalse(self.parser.parse_instance.called)
         request_mock.assert_called_once_with("id")
 
     @patch("brewtils.rest.client.RestClient.get_instance")
     def test_get_instance_connection_error(self, request_mock):
         request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.get_instance_status, "id")
+        self.assertRaises(RestConnectionError, self.client.get_instance, "id")
+
+    @patch("brewtils.rest.client.RestClient.get_instance")
+    def test_get_instance_status(self, request_mock):
+        request_mock.return_value = self.fake_success_response
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            self.client.get_instance_status("id")
+            self.assertTrue(self.parser.parse_instance.called)
+            request_mock.assert_called_once_with("id")
+
+            self.assertEqual(1, len(w))
+            self.assertEqual(w[0].category, FutureWarning)
+
+    @patch("brewtils.rest.client.RestClient.get_instance")
+    def test_get_instance_status_client_error(self, request_mock):
+        request_mock.return_value = self.fake_client_error_response
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            self.assertRaises(ValidationError, self.client.get_instance_status, "id")
+            self.assertFalse(self.parser.parse_instance.called)
+            request_mock.assert_called_once_with("id")
+
+            self.assertEqual(1, len(w))
+            self.assertEqual(w[0].category, FutureWarning)
+
+    @patch("brewtils.rest.client.RestClient.get_instance")
+    def test_get_instance_status_server_error(self, request_mock):
+        request_mock.return_value = self.fake_server_error_response
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            self.assertRaises(FetchError, self.client.get_instance_status, "id")
+            self.assertFalse(self.parser.parse_instance.called)
+            request_mock.assert_called_once_with("id")
+
+            self.assertEqual(1, len(w))
+            self.assertEqual(w[0].category, FutureWarning)
+
+    @patch("brewtils.rest.client.RestClient.get_instance")
+    def test_get_instance_status_connection_error(self, request_mock):
+        request_mock.return_value = self.fake_connection_error_response
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            self.assertRaises(
+                RestConnectionError, self.client.get_instance_status, "id"
+            )
+
+            self.assertEqual(1, len(w))
+            self.assertEqual(w[0].category, FutureWarning)
 
     @patch("brewtils.rest.client.RestClient.patch_instance")
     def test_update_instance_status(self, request_mock):

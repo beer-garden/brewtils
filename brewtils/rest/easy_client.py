@@ -354,8 +354,25 @@ class EasyClient(object):
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=FetchError
     )
+    def get_instance(self, instance_id):
+        """Get an Instance
+
+        Args:
+            instance_id: The Id
+
+        Returns:
+            The Instance
+
+        """
+        return self.client.get_instance(instance_id)
+
     def get_instance_status(self, instance_id):
-        """Get an instance's status
+        """Get an Instance
+
+        WARNING: This method currently returns the Instance, not the Instance's status.
+        This behavior will be corrected in 3.0.
+
+        To prepare for this change please use get_instance() instead of this method.
 
         Args:
             instance_id: The Id
@@ -364,7 +381,14 @@ class EasyClient(object):
             The status
 
         """
-        return self.client.get_instance(instance_id)
+        warnings.warn(
+            "This method currently returns the Instance, not the Instance's status. "
+            "This behavior will be corrected in 3.0. To prepare please use "
+            "get_instance() instead of this method.",
+            FutureWarning,
+        )
+
+        return self.get_instance(instance_id)
 
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=SaveError

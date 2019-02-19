@@ -6,7 +6,27 @@ from pika import ConnectionParameters, PlainCredentials, SSLOptions
 
 
 class PikaClient(object):
-    """Base class for connecting to RabbitMQ using Pika"""
+    """Base class for connecting to RabbitMQ using Pika
+
+    Args:
+        host: RabbitMQ host
+        port: RabbitMQ port
+        user: RabbitMQ user
+        password: RabbitMQ password
+        connection_attempts: Maximum number of retry attempts
+        heartbeat: Time between RabbitMQ heartbeats
+        heartbeat_interval: DEPRECATED, use heartbeat
+        virtual_host: RabbitMQ virtual host
+        exchange: Default exchange that will be used
+        ssl: SSL Options
+        blocked_connection_timeout: If not None, the value is a non-negative timeout,
+            in seconds, for the connection to remain blocked (triggered by
+            Connection.Blocked from broker); if the timeout expires before connection
+            becomes unblocked, the connection will be torn down, triggering the
+            adapter-specific mechanism for informing client app about the closed
+            connection (e.g., on_close_callback or ConnectionClosed exception) with
+            `reason_code` of `InternalCloseReasons.BLOCKED_CONNECTION_TIMEOUT`.
+    """
 
     def __init__(
         self,
@@ -20,13 +40,14 @@ class PikaClient(object):
         exchange="beer_garden",
         ssl=None,
         blocked_connection_timeout=None,
+        **kwargs
     ):
         self._host = host
         self._port = port
         self._user = user
         self._password = password
         self._connection_attempts = connection_attempts
-        self._heartbeat_interval = heartbeat_interval
+        self._heartbeat = kwargs.get("heartbeat", heartbeat_interval)
         self._blocked_connection_timeout = blocked_connection_timeout
         self._virtual_host = virtual_host
         self._exchange = exchange
@@ -85,8 +106,8 @@ class PikaClient(object):
             connection_attempts=kwargs.get(
                 "connection_attempts", self._connection_attempts
             ),
-            heartbeat_interval=kwargs.get(
-                "heartbeat_interval", self._heartbeat_interval
+            heartbeat=kwargs.get(
+                "heartbeat", kwargs.get("heartbeat_interval", self._heartbeat)
             ),
             blocked_connection_timeout=kwargs.get(
                 "blocked_connection_timeout", self._blocked_connection_timeout

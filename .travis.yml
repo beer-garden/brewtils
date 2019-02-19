@@ -31,10 +31,12 @@ jobs:
       if: tag IS present
       install: skip
       script: skip
-      after_success: skip
+      after_success: true
       deploy:
         provider: pypi
         distributions: "sdist bdist_wheel"
+        on:
+          tags: true
         user: beerbuildbot
         password:
           secure: jW6tOmxBs28o7fdWhQuHbAZbLuLVFu+WUtfaKkEhzONWpjJqYU/HWsugznilCWC1JB8OYHn0y/KdWzF/5JL0aICW2S9qf7Z/tgd3bcbJgEaAZrI92tKYEWv8qc91LkFfaC3jg/qkvAz1ePZ445p7kOh3WnOmgyYy5qNaw46M+EFSXnQJ7S5UQ+kc0Yu1FX6KkccOItIZns4klFO+6MA1o+Alt5fjN67ifrPtJih6m1k15vh7COsUyL+eYxRSYNfDDcCkiYv9qcXRR2JA9IdT/uJ8hUxKm2T5jeAH8LNDo1/XSQ+RZiR8ls93MQx/y0CcFht0K0Qa1h5MA7ZP5dh3XCpPbXDQmt0YpN6csjGLfdSwKItVaWNxLBbuxHf1/jZe+1kdzn8ovYXh+7GmxwWm6DnNf7J4pnwKRQnB5K650lJucx03rbuX+Q+rtWGDyLjYPZqTj1Dg7dDPplISAGmLTg1bMm9eGWx4zFtZsj6cLMfM/Sp5ZXFlPLpfj0eHQMPJ0fktg+WjvKH8K5ZOU81FtfsTA4qJ8Z6+TFNBXxxcR0z+pI0DOpI7PxhleGJRDuKB4uEO7Sg4WlLH/pXOolYwNTLjU56GBtBTIc3p+uLxzzAqPwsFK0/jjAAbiWg7lN8b0WGmDT93A1Dcv9QG9e6l039ZwHfUUzYS7DIJFCguy/k=

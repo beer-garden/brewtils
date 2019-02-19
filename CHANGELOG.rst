@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+2.4.5
+-----
+Date: 2/14/19
+
+Bug Fixes
+^^^^^^^^^
+- Fixed a warning occuring with newer versions of Marshmallow (#111)
+
+Other Changes
+^^^^^^^^^^^^^
+- Adding EasyClient to __all__ (beer-garden/#233)
+
 2.4.4
 -----
 Date: 1/7/19

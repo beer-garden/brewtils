@@ -28,7 +28,7 @@ setup(
         "lark-parser<0.7",
         "marshmallow<3",
         "marshmallow-polyfield<4",
-        "pika<0.14",
+        "pika<0.14,>=0.11",
         "pyjwt<2",
         "requests<3",
         "simplejson<4",

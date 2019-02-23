@@ -691,6 +691,9 @@ class Queue(object):
 
 
 class Principal(object):
+
+    schema = "PrincipalSchema"
+
     def __init__(
         self,
         id=None,
@@ -719,6 +722,9 @@ class Principal(object):
 
 
 class Role(object):
+
+    schema = "RoleSchema"
+
     def __init__(
         self, id=None, name=None, description=None, roles=None, permissions=None
     ):
@@ -740,6 +746,9 @@ class Role(object):
 
 
 class RefreshToken(object):
+
+    schema = "RefreshTokenSchema"
+
     def __init__(self, id=None, issued=None, expires=None, payload=None):
         self.id = id
         self.issued = issued

@@ -23,6 +23,17 @@ class TestPikaClient(object):
         params = client.connection_parameters(host="another_host")
         assert params.host == "another_host"
         assert params.port == port
+        assert params.heartbeat == 3600
+
+    def test_connection_parameters_heartbeat(self, client):
+        assert client.connection_parameters(heartbeat=100).heartbeat == 100
+        assert client.connection_parameters(heartbeat_interval=100).heartbeat == 100
+        assert (
+            client.connection_parameters(
+                heartbeat=100, heartbeat_interval=200
+            ).heartbeat
+            == 100
+        )
 
     def test_connection_url(self, client):
         url = client.connection_url

@@ -298,7 +298,7 @@ def parameters(*args):
             pass
 
     Args:
-        *args (list): Positional arguments
+        *args (iterable): Positional arguments
             The first (and only) positional argument must be a list containing
             dictionaries that describe parameters.
 
@@ -306,8 +306,6 @@ def parameters(*args):
         func: The decorated function
     """
     if len(args) == 1:
-        if not isinstance(args[0], list):
-            raise PluginParamError("@parameters argument must be a list")
         return functools.partial(parameters, args[0])
     elif len(args) != 2:
         raise PluginParamError("@parameters takes a single argument")
@@ -315,8 +313,11 @@ def parameters(*args):
     if not isinstance(args[1], types.FunctionType):
         raise PluginParamError("@parameters must be applied to a function")
 
-    for param in args[0]:
-        parameter(args[1], **param)
+    try:
+        for param in args[0]:
+            parameter(args[1], **param)
+    except TypeError:
+        raise PluginParamError("@parameters arg must be an iterable of dictionaries")
 
     @wrapt.decorator(enabled=_wrap_functions)
     def wrapper(_double_wrapped, _, _args, _kwargs):

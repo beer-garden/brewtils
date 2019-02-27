@@ -237,6 +237,22 @@ def parameter(
                 "is_kwarg be True?)" % (key, cmd.name)
             )
 
+    # Next, fail if the param is_kwarg=True and the method doesn't have a **kwargs
+    if is_kwarg:
+        kwarg_declared = False
+        method_params = inspect.signature(_wrapped).parameters
+        for p in method_params.values():
+            if p.kind == inspect.Parameter.VAR_KEYWORD:
+                kwarg_declared = True
+                break
+
+        if not kwarg_declared:
+            raise PluginParamError(
+                "Parameter '%s' of command '%s' was declared as a kwarg argument "
+                "(is_kwarg=True) but the command method does not declare a **kwargs "
+                "argument" % (key, cmd.name)
+            )
+
     # Update parameter definition with the plugin_param arguments
     param.type = _format_type(param.type if type is None else type)
     param.multi = param.multi if multi is None else multi

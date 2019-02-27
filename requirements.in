@@ -11,6 +11,7 @@ six < 2
 wrapt < 2
 yapconf >= 0.2.1
 enum34 ; python_version < "3.4"
+funcsigs ; python_version < "3.0"
 futures ; python_version < "3.0"
 
 # Documentation Dependencies

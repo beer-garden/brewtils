@@ -4,6 +4,7 @@ import functools
 import inspect
 import json
 import os
+import sys
 import types
 from io import open
 
@@ -19,6 +20,11 @@ except ImportError:
 from brewtils.choices import parse
 from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter, Choices
+
+if sys.version_info.major == 2:
+    from funcsigs import signature, Parameter as InspectParameter
+else:
+    from inspect import signature, Parameter as InspectParameter
 
 __all__ = [
     "system",
@@ -240,9 +246,8 @@ def parameter(
     # Next, fail if the param is_kwarg=True and the method doesn't have a **kwargs
     if is_kwarg:
         kwarg_declared = False
-        method_params = inspect.signature(_wrapped).parameters
-        for p in method_params.values():
-            if p.kind == inspect.Parameter.VAR_KEYWORD:
+        for p in signature(_wrapped).parameters.values():
+            if p.kind == InspectParameter.VAR_KEYWORD:
                 kwarg_declared = True
                 break
 

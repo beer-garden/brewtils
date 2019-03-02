@@ -2,7 +2,6 @@
 
 import pytest
 from mock import Mock, call, patch
-from pytest_lazyfixture import lazy_fixture
 
 import brewtils.decorators
 from brewtils.decorators import (
@@ -378,14 +377,44 @@ class TestParameters(object):
             func1._command.parameters[0], func2._command.parameters[0]
         )
 
-    @pytest.mark.parametrize("args", [[], [1], [1, 2], [1, 2, 3], lazy_fixture("cmd")])
-    def test_bad_arguments(self, args):
-        # Can't put lazy fixture in a list inside of parametrize...
-        if not isinstance(args, list):
-            args = [args]
-
-        with pytest.raises(PluginParamError):
+    @pytest.mark.parametrize("args", [[], [1, 2, 3]])
+    def test_bad_arity(self, args):
+        # Must be called with either just one arg, or one arg + the function
+        with pytest.raises(PluginParamError) as ex:
             parameters(*args)
+        assert "single argument" in str(ex)
+
+    @pytest.mark.parametrize(
+        "arg1,arg2",
+        [
+            (1, cmd),  # arg1 needs to be iterable
+            ([1], cmd),  # arg1 item needs to be **able
+            ([], 1),  # arg2 must be a FunctionType
+        ],
+    )
+    def test_bad_args(self, arg1, arg2):
+        with pytest.raises(PluginParamError):
+            parameters(arg1, arg2)
+
+    def test_dict_values(self, cmd, param_definition, wrap_functions):
+        test_mock = Mock()
+        wrapped = parameters({"foo": param_definition}.values(), cmd)
+
+        assert len(cmd._command.parameters) == 1
+        assert cmd._command.parameters[0].key == "foo"
+        assert wrapped(self, test_mock) == test_mock
+
+    def test_dict_values_decorator(self, param_definition, wrap_functions):
+        test_mock = Mock()
+        param_spec = {"foo": param_definition}
+
+        @parameters(param_spec.values())
+        def func(_, foo):
+            return foo
+
+        assert len(func._command.parameters) == 1
+        assert func._command.parameters[0].key == "foo"
+        assert func(self, test_mock) == test_mock
 
 
 class TestCommand(object):

@@ -4,6 +4,7 @@ import functools
 import inspect
 import json
 import os
+import sys
 import types
 from io import open
 
@@ -19,6 +20,11 @@ except ImportError:
 from brewtils.choices import parse
 from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter, Choices
+
+if sys.version_info.major == 2:
+    from funcsigs import signature, Parameter as InspectParameter
+else:
+    from inspect import signature, Parameter as InspectParameter
 
 __all__ = [
     "system",
@@ -235,6 +241,21 @@ def parameter(
                 "Parameter '%s' was not an explicit keyword argument for "
                 "command '%s' and was not marked as part of kwargs (should "
                 "is_kwarg be True?)" % (key, cmd.name)
+            )
+
+    # Next, fail if the param is_kwarg=True and the method doesn't have a **kwargs
+    if is_kwarg:
+        kwarg_declared = False
+        for p in signature(_wrapped).parameters.values():
+            if p.kind == InspectParameter.VAR_KEYWORD:
+                kwarg_declared = True
+                break
+
+        if not kwarg_declared:
+            raise PluginParamError(
+                "Parameter '%s' of command '%s' was declared as a kwarg argument "
+                "(is_kwarg=True) but the command method does not declare a **kwargs "
+                "argument" % (key, cmd.name)
             )
 
     # Update parameter definition with the plugin_param arguments

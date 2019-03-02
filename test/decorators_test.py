@@ -155,6 +155,16 @@ class TestParameter(object):
         param = cmd._command.get_parameter_by_key("foo")
         assert_parameter_equal(param, Parameter(**param_definition))
 
+    def test_is_kwarg_missing(self, param_definition):
+        with pytest.raises(PluginParamError) as ex:
+
+            @parameter(is_kwarg=True, **param_definition)
+            def cmd(_):
+                return None
+
+        assert param_definition["key"] in str(ex)
+        assert "cmd" in str(ex)
+
     @pytest.mark.parametrize(
         "default,expected",
         [(None, {"key1": 1, "key2": "100"}), ({"key1", 123}, {"key1", 123})],

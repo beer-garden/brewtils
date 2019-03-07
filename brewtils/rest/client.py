@@ -482,8 +482,9 @@ class RestClient(object):
             Response object
         """
         refresh_token = refresh_token or self.refresh_token
-        body = {"refresh_id": refresh_token}
-        response = self.session.get(self.token_url, data=body)
+        response = self.session.get(
+            self.token_url, headers={"X-BG-RefreshID": refresh_token}
+        )
 
         # On older versions of the API (2.4.2 and below) the new refresh token
         # is not available.

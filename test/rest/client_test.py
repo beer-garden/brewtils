@@ -268,7 +268,7 @@ class TestRestClient(object):
 
         client.refresh(refresh_token="refresh")
         session_mock.get.assert_called_with(
-            client.token_url, data={"refresh_id": "refresh"}
+            client.token_url, headers={"X-BG-RefreshID": "refresh"}
         )
         assert client.access_token == "new_token"
 
@@ -283,7 +283,7 @@ class TestRestClient(object):
             client.token_url + 'refresh'
         )
         session_mock.get.assert_any_call(
-            client.token_url, data={'refresh_id': 'refresh'}
+            client.token_url, headers={"X-BG-RefreshID": "refresh"}
         )
         assert client.access_token == 'new_token'
 

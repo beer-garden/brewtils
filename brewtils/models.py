@@ -691,14 +691,24 @@ class Queue(object):
 
 
 class Principal(object):
+
+    schema = "PrincipalSchema"
+
     def __init__(
-        self, id=None, username=None, roles=None, permissions=None, preferences=None
+        self,
+        id=None,
+        username=None,
+        roles=None,
+        permissions=None,
+        preferences=None,
+        metadata=None,
     ):
         self.id = id
         self.username = username
         self.roles = roles
         self.permissions = permissions
         self.preferences = preferences
+        self.metadata = metadata
 
     def __str__(self):
         return "%s" % self.username
@@ -712,6 +722,9 @@ class Principal(object):
 
 
 class Role(object):
+
+    schema = "RoleSchema"
+
     def __init__(
         self, id=None, name=None, description=None, roles=None, permissions=None
     ):
@@ -733,6 +746,9 @@ class Role(object):
 
 
 class RefreshToken(object):
+
+    schema = "RefreshTokenSchema"
+
     def __init__(self, id=None, issued=None, expires=None, payload=None):
         self.id = id
         self.issued = issued

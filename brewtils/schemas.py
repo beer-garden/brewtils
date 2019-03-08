@@ -247,6 +247,7 @@ class PrincipalSchema(BaseSchema):
     roles = fields.Nested("RoleSchema", many=True, allow_none=True)
     permissions = fields.List(fields.Str(), allow_none=True)
     preferences = fields.Dict(allow_none=True)
+    metadata = fields.Dict(allow_none=True)
 
 
 class RoleSchema(BaseSchema):

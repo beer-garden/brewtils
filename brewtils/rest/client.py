@@ -482,7 +482,14 @@ class RestClient(object):
             Response object
         """
         refresh_token = refresh_token or self.refresh_token
-        response = self.session.get(self.token_url + refresh_token)
+        response = self.session.get(
+            self.token_url, headers={"X-BG-RefreshID": refresh_token}
+        )
+
+        # On older versions of the API (2.4.2 and below) the new refresh token
+        # is not available.
+        if response.status_code == 404:
+            response = self.session.get(self.token_url + refresh_token)
 
         if response.ok:
             response_data = response.json()

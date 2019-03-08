@@ -267,8 +267,25 @@ class TestRestClient(object):
         session_mock.get.return_value = response
 
         client.refresh(refresh_token="refresh")
-        session_mock.get.assert_called_with(client.token_url + "refresh")
+        session_mock.get.assert_called_with(
+            client.token_url, headers={"X-BG-RefreshID": "refresh"}
+        )
         assert client.access_token == "new_token"
+
+    def test_refresh_404_fallback(self, client, session_mock):
+        response404 = Mock(status_code=404)
+        response200 = Mock(status_code=404)
+        response200.json.return_value = {'token': 'new_token'}
+        session_mock.get.side_effect = [response404, response200]
+        client.refresh(refresh_token='refresh')
+        assert session_mock.get.call_count == 2
+        session_mock.get.assert_any_call(
+            client.token_url + 'refresh'
+        )
+        session_mock.get.assert_any_call(
+            client.token_url, headers={"X-BG-RefreshID": "refresh"}
+        )
+        assert client.access_token == 'new_token'
 
     def test_session_client_cert(self):
         client = RestClient(

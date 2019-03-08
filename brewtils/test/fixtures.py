@@ -438,6 +438,7 @@ def principal_dict(role_dict):
         "roles": [role_dict],
         "permissions": ["bg-all"],
         "preferences": {"theme": "dark"},
+        "metadata": {"foo": "bar"},
     }
 
 

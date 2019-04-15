@@ -14,10 +14,15 @@ def find_version():
     return match_object.group(1)
 
 
+with open("README.rst") as readme_file:
+    readme = readme_file.read()
+
+
 setup(
     name="brewtils",
     version=find_version(),
     description="Utilities for building and running beer-garden Systems",
+    long_description=readme,
     url="https://beer-garden.io/",
     author="The beer-garden Team",
     author_email=" ",

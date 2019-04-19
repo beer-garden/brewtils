@@ -1,6 +1,21 @@
 Brewtils Changelog
 ==================
 
+2.4.6
+-----
+Date: 4/19/19
+
+Bug Fixes
+^^^^^^^^^
+- Using new pika heartbeat instead of heartbeat_interval (#118)
+- @parameters now accepts any iterable, not just lists (beer-garden/#237)
+
+Other Changes
+^^^^^^^^^^^^^
+- Support for new header-style authentication token (#122)
+- Added EasyClient.get_instance, deprecated get_instance_status (beer-garden/#231)
+- Parameters with is_kwarg on command without **kwargs will raise (beer-garden/#216)
+
 2.4.5
 -----
 Date: 2/14/19

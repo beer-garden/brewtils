@@ -294,11 +294,8 @@ class SystemClient(object):
         """
 
         if self._version_constraint == "latest":
-            systems = self._easy_client.find_systems(name=self._system_name)
-            self._system = (
-                sorted(systems, key=lambda x: x.version, reverse=True)[0]
-                if systems
-                else None
+            self._system = self._determine_latest(
+                self._easy_client.find_systems(name=self._system_name)
             )
         else:
             self._system = self._easy_client.find_unique_system(
@@ -393,6 +390,14 @@ class SystemClient(object):
             parent=parent,
             metadata=metadata,
             parameters=kwargs,
+        )
+
+    @staticmethod
+    def _determine_latest(systems):
+        return (
+            sorted(systems, key=lambda x: x.version, reverse=True)[0]
+            if systems
+            else None
         )
 
 

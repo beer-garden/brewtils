@@ -349,6 +349,22 @@ class TestSystemClient(object):
         assert client._system.version == "2.0.0"
         assert easy_client.create_request.call_count == 2
 
+    @pytest.mark.parametrize(
+        "latest,versions",
+        [
+            ("1.0.0", ["1.0.0"]),
+            ("2.0.0", ["1.0.0", "2.0.0"]),
+            ("1.2.0", ["1.0.0", "1.2.0"]),
+            ("1.0.0", ["1.0.0", "0.2.1rc1"]),
+            ("1.0.0rc1", ["1.0.0rc1", "0.2.1"]),
+            ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
+            ("1.0", ["1.0", "0.2.1"]),
+        ],
+    )
+    def test_determine_latest(self, client, versions, latest):
+        systems = [Mock(version=version) for version in versions]
+        assert client._determine_latest(systems).version == latest
+
 
 class TestBrewmasterSystemClient(object):
     def test_deprecation(self):

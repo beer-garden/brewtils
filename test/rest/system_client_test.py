@@ -17,74 +17,81 @@ from brewtils.errors import (
 from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
 
 
+@pytest.fixture
+def command_1():
+    mock = Mock()
+    type(mock).name = PropertyMock(return_value="command_1")
+    return mock
+
+
+@pytest.fixture
+def command_2():
+    mock = Mock()
+    type(mock).name = PropertyMock(return_value="command_2")
+    return mock
+
+
+@pytest.fixture
+def system_1(command_1, command_2):
+    mock = Mock(
+        version="1.0.0", instance_names=[u"default"], commands=[command_1, command_2]
+    )
+    type(mock).name = PropertyMock(return_value="system")
+    return mock
+
+
+@pytest.fixture
+def system_2(command_1, command_2):
+    mock = Mock(
+        version="2.0.0", instance_names=[u"default"], commands=[command_1, command_2]
+    )
+    type(mock).name = PropertyMock(return_value="system")
+    return mock
+
+
+@pytest.fixture
+def mock_in_progress():
+    return Mock(status="IN PROGRESS", output="output")
+
+
+@pytest.fixture
+def mock_success():
+    return Mock(status="SUCCESS", output="output")
+
+
+@pytest.fixture
+def mock_error():
+    return Mock(status="ERROR", output="error_output")
+
+
+@pytest.fixture
+def easy_client(system_1):
+    mock = Mock(name="easy_client")
+    mock.find_unique_system.return_value = system_1
+    mock.find_systems.return_value = [system_1]
+    return mock
+
+
+@pytest.fixture
+def client():
+    return SystemClient(bg_host="localhost", bg_port=3000, system_name="system")
+
+
+@pytest.fixture
+def sleep_patch(monkeypatch):
+    mock = Mock(name="sleep mock")
+    monkeypatch.setattr(brewtils.rest.system_client.time, "sleep", mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def easy_client_patch(monkeypatch, easy_client):
+    monkeypatch.setattr(
+        brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
+    )
+
+
 class TestSystemClient(object):
-    @pytest.fixture
-    def command_1(self):
-        mock = Mock()
-        type(mock).name = PropertyMock(return_value="command_1")
-        return mock
-
-    @pytest.fixture
-    def command_2(self):
-        mock = Mock()
-        type(mock).name = PropertyMock(return_value="command_2")
-        return mock
-
-    @pytest.fixture
-    def system_1(self, command_1, command_2):
-        mock = Mock(
-            version="1.0.0",
-            instance_names=[u"default"],
-            commands=[command_1, command_2],
-        )
-        type(mock).name = PropertyMock(return_value="system")
-        return mock
-
-    @pytest.fixture
-    def system_2(self, command_1, command_2):
-        mock = Mock(
-            version="2.0.0",
-            instance_names=[u"default"],
-            commands=[command_1, command_2],
-        )
-        type(mock).name = PropertyMock(return_value="system")
-        return mock
-
-    @pytest.fixture
-    def mock_in_progress(self):
-        return Mock(status="IN PROGRESS", output="output")
-
-    @pytest.fixture
-    def mock_success(self):
-        return Mock(status="SUCCESS", output="output")
-
-    @pytest.fixture
-    def mock_error(self):
-        return Mock(status="ERROR", output="error_output")
-
-    @pytest.fixture
-    def easy_client(self, system_1):
-        mock = Mock(name="easy_client")
-        mock.find_unique_system.return_value = system_1
-        mock.find_systems.return_value = [system_1]
-        return mock
-
-    @pytest.fixture
-    def client(self):
-        return SystemClient(bg_host="localhost", bg_port=3000, system_name="system")
-
-    @pytest.fixture
-    def sleep_patch(self, monkeypatch):
-        mock = Mock(name="sleep mock")
-        monkeypatch.setattr(brewtils.rest.system_client.time, "sleep", mock)
-        return mock
-
-    @pytest.fixture(autouse=True)
-    def easy_client_patch(self, monkeypatch, easy_client):
-        monkeypatch.setattr(
-            brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
-        )
-
     def test_lazy_system_loading(self, client):
         assert client._loaded is False
         assert client._system is None

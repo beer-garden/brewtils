@@ -360,6 +360,8 @@ class TestSystemClient(object):
             ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
             ("1.0", ["1.0", "0.2.1"]),
             ("1.0.0", ["1.0.0rc1", "1.0.0"]),
+            ("b", ["a", "b"]),
+            ("1.0.0", ["a", "b", "1.0.0"]),
         ],
     )
     def test_determine_latest(self, client, versions, latest):

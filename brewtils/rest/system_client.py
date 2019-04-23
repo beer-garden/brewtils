@@ -3,10 +3,11 @@
 import logging
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from multiprocessing import cpu_count
 
 import time
+from functools import partial
+from packaging.version import parse
 
 from brewtils.errors import (
     FetchError,
@@ -395,7 +396,7 @@ class SystemClient(object):
     @staticmethod
     def _determine_latest(systems):
         return (
-            sorted(systems, key=lambda x: x.version, reverse=True)[0]
+            sorted(systems, key=lambda x: parse(x.version), reverse=True)[0]
             if systems
             else None
         )

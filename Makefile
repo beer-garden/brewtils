@@ -92,7 +92,7 @@ test-tox: ## run tests on every Python version with tox
 test: test-python ## alias of test-python
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source brewtils -m pytest
+	coverage run --source $(MODULE_NAME) -m pytest
 	coverage report -m
 	coverage html
 
@@ -102,7 +102,7 @@ coverage-view: coverage ## view coverage report in a browser
 
 # Documentation
 docs: ## generate Sphinx HTML documentation, including API docs
-	sphinx-apidoc -o docs/ brewtils
+	sphinx-apidoc -o docs/ $(MODULE_NAME)
 	$(MAKE) -C docs html
 
 docs-view: docs ## view generated documenation in a browser

@@ -57,9 +57,21 @@ def wrap_functions(request):
 
 
 class TestSystem(object):
-    def test_system(self, sys):
+    def test_system_basic(self, sys):
         assert 1 == len(sys._commands)
         assert "foo" == sys._commands[0].name
+
+    def test_system(self):
+        @system(name="sys", version="1.0.0")
+        class SystemClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert SystemClass._name == "sys"
+        assert SystemClass._version == "1.0.0"
+        assert 1 == len(SystemClass._commands)
+        assert "foo" == SystemClass._commands[0].name
 
 
 class TestParameter(object):

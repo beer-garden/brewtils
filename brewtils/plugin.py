@@ -851,6 +851,11 @@ class Plugin(object):
             return str(output)
 
 
+def run_plugin(client, **kwargs):
+    """Helper for running a Plugin from a Client instance"""
+    Plugin(client, **kwargs).run()
+
+
 # Alias old name
 PluginBase = Plugin
 

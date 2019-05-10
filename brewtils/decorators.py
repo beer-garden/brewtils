@@ -82,6 +82,8 @@ def system(cls=None, name=None, version=None):
         lambda self: brewtils.plugin.request_context.current_request
     )
 
+    cls.run_plugin = brewtils.plugin.run_plugin
+
     return cls
 
 

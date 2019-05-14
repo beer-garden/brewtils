@@ -62,14 +62,14 @@ class TestSystem(object):
         assert "foo" == sys._commands[0].name
 
     def test_system(self):
-        @system(name="sys", version="1.0.0")
+        @system(bg_name="sys", bg_version="1.0.0")
         class SystemClass(object):
             @command
             def foo(self):
                 pass
 
-        assert SystemClass._name == "sys"
-        assert SystemClass._version == "1.0.0"
+        assert SystemClass._bg_name == "sys"
+        assert SystemClass._bg_version == "1.0.0"
         assert 1 == len(SystemClass._commands)
         assert "foo" == SystemClass._commands[0].name
 

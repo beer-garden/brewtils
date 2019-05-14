@@ -46,10 +46,10 @@ def bm_client(bg_system, bg_instance):
 def client():
     return MagicMock(
         name="client",
-        spec=["command", "_commands", "_name", "_version"],
+        spec=["command", "_commands", "_bg_name", "_bg_version"],
         _commands=["command"],
-        _name=None,
-        _version=None,
+        _bg_name=None,
+        _bg_version=None,
     )
 
 
@@ -778,7 +778,9 @@ class TestSetupSystem(object):
         with pytest.raises(ValidationError, match="system creation helper keywords"):
             plugin._setup_system(client, "default", bg_system, *extra_args)
 
-    @pytest.mark.parametrize("attr,value", [("_name", "name"), ("_version", "1.1.1")])
+    @pytest.mark.parametrize(
+        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
+    )
     def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
         setattr(client, attr, value)
         with pytest.raises(ValidationError, match="@system decorator"):
@@ -845,8 +847,8 @@ class TestSetupSystem(object):
         self._validate_system(new_system)
 
     def test_construct_from_decorator(self, plugin, client):
-        client._name = "name"
-        client._version = "1.0.0"
+        client._bg_name = "name"
+        client._bg_version = "1.0.0"
 
         new_system = plugin._setup_system(
             client,

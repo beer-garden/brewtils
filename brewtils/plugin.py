@@ -776,10 +776,10 @@ class Plugin(object):
                     "max_instances, display_name, and icon_name)"
                 )
 
-            if client._name or client._version:
+            if client._bg_name or client._bg_version:
                 raise ValidationError(
                     "Sorry, you can't specify a system as well as system "
-                    "info in the @system decorator (name, version)"
+                    "info in the @system decorator (bg_name, bg_version)"
                 )
 
             if not system.instances:
@@ -793,8 +793,10 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = name or os.environ.get("BG_NAME", None) or client._name
-            version = version or os.environ.get("BG_VERSION", None) or client._version
+            name = name or os.environ.get("BG_NAME", None) or client._bg_name
+            version = (
+                version or os.environ.get("BG_VERSION", None) or client._bg_version
+            )
 
             if client.__doc__ and not description:
                 description = self.client.__doc__.split("\n")[0]

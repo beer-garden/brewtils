@@ -6,6 +6,7 @@ import logging.config
 import os
 import sys
 import threading
+import warnings
 
 import pytest
 from mock import MagicMock, Mock
@@ -57,7 +58,11 @@ def parser():
 @pytest.fixture
 def plugin(client, bm_client, parser, bg_system, bg_instance):
     plugin = Plugin(
-        client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
+        client,
+        bg_host="localhost",
+        system=bg_system,
+        metadata={"foo": "bar"},
+        max_concurrent=1,
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
@@ -67,6 +72,13 @@ def plugin(client, bm_client, parser, bg_system, bg_instance):
 
 
 class TestPluginInit(object):
+    @pytest.fixture(autouse=True)
+    def ignore_max_concurrent_warning(self):
+        """Suppress warnings about max_concurrent behavior changing in 3.0"""
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            yield
+
     def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
             Plugin(client)
@@ -742,21 +754,39 @@ class TestAdminMethods(object):
         assert bm_client.instance_heartbeat.called is False
 
 
-@pytest.mark.parametrize(
-    "args,expected",
-    [
-        ((None, None), 1),
-        ((True, None), 5),
-        ((False, None), 1),
-        ((None, 4), 4),
-        ((True, 1), 1),
-        ((False, 1), 1),
-        ((True, 4), 4),
-        ((False, 4), 4),
-    ],
-)
-def test_max_concurrent(plugin, args, expected):
-    assert plugin._setup_max_concurrent(*args) == expected
+class TestMaxConcurrent(object):
+    @pytest.mark.parametrize(
+        "multithreaded,max_concurrent,expected",
+        [
+            (None, None, 1),
+            (True, None, 5),
+            (False, None, 1),
+            (None, 4, 4),
+            (True, 1, 1),
+            (False, 1, 1),
+            (True, 4, 4),
+            (False, 4, 4),
+        ],
+    )
+    def test_setup(self, plugin, multithreaded, max_concurrent, expected):
+        with warnings.catch_warnings(record=True) as w:
+            assert (
+                plugin._setup_max_concurrent(
+                    multithreaded=multithreaded, max_concurrent=max_concurrent
+                )
+                == expected
+            )
+
+            if multithreaded:
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert "multithreaded" in str(w[0].message)
+
+    def test_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            Plugin(client, bg_host="localhost")
+
+            assert issubclass(w[-1].category, PendingDeprecationWarning)
+            assert "max_concurrent" in str(w[-1].message)
 
 
 class TestSetupSystem(object):

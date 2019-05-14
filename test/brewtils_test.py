@@ -2,6 +2,7 @@
 
 import copy
 import os
+import warnings
 
 import pytest
 
@@ -73,7 +74,7 @@ class TestBrewtils(object):
         assert config.bg_host == "the_host"
 
     def test_get_easy_client(self):
-        client = brewtils.get_easy_client(host="bg_host")
+        client = brewtils.get_easy_client(bg_host="bg_host")
         assert isinstance(client, EasyClient) is True
 
     def test_get_connection_info_kwargs(self, params):
@@ -90,12 +91,29 @@ class TestBrewtils(object):
 
         assert params == brewtils.get_connection_info()
 
-    def test_get_connection_info_deprecated_kwargs(self, params):
+    def test_get_connection_info_deprecated_kwarg_host(self, params):
         deprecated_params = copy.copy(params)
         deprecated_params["host"] = deprecated_params.pop("bg_host")
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert params == brewtils.get_connection_info(**deprecated_params)
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "host" in str(w[0].message)
+
+    def test_get_connection_info_deprecated_kwarg_port(self, params):
+        deprecated_params = copy.copy(params)
         deprecated_params["port"] = deprecated_params.pop("bg_port")
 
-        assert params == brewtils.get_connection_info(**deprecated_params)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert params == brewtils.get_connection_info(**deprecated_params)
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "port" in str(w[0].message)
 
     def test_get_connection_info_deprecated_env(self, params):
         deprecated_params = copy.copy(params)

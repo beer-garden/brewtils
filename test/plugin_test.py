@@ -764,6 +764,8 @@ class TestMaxConcurrent(object):
     )
     def test_setup(self, plugin, multithreaded, max_concurrent, expected):
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
             assert (
                 plugin._setup_max_concurrent(
                     multithreaded=multithreaded, max_concurrent=max_concurrent
@@ -777,6 +779,8 @@ class TestMaxConcurrent(object):
 
     def test_deprecation(self, client):
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
             Plugin(client, bg_host="localhost")
 
             assert issubclass(w[-1].category, PendingDeprecationWarning)

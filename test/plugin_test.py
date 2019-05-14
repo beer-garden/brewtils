@@ -71,14 +71,8 @@ def plugin(client, bm_client, parser, bg_system, bg_instance):
     return plugin
 
 
+@pytest.mark.filterwarnings("ignore:Heads up")
 class TestPluginInit(object):
-    @pytest.fixture(autouse=True)
-    def ignore_max_concurrent_warning(self):
-        """Suppress warnings about max_concurrent behavior changing in 3.0"""
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            yield
-
     def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
             Plugin(client)

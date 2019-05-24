@@ -121,6 +121,7 @@ class TestParameter(object):
             ("Boolean", "Boolean"),
             ("Dictionary", "Dictionary"),
             ("Any", "Any"),
+            ("string", "String"),
         ],
     )
     def test_types(self, cmd, t, expected):

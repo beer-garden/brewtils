@@ -520,7 +520,7 @@ def _format_type(param_type):
     elif param_type == dict:
         return "Dictionary"
     else:
-        return param_type
+        return str(param_type).title()
 
 
 def _format_choices(choices):

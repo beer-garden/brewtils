@@ -24,6 +24,7 @@ from brewtils.models import (
     RequestTemplate,
     IntervalTrigger,
     DateTrigger,
+    RequestFile,
 )
 
 
@@ -502,6 +503,17 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
 
 
 @pytest.fixture
+def request_file_dict():
+    """A request file represented as a dictionary."""
+    return {
+        "content_type": "application/json",
+        "storage_type": "gridfs",
+        "filename": "request_filename",
+        "external_link": None,
+    }
+
+
+@pytest.fixture
 def cron_job_dict(job_dict, cron_trigger_dict):
     """A cron job represented as a dictionary."""
     dict_copy = copy.deepcopy(job_dict)
@@ -614,3 +626,9 @@ def bg_date_trigger(date_trigger_dict, ts_dt):
     dict_copy = copy.deepcopy(date_trigger_dict)
     dict_copy["run_date"] = ts_dt
     return DateTrigger(**dict_copy)
+
+
+@pytest.fixture
+def bg_request_file(request_file_dict):
+    """A request file as a model"""
+    return RequestFile(**request_file_dict)

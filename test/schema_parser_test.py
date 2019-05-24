@@ -25,6 +25,7 @@ from brewtils.test.comparable import (
     assert_principal_equal,
     assert_role_equal,
     assert_job_equal,
+    assert_request_file_equal,
 )
 
 
@@ -157,6 +158,13 @@ def test_no_modify(system_dict):
             assert_job_equal,
             lazy_fixture("bg_interval_job"),
         ),
+        (
+            "parse_request_file",
+            lazy_fixture("request_file_dict"),
+            {},
+            assert_request_file_equal,
+            lazy_fixture("bg_request_file"),
+        ),
     ],
 )
 def test_parse(method, data, kwargs, assertion, expected):
@@ -274,6 +282,12 @@ def test_parse_patch_many(patch_many_dict, bg_patch1, bg_patch2):
             lazy_fixture("bg_interval_job"),
             {"to_string": False},
             lazy_fixture("interval_job_dict"),
+        ),
+        (
+            "serialize_request_file",
+            lazy_fixture("bg_request_file"),
+            {"to_string": False},
+            lazy_fixture("request_file_dict"),
         ),
     ],
 )

@@ -19,6 +19,7 @@ from brewtils.models import (
     Principal,
     Role,
     RequestTemplate,
+    RequestFile,
 )
 
 
@@ -212,6 +213,25 @@ class TestParameter(object):
     )
     def test_is_not_different(self, p1, p2):
         assert not p1.is_different(p2)
+
+
+class TestRequestFile(object):
+    @pytest.fixture
+    def request_file(self):
+        return RequestFile(
+            content_type="application/json",
+            storage_type="gridfs",
+            filename="request_filename",
+            external_link=None,
+        )
+
+    def test_str(self, request_file):
+        assert str(request_file) == "request_filename"
+
+    def test_repr(self, request_file):
+        assert "request_filename" in repr(request_file)
+        assert "application/json" in repr(request_file)
+        assert "gridfs" in repr(request_file)
 
 
 class TestRequestTemplate(object):

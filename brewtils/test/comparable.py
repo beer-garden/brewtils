@@ -30,6 +30,7 @@ from brewtils.models import (
     DateTrigger,
     CronTrigger,
     RequestTemplate,
+    RequestFile,
 )
 
 __all__ = [
@@ -173,6 +174,7 @@ assert_request_template_equal = partial(_assert_wrapper, expected_type=RequestTe
 assert_trigger_equal = partial(
     _assert_wrapper, expected_type=(CronTrigger, DateTrigger, IntervalTrigger)
 )
+assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):

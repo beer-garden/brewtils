@@ -21,6 +21,7 @@ from brewtils.models import (
     RefreshToken,
     Job,
     RequestTemplate,
+    RequestFile,
     DateTrigger,
     CronTrigger,
     IntervalTrigger,
@@ -31,6 +32,7 @@ from brewtils.schemas import (
     CommandSchema,
     ParameterSchema,
     RequestSchema,
+    RequestFileSchema,
     PatchSchema,
     LoggingConfigSchema,
     EventSchema,
@@ -50,6 +52,7 @@ class SchemaParser(object):
         "InstanceSchema": Instance,
         "CommandSchema": Command,
         "ParameterSchema": Parameter,
+        "RequestFileSchema": RequestFile,
         "RequestTemplateSchema": RequestTemplate,
         "RequestSchema": Request,
         "PatchSchema": PatchOperation,
@@ -115,6 +118,19 @@ class SchemaParser(object):
         """
         return cls._do_parse(
             parameter, ParameterSchema(**kwargs), from_string=from_string
+        )
+
+    @classmethod
+    def parse_request_file(cls, request_file, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a request file model object
+
+        :param request_file: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Request object
+        """
+        return cls._do_parse(
+            request_file, RequestFileSchema(**kwargs), from_string=from_string
         )
 
     @classmethod
@@ -309,6 +325,17 @@ class SchemaParser(object):
         :return: Serialized representation of parameter
         """
         return cls._do_serialize(ParameterSchema(**kwargs), parameter, to_string)
+
+    @classmethod
+    def serialize_request_file(cls, request_file, to_string=True, **kwargs):
+        """Convert a request file model into serialized form
+
+        :param request_file: The request file object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation of request
+        """
+        return cls._do_serialize(RequestFileSchema(**kwargs), request_file, to_string)
 
     @classmethod
     def serialize_request(cls, request, to_string=True, **kwargs):

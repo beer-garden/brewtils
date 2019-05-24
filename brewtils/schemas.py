@@ -15,6 +15,7 @@ __all__ = [
     "CommandSchema",
     "ParameterSchema",
     "RequestSchema",
+    "RequestFileSchema",
     "PatchSchema",
     "LoggingConfigSchema",
     "EventSchema",
@@ -114,6 +115,7 @@ class ParameterSchema(BaseSchema):
     minimum = fields.Int(allow_none=True)
     regex = fields.Str(allow_none=True)
     form_input_type = fields.Str(allow_none=True)
+    type_info = fields.Dict(allow_none=True)
 
 
 class CommandSchema(BaseSchema):
@@ -156,6 +158,14 @@ class SystemSchema(BaseSchema):
     commands = fields.Nested("CommandSchema", many=True)
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+
+
+class RequestFileSchema(BaseSchema):
+
+    content_type = fields.Str(allow_none=True)
+    storage_type = fields.Str(allow_none=True)
+    filename = fields.Str(allow_none=True)
+    external_link = fields.Str(allow_none=True)
 
 
 class RequestTemplateSchema(BaseSchema):

@@ -115,18 +115,26 @@ class TestParameter(object):
             (float, "Float"),
             (bool, "Boolean"),
             (dict, "Dictionary"),
+            (bytes, "Bytes"),
             ("String", "String"),
             ("Integer", "Integer"),
             ("Float", "Float"),
             ("Boolean", "Boolean"),
             ("Dictionary", "Dictionary"),
             ("Any", "Any"),
+            ("file", "Bytes"),
             ("string", "String"),
         ],
     )
     def test_types(self, cmd, t, expected):
         wrapped = parameter(cmd, key="foo", type=t)
         assert expected == wrapped._command.get_parameter_by_key("foo").type
+
+    def test_file_type_info(self, cmd):
+        wrapped = parameter(cmd, key="foo", type="file")
+        assert wrapped._command.get_parameter_by_key("foo").type_info == {
+            "storage": "gridfs"
+        }
 
     def test_values(self, cmd, param_definition):
         wrapped = parameter(cmd, **param_definition)

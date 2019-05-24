@@ -276,6 +276,15 @@ def parameter(
 
     param.choices = _format_choices(param.choices)
 
+    # Type info is where type specific information goes. For now, this is specific
+    # to file types. See #289 for more details.
+    if str(type).lower() == "file":
+        param.type_info = {
+            "storage": "gridfs",
+        }
+    else:
+        param.type_info = {}
+
     # Model is another special case - it requires its own handling
     if model is not None:
         param.type = "Dictionary"
@@ -422,6 +431,7 @@ def _generate_nested_params(model_class):
         maximum = parameter_definition.maximum
         minimum = parameter_definition.minimum
         regex = parameter_definition.regex
+        type_info = parameter_definition.type_info
 
         choices = _format_choices(parameter_definition.choices)
 
@@ -446,6 +456,7 @@ def _generate_nested_params(model_class):
                 maximum=maximum,
                 minimum=minimum,
                 regex=regex,
+                type_info=type_info,
             )
         )
     return parameters_to_return
@@ -519,6 +530,10 @@ def _format_type(param_type):
         return "Boolean"
     elif param_type == dict:
         return "Dictionary"
+    elif param_type == bytes:
+        return "Bytes"
+    elif str(param_type).lower() == "file":
+        return "Bytes"
     else:
         return str(param_type).title()
 

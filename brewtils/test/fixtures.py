@@ -92,6 +92,7 @@ def nested_parameter_dict():
         "minimum": None,
         "regex": None,
         "form_input_type": None,
+        "type_info": {},
     }
 
 
@@ -113,6 +114,7 @@ def parameter_dict(nested_parameter_dict, choices_dict):
         "minimum": 1,
         "regex": ".*",
         "form_input_type": None,
+        "type_info": {},
     }
 
 

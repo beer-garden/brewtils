@@ -210,6 +210,7 @@ class Parameter(object):
         "Dictionary",
         "Date",
         "DateTime",
+        "Bytes",
     )
     FORM_INPUT_TYPES = ("textarea",)
 
@@ -229,6 +230,7 @@ class Parameter(object):
         minimum=None,
         regex=None,
         form_input_type=None,
+        type_info=None,
     ):
         self.key = key
         self.type = type
@@ -244,6 +246,7 @@ class Parameter(object):
         self.minimum = minimum
         self.regex = regex
         self.form_input_type = form_input_type
+        self.type_info = type_info or {}
 
     def __str__(self):
         return self.key
@@ -262,6 +265,7 @@ class Parameter(object):
         fields_to_compare = [
             "key",
             "type",
+            "type_info",
             "multi",
             "optional",
             "default",

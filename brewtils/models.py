@@ -46,6 +46,7 @@ class Events(Enum):
     SYSTEM_REMOVED = 13
     QUEUE_CLEARED = 14
     ALL_QUEUES_CLEARED = 15
+    FILE_CREATED = 16
 
 
 class Command(object):

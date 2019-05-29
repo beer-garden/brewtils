@@ -71,7 +71,6 @@ def plugin(client, bm_client, parser, bg_system, bg_instance):
     return plugin
 
 
-@pytest.mark.filterwarnings("ignore:Heads up")
 class TestPluginInit(object):
     def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
@@ -85,7 +84,11 @@ class TestPluginInit(object):
         self, client, bg_system, instance_name, expected_unique
     ):
         plugin = Plugin(
-            client, bg_host="localhost", system=bg_system, instance_name=instance_name
+            client,
+            bg_host="localhost",
+            system=bg_system,
+            instance_name=instance_name,
+            max_concurrent=1,
         )
 
         assert expected_unique == plugin.unique_name
@@ -113,7 +116,7 @@ class TestPluginInit(object):
         monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
 
-        plugin = Plugin(client, bg_host="localhost")
+        plugin = Plugin(client, bg_host="localhost", max_concurrent=1)
         dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
         assert logging.getLogger("brewtils.plugin") == plugin.logger
 
@@ -129,6 +132,7 @@ class TestPluginInit(object):
             ssl_enabled=False,
             ca_verify=False,
             logger=logger,
+            max_concurrent=1,
         )
 
         assert plugin.bg_host == "host1"
@@ -145,7 +149,7 @@ class TestPluginInit(object):
         os.environ["BG_SSL_ENABLED"] = "False"
         os.environ["BG_CA_VERIFY"] = "False"
 
-        plugin = Plugin(client, system=bg_system)
+        plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
         assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 7332
@@ -168,6 +172,7 @@ class TestPluginInit(object):
             system=bg_system,
             ssl_enabled=True,
             ca_verify=True,
+            max_concurrent=1,
         )
 
         assert plugin.bg_host == "localhost"
@@ -188,7 +193,12 @@ class TestPluginInit(object):
             "--no-ca-verify",
         ]
 
-        plugin = Plugin(client, system=bg_system, **get_connection_info(cli_args=args))
+        plugin = Plugin(
+            client,
+            system=bg_system,
+            max_concurrent=1,
+            **get_connection_info(cli_args=args)
+        )
 
         assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 2338
@@ -779,12 +789,13 @@ class TestMaxConcurrent(object):
 
     def test_deprecation(self, client):
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+            warnings.simplefilter("ignore")
+            warnings.filterwarnings("always", module="brewtils.plugin")
 
             Plugin(client, bg_host="localhost")
 
-            assert issubclass(w[-1].category, PendingDeprecationWarning)
-            assert "max_concurrent" in str(w[-1].message)
+            assert issubclass(w[0].category, PendingDeprecationWarning)
+            assert "max_concurrent" in str(w[0].message)
 
 
 class TestSetupSystem(object):

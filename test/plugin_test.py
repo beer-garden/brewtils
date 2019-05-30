@@ -742,23 +742,6 @@ class TestAdminMethods(object):
         assert bm_client.instance_heartbeat.called is False
 
 
-@pytest.mark.parametrize(
-    "args,expected",
-    [
-        ((None, None), 1),
-        ((True, None), 5),
-        ((False, None), 1),
-        ((None, 4), 4),
-        ((True, 1), 1),
-        ((False, 1), 1),
-        ((True, 4), 4),
-        ((False, 4), 4),
-    ],
-)
-def test_max_concurrent(plugin, args, expected):
-    assert plugin._setup_max_concurrent(*args) == expected
-
-
 class TestSetupSystem(object):
     @pytest.mark.parametrize(
         "extra_args",

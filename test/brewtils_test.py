@@ -10,46 +10,54 @@ from brewtils.errors import ValidationError
 from brewtils.rest.easy_client import EasyClient
 
 
-class TestBrewtils(object):
-    @pytest.fixture
-    def params(self):
-        return {
-            "host": "bg_host",
-            "port": 1234,
-            "ssl_enabled": False,
-            "api_version": None,
-            "ca_cert": "ca_cert",
-            "client_cert": "client_cert",
-            "url_prefix": "/beer/",
-            "ca_verify": True,
-            "username": None,
-            "password": None,
-            "access_token": None,
-            "refresh_token": None,
-            "client_timeout": -1.0,
-        }
+@pytest.fixture(autouse=True)
+def environ():
+    safe_copy = os.environ.copy()
+    yield
+    os.environ = safe_copy
 
-    def setup_method(self):
-        self.safe_copy = os.environ.copy()
 
-    def teardown_method(self):
-        os.environ = self.safe_copy
+@pytest.fixture
+def params():
+    return {
+        "host": "bg_host",
+        "port": 1234,
+        "ssl_enabled": False,
+        "api_version": None,
+        "ca_cert": "ca_cert",
+        "client_cert": "client_cert",
+        "url_prefix": "/beer/",
+        "ca_verify": True,
+        "username": None,
+        "password": None,
+        "access_token": None,
+        "refresh_token": None,
+        "client_timeout": -1.0,
+    }
 
-    def test_load_config_kwargs(self):
+
+class TestLoadConfig(object):
+    def test_kwargs(self):
         config = brewtils.load_config(host="the_host")
         assert config.bg.host == "the_host"
 
-    def test_load_config_kwargs_prefixed(self):
+    def test_kwargs_prefixed(self):
         config = brewtils.load_config(bg_host="the_host")
         assert config.bg.host == "the_host"
 
-    def test_load_config_cli(self):
+    def test_cli_args(self):
         cli_args = ["--bg-host", "the_host"]
 
         config = brewtils.load_config(cli_args)
         assert config.bg.host == "the_host"
 
-    def test_load_config_cli_custom_argument_parser_vars(self):
+    def test_environment(self):
+        os.environ["BG_HOST"] = "the_host"
+
+        config = brewtils.load_config()
+        assert config.bg.host == "the_host"
+
+    def test_custom_argument_parser_vars(self):
         parser = brewtils.get_argument_parser()
         parser.add_argument("some_parameter")
 
@@ -61,7 +69,7 @@ class TestBrewtils(object):
         assert parsed_args.some_parameter == "param"
         assert "some_parameter" not in config
 
-    def test_load_config_cli_custom_argument_parser_cli(self):
+    def test_custom_argument_parser_cli_args(self):
         parser = brewtils.get_argument_parser()
         parser.add_argument("some_parameter")
 
@@ -73,16 +81,15 @@ class TestBrewtils(object):
         assert parsed_args.some_parameter == "param"
         assert "some_parameter" not in config
 
-    def test_load_config_environment(self):
-        os.environ["BG_HOST"] = "the_host"
+    def test_normalize_url_prefix(self, params):
+        os.environ["BG_HOST"] = "bg_host"
+        os.environ["BG_URL_PREFIX"] = "/beer"
 
-        config = brewtils.load_config([])
-        assert config.bg.host == "the_host"
+        config = brewtils.load_config()
+        assert config.bg.url_prefix == params["url_prefix"]
 
-    def test_get_easy_client(self):
-        client = brewtils.get_easy_client(bg_host="bg_host")
-        assert isinstance(client, EasyClient) is True
 
+class TestGetConnectionInfo(object):
     def test_get_connection_info_kwargs(self, params):
         assert params == brewtils.get_connection_info(**params)
 
@@ -101,9 +108,7 @@ class TestBrewtils(object):
         with pytest.raises(ValidationError):
             brewtils.get_connection_info()
 
-    def test_normalize_url_prefix(self, params):
-        os.environ["BG_HOST"] = "bg_host"
-        os.environ["BG_URL_PREFIX"] = "/beer"
 
-        generated_params = brewtils.get_connection_info()
-        assert generated_params["url_prefix"] == params["url_prefix"]
+def test_get_easy_client():
+    client = brewtils.get_easy_client(host="bg_host")
+    assert isinstance(client, EasyClient) is True

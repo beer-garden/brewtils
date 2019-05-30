@@ -300,10 +300,7 @@ class RequestFile(object):
 
     schema = "RequestFileSchema"
 
-    def __init__(
-        self, content_type=None, storage_type=None, filename=None, external_link=None
-    ):
-        self.content_type = content_type
+    def __init__(self, storage_type=None, filename=None, external_link=None):
         self.storage_type = storage_type
         self.filename = filename
         self.external_link = external_link
@@ -312,9 +309,8 @@ class RequestFile(object):
         return self.filename
 
     def __repr__(self):
-        return "<RequestFile: filename=%s, content_type=%s, storage_type=%s, " % (
+        return "<RequestFile: filename=%s, storage_type=%s, " % (
             self.filename,
-            self.content_type,
             self.storage_type,
         )
 

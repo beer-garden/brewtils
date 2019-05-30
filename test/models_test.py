@@ -219,10 +219,7 @@ class TestRequestFile(object):
     @pytest.fixture
     def request_file(self):
         return RequestFile(
-            content_type="application/json",
-            storage_type="gridfs",
-            filename="request_filename",
-            external_link=None,
+            storage_type="gridfs", filename="request_filename", external_link=None
         )
 
     def test_str(self, request_file):
@@ -230,7 +227,6 @@ class TestRequestFile(object):
 
     def test_repr(self, request_file):
         assert "request_filename" in repr(request_file)
-        assert "application/json" in repr(request_file)
         assert "gridfs" in repr(request_file)
 
 

@@ -508,7 +508,6 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
 def request_file_dict():
     """A request file represented as a dictionary."""
     return {
-        "content_type": "application/json",
         "storage_type": "gridfs",
         "filename": "request_filename",
         "external_link": None,

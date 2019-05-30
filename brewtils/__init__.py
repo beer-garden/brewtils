@@ -185,11 +185,9 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
     except YapconfItemNotFound as ex:
         if ex.item.fq_name == "bg.host":
             raise ValidationError(
-                "Unable to create a plugin without a "
-                "beer-garden host. Please specify one on the "
-                "command line (--bg-host), in the "
-                "environment (BG_HOST), or in kwargs "
-                "(bg_host)"
+                "Unable to create a plugin without a beer-garden host. "
+                "Please specify one on the command line (--bg-host), in the "
+                "environment (BG_HOST), or in kwargs (bg_host)"
             )
         raise
 

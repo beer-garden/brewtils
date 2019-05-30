@@ -44,12 +44,12 @@ class Plugin(object):
     When creating a Plugin you can pass certain keyword arguments to let the
     Plugin know how to communicate with the beer-garden instance. These are:
 
-        - ``bg_host``
-        - ``bg_port``
+        - ``host``
+        - ``port``
         - ``ssl_enabled``
         - ``ca_cert``
         - ``client_cert``
-        - ``bg_url_prefix``
+        - ``url_prefix``
 
     A Plugin also needs some identifying data. You can either pass parameters to
     the Plugin or pass a fully defined System object (but not both). Note that
@@ -94,19 +94,20 @@ class Plugin(object):
 
     Plugins service requests using a
     :py:class:`concurrent.futures.ThreadPoolExecutor`. The maximum number of
-    threads available is controlled by the max_concurrent argument (the
-    'multithreaded' argument has been deprecated).
+    threads available is controlled by the max_concurrent argument.
 
     .. warning::
-        The default value for ``max_concurrent`` is 1. This means that a Plugin
-        that invokes a Command on itself in the course of processing a Request
-        will deadlock! If you intend to do this, please set ``max_concurrent``
-        to a value that makes sense and be aware that Requests are processed in
-        separate thread contexts!
+        The default value for ``max_concurrent`` is 5. This means that by
+        default a Plugin will process multiple requests simultaneously in
+        multiple thread contexts.
+        It's possible to set ``max_concurrent`` to 1 to get single-threaded
+        behavior. However, be aware that the Plugin invoking any commands on
+        itself (using a SystemClient) during the course of processing a
+        Request will cause a deadlock.
 
     :param client: Instance of a class annotated with @system.
-    :param str bg_host: Hostname of a beer-garden.
-    :param int bg_port: Port beer-garden is listening on.
+    :param str host: Hostname of a beer-garden.
+    :param int port: Port beer-garden is listening on.
     :param bool ssl_enabled: Whether to use SSL for beer-garden communication.
     :param ca_cert: Certificate that issued the server certificate used by the
         beer-garden server.
@@ -122,13 +123,12 @@ class Plugin(object):
     :type logger: :py:class:`logging.Logger`.
     :param parser: The parser to use when communicating with beer-garden.
     :type parser: :py:class:`brewtils.schema_parser.SchemaParser`.
-    :param bool multithreaded: DEPRECATED Process requests in a separate thread.
     :param int worker_shutdown_timeout: Time to wait during shutdown to finish
         processing.
     :param dict metadata: Metadata specific to this plugin.
     :param int max_concurrent: Maximum number of requests to process
         concurrently.
-    :param str bg_url_prefix: URL Prefix beer-garden is on.
+    :param str url_prefix: URL Prefix beer-garden is on.
     :param str display_name: The display name to use for the system.
     :param int max_attempts: Number of times to attempt updating the request
         before giving up (default -1 aka never).

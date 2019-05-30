@@ -95,11 +95,11 @@ class TestPluginInit(object):
     def test_defaults(self, plugin):
         assert plugin.logger == logging.getLogger("brewtils.plugin")
         assert plugin.instance_name == "default"
-        assert plugin.bg_host == "localhost"
-        assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == "/"
-        assert plugin.ssl_enabled is True
-        assert plugin.ca_verify is True
+        assert plugin.connection_info["host"] == "localhost"
+        assert plugin.connection_info["port"] == 2337
+        assert plugin.connection_info["url_prefix"] == "/"
+        assert plugin.connection_info["ssl_enabled"] is True
+        assert plugin.connection_info["ca_verify"] is True
 
     def test_default_logger(self, monkeypatch, client):
         """Test that the default logging configuration is used.
@@ -134,12 +134,12 @@ class TestPluginInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.bg_host == "host1"
-        assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
         assert plugin.logger == logger
+        assert plugin.connection_info["host"] == "host1"
+        assert plugin.connection_info["port"] == 2338
+        assert plugin.connection_info["url_prefix"] == "/beer/"
+        assert plugin.connection_info["ssl_enabled"] is False
+        assert plugin.connection_info["ca_verify"] is False
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -150,11 +150,11 @@ class TestPluginInit(object):
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
-        assert plugin.bg_host == "remotehost"
-        assert plugin.bg_port == 7332
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
+        assert plugin.connection_info["host"] == "remotehost"
+        assert plugin.connection_info["port"] == 7332
+        assert plugin.connection_info["url_prefix"] == "/beer/"
+        assert plugin.connection_info["ssl_enabled"] is False
+        assert plugin.connection_info["ca_verify"] is False
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -174,11 +174,11 @@ class TestPluginInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.bg_host == "localhost"
-        assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is True
-        assert plugin.ca_verify is True
+        assert plugin.connection_info["host"] == "localhost"
+        assert plugin.connection_info["port"] == 2337
+        assert plugin.connection_info["url_prefix"] == "/beer/"
+        assert plugin.connection_info["ssl_enabled"] is True
+        assert plugin.connection_info["ca_verify"] is True
 
     def test_cli(self, client, bg_system):
         args = [
@@ -186,10 +186,10 @@ class TestPluginInit(object):
             "remotehost",
             "--bg-port",
             "2338",
-            "--url-prefix",
+            "--bg-url-prefix",
             "beer",
-            "--no-ssl-enabled",
-            "--no-ca-verify",
+            "--bg-no-ssl-enabled",
+            "--bg-no-ca-verify",
         ]
 
         plugin = Plugin(
@@ -199,11 +199,11 @@ class TestPluginInit(object):
             **get_connection_info(cli_args=args)
         )
 
-        assert plugin.bg_host == "remotehost"
-        assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
+        assert plugin.connection_info["host"] == "remotehost"
+        assert plugin.connection_info["port"] == 2338
+        assert plugin.connection_info["url_prefix"] == "/beer/"
+        assert plugin.connection_info["ssl_enabled"] is False
+        assert plugin.connection_info["ca_verify"] is False
 
 
 class TestPluginRun(object):

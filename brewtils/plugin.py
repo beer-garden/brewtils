@@ -143,27 +143,7 @@ class Plugin(object):
     :param refresh_token: Refresh token for Beergarden authentication
     """
 
-    def __init__(
-        self,
-        client,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=None,
-        ca_cert=None,
-        client_cert=None,
-        system=None,
-        name=None,
-        description=None,
-        version=None,
-        icon_name=None,
-        instance_name=None,
-        logger=None,
-        parser=None,
-        metadata=None,
-        max_concurrent=None,
-        bg_url_prefix=None,
-        **kwargs
-    ):
+    def __init__(self, client, logger=None, **kwargs):
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
         if logger or len(logging.getLogger(__name__).root.handlers) > 0:
@@ -174,35 +154,16 @@ class Plugin(object):
             self.logger = logging.getLogger(__name__)
             self._custom_logger = False
 
-        connection_parameters = brewtils.get_connection_info(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=bg_url_prefix or kwargs.get("url_prefix", None),
-            ca_verify=kwargs.get("ca_verify", None),
-            username=kwargs.get("username", None),
-            password=kwargs.get("password", None),
-            client_timeout=kwargs.get("client_timeout", None),
-        )
-        self.bg_host = connection_parameters["bg_host"]
-        self.bg_port = connection_parameters["bg_port"]
-        self.ssl_enabled = connection_parameters["ssl_enabled"]
-        self.ca_cert = connection_parameters["ca_cert"]
-        self.client_cert = connection_parameters["client_cert"]
-        self.bg_url_prefix = connection_parameters["url_prefix"]
-        self.ca_verify = connection_parameters["ca_verify"]
+        self.connection_info = brewtils.get_connection_info(**kwargs)
 
         self.max_attempts = kwargs.get("max_attempts", -1)
         self.max_timeout = kwargs.get("max_timeout", 30)
         self.starting_timeout = kwargs.get("starting_timeout", 5)
 
-        self.max_concurrent = max_concurrent or 5
-        self.instance_name = instance_name or os.environ.get(
+        self.max_concurrent = kwargs.get("max_concurrent", 5)
+        self.instance_name = kwargs.get("instance_name") or os.environ.get(
             "BG_INSTANCE_NAME", "default"
         )
-        self.metadata = metadata or {}
 
         self.instance = None
         self.queue_connection_params = None
@@ -211,17 +172,17 @@ class Plugin(object):
         self.connection_poll_thread = None
         self.client = client
         self.shutdown_event = threading.Event()
-        self.parser = parser or SchemaParser()
+        self.parser = kwargs.get("parser", SchemaParser())
 
         self.system = self._setup_system(
-            client,
+            self.client,
             self.instance_name,
-            system,
-            name,
-            description,
-            version,
-            icon_name,
-            self.metadata,
+            kwargs.get("system", None),
+            kwargs.get("name", None),
+            kwargs.get("description", None),
+            kwargs.get("version", None),
+            kwargs.get("icon_name", None),
+            kwargs.get("metadata", {}),
             kwargs.get("display_name", None),
             kwargs.get("max_instances", None),
         )
@@ -240,7 +201,7 @@ class Plugin(object):
         self.admin_pool = ThreadPoolExecutor(max_workers=1)
 
         self.bm_client = EasyClient(
-            logger=self.logger, parser=self.parser, **connection_parameters
+            logger=self.logger, parser=self.parser, **self.connection_info
         )
 
     def run(self):
@@ -327,8 +288,8 @@ class Plugin(object):
             #  the current plugin. We currently don't support parent/child
             # requests across different servers.
             request_context.current_request = request
-            request_context.bg_host = self.bg_host
-            request_context.bg_port = self.bg_port
+            request_context.bg_host = self.connection_info["host"]
+            request_context.bg_port = self.connection_info["port"]
 
             output = self._invoke_command(target, request)
         except Exception as ex:
@@ -456,9 +417,9 @@ class Plugin(object):
         ):
             self.queue_connection_params["ssl"].update(
                 {
-                    "ca_cert": self.ca_cert,
-                    "ca_verify": self.ca_verify,
-                    "client_cert": self.client_cert,
+                    "ca_cert": self.connection_info["ca_cert"],
+                    "ca_verify": self.connection_info["ca_verify"],
+                    "client_cert": self.connection_info["client_cert"],
                 }
             )
 

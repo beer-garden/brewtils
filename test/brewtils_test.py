@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import copy
 import os
-import warnings
 
 import pytest
 
@@ -16,8 +14,8 @@ class TestBrewtils(object):
     @pytest.fixture
     def params(self):
         return {
-            "bg_host": "bg_host",
-            "bg_port": 1234,
+            "host": "bg_host",
+            "port": 1234,
             "ssl_enabled": False,
             "api_version": None,
             "ca_cert": "ca_cert",
@@ -37,11 +35,19 @@ class TestBrewtils(object):
     def teardown_method(self):
         os.environ = self.safe_copy
 
+    def test_load_config_kwargs(self):
+        config = brewtils.load_config(host="the_host")
+        assert config.bg.host == "the_host"
+
+    def test_load_config_kwargs_prefixed(self):
+        config = brewtils.load_config(bg_host="the_host")
+        assert config.bg.host == "the_host"
+
     def test_load_config_cli(self):
         cli_args = ["--bg-host", "the_host"]
 
         config = brewtils.load_config(cli_args)
-        assert config.bg_host == "the_host"
+        assert config.bg.host == "the_host"
 
     def test_load_config_cli_custom_argument_parser_vars(self):
         parser = brewtils.get_argument_parser()
@@ -50,8 +56,8 @@ class TestBrewtils(object):
         cli_args = ["param", "--bg-host", "the_host"]
         parsed_args = parser.parse_args(cli_args)
 
-        config = brewtils.load_config(**vars(parsed_args))
-        assert config.bg_host == "the_host"
+        config = brewtils.load_config(**vars(parsed_args)["bg"])
+        assert config.bg.host == "the_host"
         assert parsed_args.some_parameter == "param"
         assert "some_parameter" not in config
 
@@ -63,7 +69,7 @@ class TestBrewtils(object):
         parsed_args = parser.parse_args(cli_args)
 
         config = brewtils.load_config(cli_args=cli_args, argument_parser=parser)
-        assert config.bg_host == "the_host"
+        assert config.bg.host == "the_host"
         assert parsed_args.some_parameter == "param"
         assert "some_parameter" not in config
 
@@ -71,7 +77,7 @@ class TestBrewtils(object):
         os.environ["BG_HOST"] = "the_host"
 
         config = brewtils.load_config([])
-        assert config.bg_host == "the_host"
+        assert config.bg.host == "the_host"
 
     def test_get_easy_client(self):
         client = brewtils.get_easy_client(bg_host="bg_host")
@@ -91,50 +97,12 @@ class TestBrewtils(object):
 
         assert params == brewtils.get_connection_info()
 
-    def test_get_connection_info_deprecated_kwarg_host(self, params):
-        deprecated_params = copy.copy(params)
-        deprecated_params["host"] = deprecated_params.pop("bg_host")
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            assert params == brewtils.get_connection_info(**deprecated_params)
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "host" in str(w[0].message)
-
-    def test_get_connection_info_deprecated_kwarg_port(self, params):
-        deprecated_params = copy.copy(params)
-        deprecated_params["port"] = deprecated_params.pop("bg_port")
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            assert params == brewtils.get_connection_info(**deprecated_params)
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "port" in str(w[0].message)
-
-    def test_get_connection_info_deprecated_env(self, params):
-        deprecated_params = copy.copy(params)
-        deprecated_params["bg_host"] = None
-        deprecated_params["bg_port"] = None
-        deprecated_params["ca_cert"] = None
-        deprecated_params["client_cert"] = None
-
-        os.environ["BG_SSL_CA_CERT"] = "ca_cert"
-        os.environ["BG_SSL_CLIENT_CERT"] = "client_cert"
-        os.environ["BG_WEB_HOST"] = "bg_host"
-        os.environ["BG_WEB_PORT"] = "1234"
-
-        assert params == brewtils.get_connection_info(**deprecated_params)
-
     def test_get_connection_info_no_host(self):
         with pytest.raises(ValidationError):
             brewtils.get_connection_info()
 
     def test_normalize_url_prefix(self, params):
-        os.environ["BG_WEB_HOST"] = "bg_host"
+        os.environ["BG_HOST"] = "bg_host"
         os.environ["BG_URL_PREFIX"] = "/beer"
 
         generated_params = brewtils.get_connection_info()

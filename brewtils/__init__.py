@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import warnings
 from argparse import ArgumentParser
-
 from yapconf import YapconfSpec
 from yapconf.exceptions import YapconfItemNotFound
 
@@ -119,10 +117,10 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
     config = load_config(cli_args=cli_args, argument_parser=argument_parser, **kwargs)
 
     return {
-        key: config[key]
+        key: config["bg"][key]
         for key in (
-            "bg_host",
-            "bg_port",
+            "host",
+            "port",
             "ssl_enabled",
             "api_version",
             "ca_cert",
@@ -162,32 +160,15 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
     Returns:
         :obj:`box.Box`: The resolved configuration object
     """
-    spec = YapconfSpec(SPECIFICATION, env_prefix="BG_")
+    spec = YapconfSpec(SPECIFICATION)
 
     sources = []
 
     if kwargs:
-        # Do a little kwarg massaging for backwards compatibility
-        if "bg_host" not in kwargs and "host" in kwargs:
-            warnings.warn(
-                "brewtils.load_config called with 'host' keyword "
-                "argument. This name will be removed in version 3.0, "
-                "please use 'bg_host' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            kwargs["bg_host"] = kwargs.pop("host")
-        if "bg_port" not in kwargs and "port" in kwargs:
-            warnings.warn(
-                "brewtils.load_config called with 'port' keyword "
-                "argument. This name will be removed in version 3.0, "
-                "please use 'bg_port' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            kwargs["bg_port"] = kwargs.pop("port")
+        # This ensures any older usage that was passing bg_host or such still works
+        real_kwargs = {key.lstrip("bg_"): value for key, value in kwargs.items()}
 
-        sources.append(("kwargs", kwargs))
+        sources.append(("kwargs", {"bg": real_kwargs}))
 
     if cli_args:
         if not argument_parser:
@@ -202,7 +183,7 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
     try:
         config = spec.load_config(*sources)
     except YapconfItemNotFound as ex:
-        if ex.item.name == "bg_host":
+        if ex.item.fq_name == "bg.host":
             raise ValidationError(
                 "Unable to create a plugin without a "
                 "beer-garden host. Please specify one on the "
@@ -213,7 +194,7 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
         raise
 
     # Make sure the url_prefix is normal
-    config.url_prefix = normalize_url_prefix(config.url_prefix)
+    config.bg.url_prefix = normalize_url_prefix(config.bg.url_prefix)
 
     return config
 

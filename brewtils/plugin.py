@@ -5,11 +5,10 @@ import logging
 import logging.config
 import os
 import sys
-import threading
-import warnings
 from concurrent.futures import ThreadPoolExecutor
 
 import six
+import threading
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
@@ -160,7 +159,6 @@ class Plugin(object):
         instance_name=None,
         logger=None,
         parser=None,
-        multithreaded=None,
         metadata=None,
         max_concurrent=None,
         bg_url_prefix=None,
@@ -200,7 +198,7 @@ class Plugin(object):
         self.max_timeout = kwargs.get("max_timeout", 30)
         self.starting_timeout = kwargs.get("starting_timeout", 5)
 
-        self.max_concurrent = self._setup_max_concurrent(multithreaded, max_concurrent)
+        self.max_concurrent = max_concurrent or 5
         self.instance_name = instance_name or os.environ.get(
             "BG_INSTANCE_NAME", "default"
         )
@@ -704,49 +702,6 @@ class Plugin(object):
                 except (RequestsConnectionError, RestConnectionError):
                     self.brew_view_down = True
                     raise
-
-    def _setup_max_concurrent(self, multithreaded, max_concurrent):
-        """Determine correct max_concurrent value.
-        Will be unnecessary when multithreaded flag is removed."""
-        if multithreaded is not None:
-            warnings.warn(
-                "Keyword argument 'multithreaded' is deprecated and will be "
-                "removed in version 3.0, please use 'max_concurrent' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-            # Both multithreaded and max_concurrent kwargs explicitly set
-            # check for mutually exclusive settings
-            if max_concurrent is not None:
-                if multithreaded is True and max_concurrent == 1:
-                    self.logger.warning(
-                        "Plugin created with multithreaded=True and "
-                        "max_concurrent=1, ignoring 'multithreaded' argument"
-                    )
-                elif multithreaded is False and max_concurrent > 1:
-                    self.logger.warning(
-                        "Plugin created with multithreaded=False and "
-                        "max_concurrent>1, ignoring 'multithreaded' argument"
-                    )
-
-                return max_concurrent
-            else:
-                return 5 if multithreaded else 1
-        else:
-            if max_concurrent is None:
-                warnings.warn(
-                    "Heads up - in 3.0 the default plugin behavior is changing "
-                    "from handling requests one at a time to handling multiple "
-                    "at once. If this plugin needs to maintain the old "
-                    "behavior just set max_concurrent=1 when creating the "
-                    "plugin.",
-                    PendingDeprecationWarning,
-                    stacklevel=2,
-                )
-                return 1
-
-            return max_concurrent
 
     def _setup_system(
         self,

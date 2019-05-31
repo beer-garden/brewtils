@@ -344,3 +344,4 @@ class JobSchema(BaseSchema):
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
+    max_instances = fields.Int(allow_none=True)

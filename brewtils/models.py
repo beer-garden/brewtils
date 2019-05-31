@@ -785,6 +785,7 @@ class Job(object):
         success_count=None,
         error_count=None,
         status=None,
+        max_instances=None,
     ):
         self.id = id
         self.name = name
@@ -797,6 +798,7 @@ class Job(object):
         self.success_count = success_count
         self.error_count = error_count
         self.status = status
+        self.max_instances = max_instances
 
     def __str__(self):
         return "%s: %s" % (self.name, self.id)

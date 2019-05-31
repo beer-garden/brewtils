@@ -356,9 +356,14 @@ class TestParameters(object):
         assert wrapped(self, test_mock) == test_mock
 
     def test_equivalence(self, param_definition):
-        # We need two separate copies of _cmd here so just invoke cwd() directly
-        func1 = parameter(cmd(), **param_definition)
-        func2 = parameters([param_definition], cmd())
+        # We need two separate copies of _cmd here, but pytest doesn't like you calling
+        # fixtures directly. So just re-define the function here:
+        def cmd(_, foo):
+            """Docstring"""
+            return foo
+
+        func1 = parameter(cmd, **param_definition)
+        func2 = parameters([param_definition], cmd)
 
         assert_parameter_equal(
             func1._command.parameters[0], func2._command.parameters[0]

@@ -6,6 +6,7 @@ import logging.config
 import os
 import sys
 import threading
+import warnings
 
 import pytest
 from mock import MagicMock, Mock
@@ -57,7 +58,11 @@ def parser():
 @pytest.fixture
 def plugin(client, bm_client, parser, bg_system, bg_instance):
     plugin = Plugin(
-        client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
+        client,
+        bg_host="localhost",
+        system=bg_system,
+        metadata={"foo": "bar"},
+        max_concurrent=1,
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
@@ -79,7 +84,11 @@ class TestPluginInit(object):
         self, client, bg_system, instance_name, expected_unique
     ):
         plugin = Plugin(
-            client, bg_host="localhost", system=bg_system, instance_name=instance_name
+            client,
+            bg_host="localhost",
+            system=bg_system,
+            instance_name=instance_name,
+            max_concurrent=1,
         )
 
         assert expected_unique == plugin.unique_name
@@ -107,7 +116,7 @@ class TestPluginInit(object):
         monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
 
-        plugin = Plugin(client, bg_host="localhost")
+        plugin = Plugin(client, bg_host="localhost", max_concurrent=1)
         dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
         assert logging.getLogger("brewtils.plugin") == plugin.logger
 
@@ -123,6 +132,7 @@ class TestPluginInit(object):
             ssl_enabled=False,
             ca_verify=False,
             logger=logger,
+            max_concurrent=1,
         )
 
         assert plugin.bg_host == "host1"
@@ -139,7 +149,7 @@ class TestPluginInit(object):
         os.environ["BG_SSL_ENABLED"] = "False"
         os.environ["BG_CA_VERIFY"] = "False"
 
-        plugin = Plugin(client, system=bg_system)
+        plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
         assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 7332
@@ -162,6 +172,7 @@ class TestPluginInit(object):
             system=bg_system,
             ssl_enabled=True,
             ca_verify=True,
+            max_concurrent=1,
         )
 
         assert plugin.bg_host == "localhost"
@@ -182,7 +193,12 @@ class TestPluginInit(object):
             "--no-ca-verify",
         ]
 
-        plugin = Plugin(client, system=bg_system, **get_connection_info(cli_args=args))
+        plugin = Plugin(
+            client,
+            system=bg_system,
+            max_concurrent=1,
+            **get_connection_info(cli_args=args)
+        )
 
         assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 2338
@@ -742,21 +758,44 @@ class TestAdminMethods(object):
         assert bm_client.instance_heartbeat.called is False
 
 
-@pytest.mark.parametrize(
-    "args,expected",
-    [
-        ((None, None), 1),
-        ((True, None), 5),
-        ((False, None), 1),
-        ((None, 4), 4),
-        ((True, 1), 1),
-        ((False, 1), 1),
-        ((True, 4), 4),
-        ((False, 4), 4),
-    ],
-)
-def test_max_concurrent(plugin, args, expected):
-    assert plugin._setup_max_concurrent(*args) == expected
+class TestMaxConcurrent(object):
+    @pytest.mark.parametrize(
+        "multithreaded,max_concurrent,expected",
+        [
+            (None, None, 1),
+            (True, None, 5),
+            (False, None, 1),
+            (None, 4, 4),
+            (True, 1, 1),
+            (False, 1, 1),
+            (True, 4, 4),
+            (False, 4, 4),
+        ],
+    )
+    def test_setup(self, plugin, multithreaded, max_concurrent, expected):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert (
+                plugin._setup_max_concurrent(
+                    multithreaded=multithreaded, max_concurrent=max_concurrent
+                )
+                == expected
+            )
+
+            if multithreaded:
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert "multithreaded" in str(w[0].message)
+
+    def test_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("ignore")
+            warnings.filterwarnings("always", module="brewtils.plugin")
+
+            Plugin(client, bg_host="localhost")
+
+            assert issubclass(w[0].category, PendingDeprecationWarning)
+            assert "max_concurrent" in str(w[0].message)
 
 
 class TestSetupSystem(object):

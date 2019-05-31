@@ -154,6 +154,10 @@ def load_config(cli_args=None, argument_parser=None, merge_spec=None, **kwargs):
         3. Environment variables using the ``BG_`` prefix
         4. Default values in the brewtils specification
 
+    The return value will be a ``Box`` object containing the resolved configuration.
+    Note that the Beergarden config items can be found under the ``bg`` attribute - this
+    is necessary to support additional specifications in a safe way.
+
     Args:
         cli_args (list, optional): List of command line arguments for
             configuration loading
@@ -167,7 +171,9 @@ def load_config(cli_args=None, argument_parser=None, merge_spec=None, **kwargs):
         **kwargs: Additional configuration overrides
 
     Returns:
-        :obj:`box.Box`: The resolved configuration object
+        :obj:`box.Box`: The resolved configuration object. Be aware that the brewtils
+            config items will be nested under the ``bg`` attribute. For example, to get
+            the Beergarden host you'd use ``config.bg.host``.
     """
     spec_definition = merge_spec or {}
     spec_definition.update(SPECIFICATION)

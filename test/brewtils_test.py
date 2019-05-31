@@ -81,6 +81,21 @@ class TestLoadConfig(object):
         assert parsed_args.some_parameter == "param"
         assert "some_parameter" not in config
 
+    def test_merge_spec(self):
+        new_spec = {
+            "foo": {
+                "type": "dict",
+                "items": {"bar": {"type": "str", "required": False}},
+            }
+        }
+
+        os.environ["BG_HOST"] = "bg_host"
+        os.environ["FOO_BAR"] = "foobar"
+
+        config = brewtils.load_config(merge_spec=new_spec)
+        assert config.bg.host == "bg_host"
+        assert config.foo.bar == "foobar"
+
     def test_normalize_url_prefix(self, params):
         os.environ["BG_HOST"] = "bg_host"
         os.environ["BG_URL_PREFIX"] = "/beer"

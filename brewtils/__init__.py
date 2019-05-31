@@ -99,7 +99,7 @@ def get_argument_parser():
     return parser
 
 
-def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
+def get_connection_info(cli_args=None, argument_parser=None, merge_spec=None, **kwargs):
     """Wrapper around ``load_config`` that returns only connection parameters
 
     Args:
@@ -109,12 +109,19 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
             parsing cli_args. Supplying this allows adding additional arguments
             prior to loading the configuration. This can be useful if your
             startup script takes additional arguments.
+        merge_spec (dict, optional): Specification that will be merged with the
+            brewtils specification before loading the configuration
         **kwargs: Additional configuration overrides
 
     Returns:
         :dict: Parameters needed to make a connection to Beergarden
     """
-    config = load_config(cli_args=cli_args, argument_parser=argument_parser, **kwargs)
+    config = load_config(
+        cli_args=cli_args,
+        argument_parser=argument_parser,
+        merge_spec=merge_spec,
+        **kwargs
+    )
 
     return {
         key: config["bg"][key]
@@ -136,7 +143,7 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
     }
 
 
-def load_config(cli_args=None, argument_parser=None, **kwargs):
+def load_config(cli_args=None, argument_parser=None, merge_spec=None, **kwargs):
     """Load configuration using Yapconf
 
     Configuration will be loaded from these sources, with earlier sources having
@@ -155,12 +162,16 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
             prior to loading the configuration. This can be useful if your
             startup script takes additional arguments. See get_argument_parser
             for additional information.
+        merge_spec (dict, optional): Specification that will be merged with the
+            brewtils specification before loading the configuration
         **kwargs: Additional configuration overrides
 
     Returns:
         :obj:`box.Box`: The resolved configuration object
     """
-    spec = YapconfSpec(SPECIFICATION)
+    spec_definition = merge_spec or {}
+    spec_definition.update(SPECIFICATION)
+    spec = YapconfSpec(spec_definition)
 
     sources = []
 

@@ -278,10 +278,8 @@ def parameter(
 
     # Type info is where type specific information goes. For now, this is specific
     # to file types. See #289 for more details.
-    if str(type).lower() == "file":
-        param.type_info = {
-            "storage": "gridfs",
-        }
+    if param.type == "Bytes":
+        param.type_info = {"storage": "gridfs"}
     else:
         param.type_info = {}
 

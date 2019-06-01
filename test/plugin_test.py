@@ -93,6 +93,14 @@ class TestPluginInit(object):
 
         assert expected_unique == plugin.unique_name
 
+    def test_working_directory(self, client, bg_system, tmpdir):
+        plugin = Plugin(client, bg_host="localhost", system=bg_system)
+        assert os.path.isdir(plugin.working_directory)
+
+        new_dir = os.path.join(tmpdir, "example")
+        Plugin(client, bg_host="localhost", system=bg_system, working_directory=new_dir)
+        assert os.path.isdir(new_dir)
+
     def test_defaults(self, plugin):
         assert plugin.logger == logging.getLogger("brewtils.plugin")
         assert plugin.instance_name == "default"
@@ -116,7 +124,7 @@ class TestPluginInit(object):
         monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
 
-        plugin = Plugin(client, bg_host="localhost", max_concurrent=1)
+        plugin = Plugin(client, name="foo", bg_host="localhost", max_concurrent=1)
         dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
         assert logging.getLogger("brewtils.plugin") == plugin.logger
 
@@ -309,12 +317,14 @@ class TestProcessMessage(object):
 
     def test_process(self, plugin, update_mock, invoke_mock):
         target_mock = Mock()
-        request_mock = Mock(is_ephemeral=False)
+        request_mock = Mock(is_ephemeral=False, id="123")
         format_mock = Mock()
         plugin._format_output = format_mock
 
         plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        invoke_mock.assert_called_once_with(
+            target_mock, request_mock.command, request_mock.parameters
+        )
         format_mock.assert_called_once_with(invoke_mock.return_value)
         assert update_mock.call_count == 2
         assert request_mock.status == "SUCCESS"
@@ -322,11 +332,13 @@ class TestProcessMessage(object):
 
     def test_invoke_exception(self, plugin, update_mock, invoke_mock):
         target_mock = Mock()
-        request_mock = Mock(is_json=False)
+        request_mock = Mock(is_json=False, id="123")
         invoke_mock.side_effect = ValueError("I am an error")
 
         plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        invoke_mock.assert_called_once_with(
+            target_mock, request_mock.command, request_mock.parameters
+        )
         assert update_mock.call_count == 2
         assert request_mock.status == "ERROR"
         assert request_mock.error_class == "ValueError"
@@ -334,11 +346,13 @@ class TestProcessMessage(object):
 
     def test_invoke_exception_json_output(self, plugin, update_mock, invoke_mock):
         target_mock = Mock()
-        request_mock = Mock(is_json=True)
+        request_mock = Mock(is_json=True, id="123")
         invoke_mock.side_effect = ValueError("Not JSON")
 
         plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        invoke_mock.assert_called_once_with(
+            target_mock, request_mock.command, request_mock.parameters
+        )
         assert update_mock.call_count == 2
         assert request_mock.status == "ERROR"
         assert request_mock.error_class == "ValueError"
@@ -351,7 +365,7 @@ class TestProcessMessage(object):
     @pytest.mark.parametrize("ex_arg", [{"foo": "bar"}, json.dumps({"foo": "bar"})])
     def test_format_json_args(self, plugin, invoke_mock, ex_arg):
         target_mock = Mock()
-        request_mock = Mock(is_json=True)
+        request_mock = Mock(is_json=True, id="123")
         invoke_mock.side_effect = Exception(ex_arg)
 
         plugin.process_message(target_mock, request_mock, {})
@@ -363,7 +377,7 @@ class TestProcessMessage(object):
                 self.foo = foo
 
         target_mock = Mock()
-        request_mock = Mock(is_json=True)
+        request_mock = Mock(is_json=True, id="123")
         exc = MyError("bar")
         invoke_mock.side_effect = exc
 
@@ -375,7 +389,9 @@ class TestProcessMessage(object):
             arguments = ["bar"]
 
         plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        invoke_mock.assert_called_once_with(
+            target_mock, request_mock.command, request_mock.parameters
+        )
         assert update_mock.call_count == 2
         assert request_mock.status == "ERROR"
         assert request_mock.error_class == "MyError"
@@ -391,7 +407,7 @@ class TestProcessMessage(object):
                 self.foo = foo
 
         target_mock = Mock()
-        request_mock = Mock(is_json=True)
+        request_mock = Mock(is_json=True, id="123")
         message = MyError("another object")
         thing = MyError(message)
         invoke_mock.side_effect = thing
@@ -404,7 +420,9 @@ class TestProcessMessage(object):
             arguments = [str(message)]
 
         plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        invoke_mock.assert_called_once_with(
+            target_mock, request_mock.command, request_mock.parameters
+        )
         assert update_mock.call_count == 2
         assert request_mock.status == "ERROR"
         assert request_mock.error_class == "MyError"
@@ -618,7 +636,7 @@ class TestInvokeCommand(object):
             parameters={"p1": "param"},
         )
 
-        plugin._invoke_command(plugin, request)
+        plugin._invoke_command(plugin, request.command, request.parameters)
         start_mock.assert_called_once_with(plugin, **request.parameters)
 
     def test_invoke_request(self, plugin, client):
@@ -629,7 +647,7 @@ class TestInvokeCommand(object):
             parameters={"p1": "param"},
         )
 
-        plugin._invoke_command(client, request)
+        plugin._invoke_command(client, request.command, request.parameters)
         client.command.assert_called_once_with(**request.parameters)
 
     @pytest.mark.parametrize(
@@ -637,15 +655,13 @@ class TestInvokeCommand(object):
     )
     def test_failure(self, plugin, client, command):
         with pytest.raises(RequestProcessingError):
-            plugin._invoke_command(
-                client,
-                Request(
-                    system="name",
-                    system_version="1.0.0",
-                    command=command,
-                    parameters={"p1": "param"},
-                ),
+            request = Request(
+                system="name",
+                system_version="1.0.0",
+                command=command,
+                parameters={"p1": "param"},
             )
+            plugin._invoke_command(client, request.command, request.parameters)
 
 
 class TestUpdateRequest(object):

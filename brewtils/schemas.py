@@ -164,7 +164,6 @@ class RequestFileSchema(BaseSchema):
 
     storage_type = fields.Str(allow_none=True)
     filename = fields.Str(allow_none=True)
-    external_link = fields.Str(allow_none=True)
 
 
 class RequestTemplateSchema(BaseSchema):

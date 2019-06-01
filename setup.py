@@ -30,6 +30,7 @@ setup(
     packages=find_packages(exclude=["test", "test.*"]),
     package_data={"": ["README.md"]},
     install_requires=[
+        "appdirs<2",
         "lark-parser<0.7",
         "marshmallow<3",
         "marshmallow-polyfield<4",

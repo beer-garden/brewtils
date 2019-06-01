@@ -9,6 +9,7 @@ import threading
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 
+import appdirs
 import six
 from requests import ConnectionError as RequestsConnectionError
 
@@ -26,6 +27,7 @@ from brewtils.errors import (
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
+from brewtils.resolvers import ParameterResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
 
@@ -245,6 +247,17 @@ class Plugin(object):
             logger=self.logger, parser=self.parser, **connection_parameters
         )
 
+        self._resolvers = build_resolver_map(self)
+        self.working_directory = kwargs.get("working_directory")
+        if self.working_directory is None:
+            appname = os.path.join(self.system.name, self.instance_name)
+            self.working_directory = appdirs.user_data_dir(
+                appname, version=self.system.version
+            )
+
+        if not os.path.exists(self.working_directory):
+            os.makedirs(self.working_directory)
+
     def run(self):
         # Let Beergarden know about our system and instance
         self._initialize()
@@ -323,31 +336,35 @@ class Plugin(object):
         request.status = "IN_PROGRESS"
         self._update_request(request, headers)
 
-        try:
-            # Set request context so this request will be the parent of any
-            # generated requests and update status We also need the host/port of
-            #  the current plugin. We currently don't support parent/child
-            # requests across different servers.
-            request_context.current_request = request
-            request_context.bg_host = self.bg_host
-            request_context.bg_port = self.bg_port
+        keys = json.loads(headers.get("resolve_parameters", "[]"), encoding="utf-8")
+        with ParameterResolver(
+            request, keys, self.working_directory, self._resolvers
+        ) as parameters:
+            try:
+                # Set request context so this request will be the parent of any
+                # generated requests and update status We also need the host/port of
+                # the current plugin. We currently don't support parent/child
+                # requests across different servers.
+                request_context.current_request = request
+                request_context.bg_host = self.bg_host
+                request_context.bg_port = self.bg_port
 
-            output = self._invoke_command(target, request)
-        except Exception as ex:
-            self.logger.exception(
-                "Plugin %s raised an exception while processing request %s: %s",
-                self.unique_name,
-                str(request),
-                ex,
-            )
-            request.status = "ERROR"
-            request.output = self._format_error_output(request, ex)
-            request.error_class = type(ex).__name__
-        else:
-            request.status = "SUCCESS"
-            request.output = self._format_output(output)
+                output = self._invoke_command(target, request.command, parameters)
+            except Exception as ex:
+                self.logger.exception(
+                    "Plugin %s raised an exception while processing request %s: %s",
+                    self.unique_name,
+                    str(request),
+                    ex,
+                )
+                request.status = "ERROR"
+                request.output = self._format_error_output(request, ex)
+                request.error_class = type(ex).__name__
+            else:
+                request.status = "SUCCESS"
+                request.output = self._format_output(output)
 
-        self._update_request(request, headers)
+            self._update_request(request, headers)
 
     def process_request_message(self, message, headers):
         """Processes a message from a RequestConsumer
@@ -520,7 +537,7 @@ class Plugin(object):
         connection_poll_thread.daemon = True
         return connection_poll_thread
 
-    def _invoke_command(self, target, request):
+    def _invoke_command(self, target, command, parameters):
         """Invoke the function named in request.command.
 
         :param target: The object to search for the function implementation.
@@ -530,16 +547,16 @@ class Plugin(object):
             callable implementation of request.command
         :return: The output of the function invocation
         """
-        if not callable(getattr(target, request.command, None)):
+        if not callable(getattr(target, command, None)):
             raise RequestProcessingError(
-                "Could not find an implementation of command '%s'" % request.command
+                "Could not find an implementation of command '%s'" % command
             )
 
         # It's kinda weird that we need to add the object arg only if we're
         # trying to call a function on self. In both cases the function object
         # is bound... think it has something to do with our decorators
         args = [self] if target is self else []
-        return getattr(target, request.command)(*args, **request.parameters)
+        return getattr(target, command)(*args, **parameters)
 
     def _update_request(self, request, headers):
         """Sends a Request update to beer-garden

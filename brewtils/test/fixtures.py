@@ -507,11 +507,7 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
 @pytest.fixture
 def request_file_dict():
     """A request file represented as a dictionary."""
-    return {
-        "storage_type": "gridfs",
-        "filename": "request_filename",
-        "external_link": None,
-    }
+    return {"storage_type": "gridfs", "filename": "request_filename"}
 
 
 @pytest.fixture

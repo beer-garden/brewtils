@@ -663,6 +663,32 @@ class EasyClient(object):
         """
         self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
+    def stream_to_source(self, file_id, source, **kwargs):
+        """Stream the given file id to the source.
+
+        Examples:
+
+            To stream a given file to a local file you can do::
+
+                with open("filename", "rb") as my_file:
+                    client.stream_to_source("id", my_file)
+
+        Args:
+            file_id: The File ID
+            source: An object with a `.write` method, often times this is
+            an open file descriptor.
+
+        Keyword Args:
+            chunk_size: Size of chunks as they are written/read.
+
+        """
+        chunk_size = kwargs.get("chunk_size", 4096)
+        with self.client.get_file(file_id, stream=True) as response:
+            if not response.ok:
+                handle_response_failure(response)
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                source.write(chunk)
+
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError
     )

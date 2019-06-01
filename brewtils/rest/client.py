@@ -171,6 +171,7 @@ class RestClient(object):
             self.user_url = self.base_url + "api/v1/users/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
+            self.file_url = self.base_url + "api/vbeta/files/"
         else:
             raise ValueError("Invalid beer-garden API version: %s" % api_version)
 
@@ -441,6 +442,31 @@ class RestClient(object):
         :param user_identifier: ID or username of User
         """
         return self.session.get(self.user_url + user_identifier)
+
+    @enable_auth
+    def get_file(self, file_id, **kwargs):
+        return self.session.get(self.file_url + file_id, **kwargs)
+
+    @enable_auth
+    def post_files(self, files):
+        """Performs a POST on the File URL.
+
+        files should be in the form:
+
+            {"identifier": ("desired_filename", open("filename", "rb")) }
+
+        :param files: Dictionary of filename to files.
+        :return: Response to the request
+        """
+
+        # This is here in case we have not authenticated yet. Without this
+        # code, it is possible for us to perform the POST, which will call
+        # read on each of the files, that method fails with a 401, we
+        # then authenticate and try again, only to post an empty file.
+        for info in files.values():
+            info[1].seek(0)
+
+        return self.session.post(self.file_url, files=files)
 
     def get_tokens(self, username=None, password=None):
         """Use a username and password to get access and refresh tokens

@@ -261,6 +261,17 @@ class TestRestClient(object):
         assert client.access_token == "token"
         assert client.refresh_token == "refresh"
 
+    def test_get_file(self, client, session_mock):
+        client.get_file("id")
+        session_mock.get.assert_called_with(client.file_url + "id")
+
+    def test_post_files(self, client, session_mock):
+        open_file = Mock()
+        files = {"id": ("filename", open_file)}
+        client.post_files(files)
+        session_mock.post.assert_called_with(client.file_url, files=files)
+        open_file.seek.assert_called_with(0)
+
     def test_refresh(self, client, session_mock):
         response = Mock(ok=True)
         response.json.return_value = {"token": "new_token"}

@@ -255,9 +255,6 @@ class Plugin(object):
                 appname, version=self.system.version
             )
 
-        if not os.path.exists(self.working_directory):
-            os.makedirs(self.working_directory)
-
     def run(self):
         # Let Beergarden know about our system and instance
         self._initialize()

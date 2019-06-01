@@ -95,11 +95,13 @@ class TestPluginInit(object):
 
     def test_working_directory(self, client, bg_system, tmpdir):
         plugin = Plugin(client, bg_host="localhost", system=bg_system)
-        assert os.path.isdir(plugin.working_directory)
+        assert plugin.working_directory is not None
 
         new_dir = os.path.join(tmpdir, "example")
-        Plugin(client, bg_host="localhost", system=bg_system, working_directory=new_dir)
-        assert os.path.isdir(new_dir)
+        plugin = Plugin(
+            client, bg_host="localhost", system=bg_system, working_directory=new_dir
+        )
+        assert plugin.working_directory == str(new_dir)
 
     def test_defaults(self, plugin):
         assert plugin.logger == logging.getLogger("brewtils.plugin")
@@ -808,7 +810,7 @@ class TestMaxConcurrent(object):
             warnings.simplefilter("ignore")
             warnings.filterwarnings("always", module="brewtils.plugin")
 
-            Plugin(client, bg_host="localhost")
+            Plugin(client, bg_host="localhost", name="foo")
 
             assert issubclass(w[0].category, PendingDeprecationWarning)
             assert "max_concurrent" in str(w[0].message)

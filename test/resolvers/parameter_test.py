@@ -143,13 +143,13 @@ class TestParameterResolver(object):
         request = Mock(parameters=nested_bytes_parameters, is_ephemeral=False, id="123")
         resolver = ParameterResolver(request, params_to_resolve, tmpdir, test_resolvers)
         expected_files = [
-            os.path.join(tmpdir, "123", "mb1"),
-            os.path.join(tmpdir, "123", "mb2"),
-            os.path.join(tmpdir, "123", "sb"),
-            os.path.join(tmpdir, "123", "tlb"),
-            os.path.join(tmpdir, "123", "nmb1"),
-            os.path.join(tmpdir, "123", "nmb2"),
-            os.path.join(tmpdir, "123", "dnb"),
+            os.path.join(str(tmpdir), "123", "mb1"),
+            os.path.join(str(tmpdir), "123", "mb2"),
+            os.path.join(str(tmpdir), "123", "sb"),
+            os.path.join(str(tmpdir), "123", "tlb"),
+            os.path.join(str(tmpdir), "123", "nmb1"),
+            os.path.join(str(tmpdir), "123", "nmb2"),
+            os.path.join(str(tmpdir), "123", "dnb"),
         ]
         actual_params = resolver.resolve_parameters()
         assert actual_params == {
@@ -174,7 +174,7 @@ class TestParameterResolver(object):
             request, [["bytes1"], ["bytes2"]], tmpdir, test_resolvers
         )
         resolver.resolve_parameters()
-        assert len(os.listdir(os.path.join(tmpdir, "123"))) == 2
+        assert len(os.listdir(os.path.join(str(tmpdir), "123"))) == 2
 
     def test_invalid_resolver(self, tmpdir):
         request = Mock(
@@ -191,16 +191,16 @@ class TestParameterResolver(object):
     def test_cleanup(self, tmpdir, test_resolvers):
         resolver = ParameterResolver(Mock(id=None), [], tmpdir, test_resolvers)
         resolver.cleanup()
-        assert not os.path.exists(tmpdir)
+        assert not os.path.exists(str(tmpdir))
 
     def test_with(self, tmpdir, bytes_request, test_resolvers):
         with ParameterResolver(
             bytes_request, [["bytes"]], tmpdir, test_resolvers
         ) as params:
-            assert os.path.isdir(os.path.join(tmpdir, bytes_request.id))
+            assert os.path.isdir(os.path.join(str(tmpdir), bytes_request.id))
             assert "bytes" in params
             assert os.path.isfile(params["bytes"])
-        assert not os.path.isdir(os.path.join(tmpdir, bytes_request.id))
+        assert not os.path.isdir(os.path.join(str(tmpdir), bytes_request.id))
 
     def test_with_unexpected_exception(self, tmpdir, test_resolvers, bytes_request):
         resolver = ParameterResolver(bytes_request, [["bytes"]], tmpdir, test_resolvers)

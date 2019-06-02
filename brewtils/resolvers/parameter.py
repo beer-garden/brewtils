@@ -11,7 +11,7 @@ class ParameterResolver(object):
         self.params_to_resolve = params_to_resolve
         self.base_directory = base_directory
         self.resolvers = resolvers
-        self._working_dir = os.path.join(self.base_directory, request.id or "")
+        self._working_dir = os.path.join(str(self.base_directory), request.id or "")
 
     def __enter__(self):
         try:

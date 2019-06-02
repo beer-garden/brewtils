@@ -97,7 +97,7 @@ class TestPluginInit(object):
         plugin = Plugin(client, bg_host="localhost", system=bg_system)
         assert plugin.working_directory is not None
 
-        new_dir = os.path.join(tmpdir, "example")
+        new_dir = os.path.join(str(tmpdir), "example")
         plugin = Plugin(
             client, bg_host="localhost", system=bg_system, working_directory=new_dir
         )

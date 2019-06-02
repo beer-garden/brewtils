@@ -1,19 +1,15 @@
-from brewtils.resolvers.parameter import ParameterResolver
+from brewtils.resolvers.parameter import UploadResolver, DownloadResolver
 from brewtils.resolvers.gridfs import GridfsResolver
 
-__all__ = ["build_resolver_map", "ParameterResolver", "GridfsResolver"]
+__all__ = ["build_resolver_map", "UploadResolver", "DownloadResolver", "GridfsResolver"]
 
-_resolver_map = {
-    "gridfs": {"class": GridfsResolver, "self_kwargs": {"client": "bm_client"}}
-}
+_resolver_map = {"gridfs": {"class": GridfsResolver}}
 
 
-def build_resolver_map(obj):
+def build_resolver_map(easy_client):
     """Builds all the resolvers"""
     resolvers = {}
     for key, options in _resolver_map.items():
         klass = options["class"]
-        self_kwargs = options["self_kwargs"]
-        kwargs = {key: getattr(obj, value) for key, value in self_kwargs.items()}
-        resolvers[key] = klass(**kwargs)
+        resolvers[key] = klass(client=easy_client)
     return resolvers

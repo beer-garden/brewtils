@@ -3,6 +3,7 @@ import logging
 import warnings
 
 import requests.exceptions
+import six
 import wrapt
 
 from brewtils.errors import (
@@ -688,6 +689,38 @@ class EasyClient(object):
                 handle_response_failure(response)
             for chunk in response.iter_content(chunk_size=chunk_size):
                 source.write(chunk)
+
+    def upload_file(self, file_to_upload, desired_filename=None):
+        """Upload a given file to the Beer Garden server.
+
+        Args:
+            file_to_upload: Can either be an open file descriptor or a path.
+            desired_filename: The desired filename if none is provided, it
+            will use the basename of the path_to_file argument.
+
+        Returns:
+            A dictionary of the bytes parameter that should be used during
+            request creation.
+        """
+        if isinstance(file_to_upload, six.string_types):
+            fd = open(file_to_upload, "rb")
+            close = True
+        else:
+            fd = file_to_upload
+            close = False
+
+        desired_filename = desired_filename or fd.name
+        try:
+            files = {"upload_id": (desired_filename, fd)}
+            response = self.client.post_files(files)
+        finally:
+            if close:
+                fd.close()
+
+        if not response.ok:
+            handle_response_failure(response, default_exc=SaveError)
+
+        return response.json()["upload_id"]
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError

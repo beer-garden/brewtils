@@ -27,7 +27,7 @@ from brewtils.errors import (
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
-from brewtils.resolvers import ParameterResolver, build_resolver_map
+from brewtils.resolvers import DownloadResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
 
@@ -247,7 +247,7 @@ class Plugin(object):
             logger=self.logger, parser=self.parser, **connection_parameters
         )
 
-        self._resolvers = build_resolver_map(self)
+        self._resolvers = build_resolver_map(self.bm_client)
         self.working_directory = kwargs.get("working_directory")
         if self.working_directory is None:
             appname = os.path.join(self.system.name, self.instance_name)
@@ -334,8 +334,8 @@ class Plugin(object):
         self._update_request(request, headers)
 
         keys = json.loads(headers.get("resolve_parameters", "[]"), encoding="utf-8")
-        with ParameterResolver(
-            request, keys, self.working_directory, self._resolvers
+        with DownloadResolver(
+            request, keys, self._resolvers, self.working_directory
         ) as parameters:
             try:
                 # Set request context so this request will be the parent of any

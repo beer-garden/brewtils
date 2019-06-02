@@ -16,6 +16,8 @@ from brewtils.errors import (
 )
 from brewtils.models import Request
 from brewtils.plugin import request_context
+from brewtils.resolvers import build_resolver_map
+from brewtils.resolvers.parameter import UploadResolver
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -182,6 +184,7 @@ class SystemClient(object):
             ca_verify=ca_verify,
             **kwargs
         )
+        self._resolvers = build_resolver_map(self._easy_client)
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""
@@ -383,7 +386,7 @@ class SystemClient(object):
         if instance_name is None:
             raise ValidationError("Unable to send a request with no instance name")
 
-        return Request(
+        request = Request(
             command=command,
             system=system_name,
             system_version=system_version,
@@ -394,6 +397,10 @@ class SystemClient(object):
             metadata=metadata,
             parameters=kwargs,
         )
+        params_to_resolve = self._commands[command].parameter_keys_by_type("Bytes")
+        resolver = UploadResolver(request, params_to_resolve, self._resolvers)
+        request.parameters = resolver.resolve_parameters()
+        return request
 
 
 class BrewmasterSystemClient(SystemClient):

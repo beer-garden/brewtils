@@ -119,6 +119,18 @@ class TestEasyClient(object):
         client.stream_to_source("file_id", source)
         source.write.assert_called_with("chunk")
 
+    def test_upload_file(self, client, rest_client, success):
+        file_to_upload = Mock()
+        success.json = Mock(return_value={"upload_id": "SERVER_RESPONSE"})
+        rest_client.post_files.return_value = success
+        assert client.upload_file(file_to_upload, "desired_name") == "SERVER_RESPONSE"
+
+    def test_upload_file_fail(self, client, rest_client, server_error):
+        file_to_upload = Mock()
+        rest_client.post_files.return_value = server_error
+        with pytest.raises(SaveError):
+            assert client.upload_file(file_to_upload, "desired_name")
+
 
 class EasyClientTest(unittest.TestCase):
     def setUp(self):

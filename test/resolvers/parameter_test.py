@@ -2,8 +2,9 @@ import pytest
 import os
 from mock import Mock
 
+from brewtils.errors import ValidationError
 from brewtils.models import Parameter, Command
-from brewtils.resolvers import ParameterResolver
+from brewtils.resolvers import DownloadResolver, UploadResolver
 
 
 @pytest.fixture
@@ -81,7 +82,7 @@ def nested_bytes_parameters():
     }
 
 
-class TestParameterResolver(object):
+class TestDownloadResolver(object):
     @pytest.fixture(autouse=True)
     def clean_tmpdir(self, tmpdir):
         tmpdir.remove()
@@ -89,14 +90,14 @@ class TestParameterResolver(object):
     @pytest.mark.parametrize("params", [({"foo": "bar"}), ({})])
     def test_trivial_resolve(self, tmpdir, params, test_resolvers):
         request = Mock(parameters=params, id="123", is_ephemeral=False)
-        resolver = ParameterResolver(request, [], tmpdir, test_resolvers)
+        resolver = DownloadResolver(request, [], test_resolvers, tmpdir)
         assert resolver.resolve_parameters() == params
         assert not os.path.exists(resolver._working_dir)
         assert test_resolvers["test"].resolve.call_count == 0
 
     def test_resolve_parameters(self, tmpdir, bytes_request, test_resolvers):
         bytes_request.parameters["foo"] = "bar"
-        resolver = ParameterResolver(bytes_request, [["bytes"]], tmpdir, test_resolvers)
+        resolver = DownloadResolver(bytes_request, [["bytes"]], test_resolvers, tmpdir)
         params = resolver.resolve_parameters()
 
         assert "foo" in params
@@ -104,11 +105,11 @@ class TestParameterResolver(object):
         assert "bytes" in params
         assert os.path.exists(params["bytes"])
         assert os.path.basename(params["bytes"]) == "testfile"
-        assert test_resolvers["test"].resolve.call_count == 1
+        assert test_resolvers["test"].download.call_count == 1
 
     def test_invalid_resolve(self, tmpdir, test_resolvers, bytes_request):
         bytes_request.parameters = "INVALID"
-        resolver = ParameterResolver(bytes_request, [["bytes"]], tmpdir, test_resolvers)
+        resolver = DownloadResolver(bytes_request, [["bytes"]], test_resolvers, tmpdir)
         with pytest.raises(ValueError):
             resolver.resolve_parameters()
 
@@ -117,7 +118,7 @@ class TestParameterResolver(object):
     ):
         bytes_request.is_ephemeral = True
         with pytest.raises(ValueError):
-            ParameterResolver(bytes_request, [["bytes"]], tmpdir, test_resolvers)
+            DownloadResolver(bytes_request, [["bytes"]], test_resolvers, tmpdir)
 
     def test_multi_bytes_resolve(self, test_resolvers, tmpdir):
         request = Mock(
@@ -130,7 +131,7 @@ class TestParameterResolver(object):
             is_ephemeral=False,
             id="123",
         )
-        resolver = ParameterResolver(request, [["multi_bytes"]], tmpdir, test_resolvers)
+        resolver = DownloadResolver(request, [["multi_bytes"]], test_resolvers, tmpdir)
         params = resolver.resolve_parameters()
         assert len(params["multi_bytes"]) == 2
         for filename in params["multi_bytes"]:
@@ -141,7 +142,7 @@ class TestParameterResolver(object):
     ):
         params_to_resolve = nested_bytes_command.parameter_keys_by_type("Bytes")
         request = Mock(parameters=nested_bytes_parameters, is_ephemeral=False, id="123")
-        resolver = ParameterResolver(request, params_to_resolve, tmpdir, test_resolvers)
+        resolver = DownloadResolver(request, params_to_resolve, test_resolvers, tmpdir)
         expected_files = [
             os.path.join(str(tmpdir), "123", "mb1"),
             os.path.join(str(tmpdir), "123", "mb2"),
@@ -170,8 +171,8 @@ class TestParameterResolver(object):
             "bytes2": {"storage_type": "test", "filename": "file1", "id": "124"},
         }
         request = Mock(id="123", is_ephemeral=False, parameters=params)
-        resolver = ParameterResolver(
-            request, [["bytes1"], ["bytes2"]], tmpdir, test_resolvers
+        resolver = DownloadResolver(
+            request, [["bytes1"], ["bytes2"]], test_resolvers, tmpdir
         )
         resolver.resolve_parameters()
         assert len(os.listdir(os.path.join(str(tmpdir), "123"))) == 2
@@ -184,18 +185,18 @@ class TestParameterResolver(object):
                 "bytes": {"storage_type": "INVALID", "filename": "foo", "id": "123"}
             },
         )
-        resolver = ParameterResolver(request, [["bytes"]], tmpdir, {})
-        with pytest.raises(KeyError):
+        resolver = DownloadResolver(request, [["bytes"]], {}, tmpdir)
+        with pytest.raises(ValidationError):
             resolver.resolve_parameters()
 
     def test_cleanup(self, tmpdir, test_resolvers):
-        resolver = ParameterResolver(Mock(id=None), [], tmpdir, test_resolvers)
+        resolver = DownloadResolver(Mock(id=None), [], test_resolvers, tmpdir)
         resolver.cleanup()
         assert not os.path.exists(str(tmpdir))
 
     def test_with(self, tmpdir, bytes_request, test_resolvers):
-        with ParameterResolver(
-            bytes_request, [["bytes"]], tmpdir, test_resolvers
+        with DownloadResolver(
+            bytes_request, [["bytes"]], test_resolvers, tmpdir
         ) as params:
             assert os.path.isdir(os.path.join(str(tmpdir), bytes_request.id))
             assert "bytes" in params
@@ -203,10 +204,22 @@ class TestParameterResolver(object):
         assert not os.path.isdir(os.path.join(str(tmpdir), bytes_request.id))
 
     def test_with_unexpected_exception(self, tmpdir, test_resolvers, bytes_request):
-        resolver = ParameterResolver(bytes_request, [["bytes"]], tmpdir, test_resolvers)
+        resolver = DownloadResolver(bytes_request, [["bytes"]], test_resolvers, tmpdir)
         resolver.resolve_parameters = Mock(side_effect=RuntimeError)
         resolver.cleanup = Mock()
         with pytest.raises(RuntimeError):
             with resolver:
                 pass
         assert resolver.cleanup.call_count == 1
+
+
+class TestUploadResolver(object):
+    def test_simple_resolve_invalid_resolver(self, bytes_request, test_resolvers):
+        resolver = UploadResolver(bytes_request, [["bytes"]], test_resolvers)
+        with pytest.raises(ValidationError):
+            resolver.simple_resolve({"storage_type": "INVALID"})
+
+    def test_simple_resolve_forward_request(self, bytes_request, test_resolvers):
+        resolver = UploadResolver(bytes_request, [["bytes"]], test_resolvers)
+        resolver.simple_resolve({"storage_type": "test"})
+        assert test_resolvers["test"].upload.call_count == 1

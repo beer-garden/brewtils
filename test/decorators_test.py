@@ -115,7 +115,6 @@ class TestParameter(object):
             (float, "Float"),
             (bool, "Boolean"),
             (dict, "Dictionary"),
-            (bytes, "Bytes"),
             ("String", "String"),
             ("Integer", "Integer"),
             ("Float", "Float"),
@@ -123,11 +122,23 @@ class TestParameter(object):
             ("Dictionary", "Dictionary"),
             ("Any", "Any"),
             ("file", "Bytes"),
+            ("Bytes", "Bytes"),
             ("string", "String"),
         ],
     )
     def test_types(self, cmd, t, expected):
         wrapped = parameter(cmd, key="foo", type=t)
+        assert expected == wrapped._command.get_parameter_by_key("foo").type
+
+    def test_bytes_types(self, cmd):
+        # Because of the bytes change in python 2, the behavior of our decorator
+        # must react accordingly. So this test passes on both python 2 and 3 and
+        # explicitly tests for the variation in behavior
+        if bytes is str:
+            expected = "String"
+        else:
+            expected = "Bytes"
+        wrapped = parameter(cmd, key="foo", type=bytes)
         assert expected == wrapped._command.get_parameter_by_key("foo").type
 
     def test_file_type_info(self, cmd):

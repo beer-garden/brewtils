@@ -536,6 +536,8 @@ def _format_type(param_type):
         return "Dictionary"
     elif str(param_type).lower() == "file":
         return "Bytes"
+    elif str(param_type).lower() == "datetime":
+        return "DateTime"
     else:
         return str(param_type).title()
 

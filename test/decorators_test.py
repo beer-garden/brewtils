@@ -120,6 +120,7 @@ class TestParameter(object):
             ("Float", "Float"),
             ("Boolean", "Boolean"),
             ("Dictionary", "Dictionary"),
+            ("DateTime", "DateTime"),
             ("Any", "Any"),
             ("file", "Bytes"),
             ("Bytes", "Bytes"),

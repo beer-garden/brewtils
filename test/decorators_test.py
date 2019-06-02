@@ -110,6 +110,7 @@ class TestParameter(object):
     @pytest.mark.parametrize(
         "t,expected",
         [
+            (None, "Any"),
             (str, "String"),
             (int, "Integer"),
             (float, "Float"),

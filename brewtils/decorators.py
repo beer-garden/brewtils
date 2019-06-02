@@ -538,6 +538,8 @@ def _format_type(param_type):
         return "Bytes"
     elif str(param_type).lower() == "datetime":
         return "DateTime"
+    elif not param_type:
+        return "Any"
     else:
         return str(param_type).title()
 

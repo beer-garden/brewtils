@@ -23,7 +23,7 @@ def test_download(resolver):
     writer = Mock()
     param = {"id": "123"}
     resolver.download(param, writer)
-    resolver.client.stream_to_source.assert_called_with("123", writer)
+    resolver.client.stream_to_sink.assert_called_with("123", writer)
 
 
 def test_upload_unknown(resolver):

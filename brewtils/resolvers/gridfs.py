@@ -14,7 +14,7 @@ class GridfsResolver(object):
     In this case, we are just simply using the API to stream bytes
     into a file.
 
-    This class is mean to be used transparently to Plugin developers.
+    This class is meant to be used transparently to Plugin developers.
 
     Resolvers respond to two methods:
 
@@ -36,7 +36,7 @@ class GridfsResolver(object):
             writer: File-like object that has a `write` method.
 
         """
-        self.client.stream_to_source(bytes_parameter["id"], writer)
+        self.client.stream_to_sink(bytes_parameter["id"], writer)
 
     def upload(self, value):
         """Upload the given value to the server if necessary.
@@ -91,7 +91,7 @@ class GridfsResolver(object):
 
         desired_filename = desired_filename or os.path.basename(filename)
 
-        with open(filename) as file_to_upload:
+        with open(filename, "rb") as file_to_upload:
             return self._upload_file_descriptor(file_to_upload, desired_filename)
 
     def _upload_file_descriptor(self, fd, filename=None):

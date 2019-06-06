@@ -664,19 +664,19 @@ class EasyClient(object):
         """
         self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
-    def stream_to_source(self, file_id, source, **kwargs):
-        """Stream the given file id to the source.
+    def stream_to_sink(self, file_id, sink, **kwargs):
+        """Stream the given file id to the sink.
 
         Examples:
 
             To stream a given file to a local file you can do::
 
                 with open("filename", "rb") as my_file:
-                    client.stream_to_source("id", my_file)
+                    client.stream_to_sink("id", my_file)
 
         Args:
             file_id: The File ID
-            source: An object with a `.write` method, often times this is
+            sink: An object with a `.write` method, often times this is
             an open file descriptor.
 
         Keyword Args:
@@ -688,14 +688,14 @@ class EasyClient(object):
             if not response.ok:
                 handle_response_failure(response)
             for chunk in response.iter_content(chunk_size=chunk_size):
-                source.write(chunk)
+                sink.write(chunk)
 
     def upload_file(self, file_to_upload, desired_filename=None):
         """Upload a given file to the Beer Garden server.
 
         Args:
             file_to_upload: Can either be an open file descriptor or a path.
-            desired_filename: The desired filename if none is provided, it
+            desired_filename: The desired filename. If none is provided, it
             will use the basename of the path_to_file argument.
 
         Returns:

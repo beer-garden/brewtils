@@ -98,26 +98,26 @@ class TestEasyClient(object):
         )
         assert output == parser.parse_logging_config.return_value
 
-    def test_stream_to_source_fail(self, client, rest_client, not_found):
+    def test_stream_to_sink_fail(self, client, rest_client, not_found):
         def mock_exit(_, exc_type, exc_value, traceback):
             if exc_value is not None:
                 raise exc_value
 
         mock_get = Mock(__enter__=Mock(return_value=not_found), __exit__=mock_exit)
-        source = Mock()
+        sink = Mock()
         rest_client.get_file.return_value = mock_get
         with pytest.raises(NotFoundError):
-            client.stream_to_source("file_id", source)
+            client.stream_to_sink("file_id", sink)
 
-    def test_stream_to_source(self, client, rest_client):
+    def test_stream_to_sink(self, client, rest_client):
         response = Mock(
             status_code=200, ok=True, iter_content=Mock(return_value=["chunk"])
         )
         mock_get = Mock(__enter__=Mock(return_value=response), __exit__=Mock())
-        source = Mock()
+        sink = Mock()
         rest_client.get_file.return_value = mock_get
-        client.stream_to_source("file_id", source)
-        source.write.assert_called_with("chunk")
+        client.stream_to_sink("file_id", sink)
+        sink.write.assert_called_with("chunk")
 
     def test_upload_file(self, client, rest_client, success):
         file_to_upload = Mock()

@@ -539,7 +539,8 @@ class Plugin(object):
 
         :param target: The object to search for the function implementation.
             Will be self or self.client.
-        :param request: The request to process
+        :param command: The command name to execute on the target.
+        :param parameters: parameters to pass as keyword arguments to the command.
         :raise RequestProcessingError: The specified target does not define a
             callable implementation of request.command
         :return: The output of the function invocation

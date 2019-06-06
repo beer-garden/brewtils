@@ -563,6 +563,7 @@ def interval_trigger_dict(ts_epoch):
         "end_date": ts_epoch,
         "timezone": "utc",
         "jitter": 1,
+        "reschedule_on_finish": False,
     }
 
 

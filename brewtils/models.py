@@ -835,6 +835,7 @@ class IntervalTrigger(object):
         end_date=None,
         timezone=None,
         jitter=None,
+        reschedule_on_finish=None,
     ):
         self.weeks = weeks
         self.days = days
@@ -845,6 +846,7 @@ class IntervalTrigger(object):
         self.end_date = end_date
         self.timezone = timezone
         self.jitter = jitter
+        self.reschedule_on_finish = reschedule_on_finish
 
     def __str__(self):
         return repr(self)

@@ -86,15 +86,17 @@ class TestLoadConfig(object):
             "foo": {
                 "type": "dict",
                 "items": {"bar": {"type": "str", "required": False}},
-            }
+            },
+            "bg_other": {"type": "str", "required": False},
         }
 
         os.environ["BG_HOST"] = "bg_host"
         os.environ["FOO_BAR"] = "foobar"
 
-        config = brewtils.load_config(merge_spec=new_spec)
+        config = brewtils.load_config(merge_spec=new_spec, bg_other="hi_there")
         assert config.bg.host == "bg_host"
         assert config.foo.bar == "foobar"
+        assert config.bg_other == "hi_there"
 
     def test_normalize_url_prefix(self, params):
         os.environ["BG_HOST"] = "bg_host"

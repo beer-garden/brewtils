@@ -183,7 +183,12 @@ def load_config(cli_args=None, argument_parser=None, merge_spec=None, **kwargs):
 
     if kwargs:
         # This ensures any older usage that was passing bg_host or such still works
-        real_kwargs = {key.lstrip("bg_"): value for key, value in kwargs.items()}
+        real_kwargs = {}
+        for key, value in kwargs.items():
+            real_key = key.lstrip("bg_") if key in SPECIFICATION["bg"]["items"] else key
+            real_kwargs[real_key] = value
+
+        # real_kwargs = {key.lstrip("bg_"): value for key, value in kwargs.items()}
 
         sources.append(("kwargs", {"bg": real_kwargs}))
 

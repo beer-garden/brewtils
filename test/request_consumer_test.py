@@ -5,13 +5,12 @@ from concurrent.futures import Future
 import pytest
 from mock import Mock, MagicMock
 from pika.exceptions import AMQPConnectionError
-from pika import __version__ as pika_version
 
 import brewtils.request_consumer
 from brewtils.errors import DiscardMessageException, RepublishRequestException
+from brewtils.queues import PIKA_ONE
 from brewtils.request_consumer import RequestConsumer
 
-PIKA_ONE = pika_version.startswith("1.")
 if PIKA_ONE:
     from pika.exceptions import ChannelClosedByBroker, ConnectionClosedByBroker
 

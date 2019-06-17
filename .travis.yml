@@ -14,6 +14,15 @@ env:
   - PIKA_VERSION=0.13.1
   - PIKA_VERSION=1.0.1
 
+matrix:
+  exclude:
+    - python: 3.6
+      env: PIKA_VERSION=0.13.1
+    - python: 3.5
+      env: PIKA_VERSION=0.13.1
+    - python: 3.4
+      env: PIKA_VERSION=0.13.1
+
 stages:
   - lint
   - test

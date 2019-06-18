@@ -5,11 +5,20 @@ import threading
 from functools import partial
 
 from pika import BlockingConnection, URLParameters, BasicProperties, SelectConnection
+from pika import __version__ as pika_version
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
 from brewtils.queues import PikaClient
 from brewtils.schema_parser import SchemaParser
+
+PIKA_ONE = pika_version.startswith("1.")
+if PIKA_ONE:
+    from pika.exceptions import (
+        ConnectionClosed,
+        ChannelClosedByBroker,
+        ChannelClosedByClient,
+    )
 
 
 class RequestConsumer(threading.Thread):
@@ -223,11 +232,16 @@ class RequestConsumer(threading.Thread):
         time_to_wait = 0.1
         retries = 0
         while not self.shutdown_event.is_set():
+            if PIKA_ONE:
+                select_kwargs = {}
+            else:
+                select_kwargs = {"stop_ioloop_on_close": False}
+
             try:
                 return SelectConnection(
                     self._connection_parameters,
                     self.on_connection_open,
-                    stop_ioloop_on_close=False,
+                    **select_kwargs
                 )
             except AMQPConnectionError as ex:
                 if 0 <= self._max_connect_retries <= retries:
@@ -250,7 +264,10 @@ class RequestConsumer(threading.Thread):
         :type unused_connection: pika.SelectConnection
         """
         self.logger.debug("Connection opened: %s", unused_connection)
-        self._connection.add_on_close_callback(self.on_connection_closed)
+        if PIKA_ONE:
+            self._connection.add_on_close_callback(self.on_connection_closed_pika1)
+        else:
+            self._connection.add_on_close_callback(self.on_connection_closed_pika0)
         self.open_channel()
 
     def close_connection(self):
@@ -258,7 +275,20 @@ class RequestConsumer(threading.Thread):
         self.logger.debug("Closing connection")
         self._connection.close()
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
+    def on_connection_closed_pika1(self, connection, exc):
+        """Invoked when the connection is closed using pika>1.
+
+        Translate to pika<1 call.
+
+        :param pika.connection.Connection connection: the closed connection
+        :param Exception exc: The reason the connection was closed
+        """
+        if isinstance(exc, ConnectionClosed):
+            self.on_connection_closed_pika0(connection, exc.reply_code, exc.reply_text)
+        else:
+            raise exc
+
+    def on_connection_closed_pika0(self, connection, reply_code, reply_text):
         """Invoked when the connection is closed
 
         This method is invoked by pika when the connection to RabbitMQ is closed
@@ -319,7 +349,10 @@ class RequestConsumer(threading.Thread):
         """
         self.logger.debug("Channel opened: %s", channel)
         self._channel = channel
-        self._channel.add_on_close_callback(self.on_channel_closed)
+        if PIKA_ONE:
+            self._channel.add_on_close_callback(self.on_channel_closed_pika1)
+        else:
+            self._channel.add_on_close_callback(self.on_channel_closed_pika0)
         self.start_consuming()
 
     def close_channel(self):
@@ -327,7 +360,20 @@ class RequestConsumer(threading.Thread):
         self.logger.debug("Closing the channel")
         self._channel.close()
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
+    def on_channel_closed_pika1(self, channel, exc):
+        """Invoked when the connection is closed with pika>1.
+
+        Translate to pika<1 call.
+
+        :param pika.channel.Channel: The closed channel
+        :param Exception exc: The exception
+        """
+        if isinstance(exc, (ChannelClosedByBroker, ChannelClosedByClient)):
+            self.on_channel_closed_pika0(channel, exc.reply_code, exc.reply_text)
+        else:
+            raise exc
+
+    def on_channel_closed_pika0(self, channel, reply_code, reply_text):
         """Invoked when the connection is closed
 
         Invoked by pika when RabbitMQ unexpectedly closes the channel. Channels
@@ -361,16 +407,22 @@ class RequestConsumer(threading.Thread):
 
         self._channel.basic_qos(prefetch_count=self._max_concurrent)
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
-        self._consumer_tag = self._channel.basic_consume(
-            self.on_message, queue=self._queue_name
-        )
+
+        basic_consume_kwargs = {"queue": self._queue_name}
+        if PIKA_ONE:
+            basic_consume_kwargs["on_message_callback"] = self.on_message
+        else:
+            basic_consume_kwargs["consumer_callback"] = self.on_message
+        self._consumer_tag = self._channel.basic_consume(**basic_consume_kwargs)
 
     def stop_consuming(self):
         """Stop consuming messages"""
         self.logger.debug("Stopping consuming on channel %s", self._channel)
         if self._channel:
             self.logger.debug("Sending a Basic.Cancel RPC command to RabbitMQ")
-            self._channel.basic_cancel(self.on_cancelok, self._consumer_tag)
+            self._channel.basic_cancel(
+                callback=self.on_cancelok, consumer_tag=self._consumer_tag
+            )
 
     def on_consumer_cancelled(self, method_frame):
         """Invoked when the consumer is canceled by the broker

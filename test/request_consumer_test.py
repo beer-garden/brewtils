@@ -223,13 +223,9 @@ def test_on_connection_open(consumer, connection):
     consumer._connection = connection
 
     consumer.on_connection_open(Mock())
-
-    if PIKA_ONE:
-        func = consumer.on_connection_closed_pika1
-    else:
-        func = consumer.on_connection_closed_pika0
-
-    connection.add_on_close_callback.assert_called_once_with(func)
+    connection.add_on_close_callback.assert_called_once_with(
+        consumer.on_connection_closed
+    )
     assert connection.channel.called is True
 
 
@@ -246,11 +242,9 @@ class TestOnConnectionClosed(object):
         consumer.shutdown_event.set()
 
         if PIKA_ONE:
-            consumer.on_connection_closed_pika1(
-                Mock(), ConnectionClosedByBroker(200, "text")
-            )
+            consumer.on_connection_closed(Mock(), ConnectionClosedByBroker(200, "text"))
         else:
-            consumer.on_connection_closed_pika0(Mock(), 200, "text")
+            consumer.on_connection_closed(Mock(), 200, "text")
 
         assert connection.ioloop.stop.called is True
         assert consumer._channel is None
@@ -259,11 +253,9 @@ class TestOnConnectionClosed(object):
         consumer._connection = connection
 
         if PIKA_ONE:
-            consumer.on_connection_closed_pika1(
-                Mock(), ConnectionClosedByBroker(200, "text")
-            )
+            consumer.on_connection_closed(Mock(), ConnectionClosedByBroker(200, "text"))
         else:
-            consumer.on_connection_closed_pika0(Mock(), 200, "text")
+            consumer.on_connection_closed(Mock(), 200, "text")
 
         connection.add_timeout.assert_called_with(5, consumer.reconnect)
         assert connection.ioloop.stop.called is False
@@ -273,11 +265,9 @@ class TestOnConnectionClosed(object):
         consumer._connection = connection
 
         if PIKA_ONE:
-            consumer.on_connection_closed_pika1(
-                Mock(), ConnectionClosedByBroker(320, "text")
-            )
+            consumer.on_connection_closed(Mock(), ConnectionClosedByBroker(320, "text"))
         else:
-            consumer.on_connection_closed_pika0(Mock(), 320, "text")
+            consumer.on_connection_closed(Mock(), 320, "text")
         assert connection.ioloop.stop.called is True
         assert consumer._channel is None
 
@@ -316,14 +306,7 @@ def test_on_channel_open(consumer):
 
     consumer.on_channel_open(fake_channel)
     assert consumer._channel == fake_channel
-    if PIKA_ONE:
-        fake_channel.add_on_close_callback.assert_called_with(
-            consumer.on_channel_closed_pika1
-        )
-    else:
-        fake_channel.add_on_close_callback.assert_called_with(
-            consumer.on_channel_closed_pika0
-        )
+    fake_channel.add_on_close_callback.assert_called_with(consumer.on_channel_closed)
 
 
 def test_close_channel(consumer, channel):
@@ -334,11 +317,9 @@ def test_close_channel(consumer, channel):
 def test_on_channel_closed(consumer, connection):
     consumer._connection = connection
     if PIKA_ONE:
-        consumer.on_channel_closed_pika1(
-            MagicMock(), ChannelClosedByBroker(200, "text")
-        )
+        consumer.on_channel_closed(MagicMock(), ChannelClosedByBroker(200, "text"))
     else:
-        consumer.on_channel_closed_pika0(MagicMock(), 200, "text")
+        consumer.on_channel_closed(MagicMock(), 200, "text")
     assert connection.close.called is True
 
 

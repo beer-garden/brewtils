@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import logging
+
 import threading
 from functools import partial
-
 from pika import BlockingConnection, URLParameters, BasicProperties, SelectConnection
-from pika import __version__ as pika_version
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.queues import PikaClient
+from brewtils.queues import PikaClient, PIKA_ONE
 from brewtils.schema_parser import SchemaParser
 
-PIKA_ONE = pika_version.startswith("1.")
 if PIKA_ONE:
     from pika.exceptions import (
         ConnectionClosed,

@@ -5,7 +5,7 @@ import ssl as pyssl
 from pika import ConnectionParameters, PlainCredentials, SSLOptions
 from pika import __version__ as pika_version
 
-PIKA_ONE = pika_version.startswith("1.0")
+PIKA_ONE = pika_version.startswith("1.")
 
 
 class PikaClient(object):

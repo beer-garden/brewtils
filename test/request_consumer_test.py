@@ -8,7 +8,11 @@ from pika.exceptions import AMQPConnectionError
 
 import brewtils.request_consumer
 from brewtils.errors import DiscardMessageException, RepublishRequestException
+from brewtils.queues import PIKA_ONE
 from brewtils.request_consumer import RequestConsumer
+
+if PIKA_ONE:
+    from pika.exceptions import ChannelClosedByBroker, ConnectionClosedByBroker
 
 
 @pytest.fixture
@@ -237,14 +241,22 @@ class TestOnConnectionClosed(object):
         consumer._connection = connection
         consumer.shutdown_event.set()
 
-        consumer.on_connection_closed(Mock(), 200, "text")
+        if PIKA_ONE:
+            consumer.on_connection_closed(Mock(), ConnectionClosedByBroker(200, "text"))
+        else:
+            consumer.on_connection_closed(Mock(), 200, "text")
+
         assert connection.ioloop.stop.called is True
         assert consumer._channel is None
 
     def test_shutdown_unset(self, consumer, connection):
         consumer._connection = connection
 
-        consumer.on_connection_closed(Mock(), 200, "text")
+        if PIKA_ONE:
+            consumer.on_connection_closed(Mock(), ConnectionClosedByBroker(200, "text"))
+        else:
+            consumer.on_connection_closed(Mock(), 200, "text")
+
         connection.add_timeout.assert_called_with(5, consumer.reconnect)
         assert connection.ioloop.stop.called is False
         assert consumer._channel is None
@@ -252,7 +264,10 @@ class TestOnConnectionClosed(object):
     def test_closed_by_server(self, consumer, connection):
         consumer._connection = connection
 
-        consumer.on_connection_closed(Mock(), 320, "text")
+        if PIKA_ONE:
+            consumer.on_connection_closed(Mock(), ConnectionClosedByBroker(320, "text"))
+        else:
+            consumer.on_connection_closed(Mock(), 320, "text")
         assert connection.ioloop.stop.called is True
         assert consumer._channel is None
 
@@ -301,7 +316,10 @@ def test_close_channel(consumer, channel):
 
 def test_on_channel_closed(consumer, connection):
     consumer._connection = connection
-    consumer.on_channel_closed(MagicMock(), 200, "text")
+    if PIKA_ONE:
+        consumer.on_channel_closed(MagicMock(), ChannelClosedByBroker(200, "text"))
+    else:
+        consumer.on_channel_closed(MagicMock(), 200, "text")
     assert connection.close.called is True
 
 
@@ -309,9 +327,14 @@ def test_start_consuming(consumer, channel):
     consumer.start_consuming()
     channel.add_on_cancel_callback.assert_called_with(consumer.on_consumer_cancelled)
     channel.basic_qos.assert_called_with(prefetch_count=1)
-    channel.basic_consume.assert_called_with(
-        consumer.on_message, queue=consumer._queue_name
-    )
+
+    basic_consume_kwargs = {"queue": consumer._queue_name}
+    if PIKA_ONE:
+        basic_consume_kwargs["on_message_callback"] = consumer.on_message
+    else:
+        basic_consume_kwargs["consumer_callback"] = consumer.on_message
+
+    channel.basic_consume.assert_called_with(**basic_consume_kwargs)
     assert consumer._consumer_tag == channel.basic_consume.return_value
 
 
@@ -320,7 +343,9 @@ def test_stop_consuming(consumer, channel):
     consumer._consumer_tag = consumer_tag
 
     consumer.stop_consuming()
-    channel.basic_cancel.assert_called_with(consumer.on_cancelok, consumer_tag)
+    channel.basic_cancel.assert_called_with(
+        callback=consumer.on_cancelok, consumer_tag=consumer_tag
+    )
 
 
 def test_on_consumer_cancelled(consumer, channel):

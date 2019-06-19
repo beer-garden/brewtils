@@ -284,6 +284,7 @@ class IntervalTriggerSchema(BaseSchema):
     end_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
+    reschedule_on_finish = fields.Bool(allow_none=True)
 
 
 class CronTriggerSchema(BaseSchema):
@@ -344,3 +345,4 @@ class JobSchema(BaseSchema):
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
+    max_instances = fields.Int(allow_none=True)

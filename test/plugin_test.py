@@ -45,7 +45,11 @@ def bm_client(bg_system, bg_instance):
 @pytest.fixture
 def client():
     return MagicMock(
-        name="client", spec=["command", "_commands"], _commands=["command"]
+        name="client",
+        spec=["command", "_commands", "_bg_name", "_bg_version"],
+        _commands=["command"],
+        _bg_name=None,
+        _bg_version=None,
     )
 
 
@@ -772,6 +776,14 @@ class TestSetupSystem(object):
         with pytest.raises(ValidationError, match="system creation helper keywords"):
             plugin._setup_system(client, "default", bg_system, *extra_args)
 
+    @pytest.mark.parametrize(
+        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
+    )
+    def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
+        setattr(client, attr, value)
+        with pytest.raises(ValidationError, match="@system decorator"):
+            plugin._setup_system(client, "default", bg_system, *([None] * 7))
+
     def test_no_instances(self, plugin, client):
         system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
@@ -803,13 +815,7 @@ class TestSetupSystem(object):
             "display_name",
             None,
         )
-
-        assert new_system.name == "name"
-        assert new_system.description == "desc"
-        assert new_system.version == "1.0.0"
-        assert new_system.icon_name == "icon"
-        assert new_system.metadata == {"foo": "bar"}
-        assert new_system.display_name == "display_name"
+        self._validate_system(new_system)
 
     def test_construct_client_docstring(self, plugin, client):
         client.__doc__ = "Description\nSome more stuff"
@@ -836,7 +842,28 @@ class TestSetupSystem(object):
             "display_name",
             None,
         )
+        self._validate_system(new_system)
 
+    def test_construct_from_decorator(self, plugin, client):
+        client._bg_name = "name"
+        client._bg_version = "1.0.0"
+
+        new_system = plugin._setup_system(
+            client,
+            "default",
+            None,
+            None,
+            "desc",
+            None,
+            "icon",
+            {"foo": "bar"},
+            "display_name",
+            None,
+        )
+        self._validate_system(new_system)
+
+    @staticmethod
+    def _validate_system(new_system):
         assert new_system.name == "name"
         assert new_system.description == "desc"
         assert new_system.version == "1.0.0"

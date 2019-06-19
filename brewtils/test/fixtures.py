@@ -498,6 +498,7 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         "success_count": 0,
         "error_count": 0,
         "status": "RUNNING",
+        "max_instances": 3,
     }
 
 
@@ -562,6 +563,7 @@ def interval_trigger_dict(ts_epoch):
         "end_date": ts_epoch,
         "timezone": "utc",
         "jitter": 1,
+        "reschedule_on_finish": False,
     }
 
 

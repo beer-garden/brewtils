@@ -5,7 +5,7 @@ import ssl as pyssl
 from pika import ConnectionParameters, PlainCredentials, SSLOptions
 from pika import __version__ as pika_version
 
-PIKA_ONE = pika_version.startswith("1.0")
+PIKA_ONE = pika_version.startswith("1.")
 
 
 class PikaClient(object):
@@ -67,11 +67,13 @@ class PikaClient(object):
             else:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = pyssl.CERT_NONE
-            self._ssl_options = SSLOptions(ssl_context, self._host)
+            self._ssl_options = SSLOptions(ssl_context, server_hostname=self._host)
         else:
             mode = pyssl.CERT_REQUIRED if ssl.get("ca_verify") else pyssl.CERT_NONE
             self._ssl_options = SSLOptions(
-                cafile=ssl.get("ca_cert", None), verify_mode=mode
+                cafile=ssl.get("ca_cert", None),
+                verify_mode=mode,
+                server_hostname=self._host,
             )
 
         # Save the 'normal' params so they don't need to be reconstructed

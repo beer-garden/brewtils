@@ -277,12 +277,13 @@ class EasyClient(object):
         return self.client.post_systems(self.parser.serialize_system(system))
 
     @wrap_response(parse_method="parse_system", parse_many=False, default_exc=SaveError)
-    def update_system(self, system_id, new_commands=None, **kwargs):
+    def update_system(self, system_id, new_commands=None, add_instance=None, **kwargs):
         """Update a System
 
         Args:
             system_id (str): The System ID
             new_commands (Optional[List[Command]]): New System commands
+            add_instance (Optional[Instance]): An instance to append
 
         Keyword Args:
             metadata (dict): New System metadata
@@ -302,6 +303,10 @@ class EasyClient(object):
                 new_commands, to_string=False, many=True
             )
             operations.append(PatchOperation("replace", "/commands", commands))
+
+        if add_instance:
+            instance = self.parser.serialize_instance(add_instance, to_string=False)
+            operations.append(PatchOperation("add", "/instance", instance))
 
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))

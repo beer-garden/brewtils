@@ -8,7 +8,7 @@ import sys
 
 import pytest
 import threading
-from mock import MagicMock, Mock
+from mock import MagicMock, Mock, ANY
 from requests import ConnectionError
 
 from brewtils import get_connection_info
@@ -25,6 +25,7 @@ from brewtils.errors import (
     ErrorLogLevelInfo,
     ErrorLogLevelDebug,
     SuppressStacktrace,
+    ConflictError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
@@ -566,16 +567,34 @@ class TestPreProcess(object):
             plugin._pre_process(Mock())
 
 
-class TestInitialize(object):
+class TestInitializeSystem(object):
     def test_new_system(self, plugin, bm_client, bg_system, bg_instance):
         bm_client.find_unique_system.return_value = None
 
-        plugin._initialize()
-        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        plugin._initialize_system()
         bm_client.create_system.assert_called_once_with(bg_system)
+        assert bm_client.find_unique_system.call_count == 1
         assert bm_client.update_system.called is False
-        assert bm_client.create_system.return_value == plugin.system
-        assert bm_client.initialize_instance.return_value == plugin.instance
+
+    def test_new_system_conflict_succeed(self, plugin, bm_client, bg_system):
+        bm_client.find_unique_system.side_effect = [None, bg_system]
+        bm_client.create_system.side_effect = ConflictError()
+
+        plugin._initialize_system()
+        bm_client.create_system.assert_called_once_with(bg_system)
+        assert bm_client.find_unique_system.call_count == 2
+        assert bm_client.update_system.called is True
+
+    def test_new_system_conflict_fail(self, plugin, bm_client, bg_system):
+        bm_client.find_unique_system.return_value = None
+        bm_client.create_system.side_effect = ConflictError()
+
+        with pytest.raises(PluginValidationError):
+            plugin._initialize_system()
+
+        bm_client.create_system.assert_called_once_with(bg_system)
+        assert bm_client.find_unique_system.call_count == 2
+        assert bm_client.update_system.called is False
 
     @pytest.mark.parametrize(
         "current_commands", [[], [Command("test")], [Command("other_test")]]
@@ -583,9 +602,6 @@ class TestInitialize(object):
     def test_system_exists(
         self, plugin, bm_client, bg_system, bg_instance, current_commands
     ):
-        bg_system.commands = [Command("test")]
-        bm_client.update_system.return_value = bg_system
-
         existing_system = System(
             id="id",
             name="test_system",
@@ -596,8 +612,11 @@ class TestInitialize(object):
         )
         bm_client.find_unique_system.return_value = existing_system
 
-        plugin._initialize()
-        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        bg_system.commands = [Command("test")]
+        bm_client.update_system.return_value = bg_system
+
+        plugin._initialize_system()
+        assert bm_client.create_system.called is False
         bm_client.update_system.assert_called_once_with(
             existing_system.id,
             new_commands=bg_system.commands,
@@ -606,13 +625,9 @@ class TestInitialize(object):
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
         )
-        assert bm_client.create_system.called is False
-        assert bm_client.create_system.return_value == plugin.system
-        assert bm_client.initialize_instance.return_value == plugin.instance
+        # assert bm_client.create_system.return_value == plugin.system
 
     def test_new_instance(self, plugin, bm_client, bg_system, bg_instance):
-        plugin.instance_name = "new_instance"
-
         existing_system = System(
             id="id",
             name="test_system",
@@ -623,24 +638,51 @@ class TestInitialize(object):
         )
         bm_client.find_unique_system.return_value = existing_system
 
-        plugin._initialize()
-        assert 2 == len(existing_system.instances)
-        assert bm_client.create_system.called is True
-        assert bm_client.update_system.called is True
+        new_name = "foo_instance"
+        plugin.instance_name = new_name
 
-    def test_new_instance_maximum(self, plugin, bm_client, bg_system):
-        plugin.instance_name = "new_instance"
-        bm_client.find_unique_system.return_value = bg_system
+        plugin._initialize_system()
+        assert bm_client.create_system.called is False
+        bm_client.update_system.assert_called_once_with(
+            existing_system.id,
+            new_commands=bg_system.commands,
+            metadata=bg_system.metadata,
+            description=bg_system.description,
+            icon_name=bg_system.icon_name,
+            display_name=bg_system.display_name,
+            add_instance=ANY,
+        )
+        assert bm_client.update_system.call_args[1]["add_instance"].name == new_name
 
-        with pytest.raises(PluginValidationError):
-            plugin._initialize()
+
+class TestInitializeInstance(object):
+    def test_success(self, plugin, bm_client, bg_instance):
+        plugin._initialize_instance()
+        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
 
     def test_unregistered_instance(self, plugin, bm_client, bg_system):
         bg_system.has_instance = Mock(return_value=False)
-        bm_client.find_unique_system.return_value = None
 
         with pytest.raises(PluginValidationError):
-            plugin._initialize()
+            plugin._initialize_instance()
+
+
+class TestInitializeQueueParams(object):
+    def test_no_ssl(self, plugin, bg_instance):
+        if bg_instance.queue_info["connection"].get("ssl"):
+            del bg_instance.queue_info["connection"]["ssl"]
+
+        assert plugin._initialize_queue_params() == bg_instance.queue_info["connection"]
+
+    def test_ssl(self, plugin, bg_instance):
+        plugin.ca_cert = Mock()
+        plugin.ca_verify = Mock()
+        plugin.client_cert = Mock()
+
+        queue_params = plugin._initialize_queue_params()
+        assert queue_params["ssl"]["ca_cert"] == plugin.ca_cert
+        assert queue_params["ssl"]["ca_verify"] == plugin.ca_verify
+        assert queue_params["ssl"]["client_cert"] == plugin.client_cert
 
 
 def test_shutdown(plugin):

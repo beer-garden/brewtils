@@ -1,6 +1,22 @@
 Brewtils Changelog
 ==================
 
+2.4.7
+-----
+Date: 6/27/19
+
+New Features
+^^^^^^^^^^^^
+- Can now specify a name and version in the ``system`` decorator (beer-garden/#290)
+
+Bug Fixes
+^^^^^^^^^
+- SystemClient now correctly handles versions with suffixes (beer-garden/#283)
+
+Other Changes
+^^^^^^^^^^^^^
+- Added compatability with Pika v1 (#130)
+
 2.4.6
 -----
 Date: 4/19/19

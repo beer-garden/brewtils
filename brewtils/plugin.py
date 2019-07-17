@@ -204,6 +204,7 @@ class Plugin(object):
             "BG_INSTANCE_NAME", "default"
         )
         self.metadata = metadata or {}
+        self.namespace = kwargs.get("namespace", os.environ.get("BG_NAMESPACE"))
 
         self.instance = None
         self.queue_connection_params = None
@@ -241,7 +242,10 @@ class Plugin(object):
         self.admin_pool = ThreadPoolExecutor(max_workers=1)
 
         self.bm_client = EasyClient(
-            logger=self.logger, parser=self.parser, **connection_parameters
+            logger=self.logger,
+            parser=self.parser,
+            namespace=self.namespace,
+            **connection_parameters,
         )
 
     def run(self):

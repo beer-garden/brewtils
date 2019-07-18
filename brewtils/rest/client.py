@@ -142,6 +142,10 @@ class RestClient(object):
         if client_cert:
             self.session.cert = client_cert
 
+        namespace = kwargs.get("namespace", None)
+        if namespace:
+            self.session.headers.update({"bg-namespace": namespace})
+
         self.username = kwargs.get("username", None)
         self.password = kwargs.get("password", None)
         self.access_token = kwargs.get("access_token", None)

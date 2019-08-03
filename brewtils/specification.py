@@ -78,4 +78,9 @@ SPECIFICATION = {
         "the Requests documentation).",
         "default": -1,
     },
+    "connection_type": {
+        "type": "str",
+        "description": "Type of connection to use when communicating with Beergarden",
+        "default": "rest",
+    },
 }

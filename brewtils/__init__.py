@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import warnings
-from argparse import ArgumentParser
 
+from argparse import ArgumentParser
 from yapconf import YapconfSpec
 from yapconf.exceptions import YapconfItemNotFound
 
@@ -11,8 +11,9 @@ from brewtils.errors import ValidationError
 from brewtils.log import configure_logging
 from brewtils.plugin import Plugin, RemotePlugin
 from brewtils.rest import normalize_url_prefix
-from brewtils.rest.easy_client import EasyClient
-from brewtils.rest.system_client import SystemClient
+from brewtils.rest.easy_client import EasyClient as RestEasyClient
+from brewtils.system_client import SystemClient
+from brewtils.thrift.easy_client import EasyClient as ThriftEasyClient
 from ._version import __version__ as generated_version
 from .specification import SPECIFICATION
 
@@ -22,7 +23,6 @@ __all__ = [
     "system",
     "Plugin",
     "RemotePlugin",
-    "EasyClient",
     "SystemClient",
     "get_easy_client",
     "get_argument_parser",
@@ -48,12 +48,17 @@ def get_easy_client(**kwargs):
     Returns:
         :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
     """
-    from brewtils.rest.easy_client import EasyClient
-
     parser = kwargs.pop("parser", None)
     logger = kwargs.pop("logger", None)
 
-    return EasyClient(logger=logger, parser=parser, **get_connection_info(**kwargs))
+    connection_type = kwargs.get("connection_type", "rest")
+
+    if connection_type == "thrift":
+        client_clazz = ThriftEasyClient
+    else:
+        client_clazz = RestEasyClient
+
+    return client_clazz(logger=logger, parser=parser, **get_connection_info(**kwargs))
 
 
 def get_argument_parser():
@@ -134,6 +139,7 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
             "access_token",
             "refresh_token",
             "client_timeout",
+            "connection_type",
         )
     }
 

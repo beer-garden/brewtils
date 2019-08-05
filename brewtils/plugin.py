@@ -368,16 +368,19 @@ class Plugin(object):
         )
 
     def _initialize_queue_params(self):
-        connection_params = self.instance.queue_info.get("connection")
+        if self.instance.queue_type == "rabbitmq":
+            connection_params = self.instance.queue_info.get("connection")
 
-        if connection_params and connection_params.get("ssl"):
-            connection_params["ssl"].update(
-                {
-                    "ca_cert": self.ca_cert,
-                    "ca_verify": self.ca_verify,
-                    "client_cert": self.client_cert,
-                }
-            )
+            if connection_params and connection_params.get("ssl"):
+                connection_params["ssl"].update(
+                    {
+                        "ca_cert": self.ca_cert,
+                        "ca_verify": self.ca_verify,
+                        "client_cert": self.client_cert,
+                    }
+                )
+        else:
+            raise ValueError("Unknown queue type '%s'" % self.instance.queue_type)
 
         return connection_params
 
@@ -404,27 +407,33 @@ class Plugin(object):
         self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _create_standard_consumer(self):
-        return RequestConsumer(
-            thread_name="Request Consumer",
-            connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get("url", None),
-            queue_name=self.instance.queue_info["request"]["name"],
-            on_message_callback=self.request_processor.on_message_received,
-            panic_event=self.shutdown_event,
-            max_concurrent=self.max_concurrent,
-        )
+        if self.instance.queue_type == "rabbitmq":
+            return RequestConsumer(
+                thread_name="Request Consumer",
+                connection_info=self.queue_connection_params,
+                amqp_url=self.instance.queue_info.get("url", None),
+                queue_name=self.instance.queue_info["request"]["name"],
+                on_message_callback=self.request_processor.on_message_received,
+                panic_event=self.shutdown_event,
+                max_concurrent=self.max_concurrent,
+            )
+
+        raise ValueError("Unknown queue type '%s'" % self.instance.queue_type)
 
     def _create_admin_consumer(self):
-        return RequestConsumer(
-            thread_name="Admin Consumer",
-            connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get("url", None),
-            queue_name=self.instance.queue_info["admin"]["name"],
-            on_message_callback=self.admin_processor.on_message_received,
-            panic_event=self.shutdown_event,
-            max_concurrent=1,
-            logger=logging.getLogger("brewtils.admin_consumer"),
-        )
+        if self.instance.queue_type == "rabbitmq":
+            return RequestConsumer(
+                thread_name="Admin Consumer",
+                connection_info=self.queue_connection_params,
+                amqp_url=self.instance.queue_info.get("url", None),
+                queue_name=self.instance.queue_info["admin"]["name"],
+                on_message_callback=self.admin_processor.on_message_received,
+                panic_event=self.shutdown_event,
+                max_concurrent=1,
+                logger=logging.getLogger("brewtils.admin_consumer"),
+            )
+
+        raise ValueError("Unknown queue type '%s'" % self.instance.queue_type)
 
     def _start(self):
         """Handle start message by marking this instance as running.

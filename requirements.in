@@ -9,6 +9,7 @@ pyjwt < 2
 requests < 3
 simplejson < 4
 six < 2
+thriftpy2 < 0.5
 wrapt < 2
 yapconf >= 0.2.1
 enum34 ; python_version < "3.4"

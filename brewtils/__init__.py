@@ -13,7 +13,6 @@ from brewtils.plugin import Plugin, RemotePlugin
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.easy_client import EasyClient as RestEasyClient
 from brewtils.system_client import SystemClient
-from brewtils.thrift.easy_client import EasyClient as ThriftEasyClient
 from ._version import __version__ as generated_version
 from .specification import SPECIFICATION
 
@@ -54,6 +53,8 @@ def get_easy_client(**kwargs):
     connection_type = kwargs.get("connection_type", "rest")
 
     if connection_type == "thrift":
+        from brewtils.thrift.easy_client import EasyClient as ThriftEasyClient
+
         client_clazz = ThriftEasyClient
     else:
         client_clazz = RestEasyClient

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import os
 
 import functools
-from thriftpy2 import load
 from thriftpy2.rpc import client_context
+
+import brewtils.thrift
 
 
 def enable_auth(method):
@@ -87,12 +87,6 @@ class ThriftClient(object):
     def __init__(self, bg_host=None, bg_port=None, **kwargs):
         self.logger = logging.getLogger(__name__)
 
-        bg_thrift = load(
-            "/home/mppatrick/git/beergarden/bg-utils/bg_utils/thrift/beergarden.thrift",
-            include_dirs=[os.path.join(os.path.dirname(__file__), "thrift")],
-            module_name="bg_thrift",
-        )
-
         bg_host = bg_host or kwargs.get("host")
         if not bg_host:
             raise ValueError('Missing keyword argument "bg_host"')
@@ -103,7 +97,7 @@ class ThriftClient(object):
 
         self.thrift_context = functools.partial(
             client_context,
-            bg_thrift.BartenderBackend,
+            brewtils.thrift.bg_thrift.BartenderBackend,
             host=bg_host,
             port=bg_port,
             socket_timeout=kwargs.get("socket_timeout"),

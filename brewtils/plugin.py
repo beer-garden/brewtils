@@ -26,7 +26,6 @@ from brewtils.errors import (
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
 from brewtils.request_consumer import RequestConsumer
-from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
 
 request_context = threading.local()
@@ -186,6 +185,7 @@ class Plugin(object):
             username=kwargs.get("username", None),
             password=kwargs.get("password", None),
             client_timeout=kwargs.get("client_timeout", None),
+            connection_type=kwargs.get("connection_type", None),
         )
         self.bg_host = connection_parameters["bg_host"]
         self.bg_port = connection_parameters["bg_port"]
@@ -241,7 +241,7 @@ class Plugin(object):
         self.pool = ThreadPoolExecutor(max_workers=self.max_concurrent)
         self.admin_pool = ThreadPoolExecutor(max_workers=1)
 
-        self.bm_client = EasyClient(
+        self.bm_client = brewtils.get_easy_client(
             logger=self.logger,
             parser=self.parser,
             namespace=self.namespace,

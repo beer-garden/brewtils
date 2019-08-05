@@ -9,6 +9,7 @@ import time
 from functools import partial
 from packaging.version import parse
 
+import brewtils
 from brewtils.errors import (
     FetchError,
     TimeoutExceededError,
@@ -17,7 +18,6 @@ from brewtils.errors import (
 )
 from brewtils.models import Request
 from brewtils.plugin import request_context
-from brewtils.rest.easy_client import EasyClient
 
 
 class SystemClient(object):
@@ -172,7 +172,7 @@ class SystemClient(object):
             max_concurrent = (cpu_count() or 1) * 5
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
-        self._easy_client = EasyClient(
+        self._easy_client = brewtils.get_easy_client(
             bg_host=self._bg_host,
             bg_port=self._bg_port,
             ssl_enabled=ssl_enabled,

@@ -162,7 +162,7 @@ class Plugin(object):
         metadata=None,
         max_concurrent=None,
         bg_url_prefix=None,
-        **kwargs,
+        **kwargs
     ):
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
@@ -245,7 +245,7 @@ class Plugin(object):
             logger=self.logger,
             parser=self.parser,
             namespace=self.namespace,
-            **connection_parameters,
+            **connection_parameters
         )
 
     def run(self):
@@ -443,7 +443,9 @@ class Plugin(object):
         # If we STILL can't find a system something is really wrong
         if not existing_system:
             raise PluginValidationError(
-                f"Unable to find or create system {self.system.name}-{self.system.version}"
+                "Unable to find or create system {0}-{1}".format(
+                    self.system.name, self.system.version
+                )
             )
 
         # We always update with these fields

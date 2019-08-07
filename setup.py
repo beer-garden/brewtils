@@ -29,7 +29,6 @@ setup(
     license="MIT",
     packages=find_packages(exclude=["test", "test.*"]),
     package_data={"": ["README.md"], "brewtils": ["thrift/*.thrift"]},
-    include_package_data=True,
     install_requires=[
         "lark-parser<0.7",
         "marshmallow<3",

@@ -1,31 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import json
 import logging
 import logging.config
 import os
-import sys
-from concurrent.futures import ThreadPoolExecutor
 
-import six
 import threading
-from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.errors import (
-    ValidationError,
-    RequestProcessingError,
-    DiscardMessageException,
-    RepublishRequestException,
-    RestConnectionError,
-    PluginValidationError,
-    RestClientError,
-    parse_exception_as_json,
     ConflictError,
+    PluginValidationError,
+    ValidationError,
+    DiscardMessageException,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
-from brewtils.models import Instance, Request, System
+from brewtils.models import Instance, System
 from brewtils.request_consumer import RequestConsumer
+from brewtils.request_handling import EasyRequestUpdater, NoopUpdater, RequestProcessor
 from brewtils.schema_parser import SchemaParser
 
 request_context = threading.local()
@@ -187,6 +178,7 @@ class Plugin(object):
             client_timeout=kwargs.get("client_timeout", None),
             connection_type=kwargs.get("connection_type", None),
         )
+
         self.bg_host = connection_parameters["bg_host"]
         self.bg_port = connection_parameters["bg_port"]
         self.ssl_enabled = connection_parameters["ssl_enabled"]
@@ -210,7 +202,6 @@ class Plugin(object):
         self.queue_connection_params = None
         self.admin_consumer = None
         self.request_consumer = None
-        self.connection_poll_thread = None
         self.client = client
         self.shutdown_event = threading.Event()
         self.parser = parser or SchemaParser()
@@ -234,18 +225,24 @@ class Plugin(object):
             self.system.version,
         )
 
-        # Tightly manage when we're in an 'error' state, aka Brew-view is down
-        self.brew_view_error_condition = threading.Condition()
-        self.brew_view_down = False
-
-        self.pool = ThreadPoolExecutor(max_workers=self.max_concurrent)
-        self.admin_pool = ThreadPoolExecutor(max_workers=1)
-
         self.bm_client = brewtils.get_easy_client(
             logger=self.logger,
             parser=self.parser,
             namespace=self.namespace,
             **connection_parameters
+        )
+
+        self.request_updater = EasyRequestUpdater(self.bm_client, self.shutdown_event)
+
+        self.request_processor = RequestProcessor(
+            self.client,
+            self.request_updater,
+            validation_funcs=[self._validate_system],
+            unique_name=self.unique_name,
+            max_workers=self.max_concurrent,
+        )
+        self.admin_processor = RequestProcessor(
+            self, NoopUpdater(), unique_name=self.unique_name, max_workers=1
         )
 
     def run(self):
@@ -262,10 +259,6 @@ class Plugin(object):
         self.request_consumer = self._create_standard_consumer()
         self.request_consumer.start()
 
-        self.logger.debug("Creating and starting connection poll thread")
-        self.connection_poll_thread = self._create_connection_poll_thread()
-        self.connection_poll_thread.start()
-
         self.logger.info("Plugin %s has started", self.unique_name)
 
         try:
@@ -274,6 +267,7 @@ class Plugin(object):
                     not self.admin_consumer.isAlive()
                     and not self.admin_consumer.shutdown_event.is_set()
                 ):
+                    # TODO: This is pretty useless, really need to re-initialize here
                     self.logger.warning(
                         "Looks like admin consumer has died - attempting to " "restart"
                     )
@@ -289,14 +283,6 @@ class Plugin(object):
                     )
                     self.request_consumer = self._create_standard_consumer()
                     self.request_consumer.start()
-
-                if not self.connection_poll_thread.isAlive():
-                    self.logger.warning(
-                        "Looks like connection poll thread has died - "
-                        "attempting to restart"
-                    )
-                    self.connection_poll_thread = self._create_connection_poll_thread()
-                    self.connection_poll_thread.start()
 
                 if (
                     self.request_consumer.shutdown_event.is_set()
@@ -314,99 +300,6 @@ class Plugin(object):
         self._shutdown()
 
         self.logger.info("Plugin %s has terminated", self.unique_name)
-
-    def process_message(self, target, request, headers):
-        """Process a message. Intended to be run on an Executor.
-
-        :param target: The object to invoke received commands on.
-            (self or self.client)
-        :param request: The parsed Request object
-        :param headers: Dictionary of headers from the
-            `brewtils.request_consumer.RequestConsumer`
-        :return: None
-        """
-        request.status = "IN_PROGRESS"
-        self._update_request(request, headers)
-
-        try:
-            # Set request context so this request will be the parent of any
-            # generated requests and update status We also need the host/port of
-            #  the current plugin. We currently don't support parent/child
-            # requests across different servers.
-            request_context.current_request = request
-            request_context.bg_host = self.bg_host
-            request_context.bg_port = self.bg_port
-
-            output = self._invoke_command(target, request)
-        except Exception as ex:
-            self.logger.exception(
-                "Plugin %s raised an exception while processing request %s: %s",
-                self.unique_name,
-                str(request),
-                ex,
-            )
-            request.status = "ERROR"
-            request.output = self._format_error_output(request, ex)
-            request.error_class = type(ex).__name__
-        else:
-            request.status = "SUCCESS"
-            request.output = self._format_output(output)
-
-        self._update_request(request, headers)
-
-    def process_request_message(self, message, headers):
-        """Processes a message from a RequestConsumer
-
-        :param message: A valid string representation of a
-            `brewtils.models.Request`
-        :param headers: A dictionary of headers from the
-            `brewtils.request_consumer.RequestConsumer`
-        :return: A `concurrent.futures.Future`
-        """
-
-        request = self._pre_process(message)
-
-        # This message has already been processed, all it needs to do is update
-        if request.status in Request.COMPLETED_STATUSES:
-            return self.pool.submit(self._update_request, request, headers)
-        else:
-            return self.pool.submit(self.process_message, self.client, request, headers)
-
-    def process_admin_message(self, message, headers):
-
-        # Admin requests won't have a system, so don't verify it
-        request = self._pre_process(message, verify_system=False)
-
-        return self.admin_pool.submit(self.process_message, self, request, headers)
-
-    def _pre_process(self, message, verify_system=True):
-
-        if self.shutdown_event.is_set():
-            raise RequestProcessingError(
-                "Unable to process message - currently shutting down"
-            )
-
-        try:
-            request = self.parser.parse_request(message, from_string=True)
-        except Exception as ex:
-            self.logger.exception(
-                "Unable to parse message body: {0}. Exception: {1}".format(message, ex)
-            )
-            raise DiscardMessageException("Error parsing message body")
-
-        if (
-            verify_system
-            and request.command_type
-            and request.command_type.upper() != "EPHEMERAL"
-            and request.system.upper() != self.system.name.upper()
-        ):
-            raise DiscardMessageException(
-                "Received message for a different system {0}".format(
-                    request.system.upper()
-                )
-            )
-
-        return request
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info
@@ -491,25 +384,21 @@ class Plugin(object):
     def _shutdown(self):
         self.shutdown_event.set()
 
-        self.logger.debug("About to stop message consuming")
+        self.logger.debug("Stopping request and admin consuming")
         self.request_consumer.stop_consuming()
         self.admin_consumer.stop_consuming()
 
-        self.logger.debug("About to wake sleeping request processing threads")
-        with self.brew_view_error_condition:
-            self.brew_view_error_condition.notify_all()
+        self.logger.debug("Shutting down request and admin processors")
+        self.request_processor.shutdown()
+        self.admin_processor.shutdown()
 
-        self.logger.debug("Shutting down request processing pool")
-        self.pool.shutdown(wait=True)
-        self.logger.debug("Shutting down admin processing pool")
-        self.admin_pool.shutdown(wait=True)
+        self.logger.debug("Shutting down request updater")
+        self.request_updater.shutdown()
 
-        self.logger.debug("Attempting to stop request queue consumer")
+        self.logger.debug("Shutting down request and admin consumers")
         self.request_consumer.stop()
-        self.request_consumer.join()
-
-        self.logger.debug("Attempting to stop admin queue consumer")
         self.admin_consumer.stop()
+        self.request_consumer.join()
         self.admin_consumer.join()
 
         self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
@@ -520,7 +409,7 @@ class Plugin(object):
             connection_info=self.queue_connection_params,
             amqp_url=self.instance.queue_info.get("url", None),
             queue_name=self.instance.queue_info["request"]["name"],
-            on_message_callback=self.process_request_message,
+            on_message_callback=self.request_processor.on_message_received,
             panic_event=self.shutdown_event,
             max_concurrent=self.max_concurrent,
         )
@@ -531,167 +420,15 @@ class Plugin(object):
             connection_info=self.queue_connection_params,
             amqp_url=self.instance.queue_info.get("url", None),
             queue_name=self.instance.queue_info["admin"]["name"],
-            on_message_callback=self.process_admin_message,
+            on_message_callback=self.admin_processor.on_message_received,
             panic_event=self.shutdown_event,
             max_concurrent=1,
             logger=logging.getLogger("brewtils.admin_consumer"),
         )
 
-    def _create_connection_poll_thread(self):
-        connection_poll_thread = threading.Thread(target=self._connection_poll)
-        connection_poll_thread.daemon = True
-        return connection_poll_thread
-
-    def _invoke_command(self, target, request):
-        """Invoke the function named in request.command.
-
-        :param target: The object to search for the function implementation.
-            Will be self or self.client.
-        :param request: The request to process
-        :raise RequestProcessingError: The specified target does not define a
-            callable implementation of request.command
-        :return: The output of the function invocation
-        """
-        if not callable(getattr(target, request.command, None)):
-            raise RequestProcessingError(
-                "Could not find an implementation of command '%s'" % request.command
-            )
-
-        # It's kinda weird that we need to add the object arg only if we're
-        # trying to call a function on self. In both cases the function object
-        # is bound... think it has something to do with our decorators
-        args = [self] if target is self else []
-        return getattr(target, request.command)(*args, **request.parameters)
-
-    def _update_request(self, request, headers):
-        """Sends a Request update to beer-garden
-
-        Ephemeral requests do not get updated, so we simply skip them.
-
-        If brew-view appears to be down, it will wait for brew-view to come back
-         up before updating.
-
-        If this is the final attempt to update, we will attempt a known, good
-        request to give some information to the user. If this attempt fails
-        then we simply discard the message
-
-        :param request: The request to update
-        :param headers: A dictionary of headers from
-            `brewtils.request_consumer.RequestConsumer`
-        :raise RepublishMessageException: The Request update failed (any reason)
-        :return: None
-        """
-
-        if request.is_ephemeral:
-            sys.stdout.flush()
-            return
-
-        with self.brew_view_error_condition:
-
-            self._wait_for_brew_view_if_down(request)
-
-            try:
-                if not self._should_be_final_attempt(headers):
-                    self._wait_if_not_first_attempt(headers)
-                    self.bm_client.update_request(
-                        request.id,
-                        status=request.status,
-                        output=request.output,
-                        error_class=request.error_class,
-                    )
-                else:
-                    self.bm_client.update_request(
-                        request.id,
-                        status="ERROR",
-                        output="We tried to update the request, but it failed "
-                        "too many times. Please check the plugin logs "
-                        "to figure out why the request update failed. "
-                        "It is possible for this request to have "
-                        "succeeded, but we cannot update beer-garden "
-                        "with that information.",
-                        error_class="BGGivesUpError",
-                    )
-            except Exception as ex:
-                self._handle_request_update_failure(request, headers, ex)
-            finally:
-                sys.stdout.flush()
-
-    def _wait_if_not_first_attempt(self, headers):
-        if headers.get("retry_attempt", 0) > 0:
-            time_to_sleep = min(
-                headers.get("time_to_wait", self.starting_timeout), self.max_timeout
-            )
-            self.shutdown_event.wait(time_to_sleep)
-
-    def _handle_request_update_failure(self, request, headers, exc):
-
-        # If brew-view is down, we always want to try again
-        # Yes, even if it is the 'final_attempt'
-        if isinstance(exc, (RequestsConnectionError, RestConnectionError)):
-            self.brew_view_down = True
-            self.logger.error(
-                "Error updating request status: {0} exception: {1}".format(
-                    request.id, exc
-                )
-            )
-            raise RepublishRequestException(request, headers)
-
-        elif isinstance(exc, RestClientError):
-            message = (
-                "Error updating request {0} and it is a client error. Probable "
-                "cause is that this request is already updated. In which case, "
-                "ignore this message. If request {0} did not complete, please "
-                "file an issue. Discarding request to avoid an infinte loop. "
-                "exception: {1}".format(request.id, exc)
-            )
-            self.logger.error(message)
-            raise DiscardMessageException(message)
-
-        # Time to discard the message because we've given up
-        elif self._should_be_final_attempt(headers):
-            message = (
-                "Could not update request {0} even with a known good status, "
-                "output and error_class. We have reached the final attempt and "
-                "will now discard the message. Attempted to process this "
-                "message {1} times".format(request.id, headers["retry_attempt"])
-            )
-            self.logger.error(message)
-            raise DiscardMessageException(message)
-
-        else:
-            self._update_retry_attempt_information(headers)
-            self.logger.exception(
-                "Error updating request (Attempt #{0}: request: {1} exception: "
-                "{2}".format(headers.get("retry_attempt", 0), request.id, exc)
-            )
-            raise RepublishRequestException(request, headers)
-
-    def _update_retry_attempt_information(self, headers):
-        headers["retry_attempt"] = headers.get("retry_attempt", 0) + 1
-        headers["time_to_wait"] = min(
-            headers.get("time_to_wait", self.starting_timeout // 2) * 2,
-            self.max_timeout,
-        )
-
-    def _should_be_final_attempt(self, headers):
-        if self.max_attempts <= 0:
-            return False
-
-        return self.max_attempts <= headers.get("retry_attempt", 0)
-
-    def _wait_for_brew_view_if_down(self, request):
-        if self.brew_view_down and not self.shutdown_event.is_set():
-            self.logger.warning(
-                "Currently unable to communicate with Brew-view, about to wait "
-                "until connection is reestablished to update request %s",
-                request.id,
-            )
-            self.brew_view_error_condition.wait()
-
-    def _start(self, request):
+    def _start(self):
         """Handle start message by marking this instance as running.
 
-        :param request: The start message
         :return: Success output message
         """
         self.instance = self.bm_client.update_instance_status(
@@ -700,10 +437,9 @@ class Plugin(object):
 
         return "Successfully started plugin"
 
-    def _stop(self, request):
+    def _stop(self):
         """Handle stop message by marking this instance as stopped.
 
-        :param request: The stop message
         :return: Success output message
         """
         self.shutdown_event.set()
@@ -713,19 +449,15 @@ class Plugin(object):
 
         return "Successfully stopped plugin"
 
-    def _status(self, request):
-        """Handle status message by sending a heartbeat.
+    def _status(self):
+        """Handle status message by sending a heartbeat."""
+        self.request_updater.update_status(self.instance.id)
 
-        :param request: The status message
-        :return: None
-        """
-        with self.brew_view_error_condition:
-            if not self.brew_view_down:
-                try:
-                    self.bm_client.instance_heartbeat(self.instance.id)
-                except (RequestsConnectionError, RestConnectionError):
-                    self.brew_view_down = True
-                    raise
+    def _validate_system(self, request):
+        if request.system.upper() != self.system.name.upper():
+            raise DiscardMessageException(
+                "Received message for system {0}".format(request.system)
+            )
 
     def _setup_system(
         self,
@@ -793,43 +525,6 @@ class Plugin(object):
             )
 
         return system
-
-    def _connection_poll(self):
-        """Periodically attempt to re-connect to beer-garden"""
-
-        while not self.shutdown_event.wait(5):
-            with self.brew_view_error_condition:
-                if self.brew_view_down:
-                    try:
-                        self.bm_client.get_version()
-                    except Exception:
-                        self.logger.debug("Attempt to reconnect to Brew-view failed")
-                    else:
-                        self.logger.info(
-                            "Brew-view connection reestablished, about to "
-                            "notify any waiting requests"
-                        )
-                        self.brew_view_down = False
-                        self.brew_view_error_condition.notify_all()
-
-    @staticmethod
-    def _format_error_output(request, exc):
-        if request.is_json:
-            return parse_exception_as_json(exc)
-        else:
-            return str(exc)
-
-    @staticmethod
-    def _format_output(output):
-        """Formats output from Plugins to prevent validation errors"""
-
-        if isinstance(output, six.string_types):
-            return output
-
-        try:
-            return json.dumps(output)
-        except (TypeError, ValueError):
-            return str(output)
 
 
 # Alias old name

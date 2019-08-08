@@ -143,20 +143,14 @@ class RequestConsumerBase(threading.Thread):
             future = self._on_message_callback(body, properties.headers)
             callback = partial(self.on_message_callback_complete, basic_deliver)
             future.add_done_callback(callback)
-        except DiscardMessageException:
-            self.logger.debug(
-                "Nacking message %s, not attempting to requeue",
-                basic_deliver.delivery_tag,
-            )
-            self._channel.basic_nack(basic_deliver.delivery_tag, requeue=False)
         except Exception as ex:
+            requeue = not isinstance(ex, DiscardMessageException)
             self.logger.exception(
-                "Exception while trying to schedule message %s, about to nack "
-                "and requeue: %s",
-                basic_deliver.delivery_tag,
-                ex,
+                "Exception while trying to schedule message %s, about to nack. The "
+                "message will %s be requeued."
+                % (basic_deliver.delivery_tag, "" if requeue else "NOT")
             )
-            self._channel.basic_nack(basic_deliver.delivery_tag, requeue=True)
+            self._channel.basic_nack(basic_deliver.delivery_tag, requeue=requeue)
 
     def on_message_callback_complete(self, basic_deliver, future):
         """Invoked when the future returned by _on_message_callback completes.

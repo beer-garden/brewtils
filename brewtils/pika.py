@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import abc
-import logging
 
-import six
 import ssl as pyssl
 import threading
 from functools import partial
@@ -19,6 +16,7 @@ from pika import (
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
+from brewtils.request_handling import RequestConsumerBase
 from brewtils.schema_parser import SchemaParser
 
 PIKA_ONE = pika_version.startswith("1.")
@@ -160,8 +158,7 @@ class PikaClient(object):
         return ConnectionParameters(**conn_params)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RequestConsumerBase(threading.Thread):
+class PikaConsumerBase(RequestConsumerBase):
     """RabbitMQ message consumer
 
     This consumer is designed to be fault-tolerant - if RabbitMQ closes the
@@ -172,45 +169,27 @@ class RequestConsumerBase(threading.Thread):
     Unexpected channel closures can indicate a problem with a command that was
     issued.
 
-    :param str amqp_url: The AMQP url to connection with
-    :param str queue_name: The name of the queue to connect to
-    :param func on_message_callback: The function called to invoke message
-        processing. Must return a Future.
-    :param event panic_event: An event to be set in the event of a catastrophic
-        failure
-    :type event: :py:class:`threading.Event`
-    :param logger: A configured logger
-    :type logger: :py:class:`logging.Logger`
-    :param str thread_name: The name to use for this thread
-    :param int max_connect_retries: Number of connection retry attempts before
-        failure. Default is -1 (retry forever).
-    :param int max_connect_backoff: Maximum amount of time to wait between
-        connection retry attempts. Default 30.
-    :param int max_concurrent: Maximum requests to process concurrently
+    Args:
+        amqp_url: (str) The AMQP url to connection with
+        queue_name: (str) The name of the queue to connect to
+        max_connect_retries: (int) Number of connection retry attempts before
+            failure. Default is -1 (retry forever).
+        max_connect_backoff: (int) Maximum amount of time to wait between
+            connection retry attempts. Default 30.
+        max_concurrent: (int) Maximum requests to process concurrently
     """
 
-    def __init__(
-        self,
-        amqp_url=None,
-        queue_name=None,
-        on_message_callback=None,
-        panic_event=None,
-        logger=None,
-        thread_name=None,
-        **kwargs
-    ):
+    def __init__(self, amqp_url=None, queue_name=None, **kwargs):
+        super(PikaConsumerBase, self).__init__(**kwargs)
+
         self._connection = None
         self._channel = None
         self._consumer_tag = None
 
         self._queue_name = queue_name
-        self._on_message_callback = on_message_callback
-        self._panic_event = panic_event
         self._max_connect_retries = kwargs.get("max_connect_retries", -1)
         self._max_connect_backoff = kwargs.get("max_connect_backoff", 30)
         self._max_concurrent = kwargs.get("max_concurrent", 1)
-        self.logger = logger or logging.getLogger(__name__)
-        self.shutdown_event = threading.Event()
 
         if kwargs.get("connection_info", None):
             pika_base = PikaClient(**kwargs["connection_info"])
@@ -218,15 +197,12 @@ class RequestConsumerBase(threading.Thread):
         else:
             self._connection_parameters = URLParameters(amqp_url)
 
-        super(RequestConsumerBase, self).__init__(name=thread_name)
-
     def run(self):
         """Run the consumer
 
         Creates a connection to RabbitMQ and starts the IOLoop. The IOLoop will
         block and allow the SelectConnection to operate.
 
-        :return:
         """
         self._connection = self.open_connection()
 
@@ -244,7 +220,6 @@ class RequestConsumerBase(threading.Thread):
         queueing service acknowledges the closure, the connection is closed
         which will end the RequestConsumer.
 
-        :return:
         """
         self.logger.debug("Stopping request consumer")
         self.shutdown_event.set()
@@ -540,7 +515,7 @@ class RequestConsumerBase(threading.Thread):
         self.logger.debug("RabbitMQ acknowledged consumer cancellation")
 
 
-class RequestConsumerPika0(RequestConsumerBase):
+class RequestConsumerPika0(PikaConsumerBase):
     """Implementation of a Pika v0 RequestConsumer
 
     This exists because some kwargs and callback signatures changed between version
@@ -563,7 +538,7 @@ class RequestConsumerPika0(RequestConsumerBase):
         return {"queue": self._queue_name, "consumer_callback": self.on_message}
 
 
-class RequestConsumerPika1(RequestConsumerBase):
+class RequestConsumerPika1(PikaConsumerBase):
     """Implementation of a Pika v1 RequestConsumer
 
     This exists because some kwargs and callback signatures changed between version
@@ -593,4 +568,4 @@ class RequestConsumerPika1(RequestConsumerBase):
 
 
 # The real RequestConsumer is based on the pika version
-RequestConsumer = RequestConsumerPika1 if PIKA_ONE else RequestConsumerPika0
+PikaRequestConsumer = RequestConsumerPika1 if PIKA_ONE else RequestConsumerPika0

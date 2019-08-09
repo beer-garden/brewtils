@@ -15,7 +15,7 @@ from brewtils.errors import (
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System
-from brewtils.pika import RequestConsumer
+from brewtils.pika import PikaRequestConsumer
 from brewtils.request_handling import EasyRequestUpdater, NoopUpdater, RequestProcessor
 from brewtils.schema_parser import SchemaParser
 
@@ -269,7 +269,7 @@ class Plugin(object):
                 ):
                     # TODO: This is pretty useless, really need to re-initialize here
                     self.logger.warning(
-                        "Looks like admin consumer has died - attempting to " "restart"
+                        "Looks like admin consumer has died - attempting to restart"
                     )
                     self.admin_consumer = self._create_admin_consumer()
                     self.admin_consumer.start()
@@ -279,7 +279,7 @@ class Plugin(object):
                     and not self.request_consumer.shutdown_event.is_set()
                 ):
                     self.logger.warning(
-                        "Looks like request consumer has died - attempting to" "restart"
+                        "Looks like request consumer has died - attempting to restart"
                     )
                     self.request_consumer = self._create_standard_consumer()
                     self.request_consumer.start()
@@ -408,7 +408,7 @@ class Plugin(object):
 
     def _create_standard_consumer(self):
         if self.instance.queue_type == "rabbitmq":
-            return RequestConsumer(
+            return PikaRequestConsumer(
                 thread_name="Request Consumer",
                 connection_info=self.queue_connection_params,
                 amqp_url=self.instance.queue_info.get("url", None),
@@ -422,7 +422,7 @@ class Plugin(object):
 
     def _create_admin_consumer(self):
         if self.instance.queue_type == "rabbitmq":
-            return RequestConsumer(
+            return PikaRequestConsumer(
                 thread_name="Admin Consumer",
                 connection_info=self.queue_connection_params,
                 amqp_url=self.instance.queue_info.get("url", None),

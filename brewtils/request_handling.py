@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import abc
 import json
 import logging
 import sys
@@ -18,6 +19,40 @@ from brewtils.errors import (
 )
 from brewtils.models import Request
 from brewtils.schema_parser import SchemaParser
+
+
+@six.add_metaclass(abc.ABCMeta)
+class RequestConsumerBase(threading.Thread):
+    """Abstract base for RequestConsumer
+
+    Args:
+        on_message_callback: Future-returning function called when messages are received
+        panic_event: An event to be set in the event of a catastrophic failure
+        logger: A configured logger
+        thread_name: Name to use for this thread
+
+    """
+
+    def __init__(
+        self,
+        on_message_callback=None,
+        panic_event=None,
+        logger=None,
+        thread_name=None,
+        **_
+    ):
+        super(RequestConsumerBase, self).__init__(name=thread_name)
+
+        self.logger = logger or logging.getLogger(__name__)
+        self._on_message_callback = on_message_callback
+        self._panic_event = panic_event
+        self.shutdown_event = threading.Event()
+
+    def stop_consuming(self):
+        pass
+
+    def stop(self):
+        pass
 
 
 class RequestProcessor(object):

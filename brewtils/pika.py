@@ -334,8 +334,8 @@ class PikaConsumerBase(RequestConsumerBase):
             requeue = not isinstance(ex, DiscardMessageException)
             self.logger.exception(
                 "Exception while trying to schedule message %s, about to nack. The "
-                "message will %s be requeued."
-                % (basic_deliver.delivery_tag, "" if requeue else "NOT")
+                "message will%sbe requeued."
+                % (basic_deliver.delivery_tag, " " if requeue else " NOT ")
             )
             self._channel.basic_nack(basic_deliver.delivery_tag, requeue=requeue)
 

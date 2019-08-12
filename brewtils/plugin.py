@@ -463,7 +463,8 @@ class Plugin(object):
         self.request_updater.update_status(self.instance.id)
 
     def _validate_system(self, request):
-        if request.system.upper() != self.system.name.upper():
+        request_system = getattr(request, "system") or ""
+        if request_system.upper() != self.system.name.upper():
             raise DiscardMessageException(
                 "Received message for system {0}".format(request.system)
             )

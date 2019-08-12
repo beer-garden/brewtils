@@ -160,7 +160,9 @@ class RequestProcessor(object):
                 "Could not find an implementation of command '%s'" % request.command
             )
 
-        return getattr(target, request.command)(**request.parameters)
+        parameters = request.parameters or {}
+
+        return getattr(target, request.command)(**parameters)
 
     @staticmethod
     def _format_error_output(request, exc):

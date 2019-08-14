@@ -414,6 +414,49 @@ class SchemaParser(object):
         """
         return cls._do_serialize(JobSchema(**kwargs), job, to_string)
 
+    @classmethod
+    def serialize(cls, model, to_string=True, **kwargs):
+        """Convenience method to serialize any model type
+
+        Args:
+            model: The model object(s) to serialize
+            to_string: True generates a JSON-formatted string, False generates a dict
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A string or dict representation of the model object. Which depends on the
+            value of the to_string parameter.
+
+        """
+        if isinstance(model, System):
+            return cls.serialize_system(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Instance):
+            return cls.serialize_instance(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Command):
+            return cls.serialize_command(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Parameter):
+            return cls.serialize_parameter(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Request):
+            return cls.serialize_request(model, to_string=to_string, **kwargs)
+        elif isinstance(model, PatchOperation):
+            return cls.serialize_patch(model, to_string=to_string, **kwargs)
+        elif isinstance(model, LoggingConfig):
+            return cls.serialize_logging_config(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Event):
+            return cls.serialize_event(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Queue):
+            return cls.serialize_queue(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Principal):
+            return cls.serialize_principal(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Role):
+            return cls.serialize_role(model, to_string=to_string, **kwargs)
+        elif isinstance(model, RefreshToken):
+            return cls.serialize_refresh_token(model, to_string=to_string, **kwargs)
+        elif isinstance(model, Job):
+            return cls.serialize_job(model, to_string=to_string, **kwargs)
+
+        raise ValueError("Unable to determine model type")
+
     @staticmethod
     def _do_serialize(schema, data, to_string):
         return schema.dumps(data).data if to_string else schema.dump(data).data

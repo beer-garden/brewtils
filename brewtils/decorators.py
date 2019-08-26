@@ -470,7 +470,10 @@ def _resolve_display_modifiers(
     wrapped, command_name, schema=None, form=None, template=None
 ):
     def _load_from_url(url):
-        return json.loads(requests.get(url).text)
+        response = requests.get(url)
+        if response.headers.get("content-type", "").lower() == "application/json":
+            return json.loads(response.text)
+        return response.text
 
     def _load_from_path(path):
         current_dir = os.path.dirname(inspect.getfile(wrapped))

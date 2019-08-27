@@ -340,6 +340,23 @@ class TestProcessMessage(object):
 
         assert len(caplog.records) == 1
         assert caplog.records[0].exc_info is False if no_trace else not False
+        assert caplog.records[0].levelno == logging.ERROR
+
+    def test_invoke_exception_log_level(self, caplog, plugin, update_mock, invoke_mock):
+        target_mock = Mock()
+        request_mock = Mock(is_json=False)
+        invoke_mock.side_effect = ValueError("I am an error")
+        invoke_mock.side_effect._bg_error_log_level = logging.WARNING
+
+        plugin.process_message(target_mock, request_mock, {})
+        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        assert update_mock.call_count == 2
+        assert request_mock.status == "ERROR"
+        assert request_mock.error_class == "ValueError"
+        assert request_mock.output == "I am an error"
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelno == logging.WARNING
 
     def test_invoke_exception_json_output(self, plugin, update_mock, invoke_mock):
         target_mock = Mock()

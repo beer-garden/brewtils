@@ -334,7 +334,8 @@ class Plugin(object):
 
             output = self._invoke_command(target, request)
         except Exception as ex:
-            self.logger.error(
+            self.logger.log(
+                getattr(ex, "_bg_error_log_level", logging.ERROR),
                 "Plugin %s raised an exception while processing request %s: %s",
                 self.unique_name,
                 str(request),

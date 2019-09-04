@@ -5,10 +5,10 @@ import logging
 import logging.config
 import os
 import sys
-import threading
 import warnings
 
 import pytest
+import threading
 from mock import MagicMock, Mock
 from requests import ConnectionError
 
@@ -20,6 +20,11 @@ from brewtils.errors import (
     RepublishRequestException,
     PluginValidationError,
     RestClientError,
+    ErrorLogLevelCritical,
+    ErrorLogLevelError,
+    ErrorLogLevelWarning,
+    ErrorLogLevelInfo,
+    ErrorLogLevelDebug,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
@@ -342,21 +347,37 @@ class TestProcessMessage(object):
         assert caplog.records[0].exc_info is False if no_trace else not False
         assert caplog.records[0].levelno == logging.ERROR
 
-    def test_invoke_exception_log_level(self, caplog, plugin, update_mock, invoke_mock):
+    @pytest.mark.parametrize(
+        "base,expected_level",
+        [
+            (ErrorLogLevelCritical, logging.CRITICAL),
+            (ErrorLogLevelError, logging.ERROR),
+            (ErrorLogLevelWarning, logging.WARNING),
+            (ErrorLogLevelInfo, logging.INFO),
+            (ErrorLogLevelDebug, logging.DEBUG),
+            (Exception, logging.ERROR),
+        ],
+    )
+    def test_invoke_exception_log_level(
+        self, caplog, plugin, update_mock, invoke_mock, base, expected_level
+    ):
         target_mock = Mock()
         request_mock = Mock(is_json=False)
-        invoke_mock.side_effect = ValueError("I am an error")
-        invoke_mock.side_effect._bg_error_log_level = logging.WARNING
 
-        plugin.process_message(target_mock, request_mock, {})
+        exception = type("CustomException", (base,), {})
+        invoke_mock.side_effect = exception("I am exception")
+
+        with caplog.at_level(logging.DEBUG):
+            plugin.process_message(target_mock, request_mock, {})
+
         invoke_mock.assert_called_once_with(target_mock, request_mock)
         assert update_mock.call_count == 2
         assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "ValueError"
-        assert request_mock.output == "I am an error"
+        assert request_mock.error_class == "CustomException"
+        assert request_mock.output == "I am exception"
 
         assert len(caplog.records) == 1
-        assert caplog.records[0].levelno == logging.WARNING
+        assert caplog.records[0].levelno == expected_level
 
     def test_invoke_exception_json_output(self, plugin, update_mock, invoke_mock):
         target_mock = Mock()

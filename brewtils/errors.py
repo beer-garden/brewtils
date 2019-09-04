@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 
 from six import string_types
 
@@ -9,6 +10,43 @@ class BrewtilsException(Exception):
     """Base exception"""
 
     pass
+
+
+# Error Logging Control
+class SuppressStacktrace(Exception):
+    """Mixin that will suppress stacktrace logging"""
+
+    _bg_suppress_stacktrace = False
+
+
+class ErrorLogLevelCritical(Exception):
+    """Mixin to log an exception at the CRITICAL level"""
+
+    _bg_error_log_level = logging.CRITICAL
+
+
+class ErrorLogLevelError(Exception):
+    """Mixin to log an exception at the ERROR level"""
+
+    _bg_error_log_level = logging.ERROR
+
+
+class ErrorLogLevelWarning(Exception):
+    """Mixin to log an exception at the WARNING level"""
+
+    _bg_error_log_level = logging.WARNING
+
+
+class ErrorLogLevelInfo(Exception):
+    """Mixin to log an exception at the INFO level"""
+
+    _bg_error_log_level = logging.INFO
+
+
+class ErrorLogLevelDebug(Exception):
+    """Mixin to log an exception at the DEBUG level"""
+
+    _bg_error_log_level = logging.DEBUG
 
 
 # Models

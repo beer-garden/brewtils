@@ -16,7 +16,7 @@ class BrewtilsException(Exception):
 class SuppressStacktrace(Exception):
     """Mixin that will suppress stacktrace logging"""
 
-    _bg_suppress_stacktrace = False
+    _bg_suppress_stacktrace = True
 
 
 class ErrorLogLevelCritical(Exception):

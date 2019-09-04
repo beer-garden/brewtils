@@ -25,6 +25,7 @@ from brewtils.errors import (
     ErrorLogLevelWarning,
     ErrorLogLevelInfo,
     ErrorLogLevelDebug,
+    SuppressStacktrace,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
@@ -329,12 +330,10 @@ class TestProcessMessage(object):
         assert request_mock.status == "SUCCESS"
         assert request_mock.output == format_mock.return_value
 
-    @pytest.mark.parametrize("no_trace", [True, False])
-    def test_invoke_exception(self, caplog, plugin, update_mock, invoke_mock, no_trace):
+    def test_invoke_exception(self, caplog, plugin, update_mock, invoke_mock):
         target_mock = Mock()
         request_mock = Mock(is_json=False)
         invoke_mock.side_effect = ValueError("I am an error")
-        invoke_mock.side_effect._bg_suppress_stacktrace = no_trace
 
         plugin.process_message(target_mock, request_mock, {})
         invoke_mock.assert_called_once_with(target_mock, request_mock)
@@ -344,7 +343,26 @@ class TestProcessMessage(object):
         assert request_mock.output == "I am an error"
 
         assert len(caplog.records) == 1
-        assert caplog.records[0].exc_info is False if no_trace else not False
+        assert caplog.records[0].exc_info is not False
+        assert caplog.records[0].levelno == logging.ERROR
+
+    def test_invoke_exception_no_trace(self, caplog, plugin, update_mock, invoke_mock):
+        class CustomException(SuppressStacktrace):
+            pass
+
+        target_mock = Mock()
+        request_mock = Mock(is_json=False)
+        invoke_mock.side_effect = CustomException("I am exception")
+
+        plugin.process_message(target_mock, request_mock, {})
+        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        assert update_mock.call_count == 2
+        assert request_mock.status == "ERROR"
+        assert request_mock.error_class == "CustomException"
+        assert request_mock.output == "I am exception"
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].exc_info is False
         assert caplog.records[0].levelno == logging.ERROR
 
     @pytest.mark.parametrize(

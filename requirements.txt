@@ -55,6 +55,7 @@ python-box==3.3.0         # via yapconf
 pytz==2019.1
 pyyaml==5.1               # via watchdog
 readme-renderer==24.0     # via twine
+requests-mock==1.6.0
 requests-toolbelt==0.9.1  # via twine
 requests==2.21.0
 scandir==1.10.0           # via pathlib2

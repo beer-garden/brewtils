@@ -29,6 +29,7 @@ mock
 pytest < 4
 pytest-lazy-fixture
 pytz
+requests-mock
 tox
 twine
 wheel

@@ -117,11 +117,13 @@ class RequestProcessor(object):
 
             output = self._invoke_command(target, request)
         except Exception as ex:
-            self.logger.exception(
+            self.logger.log(
+                getattr(ex, "_bg_error_log_level", logging.ERROR),
                 "Plugin %s raised an exception while processing request %s: %s",
                 self._unique_name,
                 str(request),
                 ex,
+                exc_info=not getattr(ex, "_bg_suppress_stacktrace", False),
             )
             request.status = "ERROR"
             request.output = self._format_error_output(request, ex)

@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+2.4.8
+-----
+Date: 9/5/19
+
+New Features
+^^^^^^^^^^^^
+- Better control over how specific error types are logged (beer-garden/#285)
+
+Bug Fixes
+^^^^^^^^^
+- Decorators now work with non-JSON resources loaded from a URL (beer-garden/#310)
+
 2.4.7
 -----
 Date: 6/27/19

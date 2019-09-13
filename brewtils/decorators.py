@@ -403,6 +403,7 @@ def _generate_params_from_function(func):
     code = six.get_function_code(func)
     function_arguments = list(code.co_varnames or [])[: code.co_argcount]
     function_defaults = list(six.get_function_defaults(func) or [])
+    function_types = getattr(func, "__annotations__", {})
 
     while len(function_defaults) != len(function_arguments):
         function_defaults.insert(0, None)
@@ -414,9 +415,10 @@ def _generate_params_from_function(func):
 
         default = function_defaults[index]
         optional = False if default is None else True
+        arg_type = function_types.get(param_name, None)
 
         parameters_to_return.append(
-            Parameter(key=param_name, default=default, optional=optional)
+            Parameter(key=param_name, default=default, optional=optional, type=arg_type)
         )
 
     return parameters_to_return

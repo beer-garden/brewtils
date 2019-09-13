@@ -17,17 +17,6 @@ from brewtils.test.comparable import assert_parameter_equal
 
 
 @pytest.fixture
-def sys():
-    @system
-    class SystemClass(object):
-        @command
-        def foo(self):
-            pass
-
-    return SystemClass
-
-
-@pytest.fixture
 def cmd():
     def _cmd(_, foo):
         """Docstring"""
@@ -57,9 +46,19 @@ def wrap_functions(request):
 
 
 class TestSystem(object):
-    def test_system_basic(self, sys):
-        assert 1 == len(sys._commands)
-        assert "foo" == sys._commands[0].name
+    @pytest.fixture
+    def system(self):
+        @system
+        class SystemClass(object):
+            @command
+            def foo(self):
+                pass
+
+        return SystemClass
+
+    def test_system_basic(self, system):
+        assert 1 == len(system._commands)
+        assert "foo" == system._commands[0].name
 
     def test_system(self):
         @system(bg_name="sys", bg_version="1.0.0")

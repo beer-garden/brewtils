@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from brewtils import parameter
+from brewtils import command, parameter
 
 
-class TestTypeHints(object):
+class TestParameter(object):
     def test_str(self):
         class Bar(object):
             @parameter(key="foo")
@@ -42,3 +42,13 @@ class TestTypeHints(object):
                 return foo
 
         assert Bar()._cmd._command.get_parameter_by_key("foo").type == "Dictionary"
+
+
+class TestCommand(object):
+    def test_str(self):
+        class Bar(object):
+            @command
+            def _cmd(self, foo: str):
+                return foo
+
+        assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"

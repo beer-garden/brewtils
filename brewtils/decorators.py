@@ -397,31 +397,45 @@ def _generate_command_from_function(func):
 
 def _generate_params_from_function(func):
     """Generate Parameters from function arguments.
-    Will set the Parameter key, default value, and optional value."""
-    parameters_to_return = []
+
+    Will inspect the function signature and use that to make some determinations:
+        * The argument name will become the Parameter key
+        * If a default value specified it will be used as the Parameter default and
+        the Parameter will be Optional
+        * If a type annotation exists for that argument it will be used as the
+        Parameter type
+
+    Args:
+        func: The function
+
+    Returns:
+        The list of generated Parameters
+    """
+    generated_params = []
 
     code = six.get_function_code(func)
-    function_arguments = list(code.co_varnames or [])[: code.co_argcount]
-    function_defaults = list(six.get_function_defaults(func) or [])
-    function_types = getattr(func, "__annotations__", {})
+    func_arg_names = list(code.co_varnames or [])[: code.co_argcount]
+    func_arg_defaults = list(six.get_function_defaults(func) or [])
+    func_arg_types = getattr(func, "__annotations__", {})
 
-    while len(function_defaults) != len(function_arguments):
-        function_defaults.insert(0, None)
+    while len(func_arg_defaults) != len(func_arg_names):
+        func_arg_defaults.insert(0, None)
 
-    for index, param_name in enumerate(function_arguments):
+    for index, arg_name in enumerate(func_arg_names):
         # Skip Self or Class reference
+        # TODO - This isn't working quite right
         if index == 0 and isinstance(func, types.FunctionType):
             continue
 
-        default = function_defaults[index]
+        default = func_arg_defaults[index]
         optional = False if default is None else True
-        arg_type = function_types.get(param_name, None)
+        arg_type = func_arg_types.get(arg_name, None)
 
-        parameters_to_return.append(
-            Parameter(key=param_name, default=default, optional=optional, type=arg_type)
+        generated_params.append(
+            Parameter(key=arg_name, default=default, optional=optional, type=arg_type)
         )
 
-    return parameters_to_return
+    return generated_params
 
 
 def _generate_nested_params(model_class):

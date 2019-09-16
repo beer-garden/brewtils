@@ -429,7 +429,7 @@ def _generate_params_from_function(func):
 
         default = func_arg_defaults[index]
         optional = False if default is None else True
-        arg_type = func_arg_types.get(arg_name, None)
+        arg_type = _format_type(func_arg_types.get(arg_name, None))
 
         generated_params.append(
             Parameter(key=arg_name, default=default, optional=optional, type=arg_type)

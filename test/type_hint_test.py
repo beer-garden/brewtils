@@ -52,3 +52,23 @@ class TestCommand(object):
                 return foo
 
         assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"
+
+
+class TestBoth(object):
+    def test_str_parameter_command(self):
+        class Bar(object):
+            @parameter(key="foo")
+            @command
+            def _cmd(self, foo: str):
+                return foo
+
+        assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"
+
+    def test_str_command_parameter(self):
+        class Bar(object):
+            @command
+            @parameter(key="foo")
+            def _cmd(self, foo: str):
+                return foo
+
+        assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"

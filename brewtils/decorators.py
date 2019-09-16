@@ -274,7 +274,7 @@ def parameter(
             )
 
     # Update parameter definition with the plugin_param arguments
-    param.type = _format_type(param.type if type is None else type)
+    param.type = _translate_type(param.type if type is None else type)
     param.multi = param.multi if multi is None else multi
     param.display_name = param.display_name if display_name is None else display_name
     param.optional = param.optional if optional is None else optional
@@ -451,7 +451,7 @@ def _generate_params_from_function(func):
 
         default = func_arg_defaults[index]
         optional = False if default is None else True
-        arg_type = _format_type(func_arg_types.get(arg_name, None))
+        arg_type = _translate_type(func_arg_types.get(arg_name, None))
 
         generated_params.append(
             Parameter(key=arg_name, default=default, optional=optional, type=arg_type)
@@ -564,7 +564,7 @@ def _resolve_display_modifiers(
     return resolved
 
 
-def _format_type(param_type):
+def _translate_type(param_type):
     if param_type == str:
         return "String"
     elif param_type == int:
@@ -575,8 +575,27 @@ def _format_type(param_type):
         return "Boolean"
     elif param_type == dict:
         return "Dictionary"
-    else:
-        return param_type
+
+    if sys.version_info >= (3, 6):
+        # So. Here we're trying to do something Bad - infer information about types at
+        # runtime based on type hints. This is frowned upon based on the fact that you
+        # can't do something like this:
+        #
+        #   isinstance(param_type, typing.Generic)
+        #
+        # We can get access to the "nested" types like this:
+        #
+        #   nested = param_type.__args__
+        #
+        # But that doesn't really help a lot as we can't determine the wrapper type
+        # (i.e. is this an Optional[str] or a List[str]).
+        import typing
+        # return typing._type_check(param_type)
+        # if isinstance(param_type, typing.Generic):
+        # if isinstance(param_type, typing.TypeVar):
+            # pass
+
+    return param_type
 
 
 def _format_choices(choices):

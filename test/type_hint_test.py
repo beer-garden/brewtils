@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Optional, List
+
 from brewtils import command, parameter
 
 
@@ -77,6 +79,26 @@ class TestBoth(object):
             @command
             @parameter(key="foo")
             def _cmd(self, foo: str):
+                return foo
+
+        assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"
+
+
+class TestContainers(object):
+    def test_list(self):
+        class Bar(object):
+            @parameter(key="foo")
+            def _cmd(self, foo: List[str]):
+                return foo
+
+        assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"
+
+
+class TestOptional(object):
+    def test_str(self):
+        class Bar(object):
+            @parameter(key="foo")
+            def _cmd(self, foo: Optional[str]):
                 return foo
 
         assert Bar()._cmd._command.get_parameter_by_key("foo").type == "String"

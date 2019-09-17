@@ -3,6 +3,14 @@ from brewtils import command, parameter
 
 
 class TestParameter(object):
+    def test_missing(self):
+        class Bar(object):
+            @parameter(key="foo")
+            def _cmd(self, foo):
+                return foo
+
+        assert Bar()._cmd._command.get_parameter_by_key("foo").type is None
+
     def test_str(self):
         class Bar(object):
             @parameter(key="foo")

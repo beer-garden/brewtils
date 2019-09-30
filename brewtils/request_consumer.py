@@ -1,18 +1,27 @@
 # -*- coding: utf-8 -*-
-
+import abc
 import logging
+
+import six
 import threading
 from functools import partial
-
 from pika import BlockingConnection, URLParameters, BasicProperties, SelectConnection
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.queues import PikaClient
+from brewtils.queues import PikaClient, PIKA_ONE
 from brewtils.schema_parser import SchemaParser
 
+if PIKA_ONE:
+    from pika.exceptions import (
+        ConnectionClosed,
+        ChannelClosedByBroker,
+        ChannelClosedByClient,
+    )
 
-class RequestConsumer(threading.Thread):
+
+@six.add_metaclass(abc.ABCMeta)
+class RequestConsumerBase(threading.Thread):
     """RabbitMQ message consumer
 
     This consumer is designed to be fault-tolerant - if RabbitMQ closes the
@@ -69,7 +78,7 @@ class RequestConsumer(threading.Thread):
         else:
             self._connection_parameters = URLParameters(amqp_url)
 
-        super(RequestConsumer, self).__init__(name=thread_name)
+        super(RequestConsumerBase, self).__init__(name=thread_name)
 
     def run(self):
         """Run the consumer
@@ -227,7 +236,7 @@ class RequestConsumer(threading.Thread):
                 return SelectConnection(
                     self._connection_parameters,
                     self.on_connection_open,
-                    stop_ioloop_on_close=False,
+                    **self._select_kwargs()
                 )
             except AMQPConnectionError as ex:
                 if 0 <= self._max_connect_retries <= retries:
@@ -258,7 +267,7 @@ class RequestConsumer(threading.Thread):
         self.logger.debug("Closing connection")
         self._connection.close()
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
+    def do_on_connection_closed(self, connection, reply_code, reply_text):
         """Invoked when the connection is closed
 
         This method is invoked by pika when the connection to RabbitMQ is closed
@@ -327,7 +336,7 @@ class RequestConsumer(threading.Thread):
         self.logger.debug("Closing the channel")
         self._channel.close()
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
+    def do_on_channel_closed(self, channel, reply_code, reply_text):
         """Invoked when the connection is closed
 
         Invoked by pika when RabbitMQ unexpectedly closes the channel. Channels
@@ -361,16 +370,16 @@ class RequestConsumer(threading.Thread):
 
         self._channel.basic_qos(prefetch_count=self._max_concurrent)
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
-        self._consumer_tag = self._channel.basic_consume(
-            self.on_message, queue=self._queue_name
-        )
+        self._consumer_tag = self._channel.basic_consume(**self._consume_kwargs())
 
     def stop_consuming(self):
         """Stop consuming messages"""
         self.logger.debug("Stopping consuming on channel %s", self._channel)
         if self._channel:
             self.logger.debug("Sending a Basic.Cancel RPC command to RabbitMQ")
-            self._channel.basic_cancel(self.on_cancelok, self._consumer_tag)
+            self._channel.basic_cancel(
+                callback=self.on_cancelok, consumer_tag=self._consumer_tag
+            )
 
     def on_consumer_cancelled(self, method_frame):
         """Invoked when the consumer is canceled by the broker
@@ -395,3 +404,59 @@ class RequestConsumer(threading.Thread):
         """
         self.logger.debug(unused_frame)
         self.logger.debug("RabbitMQ acknowledged consumer cancellation")
+
+
+class RequestConsumerPika0(RequestConsumerBase):
+    """Implementation of a Pika v0 RequestConsumer
+
+    This exists because some kwargs and callback signatures changed between version
+    0 and version 1. This is essentially a wrapper that delegates to the
+    RequestConsumerBase methods.
+
+    """
+
+    def on_connection_closed(self, *args):
+        self.do_on_connection_closed(*args)
+
+    def on_channel_closed(self, *args):
+        self.do_on_channel_closed(*args)
+
+    @staticmethod
+    def _select_kwargs():
+        return {"stop_ioloop_on_close": False}
+
+    def _consume_kwargs(self):
+        return {"queue": self._queue_name, "consumer_callback": self.on_message}
+
+
+class RequestConsumerPika1(RequestConsumerBase):
+    """Implementation of a Pika v1 RequestConsumer
+
+    This exists because some kwargs and callback signatures changed between version
+    0 and version 1. This is essentially a wrapper that delegates to the
+    RequestConsumerBase methods after translating arguments.
+
+    """
+
+    def on_connection_closed(self, connection, exc):
+        if isinstance(exc, ConnectionClosed):
+            self.do_on_connection_closed(connection, exc.reply_code, exc.reply_text)
+        else:
+            raise exc
+
+    def on_channel_closed(self, channel, exc):
+        if isinstance(exc, (ChannelClosedByBroker, ChannelClosedByClient)):
+            self.do_on_channel_closed(channel, exc.reply_code, exc.reply_text)
+        else:
+            raise exc
+
+    @staticmethod
+    def _select_kwargs():
+        return {}
+
+    def _consume_kwargs(self):
+        return {"queue": self._queue_name, "on_message_callback": self.on_message}
+
+
+# The real RequestConsumer is based on the pika version
+RequestConsumer = RequestConsumerPika1 if PIKA_ONE else RequestConsumerPika0

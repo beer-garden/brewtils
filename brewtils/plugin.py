@@ -332,11 +332,13 @@ class Plugin(object):
 
             output = self._invoke_command(target, request)
         except Exception as ex:
-            self.logger.exception(
+            self.logger.log(
+                getattr(ex, "_bg_error_log_level", logging.ERROR),
                 "Plugin %s raised an exception while processing request %s: %s",
                 self.unique_name,
                 str(request),
                 ex,
+                exc_info=not getattr(ex, "_bg_suppress_stacktrace", False),
             )
             request.status = "ERROR"
             request.output = self._format_error_output(request, ex)
@@ -731,6 +733,12 @@ class Plugin(object):
                     "max_instances, display_name, and icon_name)"
                 )
 
+            if client._bg_name or client._bg_version:
+                raise ValidationError(
+                    "Sorry, you can't specify a system as well as system "
+                    "info in the @system decorator (bg_name, bg_version)"
+                )
+
             if not system.instances:
                 raise ValidationError(
                     "Explicit system definition requires explicit instance "
@@ -742,8 +750,10 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = name or os.environ.get("BG_NAME", None)
-            version = version or os.environ.get("BG_VERSION", None)
+            name = name or os.environ.get("BG_NAME", None) or client._bg_name
+            version = (
+                version or os.environ.get("BG_VERSION", None) or client._bg_version
+            )
 
             if client.__doc__ and not description:
                 description = self.client.__doc__.split("\n")[0]

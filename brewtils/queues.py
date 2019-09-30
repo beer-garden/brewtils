@@ -3,6 +3,9 @@
 import ssl as pyssl
 
 from pika import ConnectionParameters, PlainCredentials, SSLOptions
+from pika import __version__ as pika_version
+
+PIKA_ONE = pika_version.startswith("1.")
 
 
 class PikaClient(object):
@@ -53,11 +56,25 @@ class PikaClient(object):
         self._exchange = exchange
 
         ssl = ssl or {}
-        mode = pyssl.CERT_REQUIRED if ssl.get("ca_verify") else pyssl.CERT_NONE
         self._ssl_enabled = ssl.get("enabled", False)
-        self._ssl_options = SSLOptions(
-            cafile=ssl.get("ca_cert", None), verify_mode=mode
-        )
+
+        if not self._ssl_enabled:
+            self._ssl_options = None
+        elif PIKA_ONE:
+            ssl_context = pyssl.create_default_context(cafile=ssl.get("ca_cert", None))
+            if ssl.get("ca_verify"):
+                ssl_context.verify_mode = pyssl.CERT_REQUIRED
+            else:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = pyssl.CERT_NONE
+            self._ssl_options = SSLOptions(ssl_context, server_hostname=self._host)
+        else:
+            mode = pyssl.CERT_REQUIRED if ssl.get("ca_verify") else pyssl.CERT_NONE
+            self._ssl_options = SSLOptions(
+                cafile=ssl.get("ca_cert", None),
+                verify_mode=mode,
+                server_hostname=self._host,
+            )
 
         # Save the 'normal' params so they don't need to be reconstructed
         self._conn_params = self.connection_parameters()
@@ -97,20 +114,24 @@ class PikaClient(object):
             password=kwargs.get("password", self._password),
         )
 
-        return ConnectionParameters(
-            host=kwargs.get("host", self._host),
-            port=kwargs.get("port", self._port),
-            ssl=kwargs.get("ssl_enabled", self._ssl_enabled),
-            ssl_options=kwargs.get("ssl_options", self._ssl_options),
-            virtual_host=kwargs.get("virtual_host", self._virtual_host),
-            connection_attempts=kwargs.get(
+        conn_params = {
+            "host": kwargs.get("host", self._host),
+            "port": kwargs.get("port", self._port),
+            "ssl_options": kwargs.get("ssl_options", self._ssl_options),
+            "virtual_host": kwargs.get("virtual_host", self._virtual_host),
+            "connection_attempts": kwargs.get(
                 "connection_attempts", self._connection_attempts
             ),
-            heartbeat=kwargs.get(
+            "heartbeat": kwargs.get(
                 "heartbeat", kwargs.get("heartbeat_interval", self._heartbeat)
             ),
-            blocked_connection_timeout=kwargs.get(
+            "blocked_connection_timeout": kwargs.get(
                 "blocked_connection_timeout", self._blocked_connection_timeout
             ),
-            credentials=credentials,
-        )
+            "credentials": credentials,
+        }
+
+        if not PIKA_ONE:
+            conn_params["ssl"] = kwargs.get("ssl_enabled", self._ssl_enabled)
+
+        return ConnectionParameters(**conn_params)

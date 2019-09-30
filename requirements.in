@@ -3,7 +3,8 @@
 lark-parser < 0.7
 marshmallow < 3
 marshmallow-polyfield < 4
-pika < 0.14, >= 0.11
+packaging < 20
+pika < 1.1, >= 0.11
 pyjwt < 2
 requests < 3
 simplejson < 4
@@ -27,6 +28,7 @@ mock
 pytest < 4
 pytest-lazy-fixture
 pytz
+requests-mock
 tox
 twine
 wheel

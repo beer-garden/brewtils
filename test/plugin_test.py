@@ -5,9 +5,9 @@ import logging
 import logging.config
 import os
 import sys
-import threading
 
 import pytest
+import threading
 from mock import MagicMock, Mock
 from requests import ConnectionError
 
@@ -19,6 +19,12 @@ from brewtils.errors import (
     RepublishRequestException,
     PluginValidationError,
     RestClientError,
+    ErrorLogLevelCritical,
+    ErrorLogLevelError,
+    ErrorLogLevelWarning,
+    ErrorLogLevelInfo,
+    ErrorLogLevelDebug,
+    SuppressStacktrace,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
@@ -45,7 +51,11 @@ def bm_client(bg_system, bg_instance):
 @pytest.fixture
 def client():
     return MagicMock(
-        name="client", spec=["command", "_commands"], _commands=["command"]
+        name="client",
+        spec=["command", "_commands", "_bg_name", "_bg_version"],
+        _commands=["command"],
+        _bg_name=None,
+        _bg_version=None,
     )
 
 
@@ -57,7 +67,11 @@ def parser():
 @pytest.fixture
 def plugin(client, bm_client, parser, bg_system, bg_instance):
     plugin = Plugin(
-        client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
+        client,
+        bg_host="localhost",
+        system=bg_system,
+        metadata={"foo": "bar"},
+        max_concurrent=1,
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
@@ -79,7 +93,11 @@ class TestPluginInit(object):
         self, client, bg_system, instance_name, expected_unique
     ):
         plugin = Plugin(
-            client, bg_host="localhost", system=bg_system, instance_name=instance_name
+            client,
+            bg_host="localhost",
+            system=bg_system,
+            instance_name=instance_name,
+            max_concurrent=1,
         )
 
         assert expected_unique == plugin.unique_name
@@ -107,7 +125,7 @@ class TestPluginInit(object):
         monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
 
-        plugin = Plugin(client, bg_host="localhost")
+        plugin = Plugin(client, bg_host="localhost", max_concurrent=1)
         dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
         assert logging.getLogger("brewtils.plugin") == plugin.logger
 
@@ -123,6 +141,7 @@ class TestPluginInit(object):
             ssl_enabled=False,
             ca_verify=False,
             logger=logger,
+            max_concurrent=1,
         )
 
         assert plugin.bg_host == "host1"
@@ -139,7 +158,7 @@ class TestPluginInit(object):
         os.environ["BG_SSL_ENABLED"] = "False"
         os.environ["BG_CA_VERIFY"] = "False"
 
-        plugin = Plugin(client, system=bg_system)
+        plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
         assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 7332
@@ -162,6 +181,7 @@ class TestPluginInit(object):
             system=bg_system,
             ssl_enabled=True,
             ca_verify=True,
+            max_concurrent=1,
         )
 
         assert plugin.bg_host == "localhost"
@@ -182,7 +202,12 @@ class TestPluginInit(object):
             "--no-ca-verify",
         ]
 
-        plugin = Plugin(client, system=bg_system, **get_connection_info(cli_args=args))
+        plugin = Plugin(
+            client,
+            system=bg_system,
+            max_concurrent=1,
+            **get_connection_info(cli_args=args)
+        )
 
         assert plugin.bg_host == "remotehost"
         assert plugin.bg_port == 2338
@@ -304,7 +329,7 @@ class TestProcessMessage(object):
         assert request_mock.status == "SUCCESS"
         assert request_mock.output == format_mock.return_value
 
-    def test_invoke_exception(self, plugin, update_mock, invoke_mock):
+    def test_invoke_exception(self, caplog, plugin, update_mock, invoke_mock):
         target_mock = Mock()
         request_mock = Mock(is_json=False)
         invoke_mock.side_effect = ValueError("I am an error")
@@ -315,6 +340,61 @@ class TestProcessMessage(object):
         assert request_mock.status == "ERROR"
         assert request_mock.error_class == "ValueError"
         assert request_mock.output == "I am an error"
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].exc_info is not False
+        assert caplog.records[0].levelno == logging.ERROR
+
+    def test_invoke_exception_no_trace(self, caplog, plugin, update_mock, invoke_mock):
+        class CustomException(SuppressStacktrace):
+            pass
+
+        target_mock = Mock()
+        request_mock = Mock(is_json=False)
+        invoke_mock.side_effect = CustomException("I am exception")
+
+        plugin.process_message(target_mock, request_mock, {})
+        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        assert update_mock.call_count == 2
+        assert request_mock.status == "ERROR"
+        assert request_mock.error_class == "CustomException"
+        assert request_mock.output == "I am exception"
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].exc_info is False
+        assert caplog.records[0].levelno == logging.ERROR
+
+    @pytest.mark.parametrize(
+        "base,expected_level",
+        [
+            (ErrorLogLevelCritical, logging.CRITICAL),
+            (ErrorLogLevelError, logging.ERROR),
+            (ErrorLogLevelWarning, logging.WARNING),
+            (ErrorLogLevelInfo, logging.INFO),
+            (ErrorLogLevelDebug, logging.DEBUG),
+            (Exception, logging.ERROR),
+        ],
+    )
+    def test_invoke_exception_log_level(
+        self, caplog, plugin, update_mock, invoke_mock, base, expected_level
+    ):
+        target_mock = Mock()
+        request_mock = Mock(is_json=False)
+
+        exception = type("CustomException", (base,), {})
+        invoke_mock.side_effect = exception("I am exception")
+
+        with caplog.at_level(logging.DEBUG):
+            plugin.process_message(target_mock, request_mock, {})
+
+        invoke_mock.assert_called_once_with(target_mock, request_mock)
+        assert update_mock.call_count == 2
+        assert request_mock.status == "ERROR"
+        assert request_mock.error_class == "CustomException"
+        assert request_mock.output == "I am exception"
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelno == expected_level
 
     def test_invoke_exception_json_output(self, plugin, update_mock, invoke_mock):
         target_mock = Mock()
@@ -757,6 +837,14 @@ class TestSetupSystem(object):
         with pytest.raises(ValidationError, match="system creation helper keywords"):
             plugin._setup_system(client, "default", bg_system, *extra_args)
 
+    @pytest.mark.parametrize(
+        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
+    )
+    def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
+        setattr(client, attr, value)
+        with pytest.raises(ValidationError, match="@system decorator"):
+            plugin._setup_system(client, "default", bg_system, *([None] * 7))
+
     def test_no_instances(self, plugin, client):
         system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
@@ -788,13 +876,7 @@ class TestSetupSystem(object):
             "display_name",
             None,
         )
-
-        assert new_system.name == "name"
-        assert new_system.description == "desc"
-        assert new_system.version == "1.0.0"
-        assert new_system.icon_name == "icon"
-        assert new_system.metadata == {"foo": "bar"}
-        assert new_system.display_name == "display_name"
+        self._validate_system(new_system)
 
     def test_construct_client_docstring(self, plugin, client):
         client.__doc__ = "Description\nSome more stuff"
@@ -821,7 +903,28 @@ class TestSetupSystem(object):
             "display_name",
             None,
         )
+        self._validate_system(new_system)
 
+    def test_construct_from_decorator(self, plugin, client):
+        client._bg_name = "name"
+        client._bg_version = "1.0.0"
+
+        new_system = plugin._setup_system(
+            client,
+            "default",
+            None,
+            None,
+            "desc",
+            None,
+            "icon",
+            {"foo": "bar"},
+            "display_name",
+            None,
+        )
+        self._validate_system(new_system)
+
+    @staticmethod
+    def _validate_system(new_system):
         assert new_system.name == "name"
         assert new_system.description == "desc"
         assert new_system.version == "1.0.0"

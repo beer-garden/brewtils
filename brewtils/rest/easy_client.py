@@ -285,6 +285,7 @@ class EasyClient(object):
             new_commands (Optional[List[Command]]): New System commands
 
         Keyword Args:
+            add_instance (Instance): An Instance to append
             metadata (dict): New System metadata
             description (str): New System description
             display_name (str): New System display name
@@ -296,12 +297,17 @@ class EasyClient(object):
         """
         operations = []
         metadata = kwargs.pop("metadata", {})
+        add_instance = kwargs.pop("add_instance", None)
 
         if new_commands:
             commands = self.parser.serialize_command(
                 new_commands, to_string=False, many=True
             )
             operations.append(PatchOperation("replace", "/commands", commands))
+
+        if add_instance:
+            instance = self.parser.serialize_instance(add_instance, to_string=False)
+            operations.append(PatchOperation("add", "/instance", instance))
 
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))

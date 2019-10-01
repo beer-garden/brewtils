@@ -251,6 +251,18 @@ class EasyClientTest(unittest.TestCase):
 
     @patch("brewtils.rest.easy_client.PatchOperation")
     @patch("brewtils.rest.client.RestClient.patch_system")
+    def test_update_system_add_instance(self, mock_patch, MockPatch):
+        MockPatch.return_value = "patch"
+        mock_patch.return_value = self.fake_success_response
+        self.parser.serialize_instance = Mock(return_value="new_instance")
+
+        self.client.update_system("id", add_instance="new_instance")
+        MockPatch.assert_called_with("add", "/instance", "new_instance")
+        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
+        self.parser.parse_system.assert_called_with("payload", many=False)
+
+    @patch("brewtils.rest.easy_client.PatchOperation")
+    @patch("brewtils.rest.client.RestClient.patch_system")
     def test_update_system_metadata(self, mock_patch, MockPatch):
         MockPatch.return_value = "patch"
         mock_patch.return_value = self.fake_success_response

@@ -21,6 +21,7 @@ from brewtils.errors import (
     PluginValidationError,
     RestClientError,
     parse_exception_as_json,
+    ConflictError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System
@@ -244,8 +245,10 @@ class Plugin(object):
         )
 
     def run(self):
-        # Let Beergarden know about our system and instance
-        self._initialize()
+        self.logger.debug("Initializing plugin %s", self.unique_name)
+        self.system = self._initialize_system()
+        self.instance = self._initialize_instance()
+        self.queue_connection_params = self._initialize_queue_params()
 
         self.logger.debug("Creating and starting admin queue consumer")
         self.admin_consumer = self._create_admin_consumer()
@@ -403,60 +406,77 @@ class Plugin(object):
 
         return request
 
-    def _initialize(self):
-        self.logger.debug("Initializing plugin %s", self.unique_name)
+    def _initialize_system(self):
+        """Let Beergarden know about System-level info
 
-        # TODO: We should use self.bm_client.upsert_system once it is supported
+        This will attempt to find a system with a name and version matching this plugin.
+        If one is found this will attempt to update it (with commands, metadata, etc.
+        from this plugin).
+
+        If a System is not found this will attempt to create one.
+
+        Returns:
+            Definition of a Beergarden System this plugin belongs to.
+
+        Raises:
+            PluginValidationError: Unable to find or create a System for this Plugin
+
+        """
         existing_system = self.bm_client.find_unique_system(
             name=self.system.name, version=self.system.version
         )
 
-        if existing_system:
-            if not existing_system.has_instance(self.instance_name):
-                if len(existing_system.instances) < existing_system.max_instances:
-                    existing_system.instances.append(Instance(name=self.instance_name))
-                    self.bm_client.create_system(existing_system)
-                else:
-                    raise PluginValidationError(
-                        'Unable to create plugin with instance name "%s": '
-                        'System "%s[%s]" has an instance limit of %d and '
-                        "existing instances %s"
-                        % (
-                            self.instance_name,
-                            existing_system.name,
-                            existing_system.version,
-                            existing_system.max_instances,
-                            ", ".join(existing_system.instance_names),
-                        )
-                    )
+        if not existing_system:
+            try:
+                # If this succeeds the system will already have the correct metadata
+                # and such, so can just finish here
+                return self.bm_client.create_system(self.system)
+            except ConflictError:
+                # If multiple instances are starting up at once and this is a new system
+                # the create can return a conflict. In that case just try the get again
+                existing_system = self.bm_client.find_unique_system(
+                    name=self.system.name, version=self.system.version
+                )
 
-            # We always update in case the metadata has changed.
-            self.system = self.bm_client.update_system(
-                existing_system.id,
-                new_commands=self.system.commands,
-                metadata=self.system.metadata,
-                description=self.system.description,
-                display_name=self.system.display_name,
-                icon_name=self.system.icon_name,
+        # If we STILL can't find a system something is really wrong
+        if not existing_system:
+            raise PluginValidationError(
+                "Unable to find or create system {0}-{1}".format(
+                    self.system.name, self.system.version
+                )
             )
-        else:
-            self.system = self.bm_client.create_system(self.system)
 
+        # We always update with these fields
+        update_kwargs = {
+            "new_commands": self.system.commands,
+            "metadata": self.system.metadata,
+            "description": self.system.description,
+            "display_name": self.system.display_name,
+            "icon_name": self.system.icon_name,
+        }
+
+        # And if this particular instance doesn't exist we want to add it
+        if not existing_system.has_instance(self.instance_name):
+            update_kwargs["add_instance"] = Instance(name=self.instance_name)
+
+        return self.bm_client.update_system(existing_system.id, **update_kwargs)
+
+    def _initialize_instance(self):
         # Sanity check to make sure an instance with this name was registered
-        if self.system.has_instance(self.instance_name):
-            instance_id = self.system.get_instance(self.instance_name).id
-        else:
+        if not self.system.has_instance(self.instance_name):
             raise PluginValidationError(
                 'Unable to find registered instance with name "%s"' % self.instance_name
             )
 
-        self.instance = self.bm_client.initialize_instance(instance_id)
+        return self.bm_client.initialize_instance(
+            self.system.get_instance(self.instance_name).id
+        )
 
-        self.queue_connection_params = self.instance.queue_info.get("connection", None)
-        if self.queue_connection_params and self.queue_connection_params.get(
-            "ssl", None
-        ):
-            self.queue_connection_params["ssl"].update(
+    def _initialize_queue_params(self):
+        queue_params = self.instance.queue_info.get("connection")
+
+        if queue_params and queue_params.get("ssl"):
+            queue_params["ssl"].update(
                 {
                     "ca_cert": self.ca_cert,
                     "ca_verify": self.ca_verify,
@@ -464,7 +484,7 @@ class Plugin(object):
                 }
             )
 
-        self.logger.debug("Plugin %s is initialized", self.unique_name)
+        return queue_params
 
     def _shutdown(self):
         self.shutdown_event.set()

@@ -24,7 +24,7 @@ setup(
     description="Utilities for building and running beer-garden Systems",
     long_description=readme,
     url="https://beer-garden.io/",
-    author="The beer-garden Team",
+    author="The Beer-garden Team",
     author_email=" ",
     license="MIT",
     packages=find_packages(exclude=["test", "test.*"]),

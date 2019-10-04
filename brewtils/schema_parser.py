@@ -429,6 +429,24 @@ class SchemaParser(object):
         """
         return cls._do_serialize(JobSchema(**kwargs), job, to_string)
 
+    @classmethod
+    def serialize(cls, model, to_string=False, **kwargs):
+        """Convert a model object into a dictionary or JSON string.
+
+        Args:
+            model: The model
+            to_string: True to generate a JSON string, False to generate a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A serialized model representation
+
+        """
+        # Use type(model) here because Command has an instance attribute named "schema"
+        schema = getattr(brewtils.schemas, type(model).schema)(**kwargs)
+
+        return schema.dumps(model).data if to_string else schema.dump(model).data
+
     @staticmethod
     def _do_serialize(schema, data, to_string):
         return schema.dumps(data).data if to_string else schema.dump(data).data

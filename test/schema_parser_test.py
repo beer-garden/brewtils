@@ -306,6 +306,76 @@ class TestParse(object):
 
 class TestSerialize(object):
     @pytest.mark.parametrize(
+        "model,kwargs,expected",
+        [
+            (
+                lazy_fixture("bg_system"),
+                {"to_string": False},
+                lazy_fixture("system_dict"),
+            ),
+            (
+                lazy_fixture("bg_instance"),
+                {"to_string": False},
+                lazy_fixture("instance_dict"),
+            ),
+            (
+                lazy_fixture("bg_command"),
+                {"to_string": False},
+                lazy_fixture("command_dict"),
+            ),
+            (
+                lazy_fixture("bg_parameter"),
+                {"to_string": False},
+                lazy_fixture("parameter_dict"),
+            ),
+            (
+                lazy_fixture("bg_request"),
+                {"to_string": False},
+                lazy_fixture("request_dict"),
+            ),
+            (
+                lazy_fixture("bg_patch1"),
+                {"to_string": False},
+                lazy_fixture("patch_dict"),
+            ),
+            (
+                lazy_fixture("bg_logging_config"),
+                {"to_string": False},
+                lazy_fixture("logging_config_dict"),
+            ),
+            (
+                lazy_fixture("bg_event"),
+                {"to_string": False},
+                lazy_fixture("event_dict"),
+            ),
+            (
+                lazy_fixture("bg_queue"),
+                {"to_string": False},
+                lazy_fixture("queue_dict"),
+            ),
+            (
+                lazy_fixture("bg_principal"),
+                {"to_string": False},
+                lazy_fixture("principal_dict"),
+            ),
+            (lazy_fixture("bg_role"), {"to_string": False}, lazy_fixture("role_dict")),
+            (lazy_fixture("bg_job"), {"to_string": False}, lazy_fixture("job_dict")),
+            (
+                lazy_fixture("bg_cron_job"),
+                {"to_string": False},
+                lazy_fixture("cron_job_dict"),
+            ),
+            (
+                lazy_fixture("bg_interval_job"),
+                {"to_string": False},
+                lazy_fixture("interval_job_dict"),
+            ),
+        ],
+    )
+    def test_serialize(self, model, kwargs, expected):
+        assert SchemaParser.serialize(model, **kwargs) == expected
+
+    @pytest.mark.parametrize(
         "method,data,kwargs,expected",
         [
             (
@@ -394,7 +464,7 @@ class TestSerialize(object):
             ),
         ],
     )
-    def test_serialize(self, method, data, kwargs, expected):
+    def test_serialize_specific(self, method, data, kwargs, expected):
         parser = SchemaParser()
         actual = getattr(parser, method)(data, **kwargs)
         assert actual == expected

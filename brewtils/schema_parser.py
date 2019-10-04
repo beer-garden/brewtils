@@ -5,6 +5,7 @@ import warnings
 
 import six
 
+import brewtils.schemas
 from brewtils.models import (
     System,
     Instance,
@@ -249,6 +250,26 @@ class SchemaParser(object):
 
         """
         return cls._do_parse(job, JobSchema(**kwargs), from_string=from_string)
+
+    @classmethod
+    def parse(cls, data, model_class, from_string=False, **kwargs):
+        """Convert a JSON string or dictionary into a model object
+
+        Args:
+            data: The raw input
+            model_class: Class object of the desired model type
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A model object
+
+        """
+        return cls._do_parse(
+            data,
+            getattr(brewtils.schemas, model_class.schema)(**kwargs),
+            from_string=from_string
+        )
 
     @classmethod
     def _do_parse(cls, data, schema, from_string=False):

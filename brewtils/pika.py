@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
-
 import ssl as pyssl
 
-from pika import ConnectionParameters, PlainCredentials, SSLOptions
-from pika import __version__ as pika_version
+from pika import (
+    __version__ as pika_version,
+    BasicProperties,
+    BlockingConnection,
+    ConnectionParameters,
+    PlainCredentials,
+    SSLOptions,
+)
+from pika.exceptions import AMQPError
 
 PIKA_ONE = pika_version.startswith("1.")
 
@@ -135,3 +141,75 @@ class PikaClient(object):
             conn_params["ssl"] = kwargs.get("ssl_enabled", self._ssl_enabled)
 
         return ConnectionParameters(**conn_params)
+
+
+class TransientPikaClient(PikaClient):
+    """Pika client implementation that creates a new connection and channel for each action"""
+
+    def __init__(self, **kwargs):
+        super(TransientPikaClient, self).__init__(**kwargs)
+
+    def is_alive(self):
+        try:
+            with BlockingConnection(
+                self.connection_parameters(connection_attempts=1)
+            ) as conn:
+                return conn.is_open
+        except AMQPError:
+            return False
+
+    def declare_exchange(self):
+        with BlockingConnection(self._conn_params) as conn:
+            conn.channel().exchange_declare(
+                exchange=self._exchange, exchange_type="topic", durable=True
+            )
+
+    def setup_queue(self, queue_name, queue_args, routing_keys):
+        """Will create a new queue with the given args and bind it to the given routing keys"""
+
+        with BlockingConnection(self._conn_params) as conn:
+            conn.channel().queue_declare(queue_name, **queue_args)
+
+            for routing_key in routing_keys:
+                conn.channel().queue_bind(
+                    queue_name, self._exchange, routing_key=routing_key
+                )
+
+        return {"name": queue_name, "args": queue_args}
+
+    def publish(self, message, **kwargs):
+        """Publish a message.
+        :param message: The message to publish
+        :param kwargs: Additional message properties
+        :Keyword Arguments:
+            * *routing_key* --
+              Routing key to use when publishing
+            * *headers* --
+              Headers to be included as part of the message properties
+            * *expiration* --
+              Expiration to be included as part of the message properties
+            * *confirm* --
+              Flag indicating whether to operate in publisher-acknowledgements mode
+            * *mandatory* --
+              Raise if the message can not be routed to any queues
+        """
+        with BlockingConnection(self._conn_params) as conn:
+            channel = conn.channel()
+
+            if kwargs.get("confirm"):
+                channel.confirm_delivery()
+
+            properties = BasicProperties(
+                app_id="beer-garden",
+                content_type="text/plain",
+                headers=kwargs.get("headers"),
+                expiration=kwargs.get("expiration"),
+            )
+
+            channel.basic_publish(
+                exchange=self._exchange,
+                routing_key=kwargs["routing_key"],
+                body=message,
+                properties=properties,
+                mandatory=kwargs.get("mandatory"),
+            )

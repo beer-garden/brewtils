@@ -7,21 +7,6 @@ import six
 
 import brewtils.models
 import brewtils.schemas
-from brewtils.schemas import (
-    SystemSchema,
-    InstanceSchema,
-    CommandSchema,
-    ParameterSchema,
-    RequestSchema,
-    PatchSchema,
-    LoggingConfigSchema,
-    EventSchema,
-    QueueSchema,
-    PrincipalSchema,
-    RoleSchema,
-    RefreshTokenSchema,
-    JobSchema,
-)
 
 
 class SchemaParser(object):
@@ -290,7 +275,7 @@ class SchemaParser(object):
             else:
                 kwargs["exclude"] = ("commands",)
 
-        return cls._do_serialize(SystemSchema(**kwargs), system, to_string)
+        return cls.serialize(system, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_instance(cls, instance, to_string=True, **kwargs):
@@ -301,7 +286,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of instance
         """
-        return cls._do_serialize(InstanceSchema(**kwargs), instance, to_string)
+        return cls.serialize(instance, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_command(cls, command, to_string=True, **kwargs):
@@ -312,7 +297,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of command
         """
-        return cls._do_serialize(CommandSchema(**kwargs), command, to_string)
+        return cls.serialize(command, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_parameter(cls, parameter, to_string=True, **kwargs):
@@ -323,7 +308,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of parameter
         """
-        return cls._do_serialize(ParameterSchema(**kwargs), parameter, to_string)
+        return cls.serialize(parameter, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_request(cls, request, to_string=True, **kwargs):
@@ -334,7 +319,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of request
         """
-        return cls._do_serialize(RequestSchema(**kwargs), request, to_string)
+        return cls.serialize(request, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_patch(cls, patch, to_string=True, **kwargs):
@@ -345,7 +330,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of patch
         """
-        return cls._do_serialize(PatchSchema(**kwargs), patch, to_string)
+        return cls.serialize(patch, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_logging_config(cls, logging_config, to_string=True, **kwargs):
@@ -356,9 +341,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of logging config
         """
-        return cls._do_serialize(
-            LoggingConfigSchema(**kwargs), logging_config, to_string
-        )
+        return cls.serialize(logging_config, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_event(cls, event, to_string=True, **kwargs):
@@ -369,7 +352,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of event
         """
-        return cls._do_serialize(EventSchema(**kwargs), event, to_string)
+        return cls.serialize(event, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_queue(cls, queue, to_string=True, **kwargs):
@@ -380,7 +363,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of queue
         """
-        return cls._do_serialize(QueueSchema(**kwargs), queue, to_string)
+        return cls.serialize(queue, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_principal(cls, principal, to_string=True, **kwargs):
@@ -391,7 +374,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation
         """
-        return cls._do_serialize(PrincipalSchema(**kwargs), principal, to_string)
+        return cls.serialize(principal, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_role(cls, role, to_string=True, **kwargs):
@@ -402,7 +385,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation
         """
-        return cls._do_serialize(RoleSchema(**kwargs), role, to_string)
+        return cls.serialize(role, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_refresh_token(cls, refresh_token, to_string=True, **kwargs):
@@ -413,7 +396,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation
         """
-        return cls._do_serialize(RefreshTokenSchema(**kwargs), refresh_token, to_string)
+        return cls.serialize(refresh_token, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_job(cls, job, to_string=True, **kwargs):
@@ -427,7 +410,7 @@ class SchemaParser(object):
         Returns:
             Serialize representation of job.
         """
-        return cls._do_serialize(JobSchema(**kwargs), job, to_string)
+        return cls.serialize(job, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize(cls, model, to_string=False, **kwargs):
@@ -446,10 +429,6 @@ class SchemaParser(object):
         schema = getattr(brewtils.schemas, type(model).schema)(**kwargs)
 
         return schema.dumps(model).data if to_string else schema.dump(model).data
-
-    @staticmethod
-    def _do_serialize(schema, data, to_string):
-        return schema.dumps(data).data if to_string else schema.dump(data).data
 
 
 class BrewmasterSchemaParser(SchemaParser):

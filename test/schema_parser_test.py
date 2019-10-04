@@ -63,8 +63,20 @@ class TestParse(object):
     @pytest.mark.parametrize(
         "model,data,kwargs,assertion,expected",
         [
-            (brewtils.models.System, {}, {"from_string": False}, assert_system_equal, System()),
-            (brewtils.models.System, "{}", {"from_string": True}, assert_system_equal, System()),
+            (
+                brewtils.models.System,
+                {},
+                {"from_string": False},
+                assert_system_equal,
+                System(),
+            ),
+            (
+                brewtils.models.System,
+                "{}",
+                {"from_string": True},
+                assert_system_equal,
+                System(),
+            ),
             (
                 brewtils.models.System,
                 lazy_fixture("system_dict"),
@@ -165,7 +177,13 @@ class TestParse(object):
         "method,data,kwargs,assertion,expected",
         [
             ("parse_system", {}, {"from_string": False}, assert_system_equal, System()),
-            ("parse_system", "{}", {"from_string": True}, assert_system_equal, System()),
+            (
+                "parse_system",
+                "{}",
+                {"from_string": True},
+                assert_system_equal,
+                System(),
+            ),
             (
                 "parse_system",
                 lazy_fixture("system_dict"),
@@ -382,7 +400,8 @@ class TestSerialize(object):
         assert actual == expected
 
     @pytest.mark.parametrize(
-        "keys,excludes", [(["commands"], ()), (["commands", "icon_name"], ("icon_name",))]
+        "keys,excludes",
+        [(["commands"], ()), (["commands", "icon_name"], ("icon_name",))],
     )
     def test_serialize_excludes(self, bg_system, system_dict, keys, excludes):
         for key in keys:

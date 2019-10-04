@@ -5,27 +5,8 @@ import warnings
 
 import six
 
+import brewtils.models
 import brewtils.schemas
-from brewtils.models import (
-    System,
-    Instance,
-    Command,
-    Parameter,
-    Request,
-    PatchOperation,
-    Choices,
-    LoggingConfig,
-    Event,
-    Queue,
-    Principal,
-    Role,
-    RefreshToken,
-    Job,
-    RequestTemplate,
-    DateTrigger,
-    CronTrigger,
-    IntervalTrigger,
-)
 from brewtils.schemas import (
     SystemSchema,
     InstanceSchema,
@@ -47,24 +28,24 @@ class SchemaParser(object):
     """Serialize and deserialize Brewtils models"""
 
     _models = {
-        "SystemSchema": System,
-        "InstanceSchema": Instance,
-        "CommandSchema": Command,
-        "ParameterSchema": Parameter,
-        "RequestTemplateSchema": RequestTemplate,
-        "RequestSchema": Request,
-        "PatchSchema": PatchOperation,
-        "ChoicesSchema": Choices,
-        "LoggingConfigSchema": LoggingConfig,
-        "EventSchema": Event,
-        "QueueSchema": Queue,
-        "PrincipalSchema": Principal,
-        "RoleSchema": Role,
-        "RefreshTokenSchema": RefreshToken,
-        "JobSchema": Job,
-        "DateTriggerSchema": DateTrigger,
-        "IntervalTriggerSchema": IntervalTrigger,
-        "CronTriggerSchema": CronTrigger,
+        "SystemSchema": brewtils.models.System,
+        "InstanceSchema": brewtils.models.Instance,
+        "CommandSchema": brewtils.models.Command,
+        "ParameterSchema": brewtils.models.Parameter,
+        "RequestTemplateSchema": brewtils.models.RequestTemplate,
+        "RequestSchema": brewtils.models.Request,
+        "PatchSchema": brewtils.models.PatchOperation,
+        "ChoicesSchema": brewtils.models.Choices,
+        "LoggingConfigSchema": brewtils.models.LoggingConfig,
+        "EventSchema": brewtils.models.Event,
+        "QueueSchema": brewtils.models.Queue,
+        "PrincipalSchema": brewtils.models.Principal,
+        "RoleSchema": brewtils.models.Role,
+        "RefreshTokenSchema": brewtils.models.RefreshToken,
+        "JobSchema": brewtils.models.Job,
+        "DateTriggerSchema": brewtils.models.DateTrigger,
+        "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
+        "CronTriggerSchema": brewtils.models.CronTrigger,
     }
 
     logger = logging.getLogger(__name__)
@@ -79,7 +60,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A System object
         """
-        return cls._do_parse(system, SystemSchema(**kwargs), from_string=from_string)
+        return cls.parse(
+            system, brewtils.models.System, from_string=from_string, **kwargs
+        )
 
     @classmethod
     def parse_instance(cls, instance, from_string=False, **kwargs):
@@ -90,8 +73,8 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Instance object
         """
-        return cls._do_parse(
-            instance, InstanceSchema(**kwargs), from_string=from_string
+        return cls.parse(
+            instance, brewtils.models.Instance, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -103,7 +86,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Command object
         """
-        return cls._do_parse(command, CommandSchema(**kwargs), from_string=from_string)
+        return cls.parse(
+            command, brewtils.models.Command, from_string=from_string, **kwargs
+        )
 
     @classmethod
     def parse_parameter(cls, parameter, from_string=False, **kwargs):
@@ -114,8 +99,8 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Parameter object
         """
-        return cls._do_parse(
-            parameter, ParameterSchema(**kwargs), from_string=from_string
+        return cls.parse(
+            parameter, brewtils.models.Parameter, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -127,7 +112,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Request object
         """
-        return cls._do_parse(request, RequestSchema(**kwargs), from_string=from_string)
+        return cls.parse(
+            request, brewtils.models.Request, from_string=from_string, **kwargs
+        )
 
     @classmethod
     def parse_patch(cls, patch, from_string=False, **kwargs):
@@ -148,16 +135,20 @@ class SchemaParser(object):
                 "False, this is being ignored and a list "
                 "will be returned anyway."
             )
-        return cls._do_parse(
-            patch, PatchSchema(many=True, **kwargs), from_string=from_string
+        return cls.parse(
+            patch,
+            brewtils.models.PatchOperation,
+            from_string=from_string,
+            many=True,
+            **kwargs
         )
 
     @classmethod
     def parse_logging_config(cls, logging_config, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a logging config model object
 
-        Note: for our logging_config, many is _always_ set to False. We will always return a dict
-        from this method.
+        Note: for our logging_config, many is _always_ set to False. We will always
+        return a dict from this method.
 
         :param logging_config: The raw input
         :param from_string: True if 'input is a JSON string, False if a dictionary
@@ -171,10 +162,12 @@ class SchemaParser(object):
                 "many as True, this is being ignored and a dict will be returned "
                 "anyway."
             )
-        return cls._do_parse(
+        return cls.parse(
             logging_config,
-            LoggingConfigSchema(many=False, **kwargs),
+            brewtils.models.LoggingConfig,
             from_string=from_string,
+            many=False,
+            **kwargs
         )
 
     @classmethod
@@ -186,7 +179,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: An Event object
         """
-        return cls._do_parse(event, EventSchema(**kwargs), from_string=from_string)
+        return cls.parse(
+            event, brewtils.models.Event, from_string=from_string, **kwargs
+        )
 
     @classmethod
     def parse_queue(cls, queue, from_string=False, **kwargs):
@@ -197,7 +192,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Queue object
         """
-        return cls._do_parse(queue, QueueSchema(**kwargs), from_string=from_string)
+        return cls.parse(
+            queue, brewtils.models.Queue, from_string=from_string, **kwargs
+        )
 
     @classmethod
     def parse_principal(cls, principal, from_string=False, **kwargs):
@@ -208,8 +205,8 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Principal object
         """
-        return cls._do_parse(
-            principal, PrincipalSchema(**kwargs), from_string=from_string
+        return cls.parse(
+            principal, brewtils.models.Principal, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -221,7 +218,7 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A Role object
         """
-        return cls._do_parse(role, RoleSchema(**kwargs), from_string=from_string)
+        return cls.parse(role, brewtils.models.Role, from_string=from_string, **kwargs)
 
     @classmethod
     def parse_refresh_token(cls, refresh_token, from_string=False, **kwargs):
@@ -232,8 +229,11 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A RefreshToken object
         """
-        return cls._do_parse(
-            refresh_token, RefreshTokenSchema(**kwargs), from_string=from_string
+        return cls.parse(
+            refresh_token,
+            brewtils.models.RefreshToken,
+            from_string=from_string,
+            **kwargs
         )
 
     @classmethod
@@ -249,7 +249,7 @@ class SchemaParser(object):
             A Job object.
 
         """
-        return cls._do_parse(job, JobSchema(**kwargs), from_string=from_string)
+        return cls.parse(job, brewtils.models.Job, from_string=from_string, **kwargs)
 
     @classmethod
     def parse(cls, data, model_class, from_string=False, **kwargs):
@@ -265,18 +265,12 @@ class SchemaParser(object):
             A model object
 
         """
-        return cls._do_parse(
-            data,
-            getattr(brewtils.schemas, model_class.schema)(**kwargs),
-            from_string=from_string
-        )
-
-    @classmethod
-    def _do_parse(cls, data, schema, from_string=False):
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
 
+        schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
         schema.context["models"] = cls._models
+
         return schema.loads(data).data if from_string else schema.load(data).data
 
     # Serialization methods

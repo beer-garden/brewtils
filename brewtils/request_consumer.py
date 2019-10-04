@@ -9,7 +9,7 @@ from pika import BlockingConnection, URLParameters, BasicProperties, SelectConne
 from pika.exceptions import AMQPConnectionError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.queues import PikaClient, PIKA_ONE
+from brewtils.pika import PikaClient, PIKA_ONE
 from brewtils.schema_parser import SchemaParser
 
 if PIKA_ONE:

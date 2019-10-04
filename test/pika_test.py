@@ -3,7 +3,7 @@ import pytest
 import ssl
 from pytest_lazyfixture import lazy_fixture
 
-from brewtils.queues import PikaClient, PIKA_ONE
+from brewtils.pika import PikaClient, PIKA_ONE
 
 
 class TestPikaClient(object):

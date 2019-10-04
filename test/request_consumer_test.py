@@ -8,7 +8,7 @@ from pika.exceptions import AMQPConnectionError
 
 import brewtils.request_consumer
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.queues import PIKA_ONE
+from brewtils.pika import PIKA_ONE
 from brewtils.request_consumer import RequestConsumer
 
 if PIKA_ONE:

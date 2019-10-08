@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-
+import json
 import logging
 import warnings
+from collections import Iterable
 
 import six
 
@@ -414,17 +415,26 @@ class SchemaParser(object):
 
     @classmethod
     def serialize(cls, model, to_string=False, **kwargs):
-        """Convert a model object into a dictionary or JSON string.
+        """Convert a model object or list of models into a dictionary or JSON string.
 
         Args:
-            model: The model
+            model: The model or model list
             to_string: True to generate a JSON string, False to generate a dictionary
-            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+            **kwargs: Additional parameters to be passed to the Schema.
+                Note that the 'many' parameter will be set correctly automatically.
 
         Returns:
             A serialized model representation
 
         """
+        if isinstance(model, Iterable):
+            # Explicitly force to_string to False so only original call returns a string
+            multiple = [cls.serialize(x, to_string=False, **kwargs) for x in model]
+            return json.dumps(multiple) if to_string else multiple
+
+        # At this point we know model is not an iterable, so force this to False
+        kwargs["many"] = False
+
         # Use type(model) here because Command has an instance attribute named "schema"
         schema = getattr(brewtils.schemas, type(model).schema)(**kwargs)
 

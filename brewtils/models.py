@@ -47,7 +47,11 @@ class Events(Enum):
     ALL_QUEUES_CLEARED = 15
 
 
-class Command(object):
+class BaseModel(object):
+    schema = None
+
+
+class Command(BaseModel):
 
     schema = "CommandSchema"
 
@@ -126,7 +130,7 @@ class Command(object):
         return False
 
 
-class Instance(object):
+class Instance(BaseModel):
 
     schema = "InstanceSchema"
 
@@ -171,7 +175,7 @@ class Instance(object):
         return "<Instance: name=%s, status=%s>" % (self.name, self.status)
 
 
-class Choices(object):
+class Choices(BaseModel):
 
     schema = "ChoicesSchema"
 
@@ -196,7 +200,7 @@ class Choices(object):
         )
 
 
-class Parameter(object):
+class Parameter(BaseModel):
 
     schema = "ParameterSchema"
 
@@ -290,7 +294,7 @@ class Parameter(object):
         return False
 
 
-class RequestTemplate(object):
+class RequestTemplate(BaseModel):
 
     schema = "RequestTemplateSchema"
 
@@ -424,7 +428,7 @@ class Request(RequestTemplate):
         self._status = value
 
 
-class System(object):
+class System(BaseModel):
 
     schema = "SystemSchema"
 
@@ -514,7 +518,7 @@ class System(object):
         return False
 
 
-class PatchOperation(object):
+class PatchOperation(BaseModel):
 
     schema = "PatchSchema"
 
@@ -534,7 +538,7 @@ class PatchOperation(object):
         )
 
 
-class LoggingConfig(object):
+class LoggingConfig(BaseModel):
 
     schema = "LoggingConfigSchema"
 
@@ -636,7 +640,7 @@ class LoggingConfig(object):
         )
 
 
-class Event(object):
+class Event(BaseModel):
 
     schema = "EventSchema"
 
@@ -661,7 +665,7 @@ class Event(object):
         )
 
 
-class Queue(object):
+class Queue(BaseModel):
 
     schema = "QueueSchema"
 
@@ -690,7 +694,7 @@ class Queue(object):
         return "<Queue: name=%s, size=%s>" % (self.name, self.size)
 
 
-class Principal(object):
+class Principal(BaseModel):
 
     schema = "PrincipalSchema"
 
@@ -721,7 +725,7 @@ class Principal(object):
         )
 
 
-class Role(object):
+class Role(BaseModel):
 
     schema = "RoleSchema"
 
@@ -745,7 +749,7 @@ class Role(object):
         )
 
 
-class RefreshToken(object):
+class RefreshToken(BaseModel):
 
     schema = "RefreshTokenSchema"
 
@@ -766,7 +770,7 @@ class RefreshToken(object):
         )
 
 
-class Job(object):
+class Job(BaseModel):
 
     TRIGGER_TYPES = {"interval", "date", "cron"}
     STATUS_TYPES = {"RUNNING", "PAUSED"}
@@ -807,7 +811,7 @@ class Job(object):
         return "<Job: name=%s, id=%s>" % (self.name, self.id)
 
 
-class DateTrigger(object):
+class DateTrigger(BaseModel):
     schema = "DateTriggerSchema"
 
     def __init__(self, run_date=None, timezone=None):
@@ -821,7 +825,7 @@ class DateTrigger(object):
         return "<DateTrigger: run_date=%s>" % self.run_date
 
 
-class IntervalTrigger(object):
+class IntervalTrigger(BaseModel):
     schema = "IntervalTriggerSchema"
 
     def __init__(
@@ -859,7 +863,7 @@ class IntervalTrigger(object):
         )
 
 
-class CronTrigger(object):
+class CronTrigger(BaseModel):
     schema = "CronTriggerSchema"
 
     def __init__(

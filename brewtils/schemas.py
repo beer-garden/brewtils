@@ -3,9 +3,9 @@
 import calendar
 import datetime
 
-import simplejson
 import marshmallow
-from marshmallow import Schema, post_dump, post_load, pre_load, fields
+import simplejson
+from marshmallow import Schema, post_load, pre_load, fields
 from marshmallow.utils import UTC
 from marshmallow_polyfield import PolyField
 
@@ -201,16 +201,33 @@ class PatchSchema(BaseSchema):
 
     @pre_load(pass_many=True)
     def unwrap_envelope(self, data, many):
+        """Helper function for parsing the different patch formats.
+
+        This exists because we previously wanted multiple patches to be serialized like:
+            {
+                "operations": [
+                    {"operation": "replace", ...},
+                    {"operation": "replace", ...}
+                    ...
+                ]
+            }
+
+        But we also wanted to be able to handle a simple list:
+            [
+                {"operation": "replace", ...},
+                {"operation": "replace", ...}
+                ...
+            ]
+
+        Patches are now (as of v3) serialized as the latter. Prior to v3 they were
+        serialized as the former.
+        """
         if isinstance(data, list):
             return data
         elif "operations" in data:
             return data["operations"]
         else:
             return [data]
-
-    @post_dump(pass_many=True)
-    def wrap_envelope(self, data, many):
-        return {u"operations": data if many else [data]}
 
 
 class LoggingConfigSchema(BaseSchema):

@@ -272,7 +272,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
             (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
             (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
-            (lazy_fixture("bg_patch"), lazy_fixture("patch_dict")),
+            (lazy_fixture("bg_patch"), lazy_fixture("patch_dict_no_envelop")),
             (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
@@ -314,7 +314,11 @@ class TestSerialize(object):
                 lazy_fixture("bg_request"),
                 lazy_fixture("request_dict"),
             ),
-            ("serialize_patch", lazy_fixture("bg_patch"), lazy_fixture("patch_dict")),
+            (
+                "serialize_patch",
+                lazy_fixture("bg_patch"),
+                lazy_fixture("patch_dict_no_envelop"),
+            ),
             (
                 "serialize_logging_config",
                 lazy_fixture("bg_logging_config"),
@@ -353,7 +357,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
             (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
             (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
-            (lazy_fixture("bg_patch"), lazy_fixture("patch_dict")),
+            (lazy_fixture("bg_patch"), lazy_fixture("patch_dict_no_envelop")),
             (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
@@ -386,16 +390,17 @@ class TestSerialize(object):
         assert actual == system_dict
 
     @pytest.mark.parametrize("kwargs", [{}, {"many": False}])
-    def test_patch(self, patch_dict, bg_patch, kwargs):
+    def test_patch(self, patch_dict_no_envelop, bg_patch, kwargs):
         actual = SchemaParser.serialize_patch(bg_patch, to_string=False, **kwargs)
-        assert actual == patch_dict
+        assert actual == patch_dict_no_envelop
 
-    @pytest.mark.xfail
-    def test_patch_many(self, patch_many_dict, bg_patch, bg_patch2):
+    def test_patch_many(
+        self, patch_dict_no_envelop, patch_dict_no_envelop2, bg_patch, bg_patch2
+    ):
         actual = SchemaParser.serialize_patch(
             [bg_patch, bg_patch2], to_string=False, many=True
         )
-        assert actual == patch_many_dict
+        assert actual == [patch_dict_no_envelop, patch_dict_no_envelop2]
 
 
 class TestRoundTrip(object):

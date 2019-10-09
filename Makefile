@@ -76,6 +76,11 @@ clean-all: clean-build clean-docs clean-python clean-sphinx clean-test ## remove
 clean: clean-build clean-docs clean-python clean-test ## remove everything but sphinx
 
 
+# Formatting
+format: ## Run black formatter in-line
+	black $(MODULE_NAME) $(TEST_DIR)
+
+
 # Linting
 lint: ## check style with flake8
 	flake8 $(MODULE_NAME) $(TEST_DIR)

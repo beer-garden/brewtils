@@ -43,15 +43,13 @@ class TestParse(object):
             ("bad bad bad", {}, MarshmallowError),
         ],
     )
-    def test_parse_error(self, data, kwargs, error):
-        parser = SchemaParser()
+    def test_error(self, data, kwargs, error):
         with pytest.raises(error):
-            parser.parse_system(data, **kwargs)
+            SchemaParser.parse_system(data, **kwargs)
 
     def test_non_strict_failure(self, system_dict):
-        parser = SchemaParser()
         system_dict["name"] = None
-        value = parser.parse_system(system_dict, from_string=False, strict=False)
+        value = SchemaParser.parse_system(system_dict, from_string=False, strict=False)
         assert value.get("name") is None
         assert value["version"] == system_dict["version"]
 
@@ -61,427 +59,401 @@ class TestParse(object):
         assert system_copy == system_dict
 
     @pytest.mark.parametrize(
-        "model,data,kwargs,assertion,expected",
+        "model,data,assertion,expected",
         [
-            (
-                brewtils.models.System,
-                {},
-                {"from_string": False},
-                assert_system_equal,
-                System(),
-            ),
-            (
-                brewtils.models.System,
-                "{}",
-                {"from_string": True},
-                assert_system_equal,
-                System(),
-            ),
+            (brewtils.models.System, {}, assert_system_equal, System()),
             (
                 brewtils.models.System,
                 lazy_fixture("system_dict"),
-                {},
                 assert_system_equal,
                 lazy_fixture("bg_system"),
             ),
             (
                 brewtils.models.Instance,
                 lazy_fixture("instance_dict"),
-                {},
                 assert_instance_equal,
                 lazy_fixture("bg_instance"),
             ),
             (
                 brewtils.models.Command,
                 lazy_fixture("command_dict"),
-                {},
                 assert_command_equal,
                 lazy_fixture("bg_command"),
             ),
             (
                 brewtils.models.Parameter,
                 lazy_fixture("parameter_dict"),
-                {},
                 assert_parameter_equal,
                 lazy_fixture("bg_parameter"),
             ),
             (
                 brewtils.models.Request,
                 lazy_fixture("request_dict"),
-                {},
                 assert_request_equal,
                 lazy_fixture("bg_request"),
             ),
             (
                 brewtils.models.LoggingConfig,
                 lazy_fixture("logging_config_dict"),
-                {},
                 assert_logging_config_equal,
                 lazy_fixture("bg_logging_config"),
             ),
             (
                 brewtils.models.Event,
                 lazy_fixture("event_dict"),
-                {},
                 assert_event_equal,
                 lazy_fixture("bg_event"),
             ),
             (
                 brewtils.models.Queue,
                 lazy_fixture("queue_dict"),
-                {},
                 assert_queue_equal,
                 lazy_fixture("bg_queue"),
             ),
             (
                 brewtils.models.Principal,
                 lazy_fixture("principal_dict"),
-                {},
                 assert_principal_equal,
                 lazy_fixture("bg_principal"),
             ),
             (
                 brewtils.models.Role,
                 lazy_fixture("role_dict"),
-                {},
                 assert_role_equal,
                 lazy_fixture("bg_role"),
             ),
             (
                 brewtils.models.Job,
                 lazy_fixture("job_dict"),
-                {},
                 assert_job_equal,
                 lazy_fixture("bg_job"),
             ),
             (
                 brewtils.models.Job,
                 lazy_fixture("cron_job_dict"),
-                {},
                 assert_job_equal,
                 lazy_fixture("bg_cron_job"),
             ),
             (
                 brewtils.models.Job,
                 lazy_fixture("interval_job_dict"),
-                {},
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
             ),
         ],
     )
-    def test_parse(self, model, data, kwargs, assertion, expected):
-        assertion(SchemaParser.parse(data, model, **kwargs), expected)
+    def test_single(self, model, data, assertion, expected):
+        assertion(SchemaParser.parse(data, model, from_string=False), expected)
+
+    def test_single_from_string(self):
+        assert_system_equal(
+            SchemaParser.parse("{}", brewtils.models.System, from_string=True), System()
+        )
 
     @pytest.mark.parametrize(
-        "method,data,kwargs,assertion,expected",
+        "method,data,assertion,expected",
         [
-            ("parse_system", {}, {"from_string": False}, assert_system_equal, System()),
-            (
-                "parse_system",
-                "{}",
-                {"from_string": True},
-                assert_system_equal,
-                System(),
-            ),
+            ("parse_system", {}, assert_system_equal, System()),
             (
                 "parse_system",
                 lazy_fixture("system_dict"),
-                {},
                 assert_system_equal,
                 lazy_fixture("bg_system"),
             ),
             (
                 "parse_instance",
                 lazy_fixture("instance_dict"),
-                {},
                 assert_instance_equal,
                 lazy_fixture("bg_instance"),
             ),
             (
                 "parse_command",
                 lazy_fixture("command_dict"),
-                {},
                 assert_command_equal,
                 lazy_fixture("bg_command"),
             ),
             (
                 "parse_parameter",
                 lazy_fixture("parameter_dict"),
-                {},
                 assert_parameter_equal,
                 lazy_fixture("bg_parameter"),
             ),
             (
                 "parse_request",
                 lazy_fixture("request_dict"),
-                {},
                 assert_request_equal,
                 lazy_fixture("bg_request"),
             ),
             (
                 "parse_logging_config",
                 lazy_fixture("logging_config_dict"),
-                {},
                 assert_logging_config_equal,
                 lazy_fixture("bg_logging_config"),
             ),
             (
                 "parse_event",
                 lazy_fixture("event_dict"),
-                {},
                 assert_event_equal,
                 lazy_fixture("bg_event"),
             ),
             (
                 "parse_queue",
                 lazy_fixture("queue_dict"),
-                {},
                 assert_queue_equal,
                 lazy_fixture("bg_queue"),
             ),
             (
                 "parse_principal",
                 lazy_fixture("principal_dict"),
-                {},
                 assert_principal_equal,
                 lazy_fixture("bg_principal"),
             ),
             (
                 "parse_role",
                 lazy_fixture("role_dict"),
-                {},
                 assert_role_equal,
                 lazy_fixture("bg_role"),
             ),
             (
                 "parse_job",
                 lazy_fixture("job_dict"),
-                {},
                 assert_job_equal,
                 lazy_fixture("bg_job"),
             ),
             (
                 "parse_job",
                 lazy_fixture("cron_job_dict"),
-                {},
                 assert_job_equal,
                 lazy_fixture("bg_cron_job"),
             ),
             (
                 "parse_job",
                 lazy_fixture("interval_job_dict"),
-                {},
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
             ),
         ],
     )
-    def test_parse_specific(self, method, data, kwargs, assertion, expected):
-        parser = SchemaParser()
-        actual = getattr(parser, method)(data, **kwargs)
+    def test_single_specific(self, method, data, assertion, expected):
+        actual = getattr(SchemaParser, method)(data, from_string=False)
         assertion(expected, actual)
+
+    def test_single_specific_from_string(self):
+        assert_system_equal(SchemaParser.parse_system("{}", from_string=True), System())
 
     @pytest.mark.parametrize(
         "data,kwargs",
         [
             (lazy_fixture("patch_dict"), {}),
             (lazy_fixture("patch_dict"), {"many": False}),
-            (lazy_fixture("patch_no_envelop_dict"), {}),
+            (lazy_fixture("patch_dict_no_envelop"), {}),
         ],
     )
-    def test_parse_patch(self, bg_patch1, data, kwargs):
+    def test_patch(self, bg_patch, data, kwargs):
         parser = SchemaParser()
         actual = parser.parse_patch(data, **kwargs)[0]
-        assert_patch_equal(actual, bg_patch1)
+        assert_patch_equal(actual, bg_patch)
 
-    def test_parse_patch_many(self, patch_many_dict, bg_patch1, bg_patch2):
+    def test_patch_many(self, patch_many_dict, bg_patch, bg_patch2):
         parser = SchemaParser()
         patches = sorted(
             parser.parse_patch(patch_many_dict, many=True), key=lambda x: x.operation
         )
-        for index, patch in enumerate([bg_patch1, bg_patch2]):
+        for index, patch in enumerate([bg_patch, bg_patch2]):
             assert_patch_equal(patch, patches[index])
 
 
 class TestSerialize(object):
     @pytest.mark.parametrize(
-        "model,kwargs,expected",
+        "model,expected",
         [
-            (
-                lazy_fixture("bg_system"),
-                {"to_string": False},
-                lazy_fixture("system_dict"),
-            ),
-            (
-                lazy_fixture("bg_instance"),
-                {"to_string": False},
-                lazy_fixture("instance_dict"),
-            ),
-            (
-                lazy_fixture("bg_command"),
-                {"to_string": False},
-                lazy_fixture("command_dict"),
-            ),
-            (
-                lazy_fixture("bg_parameter"),
-                {"to_string": False},
-                lazy_fixture("parameter_dict"),
-            ),
-            (
-                lazy_fixture("bg_request"),
-                {"to_string": False},
-                lazy_fixture("request_dict"),
-            ),
-            (
-                lazy_fixture("bg_patch1"),
-                {"to_string": False},
-                lazy_fixture("patch_dict"),
-            ),
-            (
-                lazy_fixture("bg_logging_config"),
-                {"to_string": False},
-                lazy_fixture("logging_config_dict"),
-            ),
-            (
-                lazy_fixture("bg_event"),
-                {"to_string": False},
-                lazy_fixture("event_dict"),
-            ),
-            (
-                lazy_fixture("bg_queue"),
-                {"to_string": False},
-                lazy_fixture("queue_dict"),
-            ),
-            (
-                lazy_fixture("bg_principal"),
-                {"to_string": False},
-                lazy_fixture("principal_dict"),
-            ),
-            (lazy_fixture("bg_role"), {"to_string": False}, lazy_fixture("role_dict")),
-            (lazy_fixture("bg_job"), {"to_string": False}, lazy_fixture("job_dict")),
-            (
-                lazy_fixture("bg_cron_job"),
-                {"to_string": False},
-                lazy_fixture("cron_job_dict"),
-            ),
-            (
-                lazy_fixture("bg_interval_job"),
-                {"to_string": False},
-                lazy_fixture("interval_job_dict"),
-            ),
+            (lazy_fixture("bg_system"), lazy_fixture("system_dict")),
+            (lazy_fixture("bg_instance"), lazy_fixture("instance_dict")),
+            (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
+            (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
+            (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
+            (lazy_fixture("bg_patch"), lazy_fixture("patch_dict")),
+            (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
+            (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
+            (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
+            (lazy_fixture("bg_principal"), lazy_fixture("principal_dict")),
+            (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
+            (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
+            (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
         ],
     )
-    def test_serialize(self, model, kwargs, expected):
-        assert SchemaParser.serialize(model, **kwargs) == expected
+    def test_single(self, model, expected):
+        assert SchemaParser.serialize(model, to_string=False) == expected
 
     @pytest.mark.parametrize(
-        "method,data,kwargs,expected",
+        "method,data,expected",
         [
             (
                 "serialize_system",
                 lazy_fixture("bg_system"),
-                {"to_string": False},
                 lazy_fixture("system_dict"),
             ),
             (
                 "serialize_instance",
                 lazy_fixture("bg_instance"),
-                {"to_string": False},
                 lazy_fixture("instance_dict"),
             ),
             (
                 "serialize_command",
                 lazy_fixture("bg_command"),
-                {"to_string": False},
                 lazy_fixture("command_dict"),
             ),
             (
                 "serialize_parameter",
                 lazy_fixture("bg_parameter"),
-                {"to_string": False},
                 lazy_fixture("parameter_dict"),
             ),
             (
                 "serialize_request",
                 lazy_fixture("bg_request"),
-                {"to_string": False},
                 lazy_fixture("request_dict"),
             ),
-            (
-                "serialize_patch",
-                lazy_fixture("bg_patch1"),
-                {"to_string": False},
-                lazy_fixture("patch_dict"),
-            ),
+            ("serialize_patch", lazy_fixture("bg_patch"), lazy_fixture("patch_dict")),
             (
                 "serialize_logging_config",
                 lazy_fixture("bg_logging_config"),
-                {"to_string": False},
                 lazy_fixture("logging_config_dict"),
             ),
-            (
-                "serialize_event",
-                lazy_fixture("bg_event"),
-                {"to_string": False},
-                lazy_fixture("event_dict"),
-            ),
-            (
-                "serialize_queue",
-                lazy_fixture("bg_queue"),
-                {"to_string": False},
-                lazy_fixture("queue_dict"),
-            ),
+            ("serialize_event", lazy_fixture("bg_event"), lazy_fixture("event_dict")),
+            ("serialize_queue", lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
             (
                 "serialize_principal",
                 lazy_fixture("bg_principal"),
-                {"to_string": False},
                 lazy_fixture("principal_dict"),
             ),
-            (
-                "serialize_role",
-                lazy_fixture("bg_role"),
-                {"to_string": False},
-                lazy_fixture("role_dict"),
-            ),
-            (
-                "serialize_job",
-                lazy_fixture("bg_job"),
-                {"to_string": False},
-                lazy_fixture("job_dict"),
-            ),
+            ("serialize_role", lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            ("serialize_job", lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (
                 "serialize_job",
                 lazy_fixture("bg_cron_job"),
-                {"to_string": False},
                 lazy_fixture("cron_job_dict"),
             ),
             (
                 "serialize_job",
                 lazy_fixture("bg_interval_job"),
-                {"to_string": False},
                 lazy_fixture("interval_job_dict"),
             ),
         ],
     )
-    def test_serialize_specific(self, method, data, kwargs, expected):
-        parser = SchemaParser()
-        actual = getattr(parser, method)(data, **kwargs)
+    def test_single_specific(self, method, data, expected):
+        actual = getattr(SchemaParser, method)(data, to_string=False)
         assert actual == expected
+
+    @pytest.mark.parametrize(
+        "model,expected",
+        [
+            (lazy_fixture("bg_system"), lazy_fixture("system_dict")),
+            (lazy_fixture("bg_instance"), lazy_fixture("instance_dict")),
+            (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
+            (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
+            (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
+            (lazy_fixture("bg_patch"), lazy_fixture("patch_dict")),
+            (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
+            (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
+            (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
+            (lazy_fixture("bg_principal"), lazy_fixture("principal_dict")),
+            (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
+            (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
+            (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
+        ],
+    )
+    def test_many(self, model, expected):
+        assert SchemaParser.serialize([model] * 2, to_string=False) == [expected] * 2
+
+    def test_double_nested(self, bg_system, system_dict):
+        model_list = [bg_system, [bg_system, bg_system]]
+        expected = [system_dict, [system_dict, system_dict]]
+        assert SchemaParser.serialize(model_list, to_string=False) == expected
 
     @pytest.mark.parametrize(
         "keys,excludes",
         [(["commands"], ()), (["commands", "icon_name"], ("icon_name",))],
     )
-    def test_serialize_excludes(self, bg_system, system_dict, keys, excludes):
+    def test_excludes(self, bg_system, system_dict, keys, excludes):
         for key in keys:
             system_dict.pop(key)
 
-        parser = SchemaParser()
-        actual = parser.serialize_system(
+        actual = SchemaParser.serialize_system(
             bg_system, to_string=False, include_commands=False, exclude=excludes
         )
         assert actual == system_dict
+
+
+class TestRoundTrip(object):
+    @pytest.mark.parametrize(
+        "model,assertion,data",
+        [
+            (brewtils.models.System, assert_system_equal, lazy_fixture("bg_system")),
+            (
+                brewtils.models.Instance,
+                assert_instance_equal,
+                lazy_fixture("bg_instance"),
+            ),
+            (brewtils.models.Command, assert_command_equal, lazy_fixture("bg_command")),
+            (
+                brewtils.models.Parameter,
+                assert_parameter_equal,
+                lazy_fixture("bg_parameter"),
+            ),
+            (brewtils.models.Request, assert_request_equal, lazy_fixture("bg_request")),
+            (
+                brewtils.models.LoggingConfig,
+                assert_logging_config_equal,
+                lazy_fixture("bg_logging_config"),
+            ),
+            (brewtils.models.Event, assert_event_equal, lazy_fixture("bg_event")),
+            (brewtils.models.Queue, assert_queue_equal, lazy_fixture("bg_queue")),
+            (
+                brewtils.models.Principal,
+                assert_principal_equal,
+                lazy_fixture("bg_principal"),
+            ),
+            (brewtils.models.Role, assert_role_equal, lazy_fixture("bg_role")),
+            (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_job")),
+            (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_cron_job")),
+            (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_interval_job")),
+        ],
+    )
+    def test_parsed_start(self, model, assertion, data):
+        assertion(
+            SchemaParser.parse(
+                SchemaParser.serialize(data, to_string=False), model, from_string=False
+            ),
+            data,
+        )
+
+    @pytest.mark.parametrize(
+        "model,data",
+        [
+            (brewtils.models.System, lazy_fixture("system_dict")),
+            (brewtils.models.Instance, lazy_fixture("instance_dict")),
+            (brewtils.models.Command, lazy_fixture("command_dict")),
+            (brewtils.models.Parameter, lazy_fixture("parameter_dict")),
+            (brewtils.models.Request, lazy_fixture("request_dict")),
+            (brewtils.models.LoggingConfig, lazy_fixture("logging_config_dict")),
+            (brewtils.models.Event, lazy_fixture("event_dict")),
+            (brewtils.models.Queue, lazy_fixture("queue_dict")),
+            (brewtils.models.Principal, lazy_fixture("principal_dict")),
+            (brewtils.models.Role, lazy_fixture("role_dict")),
+            (brewtils.models.Job, lazy_fixture("job_dict")),
+            (brewtils.models.Job, lazy_fixture("cron_job_dict")),
+            (brewtils.models.Job, lazy_fixture("interval_job_dict")),
+        ],
+    )
+    def test_serialized_start(self, model, data):
+        assert (
+            SchemaParser.serialize(
+                SchemaParser.parse(data, model, from_string=False), to_string=False
+            )
+            == data
+        )
 
 
 def test_deprecation():

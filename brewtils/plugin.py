@@ -559,7 +559,8 @@ class Plugin(object):
         # trying to call a function on self. In both cases the function object
         # is bound... think it has something to do with our decorators
         args = [self] if target is self else []
-        return getattr(target, request.command)(*args, **request.parameters)
+        kwargs = request.parameters or {}
+        return getattr(target, request.command)(*args, **kwargs)
 
     def _update_request(self, request, headers):
         """Sends a Request update to beer-garden

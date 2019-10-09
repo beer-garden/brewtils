@@ -738,6 +738,14 @@ class TestInvokeCommand(object):
         plugin._invoke_command(client, request)
         client.command.assert_called_once_with(**request.parameters)
 
+    def test_invoke_request_none_parameters(self, plugin, client):
+        request = Request(
+            system="test_system", system_version="1.0.0", command="command"
+        )
+
+        plugin._invoke_command(client, request)
+        client.command.assert_called_once_with()
+
     @pytest.mark.parametrize(
         "command", ["foo", "_commands"]  # Missing attribute  # Non-callable attribute
     )

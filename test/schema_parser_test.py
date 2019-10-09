@@ -385,6 +385,18 @@ class TestSerialize(object):
         )
         assert actual == system_dict
 
+    @pytest.mark.parametrize("kwargs", [{}, {"many": False}])
+    def test_patch(self, patch_dict, bg_patch, kwargs):
+        actual = SchemaParser.serialize_patch(bg_patch, to_string=False, **kwargs)
+        assert actual == patch_dict
+
+    @pytest.mark.xfail
+    def test_patch_many(self, patch_many_dict, bg_patch, bg_patch2):
+        actual = SchemaParser.serialize_patch(
+            [bg_patch, bg_patch2], to_string=False, many=True
+        )
+        assert actual == patch_many_dict
+
 
 class TestRoundTrip(object):
     @pytest.mark.parametrize(

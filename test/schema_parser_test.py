@@ -242,6 +242,186 @@ class TestParse(object):
         assert_system_equal(SchemaParser.parse_system("{}", from_string=True), System())
 
     @pytest.mark.parametrize(
+        "model,data,assertion,expected",
+        [
+            (brewtils.models.System, {}, assert_system_equal, System()),
+            (
+                brewtils.models.System,
+                lazy_fixture("system_dict"),
+                assert_system_equal,
+                lazy_fixture("bg_system"),
+            ),
+            (
+                brewtils.models.Instance,
+                lazy_fixture("instance_dict"),
+                assert_instance_equal,
+                lazy_fixture("bg_instance"),
+            ),
+            (
+                brewtils.models.Command,
+                lazy_fixture("command_dict"),
+                assert_command_equal,
+                lazy_fixture("bg_command"),
+            ),
+            (
+                brewtils.models.Parameter,
+                lazy_fixture("parameter_dict"),
+                assert_parameter_equal,
+                lazy_fixture("bg_parameter"),
+            ),
+            (
+                brewtils.models.Request,
+                lazy_fixture("request_dict"),
+                assert_request_equal,
+                lazy_fixture("bg_request"),
+            ),
+            (
+                brewtils.models.LoggingConfig,
+                lazy_fixture("logging_config_dict"),
+                assert_logging_config_equal,
+                lazy_fixture("bg_logging_config"),
+            ),
+            (
+                brewtils.models.Event,
+                lazy_fixture("event_dict"),
+                assert_event_equal,
+                lazy_fixture("bg_event"),
+            ),
+            (
+                brewtils.models.Queue,
+                lazy_fixture("queue_dict"),
+                assert_queue_equal,
+                lazy_fixture("bg_queue"),
+            ),
+            (
+                brewtils.models.Principal,
+                lazy_fixture("principal_dict"),
+                assert_principal_equal,
+                lazy_fixture("bg_principal"),
+            ),
+            (
+                brewtils.models.Role,
+                lazy_fixture("role_dict"),
+                assert_role_equal,
+                lazy_fixture("bg_role"),
+            ),
+            (
+                brewtils.models.Job,
+                lazy_fixture("job_dict"),
+                assert_job_equal,
+                lazy_fixture("bg_job"),
+            ),
+            (
+                brewtils.models.Job,
+                lazy_fixture("cron_job_dict"),
+                assert_job_equal,
+                lazy_fixture("bg_cron_job"),
+            ),
+            (
+                brewtils.models.Job,
+                lazy_fixture("interval_job_dict"),
+                assert_job_equal,
+                lazy_fixture("bg_interval_job"),
+            ),
+        ],
+    )
+    def test_many(self, model, data, assertion, expected):
+        parsed = SchemaParser.parse([data] * 2, model, from_string=False, many=True)
+
+        for parsed_model in parsed:
+            assertion(parsed_model, expected)
+
+    @pytest.mark.parametrize(
+        "method,data,assertion,expected",
+        [
+            ("parse_system", {}, assert_system_equal, System()),
+            (
+                "parse_system",
+                lazy_fixture("system_dict"),
+                assert_system_equal,
+                lazy_fixture("bg_system"),
+            ),
+            (
+                "parse_instance",
+                lazy_fixture("instance_dict"),
+                assert_instance_equal,
+                lazy_fixture("bg_instance"),
+            ),
+            (
+                "parse_command",
+                lazy_fixture("command_dict"),
+                assert_command_equal,
+                lazy_fixture("bg_command"),
+            ),
+            (
+                "parse_parameter",
+                lazy_fixture("parameter_dict"),
+                assert_parameter_equal,
+                lazy_fixture("bg_parameter"),
+            ),
+            (
+                "parse_request",
+                lazy_fixture("request_dict"),
+                assert_request_equal,
+                lazy_fixture("bg_request"),
+            ),
+            (
+                "parse_logging_config",
+                lazy_fixture("logging_config_dict"),
+                assert_logging_config_equal,
+                lazy_fixture("bg_logging_config"),
+            ),
+            (
+                "parse_event",
+                lazy_fixture("event_dict"),
+                assert_event_equal,
+                lazy_fixture("bg_event"),
+            ),
+            (
+                "parse_queue",
+                lazy_fixture("queue_dict"),
+                assert_queue_equal,
+                lazy_fixture("bg_queue"),
+            ),
+            (
+                "parse_principal",
+                lazy_fixture("principal_dict"),
+                assert_principal_equal,
+                lazy_fixture("bg_principal"),
+            ),
+            (
+                "parse_role",
+                lazy_fixture("role_dict"),
+                assert_role_equal,
+                lazy_fixture("bg_role"),
+            ),
+            (
+                "parse_job",
+                lazy_fixture("job_dict"),
+                assert_job_equal,
+                lazy_fixture("bg_job"),
+            ),
+            (
+                "parse_job",
+                lazy_fixture("cron_job_dict"),
+                assert_job_equal,
+                lazy_fixture("bg_cron_job"),
+            ),
+            (
+                "parse_job",
+                lazy_fixture("interval_job_dict"),
+                assert_job_equal,
+                lazy_fixture("bg_interval_job"),
+            ),
+        ],
+    )
+    def test_many_specific(self, method, data, assertion, expected):
+        parsed = getattr(SchemaParser, method)([data] * 2, from_string=False, many=True)
+
+        for parsed_model in parsed:
+            assertion(parsed_model, expected)
+
+    @pytest.mark.parametrize(
         "data,kwargs",
         [
             (lazy_fixture("patch_dict"), {}),
@@ -250,17 +430,17 @@ class TestParse(object):
         ],
     )
     def test_patch(self, bg_patch, data, kwargs):
-        parser = SchemaParser()
-        actual = parser.parse_patch(data, **kwargs)[0]
-        assert_patch_equal(actual, bg_patch)
+        """Parametrize for the 'many' kwarg because the parser should ignore it"""
+        assert_patch_equal(SchemaParser.parse_patch(data, **kwargs)[0], bg_patch)
 
-    def test_patch_many(self, patch_many_dict, bg_patch, bg_patch2):
-        parser = SchemaParser()
-        patches = sorted(
-            parser.parse_patch(patch_many_dict, many=True), key=lambda x: x.operation
-        )
+    @pytest.mark.parametrize("kwargs", [{}, {"many": True}, {"many": False}])
+    def test_patch_many(self, patch_many_dict, bg_patch, bg_patch2, kwargs):
+        """Parametrize for the 'many' kwarg because the parser should ignore it"""
+        patches = SchemaParser.parse_patch(patch_many_dict, **kwargs)
+        sorted_patches = sorted(patches, key=lambda x: x.operation)
+
         for index, patch in enumerate([bg_patch, bg_patch2]):
-            assert_patch_equal(patch, patches[index])
+            assert_patch_equal(patch, sorted_patches[index])
 
 
 class TestSerialize(object):

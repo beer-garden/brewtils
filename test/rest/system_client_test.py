@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import logging
 import warnings
 from concurrent.futures import wait
 
@@ -91,7 +91,7 @@ def easy_client_patch(monkeypatch, easy_client):
     )
 
 
-class TestSystemClient(object):
+class TestLoadBgSystem(object):
     def test_lazy_system_loading(self, client):
         assert client._loaded is False
         assert client._system is None
@@ -118,7 +118,7 @@ class TestSystemClient(object):
             pytest.param("1.0.0", None, marks=pytest.mark.xfail(raises=FetchError)),
         ],
     )
-    def test_load_bg_system(self, client, easy_client, system_1, constraint, systems):
+    def test_normal(self, client, easy_client, system_1, constraint, systems):
         client._version_constraint = constraint
         easy_client.find_unique_system.return_value = systems
 
@@ -126,51 +126,69 @@ class TestSystemClient(object):
         assert client._loaded is True
         assert client._system == system_1
 
-    def test_load_bg_system_no_constraint_failure(self, client, easy_client):
+    def test_no_constraint_failure(self, client, easy_client):
         easy_client.find_systems.return_value = []
         with pytest.raises(FetchError):
             client.load_bg_system()
 
-    def test_load_bg_system_latest(self, client, easy_client, system_1, system_2):
+    def test_latest(self, client, easy_client, system_1, system_2):
         easy_client.find_systems.return_value = [system_1, system_2]
 
         client.load_bg_system()
         assert client._system == system_2
 
-    def test_create_request_no_context(self, client, easy_client, mock_success):
+    def test_always_update(self, client, easy_client, mock_success):
+        client._always_update = True
+        client.load_bg_system()
         easy_client.create_request.return_value = mock_success
 
-        client.command_1()
-        assert easy_client.create_request.call_args[0][0].parent is None
+        load_mock = Mock()
+        client.load_bg_system = load_mock
 
-    @pytest.mark.parametrize(
-        "context,expected",
-        [
-            (None, None),
-            (Mock(current_request=None), None),
-            (
-                Mock(current_request=Mock(id="1"), bg_host="localhost", bg_port=3000),
-                "1",
-            ),
-            (
-                Mock(current_request=Mock(id="1"), bg_host="OTHER_BG", bg_port=3000),
-                None,
-            ),
-        ],
-    )
-    def test_create_request_context(
-        self, monkeypatch, client, easy_client, mock_success, context, expected
-    ):
+        client.command_1()
+        assert load_mock.called is True
+
+
+class TestCreateRequest(object):
+    @pytest.mark.parametrize("context", [None, Mock(current_request=None)])
+    def test_no_context(self, monkeypatch, client, easy_client, mock_success, context):
         easy_client.create_request.return_value = mock_success
         monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
 
         client.command_1()
-        parent = easy_client.create_request.call_args[0][0].parent
 
-        if expected is None:
-            assert parent is None
-        else:
-            assert parent.id == expected
+        parent = easy_client.create_request.call_args[0][0].parent
+        assert parent is None
+
+    def test_good_context(
+        self, monkeypatch, client, easy_client, mock_success, parent_request
+    ):
+        easy_client.create_request.return_value = mock_success
+
+        context = Mock(
+            current_request=parent_request, bg_host="localhost", bg_port=3000
+        )
+        monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
+
+        client.command_1()
+
+        parent = easy_client.create_request.call_args[0][0].parent
+        assert parent.id == parent_request.id
+
+    def test_bad_context(
+        self, monkeypatch, caplog, client, easy_client, mock_success, parent_request
+    ):
+        easy_client.create_request.return_value = mock_success
+
+        context = Mock(current_request=parent_request, bg_host="OTHER", bg_port=3000)
+        monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
+
+        client.command_1()
+
+        parent = easy_client.create_request.call_args[0][0].parent
+        assert parent is None
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelno == logging.WARNING
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -181,14 +199,14 @@ class TestSystemClient(object):
             ({"_command": "", "_system_name": "", "_system_version": ""}),
         ],
     )
-    def test_create_request_missing_fields(self, client, kwargs):
+    def test_missing_fields(self, client, kwargs):
         with pytest.raises(ValidationError):
             client._construct_bg_request(**kwargs)
 
+
+class TestExecute(object):
     @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_command_1(
-        self, client, easy_client, mock_success, mock_in_progress
-    ):
+    def test_command_1(self, client, easy_client, mock_success, mock_in_progress):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
@@ -199,7 +217,7 @@ class TestSystemClient(object):
         assert request.output == mock_success.output
 
     @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_command_1_error_raise(self, client, easy_client, mock_error):
+    def test_error_raise(self, client, easy_client, mock_error):
         easy_client.create_request.return_value = mock_error
 
         with pytest.raises(RequestFailedError) as ex:
@@ -209,21 +227,7 @@ class TestSystemClient(object):
         assert ex.value.request.output == mock_error.output
 
     @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_command_1_error_raise_future(
-        self, client, easy_client, mock_error
-    ):
-        easy_client.create_request.return_value = mock_error
-
-        future = client.command_1(_blocking=False, _raise_on_error=True)
-
-        with pytest.raises(RequestFailedError) as ex:
-            future.result()
-
-        assert ex.value.request.status == mock_error.status
-        assert ex.value.request.output == mock_error.output
-
-    @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_command_1_error(self, client, easy_client, mock_error):
+    def test_error_no_raise(self, client, easy_client, mock_error):
         easy_client.create_request.return_value = mock_error
 
         request = client.command_1(_raise_on_error=False)
@@ -231,7 +235,7 @@ class TestSystemClient(object):
         assert request.status == mock_error.status
         assert request.output == mock_error.output
 
-    def test_execute_command_with_delays(
+    def test_delays(
         self, client, easy_client, sleep_patch, mock_success, mock_in_progress
     ):
         easy_client.create_request.return_value = mock_in_progress
@@ -246,7 +250,7 @@ class TestSystemClient(object):
         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(2.0)])
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
 
-    def test_execute_with_max_delay(
+    def test_max_delay(
         self, client, easy_client, mock_success, mock_in_progress, sleep_patch
     ):
         easy_client.create_request.return_value = mock_in_progress
@@ -263,7 +267,7 @@ class TestSystemClient(object):
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
 
     @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_with_timeout(self, client, easy_client, mock_in_progress):
+    def test_timeout(self, client, easy_client, mock_in_progress):
         easy_client.create_request.return_value = mock_in_progress
         easy_client.find_unique_request.return_value = mock_in_progress
 
@@ -273,62 +277,6 @@ class TestSystemClient(object):
         with pytest.raises(TimeoutExceededError):
             future.result()
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-
-    @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_non_blocking_command_1(
-        self, client, easy_client, mock_success, mock_in_progress
-    ):
-        easy_client.find_unique_request.return_value = mock_success
-        easy_client.create_request.return_value = mock_in_progress
-
-        request = client.command_1(_blocking=False).result()
-
-        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-        assert request.status == mock_success.status
-        assert request.output == mock_success.output
-
-    @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_non_blocking_multiple_commands(
-        self, client, easy_client, mock_success, mock_in_progress
-    ):
-        easy_client.find_unique_request.return_value = mock_success
-        easy_client.create_request.return_value = mock_in_progress
-
-        futures = [client.command_1(_blocking=False) for _ in range(3)]
-        wait(futures)
-
-        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-        for future in futures:
-            result = future.result()
-            assert result.status == mock_success.status
-            assert result.output == mock_success.output
-
-    @pytest.mark.usefixtures("sleep_patch")
-    def test_execute_non_blocking_multiple_commands_timeout(
-        self, client, easy_client, mock_in_progress
-    ):
-        easy_client.find_unique_request.return_value = mock_in_progress
-        easy_client.create_request.return_value = mock_in_progress
-
-        client._timeout = 1
-        futures = [client.command_1(_blocking=False) for _ in range(3)]
-        wait(futures)
-
-        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-        for future in futures:
-            with pytest.raises(TimeoutExceededError):
-                future.result()
-
-    def test_always_update(self, client, easy_client, mock_success):
-        client._always_update = True
-        client.load_bg_system()
-        easy_client.create_request.return_value = mock_success
-
-        load_mock = Mock()
-        client.load_bg_system = load_mock
-
-        client.command_1()
-        assert load_mock.called is True
 
     def test_retry_send_no_different_version(self, client, easy_client):
         easy_client.create_request.side_effect = ValidationError
@@ -349,24 +297,80 @@ class TestSystemClient(object):
         assert client._system.version == "2.0.0"
         assert easy_client.create_request.call_count == 2
 
-    @pytest.mark.parametrize(
-        "latest,versions",
-        [
-            ("1.0.0", ["1.0.0"]),
-            ("2.0.0", ["1.0.0", "2.0.0"]),
-            ("1.2.0", ["1.0.0", "1.2.0"]),
-            ("1.0.0", ["1.0.0", "0.2.1rc1"]),
-            ("1.0.0rc1", ["1.0.0rc1", "0.2.1"]),
-            ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
-            ("1.0", ["1.0", "0.2.1"]),
-            ("1.0.0", ["1.0.0rc1", "1.0.0"]),
-            ("b", ["a", "b"]),
-            ("1.0.0", ["a", "b", "1.0.0"]),
-        ],
-    )
-    def test_determine_latest(self, client, versions, latest):
-        systems = [Mock(version=version) for version in versions]
-        assert client._determine_latest(systems).version == latest
+
+class TestExecuteNonBlocking(object):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_command_1(self, client, easy_client, mock_success, mock_in_progress):
+        easy_client.find_unique_request.return_value = mock_success
+        easy_client.create_request.return_value = mock_in_progress
+
+        request = client.command_1(_blocking=False).result()
+
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+        assert request.status == mock_success.status
+        assert request.output == mock_success.output
+
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_multiple_commands(
+        self, client, easy_client, mock_success, mock_in_progress
+    ):
+        easy_client.find_unique_request.return_value = mock_success
+        easy_client.create_request.return_value = mock_in_progress
+
+        futures = [client.command_1(_blocking=False) for _ in range(3)]
+        wait(futures)
+
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+        for future in futures:
+            result = future.result()
+            assert result.status == mock_success.status
+            assert result.output == mock_success.output
+
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_multiple_commands_timeout(self, client, easy_client, mock_in_progress):
+        easy_client.find_unique_request.return_value = mock_in_progress
+        easy_client.create_request.return_value = mock_in_progress
+
+        client._timeout = 1
+        futures = [client.command_1(_blocking=False) for _ in range(3)]
+        wait(futures)
+
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+        for future in futures:
+            with pytest.raises(TimeoutExceededError):
+                future.result()
+
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_error_raise(self, client, easy_client, mock_error):
+        easy_client.create_request.return_value = mock_error
+
+        future = client.command_1(_blocking=False, _raise_on_error=True)
+
+        with pytest.raises(RequestFailedError) as ex:
+            future.result()
+
+        assert ex.value.request.status == mock_error.status
+        assert ex.value.request.output == mock_error.output
+
+
+@pytest.mark.parametrize(
+    "latest,versions",
+    [
+        ("1.0.0", ["1.0.0"]),
+        ("2.0.0", ["1.0.0", "2.0.0"]),
+        ("1.2.0", ["1.0.0", "1.2.0"]),
+        ("1.0.0", ["1.0.0", "0.2.1rc1"]),
+        ("1.0.0rc1", ["1.0.0rc1", "0.2.1"]),
+        ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
+        ("1.0", ["1.0", "0.2.1"]),
+        ("1.0.0", ["1.0.0rc1", "1.0.0"]),
+        ("b", ["a", "b"]),
+        ("1.0.0", ["a", "b", "1.0.0"]),
+    ],
+)
+def test_determine_latest(client, versions, latest):
+    systems = [Mock(version=version) for version in versions]
+    assert client._determine_latest(systems).version == latest
 
 
 class TestBrewmasterSystemClient(object):

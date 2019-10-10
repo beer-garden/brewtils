@@ -113,19 +113,8 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A PatchOperation object
         """
-        if not kwargs.pop("many", True):
-            cls.logger.warning(
-                "A patch object should always be wrapped as a list of objects. "
-                "Thus, parsing will always return a list. You specified many as "
-                "False, this is being ignored and a list "
-                "will be returned anyway."
-            )
         return cls.parse(
-            patch,
-            brewtils.models.PatchOperation,
-            from_string=from_string,
-            many=True,
-            **kwargs
+            patch, brewtils.models.PatchOperation, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -252,6 +241,16 @@ class SchemaParser(object):
         """
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
+
+        if model_class == brewtils.models.PatchOperation:
+            if not kwargs.get("many", True):
+                cls.logger.warning(
+                    "A patch object should always be wrapped as a list of objects. "
+                    "Thus, parsing will always return a list. You specified many as "
+                    "False, this is being ignored and a list "
+                    "will be returned anyway."
+                )
+            kwargs["many"] = True
 
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
         schema.context["models"] = cls._models

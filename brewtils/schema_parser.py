@@ -121,26 +121,15 @@ class SchemaParser(object):
     def parse_logging_config(cls, logging_config, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a logging config model object
 
-        Note: for our logging_config, many is _always_ set to False. We will always
-        return a dict from this method.
-
         :param logging_config: The raw input
         :param from_string: True if 'input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A LoggingConfig object
         """
-        if kwargs.pop("many", False):
-            cls.logger.warning(
-                "A logging config object should never be wrapped as a list of "
-                "objects. Thus, parsing will always return a dict. You specified "
-                "many as True, this is being ignored and a dict will be returned "
-                "anyway."
-            )
         return cls.parse(
             logging_config,
             brewtils.models.LoggingConfig,
             from_string=from_string,
-            many=False,
             **kwargs
         )
 

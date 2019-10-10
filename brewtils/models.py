@@ -7,6 +7,7 @@ import six
 from brewtils.errors import RequestStatusTransitionError
 
 __all__ = [
+    "BaseModel",
     "System",
     "Instance",
     "Command",

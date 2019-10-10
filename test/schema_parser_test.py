@@ -472,6 +472,27 @@ class TestRoundTrip(object):
             == data
         )
 
+    def test_patch_model_start(self, bg_patch):
+        """Patches are always parsed into a list, so they need a tweak to test"""
+        parsed = SchemaParser.parse(
+            SchemaParser.serialize(bg_patch, to_string=False),
+            brewtils.models.PatchOperation,
+            from_string=False,
+        )
+
+        assert len(parsed) == 1
+        assert_patch_equal(parsed[0], bg_patch)
+
+    def test_patch_serialized_start(self, patch_dict_no_envelop):
+        """Patches are always parsed into a list, so they need a tweak to test"""
+        serialized = SchemaParser.serialize(
+            SchemaParser.parse_patch(patch_dict_no_envelop, from_string=False),
+            to_string=False,
+        )
+
+        assert len(serialized) == 1
+        assert serialized[0] == patch_dict_no_envelop
+
 
 def test_deprecation():
     with warnings.catch_warnings(record=True) as w:

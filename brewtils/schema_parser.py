@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import json
 import logging
 import warnings
 
@@ -113,45 +113,23 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A PatchOperation object
         """
-        if not kwargs.pop("many", True):
-            cls.logger.warning(
-                "A patch object should always be wrapped as a list of objects. "
-                "Thus, parsing will always return a list. You specified many as "
-                "False, this is being ignored and a list "
-                "will be returned anyway."
-            )
         return cls.parse(
-            patch,
-            brewtils.models.PatchOperation,
-            from_string=from_string,
-            many=True,
-            **kwargs
+            patch, brewtils.models.PatchOperation, from_string=from_string, **kwargs
         )
 
     @classmethod
     def parse_logging_config(cls, logging_config, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a logging config model object
 
-        Note: for our logging_config, many is _always_ set to False. We will always
-        return a dict from this method.
-
         :param logging_config: The raw input
         :param from_string: True if 'input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: A LoggingConfig object
         """
-        if kwargs.pop("many", False):
-            cls.logger.warning(
-                "A logging config object should never be wrapped as a list of "
-                "objects. Thus, parsing will always return a dict. You specified "
-                "many as True, this is being ignored and a dict will be returned "
-                "anyway."
-            )
         return cls.parse(
             logging_config,
             brewtils.models.LoggingConfig,
             from_string=from_string,
-            many=False,
             **kwargs
         )
 
@@ -252,6 +230,16 @@ class SchemaParser(object):
         """
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
+
+        if model_class == brewtils.models.PatchOperation:
+            if not kwargs.get("many", True):
+                cls.logger.warning(
+                    "A patch object should always be wrapped as a list of objects. "
+                    "Thus, parsing will always return a list. You specified many as "
+                    "False, this is being ignored and a list "
+                    "will be returned anyway."
+                )
+            kwargs["many"] = True
 
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
         schema.context["models"] = cls._models
@@ -414,21 +402,31 @@ class SchemaParser(object):
 
     @classmethod
     def serialize(cls, model, to_string=False, **kwargs):
-        """Convert a model object into a dictionary or JSON string.
+        """Convert a model object or list of models into a dictionary or JSON string.
 
         Args:
-            model: The model
+            model: The model or model list
             to_string: True to generate a JSON string, False to generate a dictionary
-            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+            **kwargs: Additional parameters to be passed to the Schema.
+                Note that the 'many' parameter will be set correctly automatically.
 
         Returns:
             A serialized model representation
 
         """
-        # Use type(model) here because Command has an instance attribute named "schema"
-        schema = getattr(brewtils.schemas, type(model).schema)(**kwargs)
+        if isinstance(model, brewtils.models.BaseModel):
+            # At this point we know model is not an iterable, so force this to False
+            kwargs["many"] = False
 
-        return schema.dumps(model).data if to_string else schema.dump(model).data
+            # Use type() here because Command has an instance attribute named "schema"
+            schema = getattr(brewtils.schemas, type(model).schema)(**kwargs)
+
+            return schema.dumps(model).data if to_string else schema.dump(model).data
+
+        # Explicitly force to_string to False so only original call returns a string
+        multiple = [cls.serialize(x, to_string=False, **kwargs) for x in model]
+
+        return json.dumps(multiple) if to_string else multiple
 
 
 class BrewmasterSchemaParser(SchemaParser):

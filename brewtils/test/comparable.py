@@ -86,10 +86,16 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
 
     if expected_type is not None:
         _assert(
-            isinstance(obj1, expected_type), "obj1 was not an {0}".format(expected_type)
+            isinstance(obj1, expected_type),
+            "type mismatch for obj1: expected '{0}' but was '{1}'".format(
+                expected_type, type(obj1)
+            ),
         )
         _assert(
-            isinstance(obj2, expected_type), "obj2 was not an {0}".format(expected_type)
+            isinstance(obj2, expected_type),
+            "type mismatch for obj2: expected '{0}' but was '{1}'".format(
+                expected_type, type(obj2)
+            ),
         )
     _assert(type(obj1) is type(obj2), "obj1 and obj2 are not the same type.")
 

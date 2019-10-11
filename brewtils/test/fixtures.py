@@ -338,40 +338,39 @@ def bg_request(request_dict, parent_request, child_request, ts_dt):
 
 
 @pytest.fixture
-def patch_dict():
-    """A patch represented as a dictionary."""
-    return {
-        "operations": [{"operation": "replace", "path": "/status", "value": "RUNNING"}]
-    }
-
-
-@pytest.fixture
-def patch_many_dict():
-    """Multiple patches represented as a dictionary."""
-    return {
-        "operations": [
-            {"operation": "replace", "path": "/status", "value": "RUNNING"},
-            {"operation": "replace2", "path": "/status2", "value": "RUNNING2"},
-        ]
-    }
-
-
-@pytest.fixture
-def patch_no_envelop_dict():
+def patch_dict_no_envelop():
     """A patch without an envelope represented as a dictionary."""
     return {"operation": "replace", "path": "/status", "value": "RUNNING"}
 
 
 @pytest.fixture
-def bg_patch1(patch_many_dict):
-    """A patch as a model."""
-    return PatchOperation(**patch_many_dict["operations"][0])
+def patch_dict_no_envelop2():
+    """A patch without an envelope represented as a dictionary."""
+    return {"operation": "replace2", "path": "/status2", "value": "RUNNING2"}
 
 
 @pytest.fixture
-def bg_patch2(patch_many_dict):
+def patch_dict(patch_dict_no_envelop):
+    """A patch represented as a dictionary."""
+    return {"operations": [patch_dict_no_envelop]}
+
+
+@pytest.fixture
+def patch_many_dict(patch_dict_no_envelop, patch_dict_no_envelop2):
+    """Multiple patches represented as a dictionary."""
+    return {"operations": [patch_dict_no_envelop, patch_dict_no_envelop2]}
+
+
+@pytest.fixture
+def bg_patch(patch_dict_no_envelop):
     """A patch as a model."""
-    return PatchOperation(**patch_many_dict["operations"][1])
+    return PatchOperation(**patch_dict_no_envelop)
+
+
+@pytest.fixture
+def bg_patch2(patch_dict_no_envelop2):
+    """A patch as a model."""
+    return PatchOperation(**patch_dict_no_envelop2)
 
 
 @pytest.fixture

@@ -414,12 +414,13 @@ class SchemaParser(object):
             A serialized model representation
 
         """
-        if isinstance(model, brewtils.models.BaseModel):
-            # At this point we know model is not an iterable, so force this to False
+        schema_name = cls._get_schema_name(model)
+
+        if schema_name:
+            # At this point we know model is not an iterable
             kwargs["many"] = False
 
-            # Use type() here because Command has an instance attribute named "schema"
-            schema = getattr(brewtils.schemas, type(model).schema)(**kwargs)
+            schema = getattr(brewtils.schemas, schema_name)(**kwargs)
 
             return schema.dumps(model).data if to_string else schema.dump(model).data
 
@@ -427,6 +428,14 @@ class SchemaParser(object):
         multiple = [cls.serialize(x, to_string=False, **kwargs) for x in model]
 
         return json.dumps(multiple) if to_string else multiple
+
+    @staticmethod
+    def _get_schema_name(model):
+        if isinstance(model, brewtils.models.BaseModel):
+            # Use type() here because Command has an instance attribute named "schema"
+            return type(model).schema
+
+        return None
 
 
 class BrewmasterSchemaParser(SchemaParser):

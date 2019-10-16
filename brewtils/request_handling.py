@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import abc
 import json
 import logging
 import sys
+import threading
 from concurrent.futures.thread import ThreadPoolExecutor
 
 import six
-import threading
 from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.errors import (
@@ -177,8 +178,19 @@ class RequestProcessor(object):
             return str(output)
 
 
-class NoopUpdater(object):
-    """RequestUpdater implementation that doesn't actually update."""
+@six.add_metaclass(abc.ABCMeta)
+class RequestUpdater(object):
+    @abc.abstractmethod
+    def update_request(self, request, headers):
+        pass
+
+    @abc.abstractmethod
+    def shutdown(self):
+        pass
+
+
+class NoopUpdater(RequestUpdater):
+    """RequestUpdater implementation that explicitly does not update."""
 
     def __init__(self, *args, **kwargs):
         pass
@@ -190,7 +202,7 @@ class NoopUpdater(object):
         pass
 
 
-class EasyRequestUpdater(object):
+class EasyRequestUpdater(RequestUpdater):
     """RequestUpdater implementation based around an EasyClient.
 
     Args:

@@ -92,10 +92,7 @@ class RequestProcessor(object):
             # requests across different servers.
             import brewtils.plugin
 
-            # TODO: Figure out what to do about nested requests
             brewtils.plugin.request_context.current_request = request
-            brewtils.plugin.request_context.bg_host = ""
-            brewtils.plugin.request_context.bg_port = None
 
             output = self._invoke_command(target, request)
         except Exception as ex:

@@ -20,7 +20,13 @@ from brewtils.request_handling import EasyRequestUpdater, NoopUpdater, RequestPr
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
 
+# This is what enables request nesting to work easily
 request_context = threading.local()
+
+# These are not thread-locals - they should be set in the Plugin __init__ and then never
+# touched. This allows us to do sanity checks when creating nested Requests.
+host = ""
+port = None
 
 
 class Plugin(object):
@@ -156,6 +162,8 @@ class Plugin(object):
         bg_url_prefix=None,
         **kwargs
     ):
+        global host, port
+
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
         if logger or len(logging.getLogger(__name__).root.handlers) > 0:
@@ -178,6 +186,9 @@ class Plugin(object):
             password=kwargs.get("password", None),
             client_timeout=kwargs.get("client_timeout", None),
         )
+
+        host = connection_parameters["bg_host"]
+        port = connection_parameters["bg_port"]
 
         self.bg_host = connection_parameters["bg_host"]
         self.bg_port = connection_parameters["bg_port"]

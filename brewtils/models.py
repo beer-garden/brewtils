@@ -2,6 +2,7 @@
 
 from enum import Enum
 
+import pytz
 import six
 
 from brewtils.errors import RequestStatusTransitionError
@@ -837,6 +838,16 @@ class DateTrigger(BaseModel):
     def __repr__(self):
         return "<DateTrigger: run_date=%s>" % self.run_date
 
+    @property
+    def scheduler_attributes(self):
+        return ["run_date", "timezone"]
+
+    @property
+    def scheduler_kwargs(self):
+        tz = pytz.timezone(self.timezone)
+
+        return {"timezone": tz, "run_date": tz.localize(self.run_date)}
+
 
 class IntervalTrigger(BaseModel):
     schema = "IntervalTriggerSchema"
@@ -874,6 +885,36 @@ class IntervalTrigger(BaseModel):
             "minutes=%d, seconds=%d>"
             % (self.weeks, self.days, self.hours, self.minutes, self.seconds)
         )
+
+    @property
+    def scheduler_attributes(self):
+        return [
+            "weeks",
+            "days",
+            "hours",
+            "minutes",
+            "seconds",
+            "start_date",
+            "end_date",
+            "timezone",
+            "jitter",
+            "reschedule_on_finish",
+        ]
+
+    @property
+    def scheduler_kwargs(self):
+        tz = pytz.timezone(self.timezone)
+
+        kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
+        kwargs.update(
+            {
+                "timezone": tz,
+                "start_date": tz.localize(self.start_date) if self.start_date else None,
+                "end_date": tz.localize(self.start_date) if self.start_date else None,
+            }
+        )
+
+        return kwargs
 
 
 class CronTrigger(BaseModel):
@@ -918,3 +959,35 @@ class CronTrigger(BaseModel):
             self.month,
             self.day,
         )
+
+    @property
+    def scheduler_attributes(self):
+        return [
+            "year",
+            "month",
+            "day",
+            "week",
+            "day_of_week",
+            "hour",
+            "minute",
+            "second",
+            "start_date",
+            "end_date",
+            "timezone",
+            "jitter",
+        ]
+
+    @property
+    def scheduler_kwargs(self):
+        tz = pytz.timezone(self.timezone)
+
+        kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
+        kwargs.update(
+            {
+                "timezone": tz,
+                "start_date": tz.localize(self.start_date) if self.start_date else None,
+                "end_date": tz.localize(self.start_date) if self.start_date else None,
+            }
+        )
+
+        return kwargs

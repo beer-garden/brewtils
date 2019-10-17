@@ -45,6 +45,12 @@ def ts_dt():
 
 
 @pytest.fixture
+def ts_dt_utc():
+    """Timezone-aware datetime (UTC)."""
+    return datetime(2016, 1, 1, tzinfo=pytz.utc)
+
+
+@pytest.fixture
 def ts_dt_with_tz():
     """Timezone-aware datetime (US/Eastern)."""
     return datetime(2016, 1, 1, tzinfo=pytz.timezone("US/Eastern"))

@@ -267,6 +267,11 @@ class TestRequest(object):
         request1.output_type = "JSON"
         assert request1.is_json
 
+    def test_from_template(self, bg_request_template):
+        request = Request.from_template(bg_request_template)
+        for key in bg_request_template.__dict__:
+            assert getattr(request, key) == getattr(bg_request_template, key)
+
 
 class TestSystem(object):
     @pytest.fixture

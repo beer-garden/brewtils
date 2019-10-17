@@ -381,6 +381,18 @@ class Request(RequestTemplate):
         self.has_parent = has_parent
         self.requester = requester
 
+    @classmethod
+    def from_template(cls, template):
+        return Request(
+            system=template.system,
+            system_version=template.system_version,
+            instance_name=template.instance_name,
+            command=template.command,
+            parameters=template.parameters,
+            comment=template.comment,
+            metadata=template.metadata,
+        )
+
     def __repr__(self):
         return (
             "<Request: command=%s, status=%s, system=%s, system_version=%s, "

@@ -39,7 +39,6 @@ class TestParse(object):
             ("bad bad bad", {"from_string": True}, ValueError),
             (["list", "is", "bad"], {"from_string": True}, TypeError),
             ({"bad": "bad bad"}, {"from_string": True}, TypeError),
-            ({"name": None}, {}, MarshmallowError),
             ("bad bad bad", {}, MarshmallowError),
         ],
     )
@@ -48,7 +47,7 @@ class TestParse(object):
             SchemaParser.parse_system(data, **kwargs)
 
     def test_non_strict_failure(self, system_dict):
-        system_dict["name"] = None
+        system_dict["name"] = 1234
         value = SchemaParser.parse_system(system_dict, from_string=False, strict=False)
         assert value.get("name") is None
         assert value["version"] == system_dict["version"]

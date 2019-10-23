@@ -13,6 +13,7 @@ from brewtils.errors import (
     ConflictError,
     DiscardMessageException,
     RequestProcessingError,
+    RestConnectionError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System, Command
@@ -441,9 +442,14 @@ class TestAdminMethods(object):
         assert plugin.instance == new_instance
         assert plugin.shutdown_event.is_set() is True
 
-    def test_status(self, plugin, updater_mock):
+    def test_status(self, plugin, bm_client):
         plugin._status()
-        updater_mock.update_status.assert_called_once_with(plugin.instance.id)
+        bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
+
+    def test_status_failure(self, plugin, bm_client):
+        bm_client.instance_heartbeat.side_effect = RestConnectionError()
+        plugin._status()
+        bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
 
 class TestValidationFunctions(object):

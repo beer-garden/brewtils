@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-
 import logging
 import logging.config
 import os
 import threading
+
+from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.errors import (
@@ -12,6 +13,7 @@ from brewtils.errors import (
     ValidationError,
     DiscardMessageException,
     RequestProcessingError,
+    RestConnectionError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System
@@ -458,7 +460,10 @@ class Plugin(object):
 
     def _status(self):
         """Handle status message by sending a heartbeat."""
-        self.request_updater.update_status(self.instance.id)
+        try:
+            self.bm_client.instance_heartbeat(self.instance.id)
+        except (RequestsConnectionError, RestConnectionError):
+            pass
 
     def _validate_system(self, request):
         """Validate that a request is intended for this Plugin"""

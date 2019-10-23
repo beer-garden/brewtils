@@ -265,16 +265,6 @@ class HTTPRequestUpdater(RequestUpdater):
         with self.brew_view_error_condition:
             self.brew_view_error_condition.notify_all()
 
-    def update_status(self, instance_id):
-        """Handle status message by sending a heartbeat."""
-        with self.brew_view_error_condition:
-            if not self.brew_view_down:
-                try:
-                    self._ez_client.instance_heartbeat(instance_id)
-                except (RequestsConnectionError, RestConnectionError):
-                    self.brew_view_down = True
-                    raise
-
     def update_request(self, request, headers):
         """Sends a Request update to beer-garden
 

@@ -386,27 +386,6 @@ class TestEasyRequestUpdater(object):
         )
         return HTTPRequestUpdater(client, shutdown_event)
 
-    class TestUpdateStatus(object):
-        def test_success(self, updater, client):
-            instance_id = "1234"
-
-            updater.update_status(instance_id)
-            client.instance_heartbeat.assert_called_once_with(instance_id)
-
-        @pytest.mark.parametrize(
-            "error,bv_down", [(ConnectionError, True), (ValueError, False)]
-        )
-        def test_error(self, updater, client, error, bv_down):
-            client.instance_heartbeat.side_effect = error
-            with pytest.raises(error):
-                updater.update_status(Mock())
-            assert updater.brew_view_down is bv_down
-
-        def test_brew_view_down(self, updater, client):
-            updater.brew_view_down = True
-            updater.update_status(Mock())
-            assert client.instance_heartbeat.called is False
-
     class TestUpdateRequest(object):
         @pytest.mark.parametrize("ephemeral", [False, True])
         def test_success(self, updater, client, ephemeral):

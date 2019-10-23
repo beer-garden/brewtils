@@ -241,11 +241,9 @@ class Plugin(object):
             logger=self.logger, parser=self.parser, **connection_parameters
         )
 
-        self.request_updater = HTTPRequestUpdater(self.bm_client, self.shutdown_event)
-
         self.request_processor = RequestProcessor(
             self.client,
-            self.request_updater,
+            HTTPRequestUpdater(self.bm_client, self.shutdown_event),
             validation_funcs=[self._validate_system, self._validate_running],
             unique_name=self.unique_name,
             max_workers=self.max_concurrent,
@@ -400,9 +398,6 @@ class Plugin(object):
         self.logger.debug("Shutting down request and admin processors")
         self.request_processor.shutdown()
         self.admin_processor.shutdown()
-
-        self.logger.debug("Shutting down request updater")
-        self.request_updater.shutdown()
 
         self.logger.debug("Shutting down request and admin consumers")
         self.request_consumer.stop()

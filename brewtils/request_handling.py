@@ -137,7 +137,11 @@ class RequestProcessor(object):
 
     def shutdown(self):
         """Stop the RequestProcessor"""
+        # Finish all current actions
         self._pool.shutdown(wait=True)
+
+        # Give the updater a chance to shutdown
+        self._updater.shutdown()
 
     def _parse(self, message):
         """Parse a message using the standard SchemaParser

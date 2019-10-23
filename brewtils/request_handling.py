@@ -22,6 +22,25 @@ from brewtils.schema_parser import SchemaParser
 
 
 class RequestProcessor(object):
+    """Class responsible for coordinating Request processing
+
+    The RequestProcessor is responsible for the following:
+    - Defining on_message_received callback that will be invoked by the RequestConsumer
+    - Parsing the request
+    - Invoking the command on the target
+    - Formatting the output
+    - Reporting request updates to Beergarden (using a RequestUpdater)
+
+    Args:
+        target: Incoming requests will be invoked on this object
+        updater: RequestUpdater that will be used for updating requests
+        validation_funcs: List of functions that will called before invoking a command
+        logger: A logger
+        unique_name: The Plugin's unique name
+        max_workers: Max number of threads to use in the executor pool
+
+    """
+
     def __init__(
         self,
         target,
@@ -75,13 +94,16 @@ class RequestProcessor(object):
     def process_message(self, target, request, headers):
         """Process a message. Intended to be run on an Executor.
 
-        :param target: The object to invoke received commands on.
-            (self or self.client)
-        :param request: The parsed Request
-        :param headers: Dictionary of headers from the
-            `brewtils.request_consumer.RequestConsumer`
-        :return: None
+        Will set the status to IN_PROGRESS, invoke the command, and set the final
+        status / output / error_class.
 
+        Args:
+            target: The object to invoke received commands on
+            request: The parsed Request
+            headers: Dictionary of headers from the `RequestConsumer`
+
+        Returns:
+            None
         """
         request.status = "IN_PROGRESS"
         self._updater.update_request(request, headers)
@@ -125,7 +147,7 @@ class RequestProcessor(object):
             message: The raw (json) message body
 
         Returns:
-            A brewtils Request model
+            A Request model
 
         Raises:
             DiscardMessageException: The request failed to parse correctly
@@ -140,14 +162,18 @@ class RequestProcessor(object):
 
     @staticmethod
     def _invoke_command(target, request):
-        """Invoke the function named in request.command.
+        """Invoke the function named in request.command
 
-        :param target: The object to search for the function implementation.
-            Will be self or self.client.
-        :param request: The request to process
-        :raise RequestProcessingError: The specified target does not define a
-            callable implementation of request.command
-        :return: The output of the function invocation
+        Args:
+            target: The object to search for the function implementation.
+            request: The request to process
+
+        Returns:
+            The output of the function call
+
+        Raises:
+            RequestProcessingError: The specified target does not define a
+                callable implementation of request.command
         """
         if not callable(getattr(target, request.command, None)):
             raise RequestProcessingError(
@@ -167,8 +193,6 @@ class RequestProcessor(object):
 
     @staticmethod
     def _format_output(output):
-        """Formats output from Plugins to prevent validation errors"""
-
         if isinstance(output, six.string_types):
             return output
 
@@ -206,14 +230,20 @@ class EasyRequestUpdater(RequestUpdater):
     """RequestUpdater implementation based around an EasyClient.
 
     Args:
-        ez_client:
-        shutdown_event:
-        logger:
-        **kwargs:
+        ez_client: EasyClient to use for communication
+        shutdown_event: `threading.Event` to allow for timely shutdowns
+        logger: A logger
+
+    Keyword Args:
+        logger: A logger
+        max_attempts: Max number of unsuccessful updates before discarding the message
+        max_timeout: Maximum amount of time (seconds) to wait between update attempts
+        starting_timeout: Starting time to wait (seconds) between update attempts
+
     """
 
-    def __init__(self, ez_client, shutdown_event, logger=None, **kwargs):
-        self.logger = logger or logging.getLogger(__name__)
+    def __init__(self, ez_client, shutdown_event, **kwargs):
+        self.logger = kwargs.get("logger", logging.getLogger(__name__))
 
         self._ez_client = ez_client
         self._shutdown_event = shutdown_event
@@ -255,14 +285,17 @@ class EasyRequestUpdater(RequestUpdater):
 
         If this is the final attempt to update, we will attempt a known, good
         request to give some information to the user. If this attempt fails
-        then we simply discard the message
+        then we simply discard the message.
 
-        :param request: The request to update
-        :param headers: A dictionary of headers from
-            `brewtils.request_consumer.RequestConsumer`
-        :raise RepublishMessageException: The Request update failed (any reason)
-        :return: None
+        Args:
+            request: The request to update
+            headers: A dictionary of headers from the `RequestConsumer`
 
+        Returns:
+            None
+
+        Raises:
+            RepublishMessageException: The Request update failed (any reason)
         """
         if request.is_ephemeral:
             sys.stdout.flush()
@@ -285,12 +318,11 @@ class EasyRequestUpdater(RequestUpdater):
                     self._ez_client.update_request(
                         request.id,
                         status="ERROR",
-                        output="We tried to update the request, but it failed "
-                        "too many times. Please check the plugin logs "
-                        "to figure out why the request update failed. "
-                        "It is possible for this request to have "
-                        "succeeded, but we cannot update beer-garden "
-                        "with that information.",
+                        output="We tried to update the request, but it failed too many "
+                        "times. Please check the plugin logs to figure out why the "
+                        "request update failed. It is possible for this request to "
+                        "have succeeded, but we cannot update beer-garden with that "
+                        "information.",
                         error_class="BGGivesUpError",
                     )
             except Exception as ex:

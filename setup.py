@@ -36,6 +36,7 @@ setup(
         "packaging<20",
         "pika<1.1,>=0.11",
         "pyjwt<2",
+        "pytz<2020",
         "requests<3",
         "simplejson<4",
         "six<2",

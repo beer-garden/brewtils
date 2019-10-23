@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
 import pytest
+import pytz
 from mock import Mock, PropertyMock
 from pytest_lazyfixture import lazy_fixture
 
@@ -19,6 +19,8 @@ from brewtils.models import (
     Principal,
     Role,
     RequestTemplate,
+    CronTrigger,
+    IntervalTrigger,
 )
 
 
@@ -267,6 +269,11 @@ class TestRequest(object):
         request1.output_type = "JSON"
         assert request1.is_json
 
+    def test_from_template(self, bg_request_template):
+        request = Request.from_template(bg_request_template)
+        for key in bg_request_template.__dict__:
+            assert getattr(request, key) == getattr(bg_request_template, key)
+
 
 class TestSystem(object):
     @pytest.fixture
@@ -497,6 +504,64 @@ class TestRole(object):
             repr(role) == "<Role: name=bg-admin, roles=['bg-anonymous'], "
             "permissions=['bg-all']>"
         )
+
+
+class TestDateTrigger(object):
+    def test_scheduler_kwargs(self, bg_date_trigger, ts_dt_utc):
+        assert bg_date_trigger.scheduler_kwargs == {
+            "timezone": pytz.utc,
+            "run_date": ts_dt_utc,
+        }
+
+
+class TestIntervalTrigger(object):
+    def test_scheduler_kwargs_default(self):
+        assert IntervalTrigger(timezone="utc").scheduler_kwargs == {
+            "weeks": None,
+            "days": None,
+            "hours": None,
+            "minutes": None,
+            "seconds": None,
+            "start_date": None,
+            "end_date": None,
+            "timezone": pytz.utc,
+            "jitter": None,
+            "reschedule_on_finish": None,
+        }
+
+    def test_scheduler_kwargs(
+        self, bg_interval_trigger, interval_trigger_dict, ts_dt_utc
+    ):
+        expected = interval_trigger_dict
+        expected.update(
+            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_dt_utc}
+        )
+        assert bg_interval_trigger.scheduler_kwargs == expected
+
+
+class TestCronTrigger(object):
+    def test_scheduler_kwargs_default(self):
+        assert CronTrigger(timezone="utc").scheduler_kwargs == {
+            "year": None,
+            "month": None,
+            "day": None,
+            "week": None,
+            "day_of_week": None,
+            "hour": None,
+            "minute": None,
+            "second": None,
+            "start_date": None,
+            "end_date": None,
+            "timezone": pytz.utc,
+            "jitter": None,
+        }
+
+    def test_scheduler_kwargs(self, bg_cron_trigger, cron_trigger_dict, ts_dt_utc):
+        expected = cron_trigger_dict
+        expected.update(
+            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_dt_utc}
+        )
+        assert bg_cron_trigger.scheduler_kwargs == expected
 
 
 @pytest.mark.parametrize(

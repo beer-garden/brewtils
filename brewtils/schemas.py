@@ -91,16 +91,16 @@ class BaseSchema(Schema):
 
 class ChoicesSchema(BaseSchema):
 
-    type = fields.Str()
-    display = fields.Str()
-    value = fields.Raw(many=True)
-    strict = fields.Bool(default=False)
-    details = fields.Dict()
+    type = fields.Str(allow_none=True)
+    display = fields.Str(allow_none=True)
+    value = fields.Raw(allow_none=True, many=True)
+    strict = fields.Bool(allow_none=True, default=False)
+    details = fields.Dict(allow_none=True)
 
 
 class ParameterSchema(BaseSchema):
 
-    key = fields.Str()
+    key = fields.Str(allow_none=True)
     type = fields.Str(allow_none=True)
     multi = fields.Bool(allow_none=True)
     display_name = fields.Str(allow_none=True)
@@ -119,7 +119,7 @@ class ParameterSchema(BaseSchema):
 class CommandSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
-    name = fields.Str()
+    name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     parameters = fields.Nested("ParameterSchema", many=True)
     command_type = fields.Str(allow_none=True)
@@ -134,7 +134,7 @@ class CommandSchema(BaseSchema):
 class InstanceSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
-    name = fields.Str()
+    name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
     status_info = fields.Nested("StatusInfoSchema", allow_none=True)
@@ -147,13 +147,13 @@ class InstanceSchema(BaseSchema):
 class SystemSchema(BaseSchema):
 
     id = fields.Str(allow_none=True)
-    name = fields.Str()
+    name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
-    version = fields.Str()
+    version = fields.Str(allow_none=True)
     max_instances = fields.Integer(allow_none=True)
     icon_name = fields.Str(allow_none=True)
     instances = fields.Nested("InstanceSchema", many=True, allow_none=True)
-    commands = fields.Nested("CommandSchema", many=True)
+    commands = fields.Nested("CommandSchema", many=True, allow_none=True)
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
 
@@ -195,7 +195,7 @@ class StatusInfoSchema(BaseSchema):
 
 class PatchSchema(BaseSchema):
 
-    operation = fields.Str()
+    operation = fields.Str(allow_none=True)
     path = fields.Str(allow_none=True)
     value = fields.Raw(allow_none=True)
 
@@ -281,7 +281,7 @@ class RefreshTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
     expires = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    payload = fields.Dict()
+    payload = fields.Dict(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):
@@ -355,7 +355,7 @@ class JobSchema(BaseSchema):
         serialization_schema_selector=serialize_trigger_selector,
         deserialization_schema_selector=deserialize_trigger_selector,
     )
-    request_template = fields.Nested("RequestTemplateSchema")
+    request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
     next_run_time = DateTime(allow_none=True, format="epoch", example="1500065932000")

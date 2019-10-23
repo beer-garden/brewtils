@@ -25,8 +25,8 @@ request_context = threading.local()
 
 # These are not thread-locals - they should be set in the Plugin __init__ and then never
 # touched. This allows us to do sanity checks when creating nested Requests.
-host = ""
-port = None
+_HOST = ""
+_PORT = None
 
 
 class Plugin(object):
@@ -162,7 +162,7 @@ class Plugin(object):
         bg_url_prefix=None,
         **kwargs
     ):
-        global host, port
+        global _HOST, _PORT
 
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
@@ -187,8 +187,8 @@ class Plugin(object):
             client_timeout=kwargs.get("client_timeout", None),
         )
 
-        host = connection_parameters["bg_host"]
-        port = connection_parameters["bg_port"]
+        _HOST = connection_parameters["bg_host"]
+        _PORT = connection_parameters["bg_port"]
 
         self.bg_host = connection_parameters["bg_host"]
         self.bg_port = connection_parameters["bg_port"]

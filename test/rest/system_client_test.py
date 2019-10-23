@@ -168,8 +168,8 @@ class TestCreateRequest(object):
         monkeypatch.setattr(
             brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(brewtils.plugin, "host", "localhost")
-        monkeypatch.setattr(brewtils.plugin, "port", 3000)
+        monkeypatch.setattr(brewtils.plugin, "_HOST", "localhost")
+        monkeypatch.setattr(brewtils.plugin, "_PORT", 3000)
 
         client.command_1()
 
@@ -184,8 +184,8 @@ class TestCreateRequest(object):
         monkeypatch.setattr(
             brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(brewtils.plugin, "host", "OTHER_HOST")
-        monkeypatch.setattr(brewtils.plugin, "port", 3000)
+        monkeypatch.setattr(brewtils.plugin, "_HOST", "OTHER_HOST")
+        monkeypatch.setattr(brewtils.plugin, "_PORT", 3000)
 
         client.command_1()
 

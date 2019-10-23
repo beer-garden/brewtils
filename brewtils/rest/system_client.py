@@ -340,8 +340,8 @@ class SystemClient(object):
             return None
 
         if (
-            getattr(brewtils.plugin, "host").upper() != self._bg_host.upper()
-            or getattr(brewtils.plugin, "port") != self._bg_port
+            getattr(brewtils.plugin, "_HOST").upper() != self._bg_host.upper()
+            or getattr(brewtils.plugin, "_PORT") != self._bg_port
         ):
             self.logger.warning(
                 "A parent request was found, but the destination beer-garden "

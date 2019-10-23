@@ -9,6 +9,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 import six
 from requests import ConnectionError as RequestsConnectionError
 
+import brewtils.plugin
 from brewtils.errors import (
     DiscardMessageException,
     parse_exception_as_json,
@@ -113,8 +114,6 @@ class RequestProcessor(object):
             # generated requests and update status We also need the host/port of
             #  the current plugin. We currently don't support parent/child
             # requests across different servers.
-            import brewtils.plugin
-
             brewtils.plugin.request_context.current_request = request
 
             output = self._invoke_command(target, request)

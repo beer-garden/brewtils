@@ -226,7 +226,7 @@ class NoopUpdater(RequestUpdater):
         pass
 
 
-class EasyRequestUpdater(RequestUpdater):
+class HTTPRequestUpdater(RequestUpdater):
     """RequestUpdater implementation based around an EasyClient.
 
     Args:

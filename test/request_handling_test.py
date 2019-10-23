@@ -21,7 +21,7 @@ from brewtils.errors import (
     RepublishRequestException,
 )
 from brewtils.models import Request
-from brewtils.request_handling import RequestProcessor, EasyRequestUpdater
+from brewtils.request_handling import RequestProcessor, HTTPRequestUpdater
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import assert_request_equal
 
@@ -380,11 +380,11 @@ class TestEasyRequestUpdater(object):
     def updater(self, monkeypatch, client, shutdown_event, conn_poll_thread):
         # Unless we're testing it we don't want to create an actual conn poll thread
         monkeypatch.setattr(
-            EasyRequestUpdater,
+            HTTPRequestUpdater,
             "_create_connection_poll_thread",
             Mock(return_value=conn_poll_thread),
         )
-        return EasyRequestUpdater(client, shutdown_event)
+        return HTTPRequestUpdater(client, shutdown_event)
 
     class TestUpdateStatus(object):
         def test_success(self, updater, client):
@@ -505,7 +505,7 @@ class TestEasyRequestUpdater(object):
 
     def test_create_connection_poll_thread(self, client):
         shutdown_event = threading.Event()
-        updater = EasyRequestUpdater(client, shutdown_event)
+        updater = HTTPRequestUpdater(client, shutdown_event)
 
         assert isinstance(updater.connection_poll_thread, threading.Thread)
         assert updater.connection_poll_thread.daemon is True

@@ -16,7 +16,7 @@ from brewtils.errors import (
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System
 from brewtils.request_consumer import RequestConsumer
-from brewtils.request_handling import EasyRequestUpdater, NoopUpdater, RequestProcessor
+from brewtils.request_handling import HTTPRequestUpdater, NoopUpdater, RequestProcessor
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
 
@@ -239,7 +239,7 @@ class Plugin(object):
             logger=self.logger, parser=self.parser, **connection_parameters
         )
 
-        self.request_updater = EasyRequestUpdater(self.bm_client, self.shutdown_event)
+        self.request_updater = HTTPRequestUpdater(self.bm_client, self.shutdown_event)
 
         self.request_processor = RequestProcessor(
             self.client,

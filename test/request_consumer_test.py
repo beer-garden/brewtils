@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from concurrent.futures import Future
 
 import pytest
@@ -86,13 +85,14 @@ class TestRequestConsumer(object):
         assert consumer._connection == connection
         assert connection.ioloop.start.called is True
 
-    def test_stop(self, consumer):
+    def test_stop(self, consumer, connection):
         channel_mock = Mock()
         consumer._channel = channel_mock
+        consumer._connection = connection
 
         consumer.stop()
         assert consumer.shutdown_event.is_set() is True
-        assert channel_mock.close.called is True
+        assert connection.ioloop.add_callback_threadsafe.called is True
 
     @pytest.mark.parametrize(
         "body,cb_arg", [("message", "message"), (b"message", "message")]
@@ -123,12 +123,19 @@ class TestRequestConsumer(object):
         )
 
 
-class TestCallbackComplete(object):
+def test_on_message_callback_complete(consumer, connection):
+    consumer._connection = connection
+
+    consumer.on_message_callback_complete(Mock(), Mock())
+    assert connection.ioloop.add_callback_threadsafe.called is True
+
+
+class TestFinishMessage(object):
     def test_success(self, consumer, channel, callback_future):
         basic_deliver = Mock()
 
         callback_future.set_result(None)
-        consumer.on_message_callback_complete(basic_deliver, callback_future)
+        consumer.finish_message(basic_deliver, callback_future)
         channel.basic_ack.assert_called_once_with(basic_deliver.delivery_tag)
 
     def test_ack_error(self, consumer, channel, callback_future, panic_event):
@@ -136,7 +143,7 @@ class TestCallbackComplete(object):
         channel.basic_ack.side_effect = ValueError
 
         callback_future.set_result(None)
-        consumer.on_message_callback_complete(basic_deliver, callback_future)
+        consumer.finish_message(basic_deliver, callback_future)
         channel.basic_ack.assert_called_once_with(basic_deliver.delivery_tag)
         assert panic_event.set.called is True
 
@@ -156,7 +163,7 @@ class TestCallbackComplete(object):
 
         callback_future.set_exception(RepublishRequestException(bg_request, {}))
 
-        consumer.on_message_callback_complete(basic_deliver, callback_future)
+        consumer.finish_message(basic_deliver, callback_future)
         channel.basic_ack.assert_called_once_with(basic_deliver.delivery_tag)
         assert publish_channel.basic_publish.called is True
 
@@ -181,18 +188,18 @@ class TestCallbackComplete(object):
         )
 
         callback_future.set_exception(RepublishRequestException(Mock(), {}))
-        consumer.on_message_callback_complete(Mock(), callback_future)
+        consumer.finish_message(Mock(), callback_future)
         assert panic_event.set.called is True
 
     def test_discard_message(self, consumer, channel, callback_future, panic_event):
         callback_future.set_exception(DiscardMessageException())
-        consumer.on_message_callback_complete(Mock(), callback_future)
+        consumer.finish_message(Mock(), callback_future)
         assert channel.basic_nack.called is True
         assert panic_event.set.called is False
 
     def test_unknown_exception(self, consumer, callback_future, panic_event):
         callback_future.set_exception(ValueError())
-        consumer.on_message_callback_complete(Mock(), callback_future)
+        consumer.finish_message(Mock(), callback_future)
         assert panic_event.set.called is True
 
 
@@ -338,14 +345,13 @@ def test_start_consuming(consumer, channel):
     assert consumer._consumer_tag == channel.basic_consume.return_value
 
 
-def test_stop_consuming(consumer, channel):
+def test_stop_consuming(consumer, channel, connection):
     consumer_tag = Mock()
     consumer._consumer_tag = consumer_tag
+    consumer._connection = connection
 
     consumer.stop_consuming()
-    channel.basic_cancel.assert_called_with(
-        callback=consumer.on_cancelok, consumer_tag=consumer_tag
-    )
+    assert connection.ioloop.add_callback_threadsafe.called is True
 
 
 def test_on_consumer_cancelled(consumer, channel):

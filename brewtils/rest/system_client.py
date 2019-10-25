@@ -366,8 +366,7 @@ class SystemClient(object):
         comment = kwargs.pop("_comment", None)
         output_type = kwargs.pop("_output_type", None)
         metadata = kwargs.pop("_metadata", {})
-
-        parent = self._get_parent_for_request()
+        parent = kwargs.pop("_parent", self._get_parent_for_request())
 
         if system_display:
             metadata["system_display_name"] = system_display

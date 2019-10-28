@@ -153,7 +153,7 @@ class TestCreateRequest(object):
     @pytest.mark.parametrize("context", [None, Mock(current_request=None)])
     def test_no_context(self, monkeypatch, client, easy_client, mock_success, context):
         easy_client.create_request.return_value = mock_success
-        monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
+        monkeypatch.setattr(brewtils.plugin, "request_context", context)
 
         client.command_1()
 
@@ -165,10 +165,11 @@ class TestCreateRequest(object):
     ):
         easy_client.create_request.return_value = mock_success
 
-        context = Mock(
-            current_request=parent_request, bg_host="localhost", bg_port=3000
+        monkeypatch.setattr(
+            brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
+        monkeypatch.setattr(brewtils.plugin, "_HOST", "localhost")
+        monkeypatch.setattr(brewtils.plugin, "_PORT", 3000)
 
         client.command_1()
 
@@ -180,8 +181,11 @@ class TestCreateRequest(object):
     ):
         easy_client.create_request.return_value = mock_success
 
-        context = Mock(current_request=parent_request, bg_host="OTHER", bg_port=3000)
-        monkeypatch.setattr(brewtils.rest.system_client, "request_context", context)
+        monkeypatch.setattr(
+            brewtils.plugin, "request_context", Mock(current_request=parent_request)
+        )
+        monkeypatch.setattr(brewtils.plugin, "_HOST", "OTHER_HOST")
+        monkeypatch.setattr(brewtils.plugin, "_PORT", 3000)
 
         client.command_1()
 

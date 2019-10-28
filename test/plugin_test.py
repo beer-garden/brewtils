@@ -1,37 +1,23 @@
 # -*- coding: utf-8 -*-
-
-import json
 import logging
 import logging.config
 import os
-import sys
 
 import pytest
-import threading
 from mock import MagicMock, Mock, ANY
-from requests import ConnectionError
 
 from brewtils import get_connection_info
 from brewtils.errors import (
     ValidationError,
-    RequestProcessingError,
-    DiscardMessageException,
-    RepublishRequestException,
     PluginValidationError,
-    RestClientError,
-    ErrorLogLevelCritical,
-    ErrorLogLevelError,
-    ErrorLogLevelWarning,
-    ErrorLogLevelInfo,
-    ErrorLogLevelDebug,
-    SuppressStacktrace,
     ConflictError,
+    DiscardMessageException,
+    RequestProcessingError,
+    RestConnectionError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
-from brewtils.models import Instance, Request, System, Command
+from brewtils.models import Instance, System, Command
 from brewtils.plugin import Plugin
-from brewtils.schema_parser import SchemaParser
-from brewtils.test.comparable import assert_request_equal
 
 
 @pytest.fixture(autouse=True)
@@ -61,12 +47,17 @@ def client():
 
 
 @pytest.fixture
-def parser():
+def parser_mock():
     return Mock()
 
 
 @pytest.fixture
-def plugin(client, bm_client, parser, bg_system, bg_instance):
+def updater_mock():
+    return Mock()
+
+
+@pytest.fixture
+def plugin(client, bm_client, parser_mock, updater_mock, bg_system, bg_instance):
     plugin = Plugin(
         client,
         bg_host="localhost",
@@ -76,7 +67,8 @@ def plugin(client, bm_client, parser, bg_system, bg_instance):
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
-    plugin.parser = parser
+    plugin.parser = parser_mock
+    plugin.request_updater = updater_mock
 
     return plugin
 
@@ -218,17 +210,7 @@ class TestPluginInit(object):
 
 
 class TestPluginRun(object):
-    @pytest.fixture
-    def create_connection_poll(self):
-        return Mock()
-
-    @pytest.fixture
-    def plugin(self, plugin, create_connection_poll):
-        plugin._initialize = Mock()
-        plugin._create_connection_poll_thread = create_connection_poll
-        return plugin
-
-    def test_run(self, plugin, create_connection_poll):
+    def test_run(self, plugin):
         admin_mock = Mock()
         standard_mock = Mock()
 
@@ -237,7 +219,7 @@ class TestPluginRun(object):
         plugin.shutdown_event = Mock(wait=Mock(return_value=True))
 
         plugin.run()
-        for moc in (admin_mock, standard_mock, create_connection_poll):
+        for moc in (admin_mock, standard_mock):
             assert moc.called is True
             assert moc.return_value.start.called is True
 
@@ -253,17 +235,14 @@ class TestPluginRun(object):
             isAlive=Mock(return_value=False),
             shutdown_event=Mock(is_set=Mock(return_value=False)),
         )
-        poll_mock = Mock(isAlive=Mock(return_value=False))
 
         plugin._create_admin_consumer = Mock(return_value=admin_mock)
         plugin._create_standard_consumer = Mock(return_value=request_mock)
-        plugin._create_connection_poll_thread = Mock(return_value=poll_mock)
         plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
 
         plugin.run()
         assert admin_mock.start.call_count == 2
         assert request_mock.start.call_count == 2
-        assert poll_mock.start.call_count == 2
 
     def test_run_consumers_closed_by_server(self, plugin):
         admin_mock = Mock(
@@ -300,271 +279,6 @@ class TestPluginRun(object):
             assert moc.called is True
             assert moc.return_value.start.called is True
             assert moc.return_value.stop.called is True
-
-
-class TestProcessMessage(object):
-    @pytest.fixture
-    def update_mock(self):
-        return Mock()
-
-    @pytest.fixture
-    def invoke_mock(self):
-        return Mock()
-
-    @pytest.fixture
-    def plugin(self, plugin, update_mock, invoke_mock):
-        plugin._update_request = update_mock
-        plugin._invoke_command = invoke_mock
-        return plugin
-
-    def test_process(self, plugin, update_mock, invoke_mock):
-        target_mock = Mock()
-        request_mock = Mock(is_ephemeral=False)
-        format_mock = Mock()
-        plugin._format_output = format_mock
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        format_mock.assert_called_once_with(invoke_mock.return_value)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "SUCCESS"
-        assert request_mock.output == format_mock.return_value
-
-    def test_invoke_exception(self, caplog, plugin, update_mock, invoke_mock):
-        target_mock = Mock()
-        request_mock = Mock(is_json=False)
-        invoke_mock.side_effect = ValueError("I am an error")
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "ValueError"
-        assert request_mock.output == "I am an error"
-
-        assert len(caplog.records) == 1
-        assert caplog.records[0].exc_info is not False
-        assert caplog.records[0].levelno == logging.ERROR
-
-    def test_invoke_exception_no_trace(self, caplog, plugin, update_mock, invoke_mock):
-        class CustomException(SuppressStacktrace):
-            pass
-
-        target_mock = Mock()
-        request_mock = Mock(is_json=False)
-        invoke_mock.side_effect = CustomException("I am exception")
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "CustomException"
-        assert request_mock.output == "I am exception"
-
-        assert len(caplog.records) == 1
-        assert caplog.records[0].exc_info is False
-        assert caplog.records[0].levelno == logging.ERROR
-
-    @pytest.mark.parametrize(
-        "base,expected_level",
-        [
-            (ErrorLogLevelCritical, logging.CRITICAL),
-            (ErrorLogLevelError, logging.ERROR),
-            (ErrorLogLevelWarning, logging.WARNING),
-            (ErrorLogLevelInfo, logging.INFO),
-            (ErrorLogLevelDebug, logging.DEBUG),
-            (Exception, logging.ERROR),
-        ],
-    )
-    def test_invoke_exception_log_level(
-        self, caplog, plugin, update_mock, invoke_mock, base, expected_level
-    ):
-        target_mock = Mock()
-        request_mock = Mock(is_json=False)
-
-        exception = type("CustomException", (base,), {})
-        invoke_mock.side_effect = exception("I am exception")
-
-        with caplog.at_level(logging.DEBUG):
-            plugin.process_message(target_mock, request_mock, {})
-
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "CustomException"
-        assert request_mock.output == "I am exception"
-
-        assert len(caplog.records) == 1
-        assert caplog.records[0].levelno == expected_level
-
-    def test_invoke_exception_json_output(self, plugin, update_mock, invoke_mock):
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        invoke_mock.side_effect = ValueError("Not JSON")
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "ValueError"
-        assert json.loads(request_mock.output) == {
-            "message": "Not JSON",
-            "arguments": ["Not JSON"],
-            "attributes": {},
-        }
-
-    @pytest.mark.parametrize("ex_arg", [{"foo": "bar"}, json.dumps({"foo": "bar"})])
-    def test_format_json_args(self, plugin, invoke_mock, ex_arg):
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        invoke_mock.side_effect = Exception(ex_arg)
-
-        plugin.process_message(target_mock, request_mock, {})
-        assert json.loads(request_mock.output) == {"foo": "bar"}
-
-    def test_invoke_exception_attributes(self, plugin, update_mock, invoke_mock):
-        class MyError(Exception):
-            def __init__(self, foo):
-                self.foo = foo
-
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        exc = MyError("bar")
-        invoke_mock.side_effect = exc
-
-        # On python version 2, errors with custom attributes do not list those
-        # attributes as arguments.
-        if sys.version_info.major < 3:
-            arguments = []
-        else:
-            arguments = ["bar"]
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "MyError"
-        assert json.loads(request_mock.output) == {
-            "message": str(exc),
-            "arguments": arguments,
-            "attributes": {"foo": "bar"},
-        }
-
-    def test_invoke_exception_bad_attributes(self, plugin, update_mock, invoke_mock):
-        class MyError(Exception):
-            def __init__(self, foo):
-                self.foo = foo
-
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        message = MyError("another object")
-        thing = MyError(message)
-        invoke_mock.side_effect = thing
-
-        # On python version 2, errors with custom attributes do not list those
-        # attributes as arguments.
-        if sys.version_info.major < 3:
-            arguments = []
-        else:
-            arguments = [str(message)]
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "MyError"
-        assert json.loads(request_mock.output) == {
-            "message": str(thing),
-            "arguments": arguments,
-            "attributes": str(thing.__dict__),
-        }
-
-    def test_request_message(self, plugin, client):
-        message_mock = Mock()
-        pool_mock = Mock()
-        pre_process_mock = Mock()
-
-        plugin.pool = pool_mock
-        plugin._pre_process = pre_process_mock
-
-        plugin.process_request_message(message_mock, {})
-        pre_process_mock.assert_called_once_with(message_mock)
-        pool_mock.submit.assert_called_once_with(
-            plugin.process_message, client, pre_process_mock.return_value, {}
-        )
-
-    def test_completed_request_message(self, plugin):
-        message_mock = Mock()
-        pool_mock = Mock()
-        pre_process_mock = Mock(return_value=Mock(status="SUCCESS"))
-
-        plugin.pool = pool_mock
-        plugin._pre_process = pre_process_mock
-
-        plugin.process_request_message(message_mock, {})
-        pre_process_mock.assert_called_once_with(message_mock)
-        pool_mock.submit.assert_called_once_with(
-            plugin._update_request, pre_process_mock.return_value, {}
-        )
-
-    def test_admin_message(self, plugin):
-        message_mock = Mock()
-        pool_mock = Mock()
-        pre_process_mock = Mock()
-
-        plugin.admin_pool = pool_mock
-        plugin._pre_process = pre_process_mock
-
-        plugin.process_admin_message(message_mock, {})
-        pre_process_mock.assert_called_once_with(message_mock, verify_system=False)
-        pool_mock.submit.assert_called_once_with(
-            plugin.process_message, plugin, pre_process_mock.return_value, {}
-        )
-
-
-class TestPreProcess(object):
-    @pytest.mark.parametrize(
-        "request_args",
-        [
-            # Normal case
-            {"system": "system", "system_version": "1.0.0", "command_type": "ACTION"},
-            # Missing or ephemeral command types should succeed even with wrong names
-            {"system": "wrong", "system_version": "1.0.0"},
-            {"system": "wrong", "system_version": "1.0.0", "command_type": "EPHEMERAL"},
-        ],
-    )
-    def test_success(self, plugin, request_args):
-        # Need to reset the real parser
-        plugin.parser = SchemaParser()
-
-        assert_request_equal(
-            plugin._pre_process(json.dumps(request_args)),
-            SchemaParser.parse_request(request_args),
-        )
-
-    @pytest.mark.parametrize(
-        "request_args",
-        [
-            # Normal case
-            {"system": "wrong", "system_version": "1.0.0", "command_type": "ACTION"}
-        ],
-    )
-    def test_wrong_system(self, plugin, request_args):
-        # Need to reset the real parser
-        plugin.parser = SchemaParser()
-
-        with pytest.raises(DiscardMessageException):
-            plugin._pre_process(json.dumps(request_args))
-
-    def test_shutting_down(self, plugin):
-        plugin.shutdown_event.set()
-        with pytest.raises(RequestProcessingError):
-            plugin._pre_process(Mock())
-
-    def test_parse_error(self, plugin, parser):
-        parser.parse_request.side_effect = ValueError
-        with pytest.raises(DiscardMessageException):
-            plugin._pre_process(Mock())
 
 
 class TestInitializeSystem(object):
@@ -706,137 +420,12 @@ def test_create_admin_consumer(plugin, bg_instance):
     assert consumer._queue_name == bg_instance.queue_info["admin"]["name"]
 
 
-def test_create_connection_poll_thread(plugin):
-    connection_poll_thread = plugin._create_connection_poll_thread()
-    assert isinstance(connection_poll_thread, threading.Thread)
-    assert connection_poll_thread.daemon is True
-
-
-class TestInvokeCommand(object):
-    def test_invoke_admin(self, plugin):
-        start_mock = Mock()
-        plugin._start = start_mock
-
-        request = Request(
-            system="test_system",
-            system_version="1.0.0",
-            command="_start",
-            parameters={"p1": "param"},
-        )
-
-        plugin._invoke_command(plugin, request)
-        start_mock.assert_called_once_with(plugin, **request.parameters)
-
-    def test_invoke_request(self, plugin, client):
-        request = Request(
-            system="test_system",
-            system_version="1.0.0",
-            command="command",
-            parameters={"p1": "param"},
-        )
-
-        plugin._invoke_command(client, request)
-        client.command.assert_called_once_with(**request.parameters)
-
-    def test_invoke_request_none_parameters(self, plugin, client):
-        request = Request(
-            system="test_system", system_version="1.0.0", command="command"
-        )
-
-        plugin._invoke_command(client, request)
-        client.command.assert_called_once_with()
-
-    @pytest.mark.parametrize(
-        "command", ["foo", "_commands"]  # Missing attribute  # Non-callable attribute
-    )
-    def test_failure(self, plugin, client, command):
-        with pytest.raises(RequestProcessingError):
-            plugin._invoke_command(
-                client,
-                Request(
-                    system="name",
-                    system_version="1.0.0",
-                    command=command,
-                    parameters={"p1": "param"},
-                ),
-            )
-
-
-class TestUpdateRequest(object):
-    @pytest.mark.parametrize("ephemeral", [False, True])
-    def test_success(self, plugin, bm_client, ephemeral):
-        plugin._update_request(Mock(is_ephemeral=ephemeral), {})
-        assert bm_client.update_request.called is not ephemeral
-
-    @pytest.mark.parametrize(
-        "ex,raised,bv_down",
-        [
-            (RestClientError, DiscardMessageException, False),
-            (ConnectionError, RepublishRequestException, True),
-            (ValueError, RepublishRequestException, False),
-        ],
-    )
-    def test_errors(self, plugin, bm_client, bg_request, ex, raised, bv_down):
-        bm_client.update_request.side_effect = ex
-
-        with pytest.raises(raised):
-            plugin._update_request(bg_request, {})
-        assert bm_client.update_request.called is True
-        assert plugin.brew_view_down is bv_down
-
-    def test_wait_during_error(self, plugin, bm_client, bg_request):
-        error_condition_mock = MagicMock()
-        plugin.brew_view_error_condition = error_condition_mock
-        plugin.brew_view_down = True
-
-        plugin._update_request(bg_request, {})
-        assert error_condition_mock.wait.called is True
-        assert bm_client.update_request.called is True
-
-    def test_final_attempt_succeeds(self, plugin, bm_client, bg_request):
-        plugin.max_attempts = 1
-
-        plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 5})
-        bm_client.update_request.assert_called_with(
-            bg_request.id,
-            status="ERROR",
-            output="We tried to update the request, but "
-            "it failed too many times. Please check "
-            "the plugin logs to figure out why the request "
-            "update failed. It is possible for this request to have "
-            "succeeded, but we cannot update beer-garden with that "
-            "information.",
-            error_class="BGGivesUpError",
-        )
-
-    def test_wait_if_in_headers(self, plugin, bg_request):
-        plugin.shutdown_event = Mock(wait=Mock(return_value=True))
-
-        plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 1})
-        assert plugin.shutdown_event.wait.called is True
-
-    def test_update_request_headers(self, plugin, bm_client, bg_request):
-        plugin.shutdown_event = Mock(wait=Mock(return_value=True))
-        bm_client.update_request.side_effect = ValueError
-
-        with pytest.raises(RepublishRequestException) as ex:
-            plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 5})
-        assert ex.value.headers["retry_attempt"] == 2
-        assert ex.value.headers["time_to_wait"] == 10
-
-    def test_update_request_final_attempt_fails(self, plugin, bm_client, bg_request):
-        plugin.max_attempts = 1
-        bm_client.update_request.side_effect = ValueError
-        with pytest.raises(DiscardMessageException):
-            plugin._update_request(bg_request, {"retry_attempt": 1})
-
-
 class TestAdminMethods(object):
     def test_start(self, plugin, bm_client, bg_instance):
         new_instance = Mock()
         bm_client.update_instance_status.return_value = new_instance
 
-        assert plugin._start(Mock())
+        assert plugin._start()
         bm_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "RUNNING"
         )
@@ -846,7 +435,7 @@ class TestAdminMethods(object):
         new_instance = Mock()
         bm_client.update_instance_status.return_value = new_instance
 
-        assert plugin._stop(Mock())
+        assert plugin._stop()
         bm_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "STOPPED"
         )
@@ -854,22 +443,34 @@ class TestAdminMethods(object):
         assert plugin.shutdown_event.is_set() is True
 
     def test_status(self, plugin, bm_client):
-        plugin._status(Mock())
+        plugin._status()
         bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
-    @pytest.mark.parametrize(
-        "error,bv_down", [(ConnectionError, True), (ValueError, False)]
-    )
-    def test_status_error(self, plugin, bm_client, error, bv_down):
-        bm_client.instance_heartbeat.side_effect = error
-        with pytest.raises(error):
-            plugin._status(Mock())
-        assert plugin.brew_view_down is bv_down
+    def test_status_failure(self, plugin, bm_client):
+        bm_client.instance_heartbeat.side_effect = RestConnectionError()
+        plugin._status()
+        bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
-    def test_status_brew_view_down(self, plugin, bm_client):
-        plugin.brew_view_down = True
-        plugin._status(Mock())
-        assert bm_client.instance_heartbeat.called is False
+
+class TestValidationFunctions(object):
+    class TestVerifySystem(object):
+        def test_success(self, plugin, bg_request):
+            assert plugin._validate_system(bg_request) is None
+
+        def test_wrong_system(self, plugin, bg_request):
+            plugin.system.name = "wrong"
+
+            with pytest.raises(DiscardMessageException):
+                plugin._validate_system(bg_request)
+
+    class TestVerifyRunning(object):
+        def test_success(self, plugin, bg_request):
+            assert plugin._validate_running(bg_request) is None
+
+        def test_shutting_down(self, plugin):
+            plugin.shutdown_event.set()
+            with pytest.raises(RequestProcessingError):
+                plugin._validate_running(Mock())
 
 
 class TestSetupSystem(object):
@@ -981,47 +582,3 @@ class TestSetupSystem(object):
         assert new_system.icon_name == "icon"
         assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
-
-
-class TestConnectionPoll(object):
-    def test_shut_down(self, plugin, bm_client):
-        plugin.shutdown_event.set()
-        plugin._connection_poll()
-        assert bm_client.get_version.called is False
-
-    def test_brew_view_normal(self, plugin, bm_client):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        plugin._connection_poll()
-        assert bm_client.get_version.called is False
-
-    def test_brew_view_down(self, plugin, bm_client):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        plugin.brew_view_down = True
-        bm_client.get_version.side_effect = ValueError
-
-        plugin._connection_poll()
-        assert bm_client.get_version.called is True
-        assert plugin.brew_view_down is True
-
-    def test_brew_view_back(self, plugin, bm_client):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        plugin.brew_view_down = True
-
-        plugin._connection_poll()
-        assert bm_client.get_version.called is True
-        assert plugin.brew_view_down is False
-
-
-@pytest.mark.parametrize(
-    "output,expected",
-    [
-        ("foo", "foo"),
-        (u"foo", "foo"),
-        ({"foo": "bar"}, json.dumps({"foo": "bar"})),
-        (["foo", "bar"], json.dumps(["foo", "bar"])),
-        # TypeError
-        (Request(command="foo"), str(Request(command="foo"))),
-    ],
-)
-def test_format(plugin, output, expected):
-    assert plugin._format_output(output) == expected

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-
 import logging
+import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from multiprocessing import cpu_count
 
-import time
-from functools import partial
 from packaging.version import parse
 
+import brewtils.plugin
 from brewtils.errors import (
     FetchError,
     TimeoutExceededError,
@@ -16,7 +16,6 @@ from brewtils.errors import (
     ValidationError,
 )
 from brewtils.models import Request
-from brewtils.plugin import request_context
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -336,13 +335,13 @@ class SystemClient(object):
         return request
 
     def _get_parent_for_request(self):
-        parent = getattr(request_context, "current_request", None)
+        parent = getattr(brewtils.plugin.request_context, "current_request", None)
         if parent is None:
             return None
 
         if (
-            request_context.bg_host.upper() != self._bg_host.upper()
-            or request_context.bg_port != self._bg_port
+            getattr(brewtils.plugin, "_HOST").upper() != self._bg_host.upper()
+            or getattr(brewtils.plugin, "_PORT") != self._bg_port
         ):
             self.logger.warning(
                 "A parent request was found, but the destination beer-garden "

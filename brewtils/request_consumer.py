@@ -110,7 +110,7 @@ class RequestConsumerBase(threading.Thread):
         """
         self.logger.debug("Stopping request consumer")
         self.shutdown_event.set()
-        self.close_channel()
+        self._connection.ioloop.add_callback_threadsafe(partial(self.close_channel))
 
     def on_message(self, channel, basic_deliver, properties, body):
         """Invoked when a message is delivered from the queueing service
@@ -157,9 +157,48 @@ class RequestConsumerBase(threading.Thread):
     def on_message_callback_complete(self, basic_deliver, future):
         """Invoked when the future returned by _on_message_callback completes.
 
-        :param pika.Spec.Basic.Deliver basic_deliver: basic_deliver method
-        :param concurrent.futures.Future future: Completed future
-        :return: None
+        This method will be invoked from the threadpool context. It's only purpose is to
+        schedule the final processing steps to take place on the connection's ioloop.
+
+        Args:
+            basic_deliver:
+            future: Completed future
+
+        Returns:
+            None
+        """
+        self._connection.ioloop.add_callback_threadsafe(
+            partial(self.finish_message, basic_deliver, future)
+        )
+
+    def finish_message(self, basic_deliver, future):
+        """Finish processing a message
+
+        This should be invoked as the final part of message processing. It's responsible
+        for acking / nacking messages back to the broker.
+
+        The main complexity here depends on whether the request processing future has
+        an exception:
+
+        - If there is no exception it acks the message
+        - If there is an exception:
+          - If the exception is an instance of DiscardMessageException it nacks the
+            message and does not requeue it
+          - If the exception is an instance of RepublishRequestException it will
+            construct an entirely new BlockingConnection, use that to publish a new
+            message, and then ack the original message
+          - If the exception is not an instance of either the panic_event is set and
+            the consumer will self-destruct
+
+        Also, if there's ever an error acking a message the panic_event is set and the
+        consumer will self-destruct.
+
+        Args:
+            basic_deliver:
+            future: Completed future
+
+        Returns:
+            None
         """
         delivery_tag = basic_deliver.delivery_tag
 
@@ -373,8 +412,12 @@ class RequestConsumerBase(threading.Thread):
         self.logger.debug("Stopping consuming on channel %s", self._channel)
         if self._channel:
             self.logger.debug("Sending a Basic.Cancel RPC command to RabbitMQ")
-            self._channel.basic_cancel(
-                callback=self.on_cancelok, consumer_tag=self._consumer_tag
+            self._connection.ioloop.add_callback_threadsafe(
+                partial(
+                    self._channel.basic_cancel,
+                    callback=self.on_cancelok,
+                    consumer_tag=self._consumer_tag,
+                )
             )
 
     def on_consumer_cancelled(self, method_frame):

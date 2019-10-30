@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.4.9
+-----
+Date: 10/30/19
+
+Bug Fixes
+^^^^^^^^^
+- Fixed issue with callbacks in RequestConsumer when using Pika v1 (beer-garden/#328)
+
 2.4.8
 -----
 Date: 9/5/19

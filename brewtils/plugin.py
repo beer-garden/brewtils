@@ -272,6 +272,7 @@ class Plugin(object):
                     self.logger.warning(
                         "Looks like admin consumer has died - attempting to restart"
                     )
+                    self.shutdown_event.wait(5)
                     self.admin_consumer = self._create_admin_consumer()
                     self.admin_consumer.start()
 
@@ -282,6 +283,7 @@ class Plugin(object):
                     self.logger.warning(
                         "Looks like request consumer has died - attempting to restart"
                     )
+                    self.shutdown_event.wait(5)
                     self.request_consumer = self._create_standard_consumer()
                     self.request_consumer.start()
 

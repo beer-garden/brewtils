@@ -2,7 +2,6 @@
 import logging
 import threading
 from functools import partial
-from time import sleep
 
 from pika import BlockingConnection, URLParameters, BasicProperties, SelectConnection
 
@@ -50,8 +49,6 @@ class RequestConsumer(threading.Thread):
         self._queue_name = queue_name
         self._on_message_callback = on_message_callback
         self._panic_event = panic_event
-        self._max_connect_retries = kwargs.get("max_connect_retries", -1)
-        self._max_connect_backoff = kwargs.get("max_connect_backoff", 30)
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
         self.shutdown_event = threading.Event()
@@ -309,12 +306,6 @@ class RequestConsumer(threading.Thread):
             None
         """
         self.logger.debug("Connection %s closed: %s", connection, args)
-
-        if not self.shutdown_event.is_set():
-            self.logger.warning("Connection unexpectedly closed: %s", args)
-            self.logger.warning("About to sleep for 5 seconds before stopping IOLoop")
-            sleep(5)
-
         self._connection.ioloop.stop()
 
     def open_channel(self):

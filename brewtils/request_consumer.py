@@ -346,7 +346,7 @@ class RequestConsumer(threading.Thread):
         parameters.
 
         This indicates that something has gone wrong, so just close the connection
-        to reset.
+        (if it's still open) to reset.
 
         Args:
             channel: The channel
@@ -361,7 +361,9 @@ class RequestConsumer(threading.Thread):
             None
         """
         self.logger.debug("Channel %i closed: %s", channel, args)
-        self._connection.close()
+
+        if self._connection.is_open:
+            self._connection.close()
 
     def start_consuming(self):
         """Begin consuming messages

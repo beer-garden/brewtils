@@ -89,7 +89,7 @@ class RequestConsumer(threading.Thread):
             None
         """
         self.logger.debug("Stopping request consumer")
-        self._connection.ioloop.add_callback_threadsafe(partial(self.close_channel))
+        self._connection.ioloop.add_callback_threadsafe(partial(self._connection.close))
 
     def on_message(self, channel, basic_deliver, properties, body):
         """Invoked when a message is delivered from the queueing service
@@ -330,13 +330,6 @@ class RequestConsumer(threading.Thread):
 
         self.start_consuming()
 
-    def close_channel(self):
-        """Cleanly close the channel"""
-        self.logger.debug("Closing the channel")
-
-        if self._channel and self._channel.is_open:
-            self._channel.close()
-
     def on_channel_closed(self, channel, *args):
         """Channel closed callback
 
@@ -427,4 +420,4 @@ class RequestConsumer(threading.Thread):
         self.logger.debug("Consumer was cancelled: %r", method_frame)
 
         if self._channel:
-            self.close_channel()
+            self._connection.close()

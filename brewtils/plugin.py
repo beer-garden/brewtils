@@ -265,24 +265,14 @@ class Plugin(object):
 
         try:
             while not self.shutdown_event.wait(0.1):
-                if (
-                    not self.admin_consumer.isAlive()
-                    and not self.admin_consumer.shutdown_event.is_set()
-                ):
-                    self.logger.warning(
-                        "Looks like admin consumer has died - attempting to restart"
-                    )
+                if not self.admin_consumer.isAlive():
+                    self.logger.warning("Admin consumer has died, restarting")
                     self.shutdown_event.wait(5)
                     self.admin_consumer = self._create_admin_consumer()
                     self.admin_consumer.start()
 
-                if (
-                    not self.request_consumer.isAlive()
-                    and not self.request_consumer.shutdown_event.is_set()
-                ):
-                    self.logger.warning(
-                        "Looks like request consumer has died - attempting to restart"
-                    )
+                if not self.request_consumer.isAlive():
+                    self.logger.warning("Request consumer has died, restarting")
                     self.shutdown_event.wait(5)
                     self.request_consumer = self._create_standard_consumer()
                     self.request_consumer.start()
@@ -294,12 +284,6 @@ class Plugin(object):
                     )
                     self.connection_poll_thread = self._create_connection_poll_thread()
                     self.connection_poll_thread.start()
-
-                if (
-                    self.request_consumer.shutdown_event.is_set()
-                    and self.admin_consumer.shutdown_event.is_set()
-                ):
-                    self.shutdown_event.set()
 
         except KeyboardInterrupt:
             self.logger.debug("Received KeyboardInterrupt - shutting down")

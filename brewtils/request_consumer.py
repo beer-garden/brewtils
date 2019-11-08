@@ -51,7 +51,6 @@ class RequestConsumer(threading.Thread):
         self._panic_event = panic_event
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
-        self.shutdown_event = threading.Event()
 
         if kwargs.get("connection_info", None):
             pika_base = PikaClient(**kwargs["connection_info"])
@@ -90,7 +89,6 @@ class RequestConsumer(threading.Thread):
             None
         """
         self.logger.debug("Stopping request consumer")
-        self.shutdown_event.set()
         self._connection.ioloop.add_callback_threadsafe(partial(self.close_channel))
 
     def on_message(self, channel, basic_deliver, properties, body):

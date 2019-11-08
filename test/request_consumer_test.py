@@ -85,12 +85,9 @@ class TestRequestConsumer(object):
         assert connection.ioloop.start.called is True
 
     def test_stop(self, consumer, connection):
-        channel_mock = Mock()
-        consumer._channel = channel_mock
         consumer._connection = connection
 
         consumer.stop()
-        assert consumer.shutdown_event.is_set() is True
         assert connection.ioloop.add_callback_threadsafe.called is True
 
     @pytest.mark.parametrize(
@@ -214,44 +211,19 @@ def test_on_connection_open(consumer, connection):
     assert connection.channel.called is True
 
 
-class TestOnConnectionClosed(object):
-    @pytest.fixture
-    def sleep_mock(self, monkeypatch):
-        sleep_mock = Mock()
-        monkeypatch.setattr(brewtils.request_consumer, "sleep", sleep_mock)
-        return sleep_mock
+@pytest.mark.parametrize(
+    "code,text", [(200, "normal shutdown"), (320, "broker initiated")]
+)
+def test_on_connection_closed(consumer, connection, code, text):
+    consumer._connection = connection
 
-    def test_expected(self, consumer, connection, sleep_mock):
-        # 'expected' means the close was expected, which means shutdown event was set
-        consumer.shutdown_event.set()
+    args = (code, text)
+    if PIKA_ONE:
+        args = (ConnectionClosedByBroker(code, text),)
 
-        consumer._connection = connection
+    consumer.on_connection_closed(connection, *args)
 
-        args = (200, "text")
-        if PIKA_ONE:
-            args = (ConnectionClosedByBroker(200, "text"),)
-
-        consumer.on_connection_closed(connection, *args)
-
-        assert connection.ioloop.stop.called is True
-        assert sleep_mock.called is False
-
-    @pytest.mark.parametrize(
-        "code,text", [(200, "normal shutdown"), (320, "broker initiated")]
-    )
-    def test_unexpected(
-        self, monkeypatch, consumer, connection, sleep_mock, code, text
-    ):
-        consumer._connection = connection
-
-        args = (code, text)
-        if PIKA_ONE:
-            args = (ConnectionClosedByBroker(code, text),)
-
-        consumer.on_connection_closed(connection, *args)
-
-        assert connection.ioloop.stop.called is True
-        assert sleep_mock.called is True
+    assert connection.ioloop.stop.called is True
 
 
 def test_open_channel(consumer, connection):
@@ -266,11 +238,6 @@ def test_on_channel_open(consumer):
     consumer.on_channel_open(fake_channel)
     assert consumer._channel == fake_channel
     fake_channel.add_on_close_callback.assert_called_with(consumer.on_channel_closed)
-
-
-def test_close_channel(consumer, channel):
-    consumer.close_channel()
-    assert channel.close.called is True
 
 
 def test_on_channel_closed(consumer, connection):
@@ -306,6 +273,8 @@ def test_stop_consuming(consumer, channel, connection):
     assert connection.ioloop.add_callback_threadsafe.called is True
 
 
-def test_on_consumer_cancelled(consumer, channel):
+def test_on_consumer_cancelled(consumer, connection):
+    consumer._connection = connection
+
     consumer.on_consumer_cancelled(Mock())
-    assert channel.close.called is True
+    assert connection.close.called is True

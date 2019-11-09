@@ -91,6 +91,14 @@ class RequestConsumer(threading.Thread):
         self.logger.debug("Stopping request consumer")
         self._connection.ioloop.add_callback_threadsafe(partial(self._connection.close))
 
+    def is_connected(self):
+        """Determine if the underlying connection is open
+
+        Returns:
+            True if the connection exists and is open, False otherwise
+        """
+        return self._connection and self._connection.is_open
+
     def on_message(self, channel, basic_deliver, properties, body):
         """Invoked when a message is delivered from the queueing service
 

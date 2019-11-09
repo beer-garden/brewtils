@@ -52,9 +52,13 @@ class RequestConsumer(threading.Thread):
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
 
-        if kwargs.get("connection_info", None):
-            pika_base = PikaClient(**kwargs["connection_info"])
-            self._connection_parameters = pika_base.connection_parameters()
+        if "connection_info" in kwargs:
+            params = kwargs["connection_info"]
+
+            # Default to one attempt as the Plugin implements its own retry logic
+            params["connection_attempts"] = params.get("connection_attempts", 1)
+
+            self._connection_parameters = PikaClient(**params).connection_parameters()
         else:
             self._connection_parameters = URLParameters(amqp_url)
 

@@ -661,7 +661,7 @@ class Plugin(object):
         """Ensure the RequestConsumers are both alive"""
         if self.admin_consumer.is_connected() and self.request_consumer.is_connected():
             if self._mq_retry_attempt != 0:
-                self.logger.info("Admin and request consumers successfully reconnected")
+                self.logger.info("Admin and request consumer connections OK")
 
             self._mq_retry_attempt = 0
             self._mq_timeout = self._mq_starting_timeout

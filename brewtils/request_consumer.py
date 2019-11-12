@@ -264,16 +264,11 @@ class RequestConsumer(threading.Thread):
         Returns:
             The SelectConnection object
         """
-        extra_kwargs = {}
-        if not PIKA_ONE:
-            extra_kwargs["stop_ioloop_on_close"] = False
-
         return SelectConnection(
             parameters=self._connection_parameters,
             on_open_callback=self.on_connection_open,
             on_close_callback=self.on_connection_closed,
             on_open_error_callback=self.on_connection_closed,
-            **extra_kwargs
         )
 
     def on_connection_open(self, connection):

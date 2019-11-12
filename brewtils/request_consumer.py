@@ -52,9 +52,13 @@ class RequestConsumer(threading.Thread):
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
 
-        if kwargs.get("connection_info", None):
-            pika_base = PikaClient(**kwargs["connection_info"])
-            self._connection_parameters = pika_base.connection_parameters()
+        if "connection_info" in kwargs:
+            params = kwargs["connection_info"]
+
+            # Default to one attempt as the Plugin implements its own retry logic
+            params["connection_attempts"] = params.get("connection_attempts", 1)
+
+            self._connection_parameters = PikaClient(**params).connection_parameters()
         else:
             self._connection_parameters = URLParameters(amqp_url)
 
@@ -90,6 +94,14 @@ class RequestConsumer(threading.Thread):
         """
         self.logger.debug("Stopping request consumer")
         self._connection.ioloop.add_callback_threadsafe(partial(self._connection.close))
+
+    def is_connected(self):
+        """Determine if the underlying connection is open
+
+        Returns:
+            True if the connection exists and is open, False otherwise
+        """
+        return self._connection and self._connection.is_open
 
     def on_message(self, channel, basic_deliver, properties, body):
         """Invoked when a message is delivered from the queueing service
@@ -252,16 +264,11 @@ class RequestConsumer(threading.Thread):
         Returns:
             The SelectConnection object
         """
-        extra_kwargs = {}
-        if not PIKA_ONE:
-            extra_kwargs["stop_ioloop_on_close"] = False
-
         return SelectConnection(
             parameters=self._connection_parameters,
             on_open_callback=self.on_connection_open,
             on_close_callback=self.on_connection_closed,
             on_open_error_callback=self.on_connection_closed,
-            **extra_kwargs
         )
 
     def on_connection_open(self, connection):

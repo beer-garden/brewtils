@@ -136,6 +136,12 @@ class Plugin(object):
     :param int max_timeout: Maximum amount of time to wait before retrying to
         update a request.
     :param int starting_timeout: Initial time to wait before the first retry.
+    :param int mq_max_attempts: Number of times to attempt reconnection to message queue
+        before giving up (default -1 aka never).
+    :param int mq_max_timeout: Maximum amount of time to wait before retrying to
+        connect to message queue.
+    :param int mq_starting_timeout: Initial time to wait before the first message queue
+        connection retry.
     :param int max_instances: Max number of instances allowed for the system.
     :param bool ca_verify: Verify server certificate when making a request.
     :param str username: The username for Beergarden authentication
@@ -199,6 +205,12 @@ class Plugin(object):
         self.max_attempts = kwargs.get("max_attempts", -1)
         self.max_timeout = kwargs.get("max_timeout", 30)
         self.starting_timeout = kwargs.get("starting_timeout", 5)
+
+        self._mq_max_attempts = kwargs.get("mq_max_attempts", -1)
+        self._mq_max_timeout = kwargs.get("mq_max_timeout", 30)
+        self._mq_starting_timeout = kwargs.get("mq_starting_timeout", 5)
+        self._mq_retry_attempt = 0
+        self._mq_timeout = self._mq_starting_timeout
 
         self.max_concurrent = self._setup_max_concurrent(multithreaded, max_concurrent)
         self.instance_name = instance_name or os.environ.get(
@@ -265,26 +277,8 @@ class Plugin(object):
 
         try:
             while not self.shutdown_event.wait(0.1):
-                if not self.admin_consumer.isAlive():
-                    self.logger.warning("Admin consumer has died, restarting")
-                    self.shutdown_event.wait(5)
-                    self.admin_consumer = self._create_admin_consumer()
-                    self.admin_consumer.start()
-
-                if not self.request_consumer.isAlive():
-                    self.logger.warning("Request consumer has died, restarting")
-                    self.shutdown_event.wait(5)
-                    self.request_consumer = self._create_standard_consumer()
-                    self.request_consumer.start()
-
-                if not self.connection_poll_thread.isAlive():
-                    self.logger.warning(
-                        "Looks like connection poll thread has died - "
-                        "attempting to restart"
-                    )
-                    self.connection_poll_thread = self._create_connection_poll_thread()
-                    self.connection_poll_thread.start()
-
+                self._check_connection_poll_thread()
+                self._check_consumers()
         except KeyboardInterrupt:
             self.logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:
@@ -653,6 +647,48 @@ class Plugin(object):
                 request.id,
             )
             self.brew_view_error_condition.wait()
+
+    def _check_connection_poll_thread(self):
+        """Ensure the connection poll thread is alive"""
+        if not self.connection_poll_thread.isAlive():
+            self.logger.warning(
+                "Looks like connection poll thread has died - attempting to restart"
+            )
+            self.connection_poll_thread = self._create_connection_poll_thread()
+            self.connection_poll_thread.start()
+
+    def _check_consumers(self):
+        """Ensure the RequestConsumers are both alive"""
+        if self.admin_consumer.is_connected() and self.request_consumer.is_connected():
+            if self._mq_retry_attempt != 0:
+                self.logger.info("Admin and request consumer connections OK")
+
+            self._mq_retry_attempt = 0
+            self._mq_timeout = self._mq_starting_timeout
+        else:
+            if 0 < self._mq_max_attempts < self._mq_retry_attempt:
+                self.logger.warning("Max consumer connection failures, shutting down")
+                self.shutdown_event.set()
+                return
+
+            if not self.admin_consumer.is_connected():
+                self.logger.warning("Looks like admin consumer has died")
+            if not self.request_consumer.is_connected():
+                self.logger.warning("Looks like request consumer has died")
+
+            self.logger.warning("Waiting %i seconds before restart", self._mq_timeout)
+            self.shutdown_event.wait(self._mq_timeout)
+
+            if not self.admin_consumer.is_connected():
+                self.admin_consumer = self._create_admin_consumer()
+                self.admin_consumer.start()
+
+            if not self.request_consumer.is_connected():
+                self.request_consumer = self._create_standard_consumer()
+                self.request_consumer.start()
+
+            self._mq_timeout = min(self._mq_timeout * 2, self._mq_max_timeout)
+            self._mq_retry_attempt += 1
 
     def _start(self, request):
         """Handle start message by marking this instance as running.

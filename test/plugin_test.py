@@ -245,46 +245,19 @@ class TestPluginRun(object):
         assert standard_mock.return_value.stop.called is True
 
     def test_run_things_died_unexpected(self, plugin):
-        admin_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=False)),
-        )
-        request_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=False)),
-        )
+        admin_mock = Mock(isAlive=Mock(return_value=False))
+        request_mock = Mock(isAlive=Mock(return_value=False))
         poll_mock = Mock(isAlive=Mock(return_value=False))
 
         plugin._create_admin_consumer = Mock(return_value=admin_mock)
         plugin._create_standard_consumer = Mock(return_value=request_mock)
         plugin._create_connection_poll_thread = Mock(return_value=poll_mock)
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
+        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True, True, True]))
 
         plugin.run()
         assert admin_mock.start.call_count == 2
         assert request_mock.start.call_count == 2
         assert poll_mock.start.call_count == 2
-
-    def test_run_consumers_closed_by_server(self, plugin):
-        admin_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=True)),
-        )
-        request_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=True)),
-        )
-        poll_mock = Mock(isAlive=Mock(return_value=True))
-
-        plugin._create_admin_consumer = Mock(return_value=admin_mock)
-        plugin._create_standard_consumer = Mock(return_value=request_mock)
-        plugin._create_connection_poll_thread = Mock(return_value=poll_mock)
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-
-        plugin.run()
-        assert plugin.shutdown_event.set.called is True
-        assert admin_mock.start.call_count == 1
-        assert request_mock.start.call_count == 1
 
     @pytest.mark.parametrize("ex", [KeyboardInterrupt, Exception])
     def test_run_consumers_exception(self, plugin, ex):

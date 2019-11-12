@@ -34,7 +34,7 @@ setup(
         "marshmallow<3",
         "marshmallow-polyfield<4",
         "packaging<20",
-        "pika<1.1,>=0.11",
+        "pika<=1.1,>=0.11",
         "pyjwt<2",
         "requests<3",
         "simplejson<4",

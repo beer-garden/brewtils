@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.4.10
+-----
+Date: 11/12/19
+
+Bug Fixes
+^^^^^^^^^
+- Plugins can now survive a rabbitmq broker restart (beer-garden/#353, beer-garden/#359)
+
 2.4.9
 -----
 Date: 10/30/19

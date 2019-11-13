@@ -206,6 +206,7 @@ class TransientPikaClient(PikaClient):
                 content_type="text/plain",
                 headers=kwargs.get("headers"),
                 expiration=kwargs.get("expiration"),
+                delivery_mode=kwargs.get("delivery_mode"),
             )
 
             channel.basic_publish(

@@ -57,7 +57,26 @@ def updater_mock():
 
 
 @pytest.fixture
-def plugin(client, bm_client, parser_mock, updater_mock, bg_system, bg_instance):
+def admin_consumer():
+    return Mock()
+
+
+@pytest.fixture
+def request_consumer():
+    return Mock()
+
+
+@pytest.fixture
+def plugin(
+    client,
+    bm_client,
+    parser_mock,
+    updater_mock,
+    bg_system,
+    bg_instance,
+    admin_consumer,
+    request_consumer,
+):
     plugin = Plugin(
         client,
         bg_host="localhost",
@@ -69,6 +88,9 @@ def plugin(client, bm_client, parser_mock, updater_mock, bg_system, bg_instance)
     plugin.bm_client = bm_client
     plugin.parser = parser_mock
     plugin.request_updater = updater_mock
+    plugin.admin_consumer = admin_consumer
+    plugin.request_consumer = request_consumer
+    plugin.queue_connection_params = {}
 
     return plugin
 
@@ -216,7 +238,7 @@ class TestPluginRun(object):
 
         plugin._create_admin_consumer = admin_mock
         plugin._create_standard_consumer = standard_mock
-        plugin.shutdown_event = Mock(wait=Mock(return_value=True))
+        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
 
         plugin.run()
         for moc in (admin_mock, standard_mock):
@@ -225,45 +247,6 @@ class TestPluginRun(object):
 
         assert admin_mock.return_value.stop.called is True
         assert standard_mock.return_value.stop.called is True
-
-    def test_run_things_died_unexpected(self, plugin):
-        admin_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=False)),
-        )
-        request_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=False)),
-        )
-
-        plugin._create_admin_consumer = Mock(return_value=admin_mock)
-        plugin._create_standard_consumer = Mock(return_value=request_mock)
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-
-        plugin.run()
-        assert admin_mock.start.call_count == 2
-        assert request_mock.start.call_count == 2
-
-    def test_run_consumers_closed_by_server(self, plugin):
-        admin_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=True)),
-        )
-        request_mock = Mock(
-            isAlive=Mock(return_value=False),
-            shutdown_event=Mock(is_set=Mock(return_value=True)),
-        )
-        poll_mock = Mock(isAlive=Mock(return_value=True))
-
-        plugin._create_admin_consumer = Mock(return_value=admin_mock)
-        plugin._create_standard_consumer = Mock(return_value=request_mock)
-        plugin._create_connection_poll_thread = Mock(return_value=poll_mock)
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-
-        plugin.run()
-        assert plugin.shutdown_event.set.called is True
-        assert admin_mock.start.call_count == 1
-        assert request_mock.start.call_count == 1
 
     @pytest.mark.parametrize("ex", [KeyboardInterrupt, Exception])
     def test_run_consumers_exception(self, plugin, ex):
@@ -418,6 +401,45 @@ def test_create_request_consumer(plugin, bg_instance):
 def test_create_admin_consumer(plugin, bg_instance):
     consumer = plugin._create_admin_consumer()
     assert consumer._queue_name == bg_instance.queue_info["admin"]["name"]
+
+
+class TestCheckConsumers(object):
+    def test_reset_on_success(self, plugin):
+        plugin._mq_retry_attempt = 3
+
+        plugin._check_consumers()
+        assert plugin._mq_retry_attempt == 0
+
+    def test_max_failures_shutdown(self, plugin):
+        plugin.admin_consumer.is_connected.return_value = False
+
+        plugin._mq_max_attempts = 1
+        plugin._mq_retry_attempt = 2
+
+        plugin._check_consumers()
+        assert plugin.shutdown_event.is_set()
+
+    def test_restart(self, plugin, admin_consumer, request_consumer):
+        plugin.admin_consumer.is_connected.return_value = False
+        plugin.request_consumer.is_connected.return_value = False
+
+        shutdown_event = Mock()
+        plugin.shutdown_event = shutdown_event
+
+        new_admin = Mock()
+        new_request = Mock()
+        plugin._create_admin_consumer = Mock(return_value=new_admin)
+        plugin._create_standard_consumer = Mock(return_value=new_request)
+
+        plugin._check_consumers()
+        assert plugin.admin_consumer == new_admin
+        assert plugin.request_consumer == new_request
+        assert new_admin.start.called is True
+        assert new_request.start.called is True
+
+        shutdown_event.wait.assert_called_once_with(5)
+        assert plugin._mq_timeout == 10
+        assert plugin._mq_retry_attempt == 1
 
 
 class TestAdminMethods(object):

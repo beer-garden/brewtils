@@ -7,7 +7,7 @@ from mock import Mock, MagicMock
 import brewtils.request_consumer
 from brewtils.errors import DiscardMessageException, RepublishRequestException
 from brewtils.pika import PIKA_ONE
-from brewtils.request_consumer import RequestConsumer
+from brewtils.request_consumer import PikaConsumer
 
 if PIKA_ONE:
     from pika.exceptions import ChannelClosedByBroker, ConnectionClosedByBroker
@@ -52,7 +52,7 @@ def select_mock(connection, reconnection):
 def consumer(monkeypatch, connection, channel, callback, panic_event, select_mock):
     monkeypatch.setattr(brewtils.request_consumer, "SelectConnection", select_mock)
 
-    consumer = RequestConsumer(
+    consumer = PikaConsumer(
         thread_name="Request Consumer",
         connection_info={
             "host": "localhost",

@@ -17,7 +17,7 @@ from brewtils.errors import (
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System
-from brewtils.request_consumer import RequestConsumer
+from brewtils.request_consumer import PikaConsumer
 from brewtils.request_handling import HTTPRequestUpdater, NoopUpdater, RequestProcessor
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
@@ -394,7 +394,7 @@ class Plugin(object):
         self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _create_standard_consumer(self):
-        return RequestConsumer(
+        return PikaConsumer(
             thread_name="Request Consumer",
             connection_info=self.queue_connection_params,
             amqp_url=self.instance.queue_info.get("url", None),
@@ -405,7 +405,7 @@ class Plugin(object):
         )
 
     def _create_admin_consumer(self):
-        return RequestConsumer(
+        return PikaConsumer(
             thread_name="Admin Consumer",
             connection_info=self.queue_connection_params,
             amqp_url=self.instance.queue_info.get("url", None),

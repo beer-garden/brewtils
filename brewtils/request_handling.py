@@ -26,7 +26,7 @@ class RequestProcessor(object):
     """Class responsible for coordinating Request processing
 
     The RequestProcessor is responsible for the following:
-    - Defining on_message_received callback that will be invoked by the RequestConsumer
+    - Defining on_message_received callback that will be invoked by the PikaConsumer
     - Parsing the request
     - Invoking the command on the target
     - Formatting the output
@@ -101,7 +101,7 @@ class RequestProcessor(object):
         Args:
             target: The object to invoke received commands on
             request: The parsed Request
-            headers: Dictionary of headers from the `RequestConsumer`
+            headers: Dictionary of headers from the `PikaConsumer`
 
         Returns:
             None
@@ -282,7 +282,7 @@ class HTTPRequestUpdater(RequestUpdater):
 
         Args:
             request: The request to update
-            headers: A dictionary of headers from the `RequestConsumer`
+            headers: A dictionary of headers from the `PikaConsumer`
 
         Returns:
             None

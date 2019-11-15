@@ -12,8 +12,8 @@ from brewtils.pika import PikaClient, PIKA_ONE
 from brewtils.schema_parser import SchemaParser
 
 
-class RequestConsumer(threading.Thread):
-    """RabbitMQ message consumer
+class PikaConsumer(threading.Thread):
+    """Pika message consumer
 
     This consumer is designed to be fault-tolerant - if RabbitMQ closes the
     connection the consumer will attempt to reopen it. There are limited
@@ -64,7 +64,7 @@ class RequestConsumer(threading.Thread):
         else:
             self._connection_parameters = URLParameters(amqp_url)
 
-        super(RequestConsumer, self).__init__(name=thread_name)
+        super(PikaConsumer, self).__init__(name=thread_name)
 
     def run(self):
         """Run the consumer
@@ -72,7 +72,7 @@ class RequestConsumer(threading.Thread):
         Creates a connection to RabbitMQ and starts the IOLoop.
 
         The IOLoop will block and allow the SelectConnection to operate. This means that
-        to stop the RequestConsumer we just need to stop the IOLoop.
+        to stop the PikaConsumer we just need to stop the IOLoop.
 
         Returns:
             None
@@ -89,7 +89,7 @@ class RequestConsumer(threading.Thread):
         This sets the shutdown_event to let callbacks know that this is an orderly
         (requested) shutdown. It then schedules a channel close on the IOLoop - the
         channel's on_close callback will close the connection, and the connection's
-        on_close callback will terminate the IOLoop which will end the RequestConsumer.
+        on_close callback will terminate the IOLoop which will end the PikaConsumer.
 
         Returns:
             None
@@ -289,7 +289,7 @@ class RequestConsumer(threading.Thread):
 
         This method is invoked by pika when the connection to RabbitMQ is closed.
 
-        If the connection is closed we terminate its IOLoop to stop the RequestConsumer.
+        If the connection is closed we terminate its IOLoop to stop the PikaConsumer.
         In the case of an unexpected connection closure we'll wait 5 seconds before
         terminating with the expectation that the plugin will attempt to restart the
         consumer once it's dead.
@@ -412,7 +412,7 @@ class RequestConsumer(threading.Thread):
 
         This is only invoked if the consumer is cancelled by the broker. Since that
         effectively ends the request consuming we close the channel to start the
-        process of terminating the RequestConsumer.
+        process of terminating the PikaConsumer.
 
         Args:
             method_frame (pika.frame.Method): The Basic.Cancel frame

@@ -219,8 +219,31 @@ class RequestProcessor(object):
             return str(output)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class RequestConsumer(threading.Thread):
-    pass
+    @staticmethod
+    def create(connection_type=None, **kwargs):
+        """Factory method for consumer creation
+
+        Currently the only supported connection_type is "rabbitmq", which will return
+        an instance of ``brewtils.pika.PikaConsumer``.
+
+        Args:
+            connection_type (str): String describing connection type
+            kwargs: Keyword arguments to be passed to the Consumer initializer
+
+        Returns:
+            Concrete instance of RequestConsumer
+
+        Raises:
+            ValueError: The specified connection_type does not map to a consumer class
+        """
+        if connection_type == "rabbitmq":
+            from brewtils.pika import PikaConsumer
+
+            return PikaConsumer(**kwargs)
+
+        raise ValueError("Unknown connection type '%s'" % connection_type)
 
 
 @six.add_metaclass(abc.ABCMeta)

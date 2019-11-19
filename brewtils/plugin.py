@@ -17,8 +17,12 @@ from brewtils.errors import (
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System
-from brewtils.pika import PikaConsumer
-from brewtils.request_handling import HTTPRequestUpdater, NoopUpdater, RequestProcessor
+from brewtils.request_handling import (
+    HTTPRequestUpdater,
+    NoopUpdater,
+    RequestConsumer,
+    RequestProcessor,
+)
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser
 
@@ -223,7 +227,8 @@ class Plugin(object):
         self.metadata = metadata or {}
 
         self.instance = None
-        self.queue_connection_params = None
+        self.admin_processor = None
+        self.request_processor = None
         self.client = client
         self.shutdown_event = threading.Event()
         self.parser = parser or SchemaParser()
@@ -270,9 +275,9 @@ class Plugin(object):
 
         self.system = self._initialize_system()
         self.instance = self._initialize_instance()
-        self.queue_connection_params = self._initialize_queue_params()
+        self.admin_processor, self.request_processor = self._initialize_processors()
 
-        self._create_processors()
+        self.logger.debug("Starting up processors")
         self.admin_processor.startup()
         self.request_processor.startup()
 
@@ -280,7 +285,7 @@ class Plugin(object):
         self.logger.debug("About to shut down plugin %s", self.unique_name)
         self.shutdown_event.set()
 
-        self.logger.debug("Shutting down request and admin processors")
+        self.logger.debug("Shutting down processors")
         self.request_processor.shutdown()
         self.admin_processor.shutdown()
 
@@ -352,11 +357,13 @@ class Plugin(object):
             self.system.get_instance(self.instance_name).id
         )
 
-    def _initialize_queue_params(self):
-        queue_params = self.instance.queue_info.get("connection")
-
-        if queue_params and queue_params.get("ssl"):
-            queue_params["ssl"].update(
+    def _initialize_processors(self):
+        """Create RequestProcessors for the admin and request queues"""
+        # If the queue connection is TLS we need to update connection params with
+        # values specified at plugin creation
+        connection_info = self.instance.queue_info["connection"]
+        if "ssl" in connection_info:
+            connection_info["ssl"].update(
                 {
                     "ca_cert": self.ca_cert,
                     "ca_verify": self.ca_verify,
@@ -364,46 +371,46 @@ class Plugin(object):
                 }
             )
 
-        return queue_params
-
-    def _create_processors(self):
-
-        admin_consumer = PikaConsumer(
+        # Each RequestProcessor needs a RequestConsumer, so start with those
+        common_args = {
+            "connection_type": self.instance.queue_type,
+            "connection_info": connection_info,
+            "panic_event": self.shutdown_event,
+            "max_reconnect_attempts": self._mq_max_attempts,
+            "max_reconnect_timeout": self._mq_max_timeout,
+            "starting_reconnect_timeout": self._mq_starting_timeout,
+        }
+        admin_consumer = RequestConsumer.create(
             thread_name="Admin Consumer",
-            connection_info=self.queue_connection_params,
             queue_name=self.instance.queue_info["admin"]["name"],
             max_concurrent=1,
-            panic_event=self.shutdown_event,
-            max_reconnect_attempts=self._mq_max_attempts,
-            max_reconnect_timeout=self._mq_max_timeout,
-            starting_reconnect_timeout=self._mq_starting_timeout,
+            **common_args
         )
-        request_consumer = PikaConsumer(
+        request_consumer = RequestConsumer.create(
             thread_name="Request Consumer",
-            connection_info=self.queue_connection_params,
             queue_name=self.instance.queue_info["request"]["name"],
             max_concurrent=self.max_concurrent,
-            panic_event=self.shutdown_event,
-            max_reconnect_attempts=self._mq_max_attempts,
-            max_reconnect_timeout=self._mq_max_timeout,
-            starting_reconnect_timeout=self._mq_starting_timeout,
+            **common_args
         )
 
-        self.admin_processor = RequestProcessor(
+        # Finally, create the actual RequestProcessors
+        admin_processor = RequestProcessor(
             target=self,
             updater=NoopUpdater(),
             consumer=admin_consumer,
-            unique_name=self.unique_name,
+            plugin_name=self.unique_name,
             max_workers=1,
         )
-        self.request_processor = RequestProcessor(
+        request_processor = RequestProcessor(
             target=self.client,
             updater=HTTPRequestUpdater(self.bm_client, self.shutdown_event),
             consumer=request_consumer,
             validation_funcs=[self._validate_system, self._validate_running],
-            unique_name=self.unique_name,
+            plugin_name=self.unique_name,
             max_workers=self.max_concurrent,
         )
+
+        return admin_processor, request_processor
 
     def _start(self):
         """Handle start message by marking this instance as running.

@@ -6,6 +6,7 @@ import os
 import pytest
 from mock import MagicMock, Mock, ANY
 
+import brewtils.plugin
 from brewtils import get_connection_info
 from brewtils.errors import (
     ValidationError,
@@ -276,9 +277,9 @@ class TestPluginRun(object):
 
 
 def test_startup(plugin, admin_processor, request_processor):
-    create_mock = Mock()
-
-    plugin._create_processors = create_mock
+    plugin._initialize_processors = Mock(
+        return_value=(admin_processor, request_processor)
+    )
 
     plugin._startup()
     assert admin_processor.startup.called is True
@@ -394,31 +395,40 @@ class TestInitializeInstance(object):
             plugin._initialize_instance()
 
 
-class TestInitializeQueueParams(object):
-    def test_no_ssl(self, plugin, bg_instance):
-        if bg_instance.queue_info["connection"].get("ssl"):
-            del bg_instance.queue_info["connection"]["ssl"]
+class TestInitializeProcessors(object):
+    class TestSSLParams(object):
+        def test_no_ssl(self, monkeypatch, plugin, bg_instance):
+            create_mock = Mock()
+            monkeypatch.setattr(brewtils.plugin.RequestConsumer, "create", create_mock)
 
-        assert plugin._initialize_queue_params() == bg_instance.queue_info["connection"]
+            if bg_instance.queue_info["connection"].get("ssl"):
+                del bg_instance.queue_info["connection"]["ssl"]
 
-    def test_ssl(self, plugin, bg_instance):
-        plugin.ca_cert = Mock()
-        plugin.ca_verify = Mock()
-        plugin.client_cert = Mock()
+            plugin._initialize_processors()
+            connection_info = create_mock.call_args_list[0][1]["connection_info"]
+            assert connection_info == bg_instance.queue_info["connection"]
 
-        queue_params = plugin._initialize_queue_params()
-        assert queue_params["ssl"]["ca_cert"] == plugin.ca_cert
-        assert queue_params["ssl"]["ca_verify"] == plugin.ca_verify
-        assert queue_params["ssl"]["client_cert"] == plugin.client_cert
+        def test_ssl(self, monkeypatch, plugin, bg_instance):
+            create_mock = Mock()
+            monkeypatch.setattr(brewtils.plugin.RequestConsumer, "create", create_mock)
 
+            plugin.ca_cert = Mock()
+            plugin.ca_verify = Mock()
+            plugin.client_cert = Mock()
 
-def test_create_processors(plugin, bg_instance):
-    request_queue = bg_instance.queue_info["request"]["name"]
-    admin_queue = bg_instance.queue_info["admin"]["name"]
+            plugin._initialize_processors()
+            connection_info = create_mock.call_args_list[0][1]["connection_info"]
+            assert connection_info["ssl"]["ca_cert"] == plugin.ca_cert
+            assert connection_info["ssl"]["ca_verify"] == plugin.ca_verify
+            assert connection_info["ssl"]["client_cert"] == plugin.client_cert
 
-    plugin._create_processors()
-    assert plugin.request_processor._consumer._queue_name == request_queue
-    assert plugin.admin_processor._consumer._queue_name == admin_queue
+    def test_queue_names(self, plugin, bg_instance):
+        request_queue = bg_instance.queue_info["request"]["name"]
+        admin_queue = bg_instance.queue_info["admin"]["name"]
+
+        admin, request = plugin._initialize_processors()
+        assert admin._consumer._queue_name == admin_queue
+        assert request._consumer._queue_name == request_queue
 
 
 class TestAdminMethods(object):

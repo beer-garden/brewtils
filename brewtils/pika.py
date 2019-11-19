@@ -343,7 +343,11 @@ class PikaConsumer(RequestConsumer):
             None
         """
         self.logger.debug("Stopping request consumer")
-        self._connection.ioloop.add_callback_threadsafe(partial(self._connection.close))
+
+        if self._connection:
+            self._connection.ioloop.add_callback_threadsafe(
+                partial(self._connection.close)
+            )
 
     def is_connected(self):
         """Determine if the underlying connection is open
@@ -651,7 +655,7 @@ class PikaConsumer(RequestConsumer):
         """
         self.logger.debug("Stopping message consuming on channel %i", self._channel)
 
-        if self._channel:
+        if self._channel and self._channel.is_open:
             self._connection.ioloop.add_callback_threadsafe(
                 partial(
                     self._channel.basic_cancel,

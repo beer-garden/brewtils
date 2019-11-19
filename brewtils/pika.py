@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 import logging
 import ssl as pyssl
-import threading
 from functools import partial
 
 from pika import (

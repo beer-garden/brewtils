@@ -9,10 +9,8 @@ from pika.exceptions import AMQPError
 from pytest_lazyfixture import lazy_fixture
 
 import brewtils.pika
-import brewtils.pika
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.pika import PikaClient, PIKA_ONE, TransientPikaClient
-from brewtils.pika import PikaConsumer
+from brewtils.pika import PIKA_ONE, PikaClient, PikaConsumer, TransientPikaClient
 
 if PIKA_ONE:
     from pika.exceptions import ChannelClosedByBroker, ConnectionClosedByBroker

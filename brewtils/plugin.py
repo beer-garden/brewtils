@@ -224,8 +224,6 @@ class Plugin(object):
 
         self.instance = None
         self.queue_connection_params = None
-        self.admin_consumer = None
-        self.request_consumer = None
         self.client = client
         self.shutdown_event = threading.Event()
         self.parser = parser or SchemaParser()
@@ -253,46 +251,40 @@ class Plugin(object):
             logger=self.logger, parser=self.parser, **connection_parameters
         )
 
-        self.request_processor = RequestProcessor(
-            self.client,
-            HTTPRequestUpdater(self.bm_client, self.shutdown_event),
-            validation_funcs=[self._validate_system, self._validate_running],
-            unique_name=self.unique_name,
-            max_workers=self.max_concurrent,
-        )
-        self.admin_processor = RequestProcessor(
-            self, NoopUpdater(), unique_name=self.unique_name, max_workers=1
-        )
-
     def run(self):
-        self.logger.debug("Initializing plugin %s", self.unique_name)
+        self._startup()
+        self.logger.info("Plugin %s has started", self.unique_name)
+
+        try:
+            self.shutdown_event.wait()
+        except KeyboardInterrupt:
+            self.logger.debug("Received KeyboardInterrupt - shutting down")
+        except Exception as ex:
+            self.logger.exception("Exception during wait, shutting down: %s", ex)
+
+        self._shutdown()
+        self.logger.info("Plugin %s has terminated", self.unique_name)
+
+    def _startup(self):
+        self.logger.debug("About to start up plugin %s", self.unique_name)
+
         self.system = self._initialize_system()
         self.instance = self._initialize_instance()
         self.queue_connection_params = self._initialize_queue_params()
 
-        self.logger.debug("Creating and starting admin queue consumer")
-        self.admin_consumer = self._create_admin_consumer()
-        self.admin_consumer.start()
+        self._create_processors()
+        self.admin_processor.startup()
+        self.request_processor.startup()
 
-        self.logger.debug("Creating and starting request queue consumer")
-        self.request_consumer = self._create_standard_consumer()
-        self.request_consumer.start()
-
-        self.logger.info("Plugin %s has started", self.unique_name)
-
-        try:
-            while not self.shutdown_event.wait(0.1):
-                self._check_consumers()
-        except KeyboardInterrupt:
-            self.logger.debug("Received KeyboardInterrupt - shutting down")
-        except Exception as ex:
-            self.logger.error("Event loop terminated unexpectedly - shutting down")
-            self.logger.exception(ex)
-
+    def _shutdown(self):
         self.logger.debug("About to shut down plugin %s", self.unique_name)
-        self._shutdown()
+        self.shutdown_event.set()
 
-        self.logger.info("Plugin %s has terminated", self.unique_name)
+        self.logger.debug("Shutting down request and admin processors")
+        self.request_processor.shutdown()
+        self.admin_processor.shutdown()
+
+        self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info
@@ -374,80 +366,44 @@ class Plugin(object):
 
         return queue_params
 
-    def _shutdown(self):
-        self.shutdown_event.set()
+    def _create_processors(self):
 
-        self.logger.debug("Stopping request and admin consuming")
-        self.request_consumer.stop_consuming()
-        self.admin_consumer.stop_consuming()
-
-        self.logger.debug("Shutting down request and admin processors")
-        self.request_processor.shutdown()
-        self.admin_processor.shutdown()
-
-        self.logger.debug("Shutting down request and admin consumers")
-        self.request_consumer.stop()
-        self.admin_consumer.stop()
-        self.request_consumer.join()
-        self.admin_consumer.join()
-
-        self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
-
-    def _create_standard_consumer(self):
-        return PikaConsumer(
-            thread_name="Request Consumer",
-            connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get("url", None),
-            queue_name=self.instance.queue_info["request"]["name"],
-            on_message_callback=self.request_processor.on_message_received,
-            panic_event=self.shutdown_event,
-            max_concurrent=self.max_concurrent,
-        )
-
-    def _create_admin_consumer(self):
-        return PikaConsumer(
+        admin_consumer = PikaConsumer(
             thread_name="Admin Consumer",
             connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get("url", None),
             queue_name=self.instance.queue_info["admin"]["name"],
-            on_message_callback=self.admin_processor.on_message_received,
-            panic_event=self.shutdown_event,
             max_concurrent=1,
-            logger=logging.getLogger("brewtils.admin_consumer"),
+            panic_event=self.shutdown_event,
+            max_reconnect_attempts=self._mq_max_attempts,
+            max_reconnect_timeout=self._mq_max_timeout,
+            starting_reconnect_timeout=self._mq_starting_timeout,
+        )
+        request_consumer = PikaConsumer(
+            thread_name="Request Consumer",
+            connection_info=self.queue_connection_params,
+            queue_name=self.instance.queue_info["request"]["name"],
+            max_concurrent=self.max_concurrent,
+            panic_event=self.shutdown_event,
+            max_reconnect_attempts=self._mq_max_attempts,
+            max_reconnect_timeout=self._mq_max_timeout,
+            starting_reconnect_timeout=self._mq_starting_timeout,
         )
 
-    def _check_consumers(self):
-        """Ensure the RequestConsumers are both alive"""
-        if self.admin_consumer.is_connected() and self.request_consumer.is_connected():
-            if self._mq_retry_attempt != 0:
-                self.logger.info("Admin and request consumer connections OK")
-
-            self._mq_retry_attempt = 0
-            self._mq_timeout = self._mq_starting_timeout
-        else:
-            if 0 < self._mq_max_attempts < self._mq_retry_attempt:
-                self.logger.warning("Max consumer connection failures, shutting down")
-                self.shutdown_event.set()
-                return
-
-            if not self.admin_consumer.is_connected():
-                self.logger.warning("Looks like admin consumer has died")
-            if not self.request_consumer.is_connected():
-                self.logger.warning("Looks like request consumer has died")
-
-            self.logger.warning("Waiting %i seconds before restart", self._mq_timeout)
-            self.shutdown_event.wait(self._mq_timeout)
-
-            if not self.admin_consumer.is_connected():
-                self.admin_consumer = self._create_admin_consumer()
-                self.admin_consumer.start()
-
-            if not self.request_consumer.is_connected():
-                self.request_consumer = self._create_standard_consumer()
-                self.request_consumer.start()
-
-            self._mq_timeout = min(self._mq_timeout * 2, self._mq_max_timeout)
-            self._mq_retry_attempt += 1
+        self.admin_processor = RequestProcessor(
+            target=self,
+            updater=NoopUpdater(),
+            consumer=admin_consumer,
+            unique_name=self.unique_name,
+            max_workers=1,
+        )
+        self.request_processor = RequestProcessor(
+            target=self.client,
+            updater=HTTPRequestUpdater(self.bm_client, self.shutdown_event),
+            consumer=request_consumer,
+            validation_funcs=[self._validate_system, self._validate_running],
+            unique_name=self.unique_name,
+            max_workers=self.max_concurrent,
+        )
 
     def _start(self):
         """Handle start message by marking this instance as running.

@@ -266,7 +266,8 @@ class TestPikaConsumer:
         consumer._channel = channel
         return consumer
 
-    def test_run(self, consumer, connection):
+    def test_run(self, consumer, connection, panic_event):
+        panic_event.is_set.side_effect = [False, True, True]
         consumer.run()
 
         assert consumer._connection == connection
@@ -457,3 +458,32 @@ class TestPikaConsumer:
 
         consumer.on_consumer_cancelled(Mock())
         assert connection.close.called is True
+
+    class TestConnectionFailure(object):
+        """Test that reconnect logic works correctly"""
+
+        def test_reset_on_success(self, consumer, connection):
+            consumer._reconnect_attempt = 3
+            consumer._connection = connection
+
+            consumer.on_connection_open(Mock())
+            assert consumer._reconnect_attempt == 0
+
+        def test_max_failures_shutdown(self, consumer, panic_event):
+            panic_event.is_set.return_value = False
+
+            consumer._max_reconnect_attempts = 1
+            consumer._reconnect_attempt = 2
+
+            consumer.run()
+            assert panic_event.set.called is True
+
+        def test_restart(self, consumer, panic_event):
+            # This is super annoying to test, but I don't have a better way
+            # This simulates two connection failures and exits:
+            panic_event.is_set.side_effect = [False, False, False, False, True]
+            consumer._reconnect_timeout = 1
+
+            consumer.run()
+            panic_event.wait.assert_has_calls([call(1), call(2)])
+            assert consumer._reconnect_attempt == 2

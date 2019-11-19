@@ -19,6 +19,7 @@ from pika import (
 from pika.exceptions import AMQPError
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
+from brewtils.request_handling import RequestConsumer
 from brewtils.schema_parser import SchemaParser
 
 PIKA_ONE = pika_version.startswith("1.")
@@ -226,7 +227,7 @@ class TransientPikaClient(PikaClient):
             )
 
 
-class PikaConsumer(threading.Thread):
+class PikaConsumer(RequestConsumer):
     """Pika message consumer
 
     This consumer is designed to be fault-tolerant - if RabbitMQ closes the
@@ -246,6 +247,10 @@ class PikaConsumer(threading.Thread):
         logger (logging.Logger): A configured Logger
         thread_name (str): Name to use for this thread
         max_concurrent: (int) Maximum requests to process concurrently
+        max_reconnect_attempts (int): Number of times to attempt reconnection to message
+            queue before giving up (default -1 aka never)
+        max_reconnect_timeout (int): Maximum time to wait before reconnect attempt
+        starting_reconnect_timeout (int): Time to wait before first reconnect attempt
     """
 
     def __init__(
@@ -268,6 +273,11 @@ class PikaConsumer(threading.Thread):
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
 
+        self._max_reconnect_attempts = kwargs.get("max_reconnect_attempts", -1)
+        self._max_reconnect_timeout = kwargs.get("max_reconnect_timeout", 30)
+        self._reconnect_timeout = kwargs.get("starting_reconnect_timeout", 5)
+        self._reconnect_attempt = 0
+
         if "connection_info" in kwargs:
             params = kwargs["connection_info"]
 
@@ -283,16 +293,40 @@ class PikaConsumer(threading.Thread):
     def run(self):
         """Run the consumer
 
-        Creates a connection to RabbitMQ and starts the IOLoop.
+        This method creates a connection to RabbitMQ and starts the IOLoop. The IOLoop
+        will block and allow the SelectConnection to operate. This means that to stop
+        the PikaConsumer we just need to stop the IOLoop.
 
-        The IOLoop will block and allow the SelectConnection to operate. This means that
-        to stop the PikaConsumer we just need to stop the IOLoop.
+        If the connection closed unexpectedly (the shutdown event is not set) then this
+        will wait a certain amount of time and before attempting to restart it.
+
+        Finally, if the maximum number of reconnect attempts have been reached the
+        panic event will be set, which will end the PikaConsumer as well as the Plugin.
 
         Returns:
             None
         """
-        self._connection = self.open_connection()
-        self._connection.ioloop.start()
+        while not self._panic_event.is_set():
+            self._connection = self.open_connection()
+            self._connection.ioloop.start()
+
+            if not self._panic_event.is_set():
+                if 0 <= self._max_reconnect_attempts <= self._reconnect_attempt:
+                    self.logger.warning("Max connection failures, shutting down")
+                    self._panic_event.set()
+                    return
+
+                self.logger.warning(
+                    "%s consumer has died, waiting %i seconds before reconnecting",
+                    self._queue_name,
+                    self._reconnect_timeout,
+                )
+                self._panic_event.wait(self._reconnect_timeout)
+
+                self._reconnect_attempt += 1
+                self._reconnect_timeout = min(
+                    self._reconnect_timeout * 2, self._max_reconnect_timeout
+                )
 
     def stop(self):
         """Cleanly shutdown
@@ -496,6 +530,11 @@ class PikaConsumer(threading.Thread):
             None
         """
         self.logger.debug("Connection opened: %s", connection)
+
+        if self._reconnect_attempt:
+            self.logger.info("%s consumer successfully reconnected", self._queue_name)
+            self._reconnect_attempt = 0
+
         self.open_channel()
 
     def on_connection_closed(self, connection, *args):

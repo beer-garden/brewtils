@@ -57,12 +57,12 @@ def updater_mock():
 
 
 @pytest.fixture
-def admin_consumer():
+def admin_processor():
     return Mock()
 
 
 @pytest.fixture
-def request_consumer():
+def request_processor():
     return Mock()
 
 
@@ -74,8 +74,8 @@ def plugin(
     updater_mock,
     bg_system,
     bg_instance,
-    admin_consumer,
-    request_consumer,
+    admin_processor,
+    request_processor,
 ):
     plugin = Plugin(
         client,
@@ -88,8 +88,8 @@ def plugin(
     plugin.bm_client = bm_client
     plugin.parser = parser_mock
     plugin.request_updater = updater_mock
-    plugin.admin_consumer = admin_consumer
-    plugin.request_consumer = request_consumer
+    plugin.admin_processor = admin_processor
+    plugin.request_processor = request_processor
     plugin.queue_connection_params = {}
 
     return plugin
@@ -232,36 +232,66 @@ class TestPluginInit(object):
 
 
 class TestPluginRun(object):
-    def test_run(self, plugin):
-        admin_mock = Mock()
-        standard_mock = Mock()
+    def test_normal(self, plugin):
+        plugin.shutdown_event = Mock()
 
-        plugin._create_admin_consumer = admin_mock
-        plugin._create_standard_consumer = standard_mock
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-
-        plugin.run()
-        for moc in (admin_mock, standard_mock):
-            assert moc.called is True
-            assert moc.return_value.start.called is True
-
-        assert admin_mock.return_value.stop.called is True
-        assert standard_mock.return_value.stop.called is True
-
-    @pytest.mark.parametrize("ex", [KeyboardInterrupt, Exception])
-    def test_run_consumers_exception(self, plugin, ex):
-        admin_mock = Mock()
-        standard_mock = Mock()
-
-        plugin._create_admin_consumer = admin_mock
-        plugin._create_standard_consumer = standard_mock
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=ex))
+        startup_mock = Mock()
+        shutdown_mock = Mock()
+        plugin._startup = startup_mock
+        plugin._shutdown = shutdown_mock
 
         plugin.run()
-        for moc in (admin_mock, standard_mock):
-            assert moc.called is True
-            assert moc.return_value.start.called is True
-            assert moc.return_value.stop.called is True
+        assert startup_mock.called is True
+        assert shutdown_mock.called is True
+
+    def test_error(self, caplog, plugin):
+        plugin.shutdown_event = Mock(wait=Mock(side_effect=ValueError))
+
+        startup_mock = Mock()
+        shutdown_mock = Mock()
+        plugin._startup = startup_mock
+        plugin._shutdown = shutdown_mock
+
+        with caplog.at_level(logging.ERROR):
+            plugin.run()
+
+        assert startup_mock.called is True
+        assert shutdown_mock.called is True
+        assert len(caplog.records) == 1
+
+    def test_keyboard_interrupt(self, caplog, plugin):
+        plugin.shutdown_event = Mock(wait=Mock(side_effect=KeyboardInterrupt))
+
+        startup_mock = Mock()
+        shutdown_mock = Mock()
+        plugin._startup = startup_mock
+        plugin._shutdown = shutdown_mock
+
+        with caplog.at_level(logging.ERROR):
+            plugin.run()
+
+        assert startup_mock.called is True
+        assert shutdown_mock.called is True
+        assert len(caplog.records) == 0
+
+
+def test_startup(plugin, admin_processor, request_processor):
+    create_mock = Mock()
+
+    plugin._create_processors = create_mock
+
+    plugin._startup()
+    assert admin_processor.startup.called is True
+    assert request_processor.startup.called is True
+
+
+def test_shutdown(plugin):
+    plugin.request_processor = Mock()
+    plugin.admin_processor = Mock()
+
+    plugin._shutdown()
+    assert plugin.request_processor.shutdown.called is True
+    assert plugin.admin_processor.shutdown.called is True
 
 
 class TestInitializeSystem(object):
@@ -382,64 +412,13 @@ class TestInitializeQueueParams(object):
         assert queue_params["ssl"]["client_cert"] == plugin.client_cert
 
 
-def test_shutdown(plugin):
-    plugin.request_consumer = Mock()
-    plugin.admin_consumer = Mock()
+def test_create_processors(plugin, bg_instance):
+    request_queue = bg_instance.queue_info["request"]["name"]
+    admin_queue = bg_instance.queue_info["admin"]["name"]
 
-    plugin._shutdown()
-    assert plugin.request_consumer.stop.called is True
-    assert plugin.request_consumer.join.called is True
-    assert plugin.admin_consumer.stop.called is True
-    assert plugin.admin_consumer.join.called is True
-
-
-def test_create_request_consumer(plugin, bg_instance):
-    consumer = plugin._create_standard_consumer()
-    assert consumer._queue_name == bg_instance.queue_info["request"]["name"]
-
-
-def test_create_admin_consumer(plugin, bg_instance):
-    consumer = plugin._create_admin_consumer()
-    assert consumer._queue_name == bg_instance.queue_info["admin"]["name"]
-
-
-class TestCheckConsumers(object):
-    def test_reset_on_success(self, plugin):
-        plugin._mq_retry_attempt = 3
-
-        plugin._check_consumers()
-        assert plugin._mq_retry_attempt == 0
-
-    def test_max_failures_shutdown(self, plugin):
-        plugin.admin_consumer.is_connected.return_value = False
-
-        plugin._mq_max_attempts = 1
-        plugin._mq_retry_attempt = 2
-
-        plugin._check_consumers()
-        assert plugin.shutdown_event.is_set()
-
-    def test_restart(self, plugin, admin_consumer, request_consumer):
-        plugin.admin_consumer.is_connected.return_value = False
-        plugin.request_consumer.is_connected.return_value = False
-
-        shutdown_event = Mock()
-        plugin.shutdown_event = shutdown_event
-
-        new_admin = Mock()
-        new_request = Mock()
-        plugin._create_admin_consumer = Mock(return_value=new_admin)
-        plugin._create_standard_consumer = Mock(return_value=new_request)
-
-        plugin._check_consumers()
-        assert plugin.admin_consumer == new_admin
-        assert plugin.request_consumer == new_request
-        assert new_admin.start.called is True
-        assert new_request.start.called is True
-
-        shutdown_event.wait.assert_called_once_with(5)
-        assert plugin._mq_timeout == 10
-        assert plugin._mq_retry_attempt == 1
+    plugin._create_processors()
+    assert plugin.request_processor._consumer._queue_name == request_queue
+    assert plugin.admin_processor._consumer._queue_name == admin_queue
 
 
 class TestAdminMethods(object):

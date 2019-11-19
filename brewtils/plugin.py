@@ -17,7 +17,7 @@ from brewtils.errors import (
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, System
-from brewtils.request_consumer import PikaConsumer
+from brewtils.pika import PikaConsumer
 from brewtils.request_handling import HTTPRequestUpdater, NoopUpdater, RequestProcessor
 from brewtils.rest.easy_client import EasyClient
 from brewtils.schema_parser import SchemaParser

@@ -37,7 +37,7 @@ class RequestProcessor(object):
         updater: RequestUpdater that will be used for updating requests
         validation_funcs: List of functions that will called before invoking a command
         logger: A logger
-        unique_name: The Plugin's unique name
+        plugin_name: The Plugin's unique name
         max_workers: Max number of threads to use in the executor pool
     """
 
@@ -48,14 +48,14 @@ class RequestProcessor(object):
         consumer,
         validation_funcs=None,
         logger=None,
-        unique_name=None,
+        plugin_name=None,
         max_workers=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
 
         self._target = target
         self._updater = updater
-        self._unique_name = unique_name
+        self._plugin_name = plugin_name
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
@@ -124,7 +124,7 @@ class RequestProcessor(object):
             self.logger.log(
                 getattr(ex, "_bg_error_log_level", logging.ERROR),
                 "Plugin %s raised an exception while processing request %s: %s",
-                self._unique_name,
+                self._plugin_name,
                 str(request),
                 ex,
                 exc_info=not getattr(ex, "_bg_suppress_stacktrace", False),

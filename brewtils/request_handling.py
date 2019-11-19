@@ -39,13 +39,13 @@ class RequestProcessor(object):
         logger: A logger
         unique_name: The Plugin's unique name
         max_workers: Max number of threads to use in the executor pool
-
     """
 
     def __init__(
         self,
         target,
         updater,
+        consumer,
         validation_funcs=None,
         logger=None,
         unique_name=None,
@@ -58,6 +58,9 @@ class RequestProcessor(object):
         self._unique_name = unique_name
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
+
+        self._consumer = consumer
+        self._consumer._on_message_callback = self.on_message_received
 
     def on_message_received(self, message, headers):
         """Callback function that will be invoked for received messages
@@ -135,10 +138,21 @@ class RequestProcessor(object):
 
         self._updater.update_request(request, headers)
 
+    def startup(self):
+        """Start the RequestProcessor"""
+        self._consumer.start()
+
     def shutdown(self):
         """Stop the RequestProcessor"""
+        self.logger.debug("Stopping consuming")
+        self._consumer.stop_consuming()
+
         # Finish all current actions
         self._pool.shutdown(wait=True)
+
+        self.logger.debug("Shutting down consumer")
+        self._consumer.stop()
+        self._consumer.join()
 
         # Give the updater a chance to shutdown
         self._updater.shutdown()
@@ -203,6 +217,10 @@ class RequestProcessor(object):
             return json.dumps(output)
         except (TypeError, ValueError):
             return str(output)
+
+
+class RequestConsumer(threading.Thread):
+    pass
 
 
 @six.add_metaclass(abc.ABCMeta)

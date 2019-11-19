@@ -40,8 +40,12 @@ class TestRequestProcessor(object):
         return Mock()
 
     @pytest.fixture
-    def processor(self, target_mock, updater_mock):
-        return RequestProcessor(target_mock, updater_mock, max_workers=1)
+    def consumer_mock(self):
+        return Mock()
+
+    @pytest.fixture
+    def processor(self, target_mock, updater_mock, consumer_mock):
+        return RequestProcessor(target_mock, updater_mock, consumer_mock, max_workers=1)
 
     @pytest.fixture
     def invoke_mock(self, processor):

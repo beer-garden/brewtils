@@ -256,7 +256,6 @@ class PikaConsumer(RequestConsumer):
         self,
         amqp_url=None,
         queue_name=None,
-        on_message_callback=None,
         panic_event=None,
         logger=None,
         thread_name=None,
@@ -267,7 +266,6 @@ class PikaConsumer(RequestConsumer):
         self._consumer_tag = None
 
         self._queue_name = queue_name
-        self._on_message_callback = on_message_callback
         self._panic_event = panic_event
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)

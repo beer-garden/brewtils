@@ -60,7 +60,7 @@ class RequestProcessor(object):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
         self._consumer = consumer
-        self._consumer._on_message_callback = self.on_message_received
+        self._consumer.on_message_callback = self.on_message_received
 
     def on_message_received(self, message, headers):
         """Callback function that will be invoked for received messages
@@ -221,6 +221,40 @@ class RequestProcessor(object):
 
 @six.add_metaclass(abc.ABCMeta)
 class RequestConsumer(threading.Thread):
+    """Base class for consumers
+
+    Classes deriving from this are expected to provide a concrete implementation for a
+    specific queue type.
+
+    After the consumer is created it will be passed to a ``RequestProcessor``. The
+    processor will then set the ``on_message_callback`` property of the consumer to the
+    correct method.
+
+    This means when the consumer receives a message it should invoke its own
+    ``_on_message_callback`` method with the message body and headers as parameters::
+
+        self._on_message_callback(body, properties.headers)
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(RequestConsumer, self).__init__(*args, **kwargs)
+        self._on_message_callback = None
+
+    def stop_consuming(self):
+        pass
+
+    def stop(self):
+        pass
+
+    @property
+    def on_message_callback(self):
+        return self._on_message_callback
+
+    @on_message_callback.setter
+    def on_message_callback(self, new_callback):
+        self._on_message_callback = new_callback
+
     @staticmethod
     def create(connection_type=None, **kwargs):
         """Factory method for consumer creation

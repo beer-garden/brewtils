@@ -257,10 +257,10 @@ class TestPikaConsumer:
             },
             amqp_url="amqp://guest:guest@localhost:5672/",
             queue_name="echo.1-0-0-dev0.default",
-            on_message_callback=callback,
             panic_event=panic_event,
             max_concurrent=1,
         )
+        consumer.on_message_callback = callback
         consumer._channel = channel
         return consumer
 

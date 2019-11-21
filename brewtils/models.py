@@ -306,17 +306,21 @@ class RequestTemplate(BaseModel):
         system_version=None,
         instance_name=None,
         command=None,
+        command_type=None,
         parameters=None,
         comment=None,
         metadata=None,
+        output_type=None,
     ):
         self.system = system
         self.system_version = system_version
         self.instance_name = instance_name
         self.command = command
+        self.command_type = command_type
         self.parameters = parameters
         self.comment = comment
         self.metadata = metadata or {}
+        self.output_type = output_type
 
     def __str__(self):
         return self.command
@@ -365,17 +369,17 @@ class Request(RequestTemplate):
             system_version=system_version,
             instance_name=instance_name,
             command=command,
+            command_type=command_type,
             parameters=parameters,
             comment=comment,
             metadata=metadata,
+            output_type=output_type,
         )
         self.id = id
         self.parent = parent
         self.children = children
         self.output = output
-        self.output_type = output_type
         self._status = status
-        self.command_type = command_type
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class
@@ -389,9 +393,11 @@ class Request(RequestTemplate):
             system_version=template.system_version,
             instance_name=template.instance_name,
             command=template.command,
+            command_type=template.command_type,
             parameters=template.parameters,
             comment=template.comment,
             metadata=template.metadata,
+            output_type=template.output_type,
         )
 
     def __repr__(self):

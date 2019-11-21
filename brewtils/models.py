@@ -300,6 +300,18 @@ class RequestTemplate(BaseModel):
 
     schema = "RequestTemplateSchema"
 
+    TEMPLATE_FIELDS = [
+        "system",
+        "system_version",
+        "instance_name",
+        "command",
+        "command_type",
+        "parameters",
+        "comment",
+        "metadata",
+        "output_type",
+    ]
+
     def __init__(
         self,
         system=None,

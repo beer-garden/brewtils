@@ -399,18 +399,21 @@ class Request(RequestTemplate):
         self.requester = requester
 
     @classmethod
-    def from_template(cls, template):
-        return Request(
-            system=template.system,
-            system_version=template.system_version,
-            instance_name=template.instance_name,
-            command=template.command,
-            command_type=template.command_type,
-            parameters=template.parameters,
-            comment=template.comment,
-            metadata=template.metadata,
-            output_type=template.output_type,
-        )
+    def from_template(cls, template, **kwargs):
+        """Create a Request instance from a RequestTemplate
+
+        Args:
+            template: The RequestTemplate to use
+            **kwargs: Optional overrides to use in place of the template's attributes
+
+        Returns:
+            The new Request instance
+        """
+        request_params = {
+            k: kwargs.get(k, getattr(template, k))
+            for k in RequestTemplate.TEMPLATE_FIELDS
+        }
+        return Request(**request_params)
 
     def __repr__(self):
         return (

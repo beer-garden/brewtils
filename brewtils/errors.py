@@ -117,7 +117,7 @@ class RepublishRequestException(RequestProcessException):
 
     :param request: The Request to republish
     :param headers: A dictionary of headers to be used by
-        `brewtils.request_consumer.RequestConsumer`
+        `brewtils.request_consumer.PikaConsumer`
     :type request: :py:class:`brewtils.models.Request`
     """
 

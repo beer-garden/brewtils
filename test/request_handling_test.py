@@ -40,8 +40,12 @@ class TestRequestProcessor(object):
         return Mock()
 
     @pytest.fixture
-    def processor(self, target_mock, updater_mock):
-        return RequestProcessor(target_mock, updater_mock, max_workers=1)
+    def consumer_mock(self):
+        return Mock()
+
+    @pytest.fixture
+    def processor(self, target_mock, updater_mock, consumer_mock):
+        return RequestProcessor(target_mock, updater_mock, consumer_mock, max_workers=1)
 
     @pytest.fixture
     def invoke_mock(self, processor):
@@ -93,7 +97,7 @@ class TestRequestProcessor(object):
         def test_process(
             self, processor, target_mock, updater_mock, invoke_mock, format_mock
         ):
-            request_mock = Mock(is_ephemeral=False)
+            request_mock = Mock()
 
             processor.process_message(target_mock, request_mock, {})
             invoke_mock.assert_called_once_with(target_mock, request_mock)
@@ -269,51 +273,6 @@ class TestRequestProcessor(object):
         )
         def test_format(self, processor, output, expected):
             assert processor._format_output(output) == expected
-
-        @pytest.mark.skip
-        def test_request_message(self, plugin, client):
-            message_mock = Mock()
-            pool_mock = Mock()
-            pre_process_mock = Mock()
-
-            plugin.pool = pool_mock
-            plugin._pre_process = pre_process_mock
-
-            plugin.process_request_message(message_mock, {})
-            pre_process_mock.assert_called_once_with(message_mock)
-            pool_mock.submit.assert_called_once_with(
-                plugin.process_message, client, pre_process_mock.return_value, {}
-            )
-
-        @pytest.mark.skip
-        def test_completed_request_message(self, plugin):
-            message_mock = Mock()
-            pool_mock = Mock()
-            pre_process_mock = Mock(return_value=Mock(status="SUCCESS"))
-
-            plugin.pool = pool_mock
-            plugin._pre_process = pre_process_mock
-
-            plugin.process_request_message(message_mock, {})
-            pre_process_mock.assert_called_once_with(message_mock)
-            pool_mock.submit.assert_called_once_with(
-                plugin._update_request, pre_process_mock.return_value, {}
-            )
-
-        @pytest.mark.skip
-        def test_admin_message(self, plugin):
-            message_mock = Mock()
-            pool_mock = Mock()
-            pre_process_mock = Mock()
-
-            plugin.admin_pool = pool_mock
-            plugin._pre_process = pre_process_mock
-
-            plugin.process_admin_message(message_mock, {})
-            pre_process_mock.assert_called_once_with(message_mock, verify_system=False)
-            pool_mock.submit.assert_called_once_with(
-                plugin.process_message, plugin, pre_process_mock.return_value, {}
-            )
 
     class TestParse(object):
         def test_success(self, processor, bg_request):

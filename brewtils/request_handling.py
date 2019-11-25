@@ -26,7 +26,7 @@ class RequestProcessor(object):
     """Class responsible for coordinating Request processing
 
     The RequestProcessor is responsible for the following:
-    - Defining on_message_received callback that will be invoked by the RequestConsumer
+    - Defining on_message_received callback that will be invoked by the PikaConsumer
     - Parsing the request
     - Invoking the command on the target
     - Formatting the output
@@ -37,27 +37,30 @@ class RequestProcessor(object):
         updater: RequestUpdater that will be used for updating requests
         validation_funcs: List of functions that will called before invoking a command
         logger: A logger
-        unique_name: The Plugin's unique name
+        plugin_name: The Plugin's unique name
         max_workers: Max number of threads to use in the executor pool
-
     """
 
     def __init__(
         self,
         target,
         updater,
+        consumer,
         validation_funcs=None,
         logger=None,
-        unique_name=None,
+        plugin_name=None,
         max_workers=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
 
         self._target = target
         self._updater = updater
-        self._unique_name = unique_name
+        self._plugin_name = plugin_name
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
+
+        self._consumer = consumer
+        self._consumer.on_message_callback = self.on_message_received
 
     def on_message_received(self, message, headers):
         """Callback function that will be invoked for received messages
@@ -101,7 +104,7 @@ class RequestProcessor(object):
         Args:
             target: The object to invoke received commands on
             request: The parsed Request
-            headers: Dictionary of headers from the `RequestConsumer`
+            headers: Dictionary of headers from the `PikaConsumer`
 
         Returns:
             None
@@ -121,7 +124,7 @@ class RequestProcessor(object):
             self.logger.log(
                 getattr(ex, "_bg_error_log_level", logging.ERROR),
                 "Plugin %s raised an exception while processing request %s: %s",
-                self._unique_name,
+                self._plugin_name,
                 str(request),
                 ex,
                 exc_info=not getattr(ex, "_bg_suppress_stacktrace", False),
@@ -135,10 +138,21 @@ class RequestProcessor(object):
 
         self._updater.update_request(request, headers)
 
+    def startup(self):
+        """Start the RequestProcessor"""
+        self._consumer.start()
+
     def shutdown(self):
         """Stop the RequestProcessor"""
+        self.logger.debug("Stopping consuming")
+        self._consumer.stop_consuming()
+
         # Finish all current actions
         self._pool.shutdown(wait=True)
+
+        self.logger.debug("Shutting down consumer")
+        self._consumer.stop()
+        self._consumer.join()
 
         # Give the updater a chance to shutdown
         self._updater.shutdown()
@@ -203,6 +217,67 @@ class RequestProcessor(object):
             return json.dumps(output)
         except (TypeError, ValueError):
             return str(output)
+
+
+@six.add_metaclass(abc.ABCMeta)
+class RequestConsumer(threading.Thread):
+    """Base class for consumers
+
+    Classes deriving from this are expected to provide a concrete implementation for a
+    specific queue type.
+
+    After the consumer is created it will be passed to a ``RequestProcessor``. The
+    processor will then set the ``on_message_callback`` property of the consumer to the
+    correct method.
+
+    This means when the consumer receives a message it should invoke its own
+    ``_on_message_callback`` method with the message body and headers as parameters::
+
+        self._on_message_callback(body, properties.headers)
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(RequestConsumer, self).__init__(*args, **kwargs)
+        self._on_message_callback = None
+
+    def stop_consuming(self):
+        pass
+
+    def stop(self):
+        pass
+
+    @property
+    def on_message_callback(self):
+        return self._on_message_callback
+
+    @on_message_callback.setter
+    def on_message_callback(self, new_callback):
+        self._on_message_callback = new_callback
+
+    @staticmethod
+    def create(connection_type=None, **kwargs):
+        """Factory method for consumer creation
+
+        Currently the only supported connection_type is "rabbitmq", which will return
+        an instance of ``brewtils.pika.PikaConsumer``.
+
+        Args:
+            connection_type (str): String describing connection type
+            kwargs: Keyword arguments to be passed to the Consumer initializer
+
+        Returns:
+            Concrete instance of RequestConsumer
+
+        Raises:
+            ValueError: The specified connection_type does not map to a consumer class
+        """
+        if connection_type == "rabbitmq":
+            from brewtils.pika import PikaConsumer
+
+            return PikaConsumer(**kwargs)
+
+        raise ValueError("Unknown connection type '%s'" % connection_type)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -282,7 +357,7 @@ class HTTPRequestUpdater(RequestUpdater):
 
         Args:
             request: The request to update
-            headers: A dictionary of headers from the `RequestConsumer`
+            headers: A dictionary of headers from the `PikaConsumer`
 
         Returns:
             None

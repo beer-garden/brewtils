@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
 import logging.config
-import os
+import sys
 import threading
 
 from requests import ConnectionError as RequestsConnectionError
 
-import brewtils
+from brewtils.config import load_config
 from brewtils.errors import (
     ConflictError,
     PluginValidationError,
@@ -154,27 +154,11 @@ class Plugin(object):
     """
 
     def __init__(
-        self,
-        client,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=None,
-        ca_cert=None,
-        client_cert=None,
-        system=None,
-        name=None,
-        description=None,
-        version=None,
-        icon_name=None,
-        instance_name=None,
-        logger=None,
-        parser=None,
-        metadata=None,
-        max_concurrent=None,
-        bg_url_prefix=None,
-        **kwargs
+        self, client, system=None, logger=None, parser=None, metadata=None, **kwargs
     ):
-        global _HOST, _PORT
+        # Load config before setting up logging so level is configurable
+        # TODO - can change to load_config(**kwargs) if yapconf supports CLI source
+        self.config = load_config(cli_args=sys.argv[1:], **kwargs)
 
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
@@ -186,45 +170,11 @@ class Plugin(object):
             self.logger = logging.getLogger(__name__)
             self._custom_logger = False
 
-        connection_parameters = brewtils.get_connection_info(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=bg_url_prefix or kwargs.get("url_prefix", None),
-            ca_verify=kwargs.get("ca_verify", None),
-            username=kwargs.get("username", None),
-            password=kwargs.get("password", None),
-            client_timeout=kwargs.get("client_timeout", None),
-        )
+        global _HOST, _PORT
+        _HOST = self.config.bg_host
+        _PORT = self.config.bg_port
 
-        _HOST = connection_parameters["bg_host"]
-        _PORT = connection_parameters["bg_port"]
-
-        self.bg_host = connection_parameters["bg_host"]
-        self.bg_port = connection_parameters["bg_port"]
-        self.ssl_enabled = connection_parameters["ssl_enabled"]
-        self.ca_cert = connection_parameters["ca_cert"]
-        self.client_cert = connection_parameters["client_cert"]
-        self.bg_url_prefix = connection_parameters["url_prefix"]
-        self.ca_verify = connection_parameters["ca_verify"]
-
-        self.max_attempts = kwargs.get("max_attempts", -1)
-        self.max_timeout = kwargs.get("max_timeout", 30)
-        self.starting_timeout = kwargs.get("starting_timeout", 5)
-
-        self._mq_max_attempts = kwargs.get("mq_max_attempts", -1)
-        self._mq_max_timeout = kwargs.get("mq_max_timeout", 30)
-        self._mq_starting_timeout = kwargs.get("mq_starting_timeout", 5)
-        self._mq_retry_attempt = 0
-        self._mq_timeout = self._mq_starting_timeout
-
-        self.max_concurrent = max_concurrent or 5
-        self.instance_name = instance_name or os.environ.get(
-            "BG_INSTANCE_NAME", "default"
-        )
-        self.metadata = metadata or {}
+        self.system = self._setup_system(client, system, metadata, kwargs)
 
         self.instance = None
         self.admin_processor = None
@@ -233,27 +183,8 @@ class Plugin(object):
         self.shutdown_event = threading.Event()
         self.parser = parser or SchemaParser()
 
-        self.system = self._setup_system(
-            client,
-            self.instance_name,
-            system,
-            name,
-            description,
-            version,
-            icon_name,
-            self.metadata,
-            kwargs.get("display_name", None),
-            kwargs.get("max_instances", None),
-        )
-
-        self.unique_name = "%s[%s]-%s" % (
-            self.system.name,
-            self.instance_name,
-            self.system.version,
-        )
-
         self.bm_client = EasyClient(
-            logger=self.logger, parser=self.parser, **connection_parameters
+            logger=self.logger, parser=self.parser, **self.config
         )
 
     def run(self):
@@ -269,6 +200,10 @@ class Plugin(object):
 
         self._shutdown()
         self.logger.info("Plugin %s has terminated", self.unique_name)
+
+    @property
+    def unique_name(self):
+        return "%s[%s]-%s" % (self.system.name, self.instance_name, self.system.version)
 
     def _startup(self):
         self.logger.debug("About to start up plugin %s", self.unique_name)
@@ -365,9 +300,9 @@ class Plugin(object):
         if "ssl" in connection_info:
             connection_info["ssl"].update(
                 {
-                    "ca_cert": self.ca_cert,
-                    "ca_verify": self.ca_verify,
-                    "client_cert": self.client_cert,
+                    "ca_cert": self.config.ca_cert,
+                    "ca_verify": self.config.ca_verify,
+                    "client_cert": self.config.client_cert,
                 }
             )
 
@@ -376,9 +311,9 @@ class Plugin(object):
             "connection_type": self.instance.queue_type,
             "connection_info": connection_info,
             "panic_event": self.shutdown_event,
-            "max_reconnect_attempts": self._mq_max_attempts,
-            "max_reconnect_timeout": self._mq_max_timeout,
-            "starting_reconnect_timeout": self._mq_starting_timeout,
+            "max_reconnect_attempts": self.config.mq.max_attempts,
+            "max_reconnect_timeout": self.config.mq.max_timeout,
+            "starting_reconnect_timeout": self.config.mq.starting_timeout,
         }
         admin_consumer = RequestConsumer.create(
             thread_name="Admin Consumer",
@@ -457,32 +392,22 @@ class Plugin(object):
                 "Unable to process message - currently shutting down"
             )
 
-    def _setup_system(
-        self,
-        client,
-        inst_name,
-        system,
-        name,
-        description,
-        version,
-        icon_name,
-        metadata,
-        display_name,
-        max_instances,
-    ):
+    def _setup_system(self, client, system, metadata, plugin_kwargs):
+        helper_keywords = {
+            "name",
+            "description",
+            "version",
+            "icon_name",
+            "display_name",
+            "max_instances",
+        }
+
         if system:
-            if (
-                name
-                or description
-                or version
-                or icon_name
-                or display_name
-                or max_instances
-            ):
+            # TODO - should also raise if metadata is provided
+            if helper_keywords.intersection(plugin_kwargs.keys()):
                 raise ValidationError(
-                    "Sorry, you can't specify a system as well as system "
-                    "creation helper keywords (name, description, version, "
-                    "max_instances, display_name, and icon_name)"
+                    "Sorry, you can't provide a complete system definition as well as "
+                    "system creation helper kwargs %s" % helper_keywords
                 )
 
             if client._bg_name or client._bg_version:
@@ -502,27 +427,107 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = name or os.environ.get("BG_NAME", None) or client._bg_name
-            version = (
-                version or os.environ.get("BG_VERSION", None) or client._bg_version
-            )
+            name = self.config.name or client._bg_name
+            version = self.config.version or client._bg_version
 
-            if client.__doc__ and not description:
-                description = self.client.__doc__.split("\n")[0]
+            description = self.config.description
+            if not description and client.__doc__:
+                description = client.__doc__.split("\n")[0]
 
             system = System(
                 name=name,
                 description=description,
                 version=version,
-                icon_name=icon_name,
                 commands=client._commands,
-                max_instances=max_instances or 1,
-                instances=[Instance(name=inst_name)],
                 metadata=metadata,
-                display_name=display_name,
+                instances=[Instance(name=self.config.instance_name)],
+                max_instances=self.config.max_instances,
+                icon_name=self.config.icon_name,
+                display_name=self.config.display_name,
             )
 
+        # Make sure the System definition makes sense
+        if not system.name:
+            raise ValidationError("Plugin system must have a name")
+
+        if not system.version:
+            raise ValidationError("Plugin system must have a version")
+
         return system
+
+    # These are provided for backward-compatibility
+    @property
+    def bg_host(self):
+        return self.config.bg_host
+
+    @property
+    def bg_port(self):
+        return self.config.bg_port
+
+    @property
+    def ssl_enabled(self):
+        return self.config.ssl_enabled
+
+    @property
+    def ca_cert(self):
+        return self.config.ca_cert
+
+    @property
+    def client_cert(self):
+        return self.config.client_cert
+
+    @property
+    def bg_url_prefix(self):
+        return self.config.bg_url_prefix
+
+    @property
+    def ca_verify(self):
+        return self.config.ca_verify
+
+    @property
+    def max_attempts(self):
+        return self.config.max_attempts
+
+    @property
+    def max_timeout(self):
+        return self.config.max_timeout
+
+    @property
+    def starting_timeout(self):
+        return self.config.starting_timeout
+
+    @property
+    def max_concurrent(self):
+        return self.config.max_concurrent
+
+    @property
+    def instance_name(self):
+        return self.config.instance_name
+
+    @property
+    def metadata(self):
+        return self.system.metadata
+
+    @property
+    def connection_parameters(self):
+        return {
+            key: self.config[key]
+            for key in (
+                "bg_host",
+                "bg_port",
+                "ssl_enabled",
+                "api_version",
+                "ca_cert",
+                "client_cert",
+                "url_prefix",
+                "ca_verify",
+                "username",
+                "password",
+                "access_token",
+                "refresh_token",
+                "client_timeout",
+            )
+        }
 
 
 # Alias old name

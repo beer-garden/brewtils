@@ -79,11 +79,7 @@ def plugin(
     request_processor,
 ):
     plugin = Plugin(
-        client,
-        bg_host="localhost",
-        system=bg_system,
-        metadata={"foo": "bar"},
-        max_concurrent=1,
+        client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
@@ -367,7 +363,7 @@ class TestInitializeSystem(object):
         bm_client.find_unique_system.return_value = existing_system
 
         new_name = "foo_instance"
-        plugin.instance_name = new_name
+        plugin.config.instance_name = new_name
 
         plugin._initialize_system()
         assert bm_client.create_system.called is False
@@ -412,9 +408,9 @@ class TestInitializeProcessors(object):
             create_mock = Mock()
             monkeypatch.setattr(brewtils.plugin.RequestConsumer, "create", create_mock)
 
-            plugin.ca_cert = Mock()
-            plugin.ca_verify = Mock()
-            plugin.client_cert = Mock()
+            plugin.config.ca_cert = Mock()
+            plugin.config.ca_verify = Mock()
+            plugin.config.client_cert = Mock()
 
             plugin._initialize_processors()
             connection_info = create_mock.call_args_list[0][1]["connection_info"]
@@ -488,16 +484,16 @@ class TestSetupSystem(object):
     @pytest.mark.parametrize(
         "extra_args",
         [
-            ("name", "", "", "", {}, None, None),
-            ("", "description", "", "", {}, None, None),
-            ("", "", "version", "", {}, None, None),
-            ("", "", "", "icon name", {}, None, None),
-            ("", "", "", "", {}, "display_name", None),
+            {"name": "foo"},
+            {"version": "foo"},
+            {"description": "foo"},
+            {"icon_name": "foo"},
+            {"display_name": "foo"},
         ],
     )
     def test_extra_params(self, plugin, client, bg_system, extra_args):
-        with pytest.raises(ValidationError, match="system creation helper keywords"):
-            plugin._setup_system(client, "default", bg_system, *extra_args)
+        with pytest.raises(ValidationError, match="system creation helper"):
+            plugin._setup_system(client, bg_system, {}, extra_args)
 
     @pytest.mark.parametrize(
         "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
@@ -505,14 +501,12 @@ class TestSetupSystem(object):
     def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
         setattr(client, attr, value)
         with pytest.raises(ValidationError, match="@system decorator"):
-            plugin._setup_system(client, "default", bg_system, *([None] * 7))
+            plugin._setup_system(client, bg_system, {}, {})
 
     def test_no_instances(self, plugin, client):
         system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
-            plugin._setup_system(
-                client, "default", system, "", "", "", "", {}, None, None
-            )
+            plugin._setup_system(client, system, {}, {})
 
     def test_max_instances(self, plugin, client):
         system = System(
@@ -520,70 +514,32 @@ class TestSetupSystem(object):
             version="1.0.0",
             instances=[Instance(name="1"), Instance(name="2")],
         )
-        new_system = plugin._setup_system(
-            client, "default", system, "", "", "", "", {}, None, None
-        )
+        new_system = plugin._setup_system(client, system, {}, {})
         assert new_system.max_instances == 2
 
     def test_construct_system(self, plugin, client):
-        new_system = plugin._setup_system(
-            client,
-            "default",
-            None,
-            "name",
-            "desc",
-            "1.0.0",
-            "icon",
-            {"foo": "bar"},
-            "display_name",
-            None,
+        plugin.config.update(
+            {
+                "name": "name",
+                "version": "1.0.0",
+                "description": "desc",
+                "icon_name": "icon",
+                "display_name": "display_name",
+            }
         )
+
+        new_system = plugin._setup_system(client, None, {"foo": "bar"}, {})
         self._validate_system(new_system)
 
-    def test_construct_client_docstring(self, plugin, client):
-        client.__doc__ = "Description\nSome more stuff"
-
-        new_system = plugin._setup_system(
-            client, "default", None, "name", "", "1.0.0", "icon", {}, None, None
-        )
-
-        assert new_system.description == "Description"
-
-    def test_construct_from_env(self, plugin, client):
-        os.environ["BG_NAME"] = "name"
-        os.environ["BG_VERSION"] = "1.0.0"
-
-        new_system = plugin._setup_system(
-            client,
-            "default",
-            None,
-            None,
-            "desc",
-            None,
-            "icon",
-            {"foo": "bar"},
-            "display_name",
-            None,
-        )
-        self._validate_system(new_system)
-
-    def test_construct_from_decorator(self, plugin, client):
+    def test_construct_from_client(self, plugin, client):
         client._bg_name = "name"
         client._bg_version = "1.0.0"
+        client.__doc__ = "Description\nSome more stuff"
 
-        new_system = plugin._setup_system(
-            client,
-            "default",
-            None,
-            None,
-            "desc",
-            None,
-            "icon",
-            {"foo": "bar"},
-            "display_name",
-            None,
-        )
-        self._validate_system(new_system)
+        new_system = plugin._setup_system(client, None, {}, {})
+        assert new_system.name == "name"
+        assert new_system.version == "1.0.0"
+        assert new_system.description == "Description"
 
     @staticmethod
     def _validate_system(new_system):

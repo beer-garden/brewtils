@@ -149,7 +149,7 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
             argument_parser = ArgumentParser()
             spec.add_arguments(argument_parser)
 
-        parsed_args = argument_parser.parse_args(cli_args)
+        parsed_args, _ = argument_parser.parse_known_args(cli_args)
         sources.append(("cli_args", vars(parsed_args)))
 
     sources.append("ENVIRONMENT")

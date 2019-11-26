@@ -15,7 +15,7 @@ from brewtils.errors import (
     RequestProcessingError,
     RestConnectionError,
 )
-from brewtils.log import DEFAULT_LOGGING_CONFIG
+from brewtils.log import default_config
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
     HTTPRequestUpdater,
@@ -162,11 +162,11 @@ class Plugin(object):
 
         # If a logger is specified or the logging module already has additional
         # handlers then we assume that logging has already been configured
-        if logger or len(logging.getLogger(__name__).root.handlers) > 0:
+        if logger or len(logging.root.handlers) > 0:
             self.logger = logger or logging.getLogger(__name__)
             self._custom_logger = True
         else:
-            logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
+            logging.config.dictConfig(default_config(level=self.config.log_level))
             self.logger = logging.getLogger(__name__)
             self._custom_logger = False
 

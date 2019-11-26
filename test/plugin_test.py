@@ -16,7 +16,7 @@ from brewtils.errors import (
     RequestProcessingError,
     RestConnectionError,
 )
-from brewtils.log import DEFAULT_LOGGING_CONFIG
+from brewtils.log import default_config
 from brewtils.models import Instance, System, Command
 from brewtils.plugin import Plugin
 
@@ -131,14 +131,13 @@ class TestPluginInit(object):
         if there's no prior configuration we have to fake it a little.
 
         """
-        plugin_logger = logging.getLogger("brewtils.plugin")
         dict_config = Mock()
 
-        monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
+        monkeypatch.setattr(logging, "root", Mock(handlers=[]))
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
 
-        plugin = Plugin(client, bg_host="localhost", max_concurrent=1)
-        dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
+        plugin = Plugin(client, bg_host="localhost", name="test", version="1")
+        dict_config.assert_called_once_with(default_config(level="INFO"))
         assert logging.getLogger("brewtils.plugin") == plugin.logger
 
     def test_kwargs(self, client, bg_system):

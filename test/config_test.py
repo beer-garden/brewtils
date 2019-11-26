@@ -15,11 +15,11 @@ class TestGetConnectionInfo(object):
         return {
             "bg_host": "bg_host",
             "bg_port": 1234,
+            "bg_url_prefix": "/beer/",
             "ssl_enabled": False,
             "api_version": None,
             "ca_cert": "ca_cert",
             "client_cert": "client_cert",
-            "url_prefix": "/beer/",
             "ca_verify": True,
             "username": None,
             "password": None,
@@ -95,7 +95,7 @@ class TestGetConnectionInfo(object):
         os.environ["BG_URL_PREFIX"] = "/beer"
 
         generated_params = get_connection_info()
-        assert generated_params["url_prefix"] == params["url_prefix"]
+        assert generated_params["bg_url_prefix"] == params["bg_url_prefix"]
 
 
 class TestLoadConfig(object):

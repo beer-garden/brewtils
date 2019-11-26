@@ -15,6 +15,13 @@ _CONNECTION_SPEC = {
         "env_name": "PORT",
         "alt_env_names": ["WEB_PORT"],
     },
+    "bg_url_prefix": {
+        "type": "str",
+        "description": "Beergarden server path",
+        "default": "/",
+        "env_name": "URL_PREFIX",
+        "cli_name": "url_prefix",
+    },
     "ca_cert": {
         "type": "str",
         "description": "CA certificate to use when verifying",
@@ -36,11 +43,6 @@ _CONNECTION_SPEC = {
         "type": "bool",
         "description": "Use SSL when communicating with Beergarden",
         "default": True,
-    },
-    "url_prefix": {
-        "type": "str",
-        "description": "Beergarden server path",
-        "default": "/",
     },
     "api_version": {
         "type": "int",

@@ -78,11 +78,11 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
         for key in (
             "bg_host",
             "bg_port",
+            "bg_url_prefix",
             "ssl_enabled",
             "api_version",
             "ca_cert",
             "client_cert",
-            "url_prefix",
             "ca_verify",
             "username",
             "password",
@@ -168,6 +168,6 @@ def load_config(cli_args=None, argument_parser=None, **kwargs):
         raise
 
     # Make sure the url_prefix is normal
-    config.url_prefix = normalize_url_prefix(config.url_prefix)
+    config.bg_url_prefix = normalize_url_prefix(config.bg_url_prefix)
 
     return config

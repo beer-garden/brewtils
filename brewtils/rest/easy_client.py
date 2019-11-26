@@ -5,6 +5,7 @@ import warnings
 import requests.exceptions
 import wrapt
 
+from brewtils.config import get_connection_info
 from brewtils.errors import (
     FetchError,
     ValidationError,
@@ -19,6 +20,25 @@ from brewtils.errors import (
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
+
+
+def get_easy_client(**kwargs):
+    """Easy way to get an EasyClient
+
+    The benefit to this method over creating an EasyClient directly is that
+    this method will also search the environment for parameters. Kwargs passed
+    to this method will take priority, however.
+
+    Args:
+        **kwargs: Options for configuring the EasyClient
+
+    Returns:
+        :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
+    """
+    parser = kwargs.pop("parser", None)
+    logger = kwargs.pop("logger", None)
+
+    return EasyClient(logger=logger, parser=parser, **get_connection_info(**kwargs))
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):

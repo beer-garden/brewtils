@@ -19,8 +19,13 @@ from brewtils.errors import (
     WaitExceededError,
 )
 from brewtils.models import System
-from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
+from brewtils.rest.easy_client import get_easy_client, EasyClient, BrewmasterEasyClient
 from brewtils.schema_parser import SchemaParser
+
+
+def test_get_easy_client():
+    client = get_easy_client(bg_host="bg_host")
+    assert isinstance(client, EasyClient)
 
 
 class TestEasyClient(object):

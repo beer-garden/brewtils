@@ -218,15 +218,20 @@ class TestParameter(object):
 
 class TestRequestTemplate(object):
     @pytest.fixture
-    def request_template(self):
+    def test_template(self):
         return RequestTemplate(command="command", system="system")
 
-    def test_str(self, request_template):
-        assert str(request_template) == "command"
+    def test_str(self, test_template):
+        assert str(test_template) == "command"
 
-    def test_repr(self, request_template):
-        assert "name" in repr(request_template)
-        assert "system" in repr(request_template)
+    def test_repr(self, test_template):
+        assert "name" in repr(test_template)
+        assert "system" in repr(test_template)
+
+    def test_template_fields(self, bg_request_template):
+        """This will hopefully prevent forgetting to add things to TEMPLATE_FIELDS"""
+        template_keys = set(bg_request_template.__dict__.keys())
+        assert template_keys == set(RequestTemplate.TEMPLATE_FIELDS)
 
 
 class TestRequest(object):
@@ -273,6 +278,13 @@ class TestRequest(object):
         request = Request.from_template(bg_request_template)
         for key in bg_request_template.__dict__:
             assert getattr(request, key) == getattr(bg_request_template, key)
+
+    def test_from_template_overrides(self, bg_request_template):
+        request = Request.from_template(bg_request_template, command_type="INFO")
+        assert request.command_type == "INFO"
+        for key in bg_request_template.__dict__:
+            if key != "command_type":
+                assert getattr(request, key) == getattr(bg_request_template, key)
 
 
 class TestSystem(object):

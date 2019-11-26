@@ -294,9 +294,11 @@ def request_template_dict():
         "system_version": "1.0.0",
         "instance_name": "default",
         "command": "speak",
+        "command_type": "ACTION",
         "parameters": {"message": "hey!"},
         "comment": "hi!",
         "metadata": {"request": "stuff"},
+        "output_type": "STRING",
     }
 
 

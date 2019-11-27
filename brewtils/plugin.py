@@ -277,20 +277,21 @@ class Plugin(object):
         }
 
         # And if this particular instance doesn't exist we want to add it
-        if not existing_system.has_instance(self.instance_name):
-            update_kwargs["add_instance"] = Instance(name=self.instance_name)
+        if not existing_system.has_instance(self.config.instance_name):
+            update_kwargs["add_instance"] = Instance(name=self.config.instance_name)
 
         return self._ez_client.update_system(existing_system.id, **update_kwargs)
 
     def _initialize_instance(self):
         # Sanity check to make sure an instance with this name was registered
-        if not self._system.has_instance(self.instance_name):
+        if not self._system.has_instance(self.config.instance_name):
             raise PluginValidationError(
-                'Unable to find registered instance with name "%s"' % self.instance_name
+                "Unable to find registered instance with name '%s'"
+                % self.config.instance_name
             )
 
         return self._ez_client.initialize_instance(
-            self._system.get_instance(self.instance_name).id
+            self._system.get_instance(self.config.instance_name).id
         )
 
     def _initialize_processors(self):
@@ -325,7 +326,7 @@ class Plugin(object):
         request_consumer = RequestConsumer.create(
             thread_name="Request Consumer",
             queue_name=self._instance.queue_info["request"]["name"],
-            max_concurrent=self.max_concurrent,
+            max_concurrent=self.config.max_concurrent,
             **common_args
         )
 
@@ -343,7 +344,7 @@ class Plugin(object):
             consumer=request_consumer,
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
-            max_workers=self.max_concurrent,
+            max_workers=self.config.max_concurrent,
         )
 
         return admin_processor, request_processor

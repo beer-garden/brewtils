@@ -77,10 +77,8 @@ def plugin(
     )
     plugin._instance = bg_instance
     plugin._ez_client = ez_client
-    plugin.request_updater = updater_mock
     plugin._admin_processor = admin_processor
     plugin._request_processor = request_processor
-    plugin.queue_connection_params = {}
 
     return plugin
 
@@ -109,12 +107,12 @@ class TestPluginInit(object):
 
     def test_defaults(self, plugin):
         assert plugin._logger == logging.getLogger("brewtils.plugin")
-        assert plugin.instance_name == "default"
-        assert plugin.bg_host == "localhost"
-        assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == "/"
-        assert plugin.ssl_enabled is True
-        assert plugin.ca_verify is True
+        assert plugin.config.instance_name == "default"
+        assert plugin.config.bg_host == "localhost"
+        assert plugin.config.bg_port == 2337
+        assert plugin.config.bg_url_prefix == "/"
+        assert plugin.config.ssl_enabled is True
+        assert plugin.config.ca_verify is True
 
     def test_default_logger(self, monkeypatch, client):
         """Test that the default logging configuration is used.
@@ -148,12 +146,12 @@ class TestPluginInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.bg_host == "host1"
-        assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
         assert plugin._logger == logger
+        assert plugin.config.bg_host == "host1"
+        assert plugin.config.bg_port == 2338
+        assert plugin.config.bg_url_prefix == "/beer/"
+        assert plugin.config.ssl_enabled is False
+        assert plugin.config.ca_verify is False
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -164,11 +162,11 @@ class TestPluginInit(object):
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
-        assert plugin.bg_host == "remotehost"
-        assert plugin.bg_port == 7332
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
+        assert plugin.config.bg_host == "remotehost"
+        assert plugin.config.bg_port == 7332
+        assert plugin.config.bg_url_prefix == "/beer/"
+        assert plugin.config.ssl_enabled is False
+        assert plugin.config.ca_verify is False
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -188,11 +186,11 @@ class TestPluginInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.bg_host == "localhost"
-        assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is True
-        assert plugin.ca_verify is True
+        assert plugin.config.bg_host == "localhost"
+        assert plugin.config.bg_port == 2337
+        assert plugin.config.bg_url_prefix == "/beer/"
+        assert plugin.config.ssl_enabled is True
+        assert plugin.config.ca_verify is True
 
     def test_cli(self, client, bg_system):
         args = [
@@ -213,11 +211,11 @@ class TestPluginInit(object):
             **get_connection_info(cli_args=args)
         )
 
-        assert plugin.bg_host == "remotehost"
-        assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
+        assert plugin.config.bg_host == "remotehost"
+        assert plugin.config.bg_port == 2338
+        assert plugin.config.bg_url_prefix == "/beer/"
+        assert plugin.config.ssl_enabled is False
+        assert plugin.config.ca_verify is False
 
 
 class TestPluginRun(object):
@@ -406,9 +404,9 @@ class TestInitializeProcessors(object):
 
             plugin._initialize_processors()
             connection_info = create_mock.call_args_list[0][1]["connection_info"]
-            assert connection_info["ssl"]["ca_cert"] == plugin.ca_cert
-            assert connection_info["ssl"]["ca_verify"] == plugin.ca_verify
-            assert connection_info["ssl"]["client_cert"] == plugin.client_cert
+            assert connection_info["ssl"]["ca_cert"] == plugin.config.ca_cert
+            assert connection_info["ssl"]["ca_verify"] == plugin.config.ca_verify
+            assert connection_info["ssl"]["client_cert"] == plugin.config.client_cert
 
     def test_queue_names(self, plugin, bg_instance):
         request_queue = bg_instance.queue_info["request"]["name"]

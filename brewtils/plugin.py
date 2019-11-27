@@ -158,15 +158,17 @@ class Plugin(object):
         # TODO - can change to load_config(**kwargs) if yapconf supports CLI source
         self.config = load_config(cli_args=sys.argv[1:], **kwargs)
 
-        # If a logger is specified or the logging module already has additional
-        # handlers then we assume that logging has already been configured
-        if logger or len(logging.root.handlers) > 0:
-            self.logger = logger or logging.getLogger(__name__)
-            self._custom_logger = True
+        # If a logger is specified or the root logger already has handlers then we
+        # assume that logging has already been configured
+        self._custom_logger = True
+        if logger:
+            self.logger = logger
         else:
-            logging.config.dictConfig(default_config(level=self.config.log_level))
+            if len(logging.root.handlers) == 0:
+                logging.config.dictConfig(default_config(level=self.config.log_level))
+                self._custom_logger = False
+
             self.logger = logging.getLogger(__name__)
-            self._custom_logger = False
 
         global _HOST, _PORT
         _HOST = self.config.bg_host

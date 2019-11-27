@@ -75,11 +75,11 @@ def plugin(
     plugin = Plugin(
         client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
     )
-    plugin.instance = bg_instance
-    plugin.ez_client = ez_client
+    plugin._instance = bg_instance
+    plugin._ez_client = ez_client
     plugin.request_updater = updater_mock
-    plugin.admin_processor = admin_processor
-    plugin.request_processor = request_processor
+    plugin._admin_processor = admin_processor
+    plugin._request_processor = request_processor
     plugin.queue_connection_params = {}
 
     return plugin
@@ -222,7 +222,7 @@ class TestPluginInit(object):
 
 class TestPluginRun(object):
     def test_normal(self, plugin):
-        plugin.shutdown_event = Mock()
+        plugin._shutdown_event = Mock()
 
         startup_mock = Mock()
         shutdown_mock = Mock()
@@ -234,7 +234,7 @@ class TestPluginRun(object):
         assert shutdown_mock.called is True
 
     def test_error(self, caplog, plugin):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=ValueError))
+        plugin._shutdown_event = Mock(wait=Mock(side_effect=ValueError))
 
         startup_mock = Mock()
         shutdown_mock = Mock()
@@ -249,7 +249,7 @@ class TestPluginRun(object):
         assert len(caplog.records) == 1
 
     def test_keyboard_interrupt(self, caplog, plugin):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=KeyboardInterrupt))
+        plugin._shutdown_event = Mock(wait=Mock(side_effect=KeyboardInterrupt))
 
         startup_mock = Mock()
         shutdown_mock = Mock()
@@ -275,12 +275,12 @@ def test_startup(plugin, admin_processor, request_processor):
 
 
 def test_shutdown(plugin):
-    plugin.request_processor = Mock()
-    plugin.admin_processor = Mock()
+    plugin._request_processor = Mock()
+    plugin._admin_processor = Mock()
 
     plugin._shutdown()
-    assert plugin.request_processor.shutdown.called is True
-    assert plugin.admin_processor.shutdown.called is True
+    assert plugin._request_processor.shutdown.called is True
+    assert plugin._admin_processor.shutdown.called is True
 
 
 class TestInitializeSystem(object):
@@ -428,7 +428,7 @@ class TestAdminMethods(object):
         ez_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "RUNNING"
         )
-        assert plugin.instance == new_instance
+        assert plugin._instance == new_instance
 
     def test_stop(self, plugin, ez_client, bg_instance):
         new_instance = Mock()
@@ -438,17 +438,17 @@ class TestAdminMethods(object):
         ez_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "STOPPED"
         )
-        assert plugin.instance == new_instance
-        assert plugin.shutdown_event.is_set() is True
+        assert plugin._instance == new_instance
+        assert plugin._shutdown_event.is_set() is True
 
     def test_status(self, plugin, ez_client):
         plugin._status()
-        ez_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
+        ez_client.instance_heartbeat.assert_called_once_with(plugin._instance.id)
 
     def test_status_failure(self, plugin, ez_client):
         ez_client.instance_heartbeat.side_effect = RestConnectionError()
         plugin._status()
-        ez_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
+        ez_client.instance_heartbeat.assert_called_once_with(plugin._instance.id)
 
 
 class TestValidationFunctions(object):
@@ -457,7 +457,7 @@ class TestValidationFunctions(object):
             assert plugin._validate_system(bg_request) is None
 
         def test_wrong_system(self, plugin, bg_request):
-            plugin.system.name = "wrong"
+            plugin._system.name = "wrong"
 
             with pytest.raises(DiscardMessageException):
                 plugin._validate_system(bg_request)
@@ -467,7 +467,7 @@ class TestValidationFunctions(object):
             assert plugin._validate_running(bg_request) is None
 
         def test_shutting_down(self, plugin):
-            plugin.shutdown_event.set()
+            plugin._shutdown_event.set()
             with pytest.raises(RequestProcessingError):
                 plugin._validate_running(Mock())
 

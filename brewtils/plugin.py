@@ -171,23 +171,22 @@ class Plugin(object):
         _HOST = self.config.bg_host
         _PORT = self.config.bg_port
 
-        self.client = client
+        self._client = client
+        self._shutdown_event = threading.Event()
+        self._system = self._setup_system(system, metadata, kwargs)
+        self._ez_client = EasyClient(logger=self.logger, **self.config)
 
-        self.instance = None
-        self.admin_processor = None
-        self.request_processor = None
-        self.shutdown_event = threading.Event()
-
-        self.system = self._setup_system(system, metadata, kwargs)
-
-        self.ez_client = EasyClient(logger=self.logger, **self.config)
+        # These will be created on startup
+        self._instance = None
+        self._admin_processor = None
+        self._request_processor = None
 
     def run(self):
         self._startup()
         self.logger.info("Plugin %s has started", self.unique_name)
 
         try:
-            self.shutdown_event.wait()
+            self._shutdown_event.wait()
         except KeyboardInterrupt:
             self.logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:
@@ -198,26 +197,30 @@ class Plugin(object):
 
     @property
     def unique_name(self):
-        return "%s[%s]-%s" % (self.system.name, self.instance_name, self.system.version)
+        return "%s[%s]-%s" % (
+            self._system.name,
+            self.config.instance_name,
+            self._system.version,
+        )
 
     def _startup(self):
         self.logger.debug("About to start up plugin %s", self.unique_name)
 
-        self.system = self._initialize_system()
-        self.instance = self._initialize_instance()
-        self.admin_processor, self.request_processor = self._initialize_processors()
+        self._system = self._initialize_system()
+        self._instance = self._initialize_instance()
+        self._admin_processor, self._request_processor = self._initialize_processors()
 
         self.logger.debug("Starting up processors")
-        self.admin_processor.startup()
-        self.request_processor.startup()
+        self._admin_processor.startup()
+        self._request_processor.startup()
 
     def _shutdown(self):
         self.logger.debug("About to shut down plugin %s", self.unique_name)
-        self.shutdown_event.set()
+        self._shutdown_event.set()
 
         self.logger.debug("Shutting down processors")
-        self.request_processor.shutdown()
-        self.admin_processor.shutdown()
+        self._request_processor.shutdown()
+        self._admin_processor.shutdown()
 
         self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
@@ -237,61 +240,61 @@ class Plugin(object):
             PluginValidationError: Unable to find or create a System for this Plugin
 
         """
-        existing_system = self.ez_client.find_unique_system(
-            name=self.system.name, version=self.system.version
+        existing_system = self._ez_client.find_unique_system(
+            name=self._system.name, version=self._system.version
         )
 
         if not existing_system:
             try:
                 # If this succeeds the system will already have the correct metadata
                 # and such, so can just finish here
-                return self.ez_client.create_system(self.system)
+                return self._ez_client.create_system(self._system)
             except ConflictError:
                 # If multiple instances are starting up at once and this is a new system
                 # the create can return a conflict. In that case just try the get again
-                existing_system = self.ez_client.find_unique_system(
-                    name=self.system.name, version=self.system.version
+                existing_system = self._ez_client.find_unique_system(
+                    name=self._system.name, version=self._system.version
                 )
 
         # If we STILL can't find a system something is really wrong
         if not existing_system:
             raise PluginValidationError(
                 "Unable to find or create system {0}-{1}".format(
-                    self.system.name, self.system.version
+                    self._system.name, self._system.version
                 )
             )
 
         # We always update with these fields
         update_kwargs = {
-            "new_commands": self.system.commands,
-            "metadata": self.system.metadata,
-            "description": self.system.description,
-            "display_name": self.system.display_name,
-            "icon_name": self.system.icon_name,
+            "new_commands": self._system.commands,
+            "metadata": self._system.metadata,
+            "description": self._system.description,
+            "display_name": self._system.display_name,
+            "icon_name": self._system.icon_name,
         }
 
         # And if this particular instance doesn't exist we want to add it
         if not existing_system.has_instance(self.instance_name):
             update_kwargs["add_instance"] = Instance(name=self.instance_name)
 
-        return self.ez_client.update_system(existing_system.id, **update_kwargs)
+        return self._ez_client.update_system(existing_system.id, **update_kwargs)
 
     def _initialize_instance(self):
         # Sanity check to make sure an instance with this name was registered
-        if not self.system.has_instance(self.instance_name):
+        if not self._system.has_instance(self.instance_name):
             raise PluginValidationError(
                 'Unable to find registered instance with name "%s"' % self.instance_name
             )
 
-        return self.ez_client.initialize_instance(
-            self.system.get_instance(self.instance_name).id
+        return self._ez_client.initialize_instance(
+            self._system.get_instance(self.instance_name).id
         )
 
     def _initialize_processors(self):
         """Create RequestProcessors for the admin and request queues"""
         # If the queue connection is TLS we need to update connection params with
         # values specified at plugin creation
-        connection_info = self.instance.queue_info["connection"]
+        connection_info = self._instance.queue_info["connection"]
         if "ssl" in connection_info:
             connection_info["ssl"].update(
                 {
@@ -303,22 +306,22 @@ class Plugin(object):
 
         # Each RequestProcessor needs a RequestConsumer, so start with those
         common_args = {
-            "connection_type": self.instance.queue_type,
+            "connection_type": self._instance.queue_type,
             "connection_info": connection_info,
-            "panic_event": self.shutdown_event,
+            "panic_event": self._shutdown_event,
             "max_reconnect_attempts": self.config.mq.max_attempts,
             "max_reconnect_timeout": self.config.mq.max_timeout,
             "starting_reconnect_timeout": self.config.mq.starting_timeout,
         }
         admin_consumer = RequestConsumer.create(
             thread_name="Admin Consumer",
-            queue_name=self.instance.queue_info["admin"]["name"],
+            queue_name=self._instance.queue_info["admin"]["name"],
             max_concurrent=1,
             **common_args
         )
         request_consumer = RequestConsumer.create(
             thread_name="Request Consumer",
-            queue_name=self.instance.queue_info["request"]["name"],
+            queue_name=self._instance.queue_info["request"]["name"],
             max_concurrent=self.max_concurrent,
             **common_args
         )
@@ -332,8 +335,8 @@ class Plugin(object):
             max_workers=1,
         )
         request_processor = RequestProcessor(
-            target=self.client,
-            updater=HTTPRequestUpdater(self.ez_client, self.shutdown_event),
+            target=self._client,
+            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=request_consumer,
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
@@ -347,8 +350,8 @@ class Plugin(object):
 
         :return: Success output message
         """
-        self.instance = self.ez_client.update_instance_status(
-            self.instance.id, "RUNNING"
+        self._instance = self._ez_client.update_instance_status(
+            self._instance.id, "RUNNING"
         )
 
         return "Successfully started plugin"
@@ -358,9 +361,9 @@ class Plugin(object):
 
         :return: Success output message
         """
-        self.shutdown_event.set()
-        self.instance = self.ez_client.update_instance_status(
-            self.instance.id, "STOPPED"
+        self._shutdown_event.set()
+        self._instance = self._ez_client.update_instance_status(
+            self._instance.id, "STOPPED"
         )
 
         return "Successfully stopped plugin"
@@ -368,21 +371,21 @@ class Plugin(object):
     def _status(self):
         """Handle status message by sending a heartbeat."""
         try:
-            self.ez_client.instance_heartbeat(self.instance.id)
+            self._ez_client.instance_heartbeat(self._instance.id)
         except (RequestsConnectionError, RestConnectionError):
             pass
 
     def _validate_system(self, request):
         """Validate that a request is intended for this Plugin"""
         request_system = getattr(request, "system") or ""
-        if request_system.upper() != self.system.name.upper():
+        if request_system.upper() != self._system.name.upper():
             raise DiscardMessageException(
                 "Received message for system {0}".format(request.system)
             )
 
     def _validate_running(self, _):
         """Validate that this plugin is still running"""
-        if self.shutdown_event.is_set():
+        if self._shutdown_event.is_set():
             raise RequestProcessingError(
                 "Unable to process message - currently shutting down"
             )
@@ -405,7 +408,7 @@ class Plugin(object):
                     "system creation helper kwargs %s" % helper_keywords
                 )
 
-            if self.client._bg_name or self.client._bg_version:
+            if self._client._bg_name or self._client._bg_version:
                 raise ValidationError(
                     "Sorry, you can't specify a system as well as system "
                     "info in the @system decorator (bg_name, bg_version)"
@@ -422,19 +425,19 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = self.config.name or self.client._bg_name
-            version = self.config.version or self.client._bg_version
+            name = self.config.name or self._client._bg_name
+            version = self.config.version or self._client._bg_version
 
             description = self.config.description
-            if not description and self.client.__doc__:
-                description = self.client.__doc__.split("\n")[0]
+            if not description and self._client.__doc__:
+                description = self._client.__doc__.split("\n")[0]
 
             system = System(
                 name=name,
                 description=description,
                 version=version,
                 metadata=metadata,
-                commands=self.client._commands,
+                commands=self._client._commands,
                 instances=[Instance(name=self.config.instance_name)],
                 max_instances=self.config.max_instances,
                 icon_name=self.config.icon_name,
@@ -501,7 +504,7 @@ class Plugin(object):
 
     @property
     def metadata(self):
-        return self.system.metadata
+        return self._system.metadata
 
     @property
     def connection_parameters(self):
@@ -525,8 +528,24 @@ class Plugin(object):
         }
 
     @property
+    def client(self):
+        return self._client
+
+    @property
+    def system(self):
+        return self._system
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @property
     def bm_client(self):
-        return self.ez_client
+        return self._ez_client
+
+    @property
+    def shutdown_event(self):
+        return self._shutdown_event
 
 
 # Alias old name

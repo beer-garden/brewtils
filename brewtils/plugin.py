@@ -530,11 +530,11 @@ class Plugin(object):
             for key in (
                 "bg_host",
                 "bg_port",
+                "bg_url_prefix",
                 "ssl_enabled",
                 "api_version",
                 "ca_cert",
                 "client_cert",
-                "url_prefix",
                 "ca_verify",
                 "username",
                 "password",

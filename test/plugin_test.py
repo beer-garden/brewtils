@@ -490,9 +490,9 @@ class TestSetupSystem(object):
             {"display_name": "foo"},
         ],
     )
-    def test_extra_params(self, plugin, client, bg_system, extra_args):
+    def test_extra_params(self, plugin, bg_system, extra_args):
         with pytest.raises(ValidationError, match="system creation helper"):
-            plugin._setup_system(client, bg_system, {}, extra_args)
+            plugin._setup_system(bg_system, {}, extra_args)
 
     @pytest.mark.parametrize(
         "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
@@ -500,23 +500,23 @@ class TestSetupSystem(object):
     def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
         setattr(client, attr, value)
         with pytest.raises(ValidationError, match="@system decorator"):
-            plugin._setup_system(client, bg_system, {}, {})
+            plugin._setup_system(bg_system, {}, {})
 
-    def test_no_instances(self, plugin, client):
+    def test_no_instances(self, plugin):
         system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
-            plugin._setup_system(client, system, {}, {})
+            plugin._setup_system(system, {}, {})
 
-    def test_max_instances(self, plugin, client):
+    def test_max_instances(self, plugin):
         system = System(
             name="name",
             version="1.0.0",
             instances=[Instance(name="1"), Instance(name="2")],
         )
-        new_system = plugin._setup_system(client, system, {}, {})
+        new_system = plugin._setup_system(system, {}, {})
         assert new_system.max_instances == 2
 
-    def test_construct_system(self, plugin, client):
+    def test_construct_system(self, plugin):
         plugin.config.update(
             {
                 "name": "name",
@@ -527,7 +527,7 @@ class TestSetupSystem(object):
             }
         )
 
-        new_system = plugin._setup_system(client, None, {"foo": "bar"}, {})
+        new_system = plugin._setup_system(None, {"foo": "bar"}, {})
         self._validate_system(new_system)
 
     def test_construct_from_client(self, plugin, client):
@@ -535,7 +535,7 @@ class TestSetupSystem(object):
         client._bg_version = "1.0.0"
         client.__doc__ = "Description\nSome more stuff"
 
-        new_system = plugin._setup_system(client, None, {}, {})
+        new_system = plugin._setup_system(None, {}, {})
         assert new_system.name == "name"
         assert new_system.version == "1.0.0"
         assert new_system.description == "Description"

@@ -174,14 +174,15 @@ class Plugin(object):
         _HOST = self.config.bg_host
         _PORT = self.config.bg_port
 
-        self.system = self._setup_system(client, system, metadata, kwargs)
+        self.client = client
 
         self.instance = None
         self.admin_processor = None
         self.request_processor = None
-        self.client = client
         self.shutdown_event = threading.Event()
         self.parser = parser or SchemaParser()
+
+        self.system = self._setup_system(system, metadata, kwargs)
 
         self.bm_client = EasyClient(
             logger=self.logger, parser=self.parser, **self.config
@@ -392,7 +393,7 @@ class Plugin(object):
                 "Unable to process message - currently shutting down"
             )
 
-    def _setup_system(self, client, system, metadata, plugin_kwargs):
+    def _setup_system(self, system, metadata, plugin_kwargs):
         helper_keywords = {
             "name",
             "description",
@@ -410,7 +411,7 @@ class Plugin(object):
                     "system creation helper kwargs %s" % helper_keywords
                 )
 
-            if client._bg_name or client._bg_version:
+            if self.client._bg_name or self.client._bg_version:
                 raise ValidationError(
                     "Sorry, you can't specify a system as well as system "
                     "info in the @system decorator (bg_name, bg_version)"
@@ -427,19 +428,19 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = self.config.name or client._bg_name
-            version = self.config.version or client._bg_version
+            name = self.config.name or self.client._bg_name
+            version = self.config.version or self.client._bg_version
 
             description = self.config.description
-            if not description and client.__doc__:
-                description = client.__doc__.split("\n")[0]
+            if not description and self.client.__doc__:
+                description = self.client.__doc__.split("\n")[0]
 
             system = System(
                 name=name,
                 description=description,
                 version=version,
-                commands=client._commands,
                 metadata=metadata,
+                commands=self.client._commands,
                 instances=[Instance(name=self.config.instance_name)],
                 max_instances=self.config.max_instances,
                 icon_name=self.config.icon_name,

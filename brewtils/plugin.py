@@ -580,9 +580,20 @@ class Plugin(object):
         return self._logger
 
 
-# Alias old name
-PluginBase = Plugin
+# Alias old names
+class PluginBase(Plugin):
+    def __init__(self, *args, **kwargs):
+        _deprecate(
+            "Looks like you're creating a 'PluginBase'. Heads up - this name will be "
+            "removed in version 4.0, please use 'Plugin' instead. Thanks!"
+        )
+        super(PluginBase, self).__init__(*args, **kwargs)
 
 
 class RemotePlugin(Plugin):
-    pass
+    def __init__(self, *args, **kwargs):
+        _deprecate(
+            "Looks like you're creating a 'RemotePlugin'. Heads up - this name will be "
+            "removed in version 4.0, please use 'Plugin' instead. Thanks!"
+        )
+        super(RemotePlugin, self).__init__(*args, **kwargs)

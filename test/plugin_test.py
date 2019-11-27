@@ -2,6 +2,7 @@
 import logging
 import logging.config
 import os
+import warnings
 
 import pytest
 from mock import MagicMock, Mock, ANY
@@ -18,7 +19,7 @@ from brewtils.errors import (
 )
 from brewtils.log import default_config
 from brewtils.models import Instance, System, Command
-from brewtils.plugin import Plugin
+from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
 @pytest.fixture(autouse=True)
@@ -539,3 +540,65 @@ class TestSetupSystem(object):
         assert new_system.icon_name == "icon"
         assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
+
+
+class TestDeprecations(object):
+    @pytest.mark.parametrize(
+        "attribute",
+        [
+            "bg_host",
+            "bg_port",
+            "ssl_enabled",
+            "ca_cert",
+            "client_cert",
+            "bg_url_prefix",
+            "ca_verify",
+            "max_attempts",
+            "max_timeout",
+            "starting_timeout",
+            "max_concurrent",
+            "instance_name",
+            "connection_parameters",
+            "client",
+            "system",
+            "instance",
+            "metadata",
+            "bm_client",
+            "shutdown_event",
+            "logger",
+        ],
+    )
+    def test_properties(self, plugin, attribute):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            getattr(plugin, attribute)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
+
+    def test_plugin_base(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            PluginBase(Mock(), bg_host="localhost")
+            assert len(w) == 1
+
+            warning = w[0]
+            assert warning.category == DeprecationWarning
+            assert "'PluginBase'" in str(warning)
+            assert "'Plugin'" in str(warning)
+            assert "4.0" in str(warning)
+
+    def test_remote_plugin(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            RemotePlugin(Mock(), bg_host="localhost")
+            assert len(w) == 1
+
+            warning = w[0]
+            assert warning.category == DeprecationWarning
+            assert "'RemotePlugin'" in str(warning)
+            assert "'Plugin'" in str(warning)
+            assert "4.0" in str(warning)

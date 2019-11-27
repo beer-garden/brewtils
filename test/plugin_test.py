@@ -29,7 +29,7 @@ def environ():
 
 
 @pytest.fixture
-def bm_client(bg_system, bg_instance):
+def ez_client(bg_system, bg_instance):
     return Mock(
         create_system=Mock(return_value=bg_system),
         initialize_instance=Mock(return_value=bg_instance),
@@ -65,7 +65,7 @@ def request_processor():
 @pytest.fixture
 def plugin(
     client,
-    bm_client,
+    ez_client,
     updater_mock,
     bg_system,
     bg_instance,
@@ -76,7 +76,7 @@ def plugin(
         client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
     )
     plugin.instance = bg_instance
-    plugin.bm_client = bm_client
+    plugin.ez_client = ez_client
     plugin.request_updater = updater_mock
     plugin.admin_processor = admin_processor
     plugin.request_processor = request_processor
@@ -284,39 +284,39 @@ def test_shutdown(plugin):
 
 
 class TestInitializeSystem(object):
-    def test_new_system(self, plugin, bm_client, bg_system, bg_instance):
-        bm_client.find_unique_system.return_value = None
+    def test_new_system(self, plugin, ez_client, bg_system, bg_instance):
+        ez_client.find_unique_system.return_value = None
 
         plugin._initialize_system()
-        bm_client.create_system.assert_called_once_with(bg_system)
-        assert bm_client.find_unique_system.call_count == 1
-        assert bm_client.update_system.called is False
+        ez_client.create_system.assert_called_once_with(bg_system)
+        assert ez_client.find_unique_system.call_count == 1
+        assert ez_client.update_system.called is False
 
-    def test_new_system_conflict_succeed(self, plugin, bm_client, bg_system):
-        bm_client.find_unique_system.side_effect = [None, bg_system]
-        bm_client.create_system.side_effect = ConflictError()
+    def test_new_system_conflict_succeed(self, plugin, ez_client, bg_system):
+        ez_client.find_unique_system.side_effect = [None, bg_system]
+        ez_client.create_system.side_effect = ConflictError()
 
         plugin._initialize_system()
-        bm_client.create_system.assert_called_once_with(bg_system)
-        assert bm_client.find_unique_system.call_count == 2
-        assert bm_client.update_system.called is True
+        ez_client.create_system.assert_called_once_with(bg_system)
+        assert ez_client.find_unique_system.call_count == 2
+        assert ez_client.update_system.called is True
 
-    def test_new_system_conflict_fail(self, plugin, bm_client, bg_system):
-        bm_client.find_unique_system.return_value = None
-        bm_client.create_system.side_effect = ConflictError()
+    def test_new_system_conflict_fail(self, plugin, ez_client, bg_system):
+        ez_client.find_unique_system.return_value = None
+        ez_client.create_system.side_effect = ConflictError()
 
         with pytest.raises(PluginValidationError):
             plugin._initialize_system()
 
-        bm_client.create_system.assert_called_once_with(bg_system)
-        assert bm_client.find_unique_system.call_count == 2
-        assert bm_client.update_system.called is False
+        ez_client.create_system.assert_called_once_with(bg_system)
+        assert ez_client.find_unique_system.call_count == 2
+        assert ez_client.update_system.called is False
 
     @pytest.mark.parametrize(
         "current_commands", [[], [Command("test")], [Command("other_test")]]
     )
     def test_system_exists(
-        self, plugin, bm_client, bg_system, bg_instance, current_commands
+        self, plugin, ez_client, bg_system, bg_instance, current_commands
     ):
         existing_system = System(
             id="id",
@@ -326,14 +326,14 @@ class TestInitializeSystem(object):
             commands=current_commands,
             metadata={"foo": "bar"},
         )
-        bm_client.find_unique_system.return_value = existing_system
+        ez_client.find_unique_system.return_value = existing_system
 
         bg_system.commands = [Command("test")]
-        bm_client.update_system.return_value = bg_system
+        ez_client.update_system.return_value = bg_system
 
         plugin._initialize_system()
-        assert bm_client.create_system.called is False
-        bm_client.update_system.assert_called_once_with(
+        assert ez_client.create_system.called is False
+        ez_client.update_system.assert_called_once_with(
             existing_system.id,
             new_commands=bg_system.commands,
             metadata=bg_system.metadata,
@@ -341,9 +341,9 @@ class TestInitializeSystem(object):
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
         )
-        # assert bm_client.create_system.return_value == plugin.system
+        # assert ez_client.create_system.return_value == plugin.system
 
-    def test_new_instance(self, plugin, bm_client, bg_system, bg_instance):
+    def test_new_instance(self, plugin, ez_client, bg_system, bg_instance):
         existing_system = System(
             id="id",
             name="test_system",
@@ -352,14 +352,14 @@ class TestInitializeSystem(object):
             max_instances=2,
             metadata={"foo": "bar"},
         )
-        bm_client.find_unique_system.return_value = existing_system
+        ez_client.find_unique_system.return_value = existing_system
 
         new_name = "foo_instance"
         plugin.config.instance_name = new_name
 
         plugin._initialize_system()
-        assert bm_client.create_system.called is False
-        bm_client.update_system.assert_called_once_with(
+        assert ez_client.create_system.called is False
+        ez_client.update_system.assert_called_once_with(
             existing_system.id,
             new_commands=bg_system.commands,
             metadata=bg_system.metadata,
@@ -368,15 +368,15 @@ class TestInitializeSystem(object):
             display_name=bg_system.display_name,
             add_instance=ANY,
         )
-        assert bm_client.update_system.call_args[1]["add_instance"].name == new_name
+        assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
 
 
 class TestInitializeInstance(object):
-    def test_success(self, plugin, bm_client, bg_instance):
+    def test_success(self, plugin, ez_client, bg_instance):
         plugin._initialize_instance()
-        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        ez_client.initialize_instance.assert_called_once_with(bg_instance.id)
 
-    def test_unregistered_instance(self, plugin, bm_client, bg_system):
+    def test_unregistered_instance(self, plugin, ez_client, bg_system):
         bg_system.has_instance = Mock(return_value=False)
 
         with pytest.raises(PluginValidationError):
@@ -420,35 +420,35 @@ class TestInitializeProcessors(object):
 
 
 class TestAdminMethods(object):
-    def test_start(self, plugin, bm_client, bg_instance):
+    def test_start(self, plugin, ez_client, bg_instance):
         new_instance = Mock()
-        bm_client.update_instance_status.return_value = new_instance
+        ez_client.update_instance_status.return_value = new_instance
 
         assert plugin._start()
-        bm_client.update_instance_status.assert_called_once_with(
+        ez_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "RUNNING"
         )
         assert plugin.instance == new_instance
 
-    def test_stop(self, plugin, bm_client, bg_instance):
+    def test_stop(self, plugin, ez_client, bg_instance):
         new_instance = Mock()
-        bm_client.update_instance_status.return_value = new_instance
+        ez_client.update_instance_status.return_value = new_instance
 
         assert plugin._stop()
-        bm_client.update_instance_status.assert_called_once_with(
+        ez_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "STOPPED"
         )
         assert plugin.instance == new_instance
         assert plugin.shutdown_event.is_set() is True
 
-    def test_status(self, plugin, bm_client):
+    def test_status(self, plugin, ez_client):
         plugin._status()
-        bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
+        ez_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
-    def test_status_failure(self, plugin, bm_client):
-        bm_client.instance_heartbeat.side_effect = RestConnectionError()
+    def test_status_failure(self, plugin, ez_client):
+        ez_client.instance_heartbeat.side_effect = RestConnectionError()
         plugin._status()
-        bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
+        ez_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
 
 class TestValidationFunctions(object):

@@ -180,7 +180,7 @@ class Plugin(object):
 
         self.system = self._setup_system(system, metadata, kwargs)
 
-        self.bm_client = EasyClient(logger=self.logger, **self.config)
+        self.ez_client = EasyClient(logger=self.logger, **self.config)
 
     def run(self):
         self._startup()
@@ -237,7 +237,7 @@ class Plugin(object):
             PluginValidationError: Unable to find or create a System for this Plugin
 
         """
-        existing_system = self.bm_client.find_unique_system(
+        existing_system = self.ez_client.find_unique_system(
             name=self.system.name, version=self.system.version
         )
 
@@ -245,11 +245,11 @@ class Plugin(object):
             try:
                 # If this succeeds the system will already have the correct metadata
                 # and such, so can just finish here
-                return self.bm_client.create_system(self.system)
+                return self.ez_client.create_system(self.system)
             except ConflictError:
                 # If multiple instances are starting up at once and this is a new system
                 # the create can return a conflict. In that case just try the get again
-                existing_system = self.bm_client.find_unique_system(
+                existing_system = self.ez_client.find_unique_system(
                     name=self.system.name, version=self.system.version
                 )
 
@@ -274,7 +274,7 @@ class Plugin(object):
         if not existing_system.has_instance(self.instance_name):
             update_kwargs["add_instance"] = Instance(name=self.instance_name)
 
-        return self.bm_client.update_system(existing_system.id, **update_kwargs)
+        return self.ez_client.update_system(existing_system.id, **update_kwargs)
 
     def _initialize_instance(self):
         # Sanity check to make sure an instance with this name was registered
@@ -283,7 +283,7 @@ class Plugin(object):
                 'Unable to find registered instance with name "%s"' % self.instance_name
             )
 
-        return self.bm_client.initialize_instance(
+        return self.ez_client.initialize_instance(
             self.system.get_instance(self.instance_name).id
         )
 
@@ -333,7 +333,7 @@ class Plugin(object):
         )
         request_processor = RequestProcessor(
             target=self.client,
-            updater=HTTPRequestUpdater(self.bm_client, self.shutdown_event),
+            updater=HTTPRequestUpdater(self.ez_client, self.shutdown_event),
             consumer=request_consumer,
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
@@ -347,7 +347,7 @@ class Plugin(object):
 
         :return: Success output message
         """
-        self.instance = self.bm_client.update_instance_status(
+        self.instance = self.ez_client.update_instance_status(
             self.instance.id, "RUNNING"
         )
 
@@ -359,7 +359,7 @@ class Plugin(object):
         :return: Success output message
         """
         self.shutdown_event.set()
-        self.instance = self.bm_client.update_instance_status(
+        self.instance = self.ez_client.update_instance_status(
             self.instance.id, "STOPPED"
         )
 
@@ -368,7 +368,7 @@ class Plugin(object):
     def _status(self):
         """Handle status message by sending a heartbeat."""
         try:
-            self.bm_client.instance_heartbeat(self.instance.id)
+            self.ez_client.instance_heartbeat(self.instance.id)
         except (RequestsConnectionError, RestConnectionError):
             pass
 
@@ -523,6 +523,10 @@ class Plugin(object):
                 "client_timeout",
             )
         }
+
+    @property
+    def bm_client(self):
+        return self.ez_client
 
 
 # Alias old name

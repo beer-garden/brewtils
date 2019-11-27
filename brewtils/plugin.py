@@ -162,13 +162,13 @@ class Plugin(object):
         # assume that logging has already been configured
         self._custom_logger = True
         if logger:
-            self.logger = logger
+            self._logger = logger
         else:
             if len(logging.root.handlers) == 0:
                 logging.config.dictConfig(default_config(level=self.config.log_level))
                 self._custom_logger = False
 
-            self.logger = logging.getLogger(__name__)
+            self._logger = logging.getLogger(__name__)
 
         global _HOST, _PORT
         _HOST = self.config.bg_host
@@ -177,7 +177,7 @@ class Plugin(object):
         self._client = client
         self._shutdown_event = threading.Event()
         self._system = self._setup_system(system, metadata, kwargs)
-        self._ez_client = EasyClient(logger=self.logger, **self.config)
+        self._ez_client = EasyClient(logger=self._logger, **self.config)
 
         # These will be created on startup
         self._instance = None
@@ -186,17 +186,17 @@ class Plugin(object):
 
     def run(self):
         self._startup()
-        self.logger.info("Plugin %s has started", self.unique_name)
+        self._logger.info("Plugin %s has started", self.unique_name)
 
         try:
             self._shutdown_event.wait()
         except KeyboardInterrupt:
-            self.logger.debug("Received KeyboardInterrupt - shutting down")
+            self._logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:
-            self.logger.exception("Exception during wait, shutting down: %s", ex)
+            self._logger.exception("Exception during wait, shutting down: %s", ex)
 
         self._shutdown()
-        self.logger.info("Plugin %s has terminated", self.unique_name)
+        self._logger.info("Plugin %s has terminated", self.unique_name)
 
     @property
     def unique_name(self):
@@ -207,25 +207,25 @@ class Plugin(object):
         )
 
     def _startup(self):
-        self.logger.debug("About to start up plugin %s", self.unique_name)
+        self._logger.debug("About to start up plugin %s", self.unique_name)
 
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
         self._admin_processor, self._request_processor = self._initialize_processors()
 
-        self.logger.debug("Starting up processors")
+        self._logger.debug("Starting up processors")
         self._admin_processor.startup()
         self._request_processor.startup()
 
     def _shutdown(self):
-        self.logger.debug("About to shut down plugin %s", self.unique_name)
+        self._logger.debug("About to shut down plugin %s", self.unique_name)
         self._shutdown_event.set()
 
-        self.logger.debug("Shutting down processors")
+        self._logger.debug("Shutting down processors")
         self._request_processor.shutdown()
         self._admin_processor.shutdown()
 
-        self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
+        self._logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info
@@ -572,6 +572,11 @@ class Plugin(object):
     def shutdown_event(self):
         _deprecate("shutdown_event attribute has been renamed to _shutdown_event")
         return self._shutdown_event
+
+    @property
+    def logger(self):
+        _deprecate("logger attribute has been renamed to _logger")
+        return self._logger
 
 
 # Alias old name

@@ -108,7 +108,7 @@ class TestPluginInit(object):
         assert expected_unique == plugin.unique_name
 
     def test_defaults(self, plugin):
-        assert plugin.logger == logging.getLogger("brewtils.plugin")
+        assert plugin._logger == logging.getLogger("brewtils.plugin")
         assert plugin.instance_name == "default"
         assert plugin.bg_host == "localhost"
         assert plugin.bg_port == 2337
@@ -131,7 +131,7 @@ class TestPluginInit(object):
 
         plugin = Plugin(client, bg_host="localhost", name="test", version="1")
         dict_config.assert_called_once_with(default_config(level="INFO"))
-        assert logging.getLogger("brewtils.plugin") == plugin.logger
+        assert logging.getLogger("brewtils.plugin") == plugin._logger
 
     def test_kwargs(self, client, bg_system):
         logger = Mock()
@@ -153,7 +153,7 @@ class TestPluginInit(object):
         assert plugin.bg_url_prefix == "/beer/"
         assert plugin.ssl_enabled is False
         assert plugin.ca_verify is False
-        assert plugin.logger == logger
+        assert plugin._logger == logger
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"

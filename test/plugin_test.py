@@ -48,11 +48,6 @@ def client():
 
 
 @pytest.fixture
-def parser_mock():
-    return Mock()
-
-
-@pytest.fixture
 def updater_mock():
     return Mock()
 
@@ -71,7 +66,6 @@ def request_processor():
 def plugin(
     client,
     bm_client,
-    parser_mock,
     updater_mock,
     bg_system,
     bg_instance,
@@ -83,7 +77,6 @@ def plugin(
     )
     plugin.instance = bg_instance
     plugin.bm_client = bm_client
-    plugin.parser = parser_mock
     plugin.request_updater = updater_mock
     plugin.admin_processor = admin_processor
     plugin.request_processor = request_processor

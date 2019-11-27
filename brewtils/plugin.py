@@ -24,7 +24,6 @@ from brewtils.request_handling import (
     RequestProcessor,
 )
 from brewtils.rest.easy_client import EasyClient
-from brewtils.schema_parser import SchemaParser
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -153,9 +152,7 @@ class Plugin(object):
     :param refresh_token: Refresh token for Beergarden authentication
     """
 
-    def __init__(
-        self, client, system=None, logger=None, parser=None, metadata=None, **kwargs
-    ):
+    def __init__(self, client, system=None, logger=None, metadata=None, **kwargs):
         # Load config before setting up logging so level is configurable
         # TODO - can change to load_config(**kwargs) if yapconf supports CLI source
         self.config = load_config(cli_args=sys.argv[1:], **kwargs)
@@ -180,13 +177,10 @@ class Plugin(object):
         self.admin_processor = None
         self.request_processor = None
         self.shutdown_event = threading.Event()
-        self.parser = parser or SchemaParser()
 
         self.system = self._setup_system(system, metadata, kwargs)
 
-        self.bm_client = EasyClient(
-            logger=self.logger, parser=self.parser, **self.config
-        )
+        self.bm_client = EasyClient(logger=self.logger, **self.config)
 
     def run(self):
         self._startup()

@@ -8,6 +8,7 @@ from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.config import load_config
 from brewtils.errors import (
+    _deprecate,
     ConflictError,
     PluginValidationError,
     ValidationError,
@@ -456,58 +457,71 @@ class Plugin(object):
     # These are provided for backward-compatibility
     @property
     def bg_host(self):
+        _deprecate("bg_host has moved into config (plugin.config.bg_host)")
         return self.config.bg_host
 
     @property
     def bg_port(self):
+        _deprecate("bg_port has moved into config (plugin.config.bg_port)")
         return self.config.bg_port
 
     @property
     def ssl_enabled(self):
+        _deprecate("ssl_enabled has moved into config (plugin.config.ssl_enabled)")
         return self.config.ssl_enabled
 
     @property
     def ca_cert(self):
+        _deprecate("ca_cert has moved into config (plugin.config.ca_cert)")
         return self.config.ca_cert
 
     @property
     def client_cert(self):
+        _deprecate("client_cert has moved into config (plugin.config.client_cert)")
         return self.config.client_cert
 
     @property
     def bg_url_prefix(self):
+        _deprecate("bg_url_prefix has moved into config (plugin.config.bg_url_prefix)")
         return self.config.bg_url_prefix
 
     @property
     def ca_verify(self):
+        _deprecate("ca_verify has moved into config (plugin.config.ca_verify)")
         return self.config.ca_verify
 
     @property
     def max_attempts(self):
+        _deprecate("max_attempts has moved into config (plugin.config.max_attempts)")
         return self.config.max_attempts
 
     @property
     def max_timeout(self):
+        _deprecate("max_timeout has moved into config (plugin.config.max_timeout)")
         return self.config.max_timeout
 
     @property
     def starting_timeout(self):
+        _deprecate(
+            "starting_timeout has moved into config (plugin.config.starting_timeout)"
+        )
         return self.config.starting_timeout
 
     @property
     def max_concurrent(self):
+        _deprecate(
+            "max_concurrent has moved into config (plugin.config.max_concurrent)"
+        )
         return self.config.max_concurrent
 
     @property
     def instance_name(self):
+        _deprecate("instance_name has moved into config (plugin.config.instance_name)")
         return self.config.instance_name
 
     @property
-    def metadata(self):
-        return self._system.metadata
-
-    @property
     def connection_parameters(self):
+        _deprecate("connection_parameters attribute was removed, please use 'config'")
         return {
             key: self.config[key]
             for key in (
@@ -529,22 +543,32 @@ class Plugin(object):
 
     @property
     def client(self):
+        _deprecate("client attribute has been renamed to _client")
         return self._client
 
     @property
     def system(self):
+        _deprecate("system attribute has been renamed to _system")
         return self._system
 
     @property
     def instance(self):
+        _deprecate("instance attribute has been renamed to _instance")
         return self._instance
 
     @property
+    def metadata(self):
+        _deprecate("metadata attribute has been renamed to _metadata")
+        return self._system.metadata
+
+    @property
     def bm_client(self):
+        _deprecate("bm_client attribute has been renamed to _ez_client")
         return self._ez_client
 
     @property
     def shutdown_event(self):
+        _deprecate("shutdown_event attribute has been renamed to _shutdown_event")
         return self._shutdown_event
 
 

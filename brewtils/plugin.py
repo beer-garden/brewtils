@@ -36,121 +36,122 @@ _PORT = None
 
 
 class Plugin(object):
-    """A beer-garden Plugin.
+    """A Beer-garden Plugin
 
-    This class represents a beer-garden Plugin - a continuously-running process
+    This class represents a Beer-garden Plugin - a continuously-running process
     that can receive and process Requests.
 
     To work, a Plugin needs a Client instance - an instance of a class defining
     which Requests this plugin can accept and process. The easiest way to define
-     a ``Client`` is by annotating a class with the ``@system`` decorator.
+    a ``Client`` is by annotating a class with the ``@system`` decorator.
 
-    When creating a Plugin you can pass certain keyword arguments to let the
-    Plugin know how to communicate with the beer-garden instance. These are:
+    A Plugin needs certain pieces of information in order to function correctly. These
+    can be grouped into two high-level categories: identifying information and
+    connection information.
+
+    Identifying information is how Beer-garden differentiates this Plugin from all
+    other Plugins. If you already have fully-defined System model you can pass that
+    directly to the Plugin (``system=my_system``). However, normally it's simpler to
+    pass the pieces directly:
+
+        - ``name`` (required)
+        - ``version`` (required)
+        - ``instance_name`` (required, but defaults to "default")
+        - ``description``
+        - ``icon_name``
+        - ``metadata``
+        - ``display_name``
+
+    Connection information tells the Plugin how to communicate with Beer-garden. The
+    most important of these is the ``bg_host`` (to tell the plugin where to find the
+    Beer-garden you want to connect to):
 
         - ``bg_host``
         - ``bg_port``
+        - ``bg_url_prefix``
         - ``ssl_enabled``
         - ``ca_cert``
+        - ``ca_verify``
         - ``client_cert``
-        - ``bg_url_prefix``
 
-    A Plugin also needs some identifying data. You can either pass parameters to
-    the Plugin or pass a fully defined System object (but not both). Note that
-    some fields are optional::
+    An example plugin might look like this::
 
         Plugin(
             name="Test",
             version="1.0.0",
             instance_name="default",
             description="A Test",
+            bg_host="localhost",
         )
 
-    or::
+    Plugins use `Yapconf <https://github.com/loganasherjones/yapconf>`_ for
+    configuration loading, which means that values can be discovered from sources other
+    than direct argument passing. Config can be passed as command line arguments::
 
-        the_system = System(
-            name="Test",
-            version="1.0.0",
-            instance_name="default,
-            description="A Test",
-        )
-        Plugin(system=the_system)
+        python my_plugin.py --bg-host localhost
 
-    If passing parameters directly note that these fields are required:
+    Values can also be specified as environment variables with a "BG_" prefix::
 
-    name
-        Environment variable ``BG_NAME`` will be used if not specified
-
-    version
-        Environment variable ``BG_VERSION`` will be used if not specified
-
-    instance_name
-        Environment variable ``BG_INSTANCE_NAME`` will be used if not specified.
-        'default' will be used if not specified and loading from environment
-        variable was unsuccessful
-
-    And these fields are optional:
-
-    - description  (Will use docstring summary line from Client if unspecified)
-    - icon_name
-    - metadata
-    - display_name
+        BG_HOST=localhost python my_plugin.py
 
     Plugins service requests using a
     :py:class:`concurrent.futures.ThreadPoolExecutor`. The maximum number of
-    threads available is controlled by the max_concurrent argument (the
-    'multithreaded' argument has been deprecated).
+    threads available is controlled by the max_concurrent argument.
 
     .. warning::
-        The default value for ``max_concurrent`` is 1. This means that a Plugin
-        that invokes a Command on itself in the course of processing a Request
-        will deadlock! If you intend to do this, please set ``max_concurrent``
-        to a value that makes sense and be aware that Requests are processed in
-        separate thread contexts!
+        Normally the processing of each Request occurs in a distinct thread context. If
+        you need to access shared state please be careful to use appropriate
+        concurrency mechanisms.
 
-    :param client: Instance of a class annotated with @system.
-    :param str bg_host: Hostname of a beer-garden.
-    :param int bg_port: Port beer-garden is listening on.
-    :param bool ssl_enabled: Whether to use SSL for beer-garden communication.
-    :param ca_cert: Certificate that issued the server certificate used by the
-        beer-garden server.
-    :param client_cert: Certificate used by the server making the connection to
-        beer-garden.
-    :param system: The system definition.
-    :param name: The system name.
-    :param description: The system description.
-    :param version: The system version.
-    :param icon_name: The system icon name.
-    :param str instance_name: The name of the instance.
-    :param logger: A logger that will be used by the Plugin.
-    :type logger: :py:class:`logging.Logger`.
-    :param parser: The parser to use when communicating with beer-garden.
-    :type parser: :py:class:`brewtils.schema_parser.SchemaParser`.
-    :param bool multithreaded: DEPRECATED Process requests in a separate thread.
-    :param int worker_shutdown_timeout: Time to wait during shutdown to finish
-        processing.
-    :param dict metadata: Metadata specific to this plugin.
-    :param int max_concurrent: Maximum number of requests to process
-        concurrently.
-    :param str bg_url_prefix: URL Prefix beer-garden is on.
-    :param str display_name: The display name to use for the system.
-    :param int max_attempts: Number of times to attempt updating the request
-        before giving up (default -1 aka never).
-    :param int max_timeout: Maximum amount of time to wait before retrying to
-        update a request.
-    :param int starting_timeout: Initial time to wait before the first retry.
-    :param int mq_max_attempts: Number of times to attempt reconnection to message queue
-        before giving up (default -1 aka never).
-    :param int mq_max_timeout: Maximum amount of time to wait before retrying to
-        connect to message queue.
-    :param int mq_starting_timeout: Initial time to wait before the first message queue
-        connection retry.
-    :param int max_instances: Max number of instances allowed for the system.
-    :param bool ca_verify: Verify server certificate when making a request.
-    :param str username: The username for Beergarden authentication
-    :param str password: The password for Beergarden authentication
-    :param access_token: Access token for Beergarden authentication
-    :param refresh_token: Refresh token for Beergarden authentication
+    .. warning::
+        The default value for ``max_concurrent`` is 5, but setting it to 1 is allowed.
+        This means that a Plugin will essentially be single-threaded, but realize this
+        means that if the Plugin invokes a Command on itself in the course of processing
+        a Request then the Plugin **will** deadlock!
+
+    Args:
+        client: Instance of a class annotated with @system.
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+        with Beer-garden. Useful if Beer-garden is running on a URL path other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+        authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+        Beer-garden
+        system (:py:class:`brewtils.models.System`): A Beer-garden System definition.
+        Incompatible with name, version, description, display_name, icon_name,
+        max_instances, and metadata parameters.
+        name (str): System name
+        version: System version
+        description (str): System description
+        display_name (str): System display name
+        icon_name (str): System icon name
+        max_instances (int): System maximum instances
+        metadata (dict): System metadata
+        instance_name: Instance name
+        logger: Logger that will be used by the Plugin. Passing a logger will prevent
+        the Plugin from preforming any additional logging configuration.
+        worker_shutdown_timeout: Time to wait during shutdown to finish processing
+        max_concurrent (int): Maximum number of requests to process concurrently
+        max_attempts (int): Number of times to attempt updating of a Request
+        before giving up. Negative numbers are interpreted as no maximum.
+        max_timeout (int): Maximum amount of time to wait between Request update
+        attempts. Negative numbers are interpreted as no maximum.
+        starting_timeout (int): Initial time to wait between Request update attempts.
+        Will double on subsequent attempts until reaching max_timeout.
+        mq_max_attempts (int): Number of times to attempt reconnection to message queue
+        before giving up. Negative numbers are interpreted as no maximum.
+        mq_max_timeout (int): Maximum amount of time to wait between message queue
+        reconnect attempts. Negative numbers are interpreted as no maximum.
+        mq_starting_timeout (int): Initial time to wait between message queue reconnect
+        attempts. Will double on subsequent attempts until reaching mq_max_timeout.
+        username (str): Username for Beergarden authentication
+        password (str): Password for Beergarden authentication
+        access_token: Access token for Beergarden authentication
+        refresh_token: Refresh token for Beergarden authentication
     """
 
     def __init__(self, client, system=None, logger=None, metadata=None, **kwargs):

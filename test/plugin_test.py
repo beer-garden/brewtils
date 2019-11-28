@@ -467,19 +467,13 @@ class TestSetupSystem(object):
             {"description": "foo"},
             {"icon_name": "foo"},
             {"display_name": "foo"},
+            {"max_instances": 1},
+            {"metadata": {"foo": "bar"}},
         ],
     )
     def test_extra_params(self, plugin, bg_system, extra_args):
         with pytest.raises(ValidationError, match="system creation helper"):
             plugin._setup_system(bg_system, {}, extra_args)
-
-    @pytest.mark.parametrize(
-        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
-    )
-    def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
-        setattr(client, attr, value)
-        with pytest.raises(ValidationError, match="@system decorator"):
-            plugin._setup_system(bg_system, {}, {})
 
     def test_no_instances(self, plugin):
         system = System(name="name", version="1.0.0")
@@ -510,6 +504,7 @@ class TestSetupSystem(object):
         self._validate_system(new_system)
 
     def test_construct_from_client(self, plugin, client):
+        """Test that @system decorator and client docstring are used"""
         client._bg_name = "name"
         client._bg_version = "1.0.0"
         client.__doc__ = "Description\nSome more stuff"
@@ -518,6 +513,29 @@ class TestSetupSystem(object):
         assert new_system.name == "name"
         assert new_system.version == "1.0.0"
         assert new_system.description == "Description"
+
+    def test_construct_from_client_matching(self, plugin, client, bg_system):
+        """Passing a System along with @system args is OK as long as they match"""
+        client._bg_name = "system"
+        client._bg_version = "1.0.0"
+
+        new_system = plugin._setup_system(bg_system, {}, {})
+        assert new_system.name == "system"
+        assert new_system.version == "1.0.0"
+
+    @pytest.mark.parametrize("kwargs", [{"name": "foo"}, {"version": "foo"}])
+    def test_missing_params(self, plugin, kwargs):
+        plugin.config.update(kwargs)
+        with pytest.raises(ValidationError):
+            plugin._setup_system(None, {}, kwargs)
+
+    @pytest.mark.parametrize(
+        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
+    )
+    def test_decorator_mismatch(self, plugin, client, bg_system, attr, value):
+        setattr(client, attr, value)
+        with pytest.raises(ValidationError, match="doesn't match"):
+            plugin._setup_system(bg_system, {}, {})
 
     @staticmethod
     def _validate_system(new_system):

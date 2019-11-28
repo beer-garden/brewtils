@@ -413,12 +413,6 @@ class Plugin(object):
                     "system creation helper kwargs %s" % helper_keywords
                 )
 
-            if self._client._bg_name or self._client._bg_version:
-                raise ValidationError(
-                    "Sorry, you can't specify a system as well as system "
-                    "info in the @system decorator (bg_name, bg_version)"
-                )
-
             if not system.instances:
                 raise ValidationError(
                     "Explicit system definition requires explicit instance "
@@ -430,8 +424,8 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = self.config.name or self._client._bg_name
-            version = self.config.version or self._client._bg_version
+            name = self.config.name or getattr(self._client, "_bg_name")
+            version = self.config.version or getattr(self._client, "_bg_version")
 
             description = self.config.description
             if not description and self._client.__doc__:
@@ -442,7 +436,7 @@ class Plugin(object):
                 description=description,
                 version=version,
                 metadata=metadata,
-                commands=self._client._commands,
+                commands=getattr(self._client, "_commands"),
                 instances=[Instance(name=self.config.instance_name)],
                 max_instances=self.config.max_instances,
                 icon_name=self.config.icon_name,
@@ -455,6 +449,20 @@ class Plugin(object):
 
         if not system.version:
             raise ValidationError("Plugin system must have a version")
+
+        client_name = getattr(self._client, "_bg_name")
+        if client_name and client_name != system.name:
+            raise ValidationError(
+                "System name '%s' doesn't match name from client decorator: "
+                "@system(bg_name=%s)" % (system.name, client_name)
+            )
+
+        client_version = getattr(self._client, "_bg_version")
+        if client_version and client_version != system.version:
+            raise ValidationError(
+                "System version '%s' doesn't match version from client decorator: "
+                "@system(bg_version=%s)" % (system.version, client_version)
+            )
 
         return system
 

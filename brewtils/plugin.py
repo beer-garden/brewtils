@@ -398,16 +398,16 @@ class Plugin(object):
     def _setup_system(self, system, metadata, plugin_kwargs):
         helper_keywords = {
             "name",
-            "description",
             "version",
+            "description",
             "icon_name",
             "display_name",
             "max_instances",
+            "metadata",
         }
 
         if system:
-            # TODO - should also raise if metadata is provided
-            if helper_keywords.intersection(plugin_kwargs.keys()):
+            if metadata or helper_keywords.intersection(plugin_kwargs.keys()):
                 raise ValidationError(
                     "Sorry, you can't provide a complete system definition as well as "
                     "system creation helper kwargs %s" % helper_keywords

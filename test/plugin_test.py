@@ -49,11 +49,6 @@ def client():
 
 
 @pytest.fixture
-def updater_mock():
-    return Mock()
-
-
-@pytest.fixture
 def admin_processor():
     return Mock()
 
@@ -65,17 +60,9 @@ def request_processor():
 
 @pytest.fixture
 def plugin(
-    client,
-    ez_client,
-    updater_mock,
-    bg_system,
-    bg_instance,
-    admin_processor,
-    request_processor,
+    client, ez_client, bg_system, bg_instance, admin_processor, request_processor
 ):
-    plugin = Plugin(
-        client, bg_host="localhost", system=bg_system, metadata={"foo": "bar"}
-    )
+    plugin = Plugin(client, bg_host="localhost", system=bg_system)
     plugin._instance = bg_instance
     plugin._ez_client = ez_client
     plugin._admin_processor = admin_processor

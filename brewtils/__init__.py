@@ -28,5 +28,9 @@ __all__ = [
 __version__ = generated_version
 
 
-# Alias old names for compatibility
-get_bg_connection_parameters = get_connection_info
+# Alias old name for compatibility
+def get_bg_connection_parameters(*args, **kwargs):
+    from brewtils.errors import _deprecate
+
+    _deprecate("get_bg_connection_parameters has been renamed to get_connection_info")
+    return get_connection_info(*args, **kwargs)

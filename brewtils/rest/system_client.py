@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 import time
-import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
@@ -399,14 +398,3 @@ class SystemClient(object):
             if systems
             else None
         )
-
-
-class BrewmasterSystemClient(SystemClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterSystemClient'. This name will be removed in version "
-            "3.0, please use 'SystemClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterSystemClient, self).__init__(*args, **kwargs)

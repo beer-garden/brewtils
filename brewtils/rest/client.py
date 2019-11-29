@@ -3,7 +3,6 @@
 import functools
 import json
 import logging
-import warnings
 from datetime import datetime
 
 import jwt
@@ -498,14 +497,3 @@ class RestClient(object):
             self.session.headers["Authorization"] = "Bearer " + self.access_token
 
         return response
-
-
-class BrewmasterRestClient(RestClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterRestClient'. This name will be removed in version "
-            "3.0, please use 'RestClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterRestClient, self).__init__(*args, **kwargs)

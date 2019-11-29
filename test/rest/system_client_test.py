@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-import warnings
 from concurrent.futures import wait
 
 import pytest
@@ -14,7 +13,7 @@ from brewtils.errors import (
     TimeoutExceededError,
     ValidationError,
 )
-from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
+from brewtils.rest.system_client import SystemClient
 
 
 @pytest.fixture
@@ -375,18 +374,3 @@ class TestExecuteNonBlocking(object):
 def test_determine_latest(client, versions, latest):
     systems = [Mock(version=version) for version in versions]
     assert client._determine_latest(systems).version == latest
-
-
-class TestBrewmasterSystemClient(object):
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            BrewmasterSystemClient("host", "port", "system")
-            assert len(w) == 1
-
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'BrewmasterSystemClient'" in str(warning)
-            assert "'SystemClient'" in str(warning)
-            assert "3.0" in str(warning)

@@ -19,7 +19,7 @@ from brewtils.errors import (
     WaitExceededError,
 )
 from brewtils.models import System
-from brewtils.rest.easy_client import get_easy_client, EasyClient, BrewmasterEasyClient
+from brewtils.rest.easy_client import get_easy_client, EasyClient
 from brewtils.schema_parser import SchemaParser
 
 
@@ -855,18 +855,3 @@ class EasyClientTest(unittest.TestCase):
 
         mock_get.return_value = self.fake_not_found_error_response
         self.assertRaises(NotFoundError, self.client.get_user, "identifier")
-
-
-class BrewmasterEasyClientTest(unittest.TestCase):
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            BrewmasterEasyClient("host", "port")
-            self.assertEqual(1, len(w))
-
-            warning = w[0]
-            self.assertEqual(warning.category, DeprecationWarning)
-            self.assertIn("'BrewmasterEasyClient'", str(warning))
-            self.assertIn("'EasyClient'", str(warning))
-            self.assertIn("3.0", str(warning))

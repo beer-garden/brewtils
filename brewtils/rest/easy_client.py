@@ -743,14 +743,3 @@ class EasyClient(object):
         return self.client.patch_job(
             job_id, self.parser.serialize_patch(operations, many=True)
         )
-
-
-class BrewmasterEasyClient(EasyClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterEasyClient'. This name will be "
-            "removed in version 3.0, please use 'EasyClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

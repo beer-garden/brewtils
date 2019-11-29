@@ -158,7 +158,7 @@ class SystemClient(object):
         self._raise_on_error = raise_on_error
         self._bg_host = bg_host or kwargs.get("host")
         self._bg_port = bg_port or kwargs.get("port")
-        self.logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__name__)
 
         self._loaded = False
         self._system = None
@@ -342,7 +342,7 @@ class SystemClient(object):
             getattr(brewtils.plugin, "_HOST").upper() != self._bg_host.upper()
             or getattr(brewtils.plugin, "_PORT") != self._bg_port
         ):
-            self.logger.warning(
+            self._logger.warning(
                 "A parent request was found, but the destination beer-garden "
                 "appears to be different than the beer-garden to which this plugin "
                 "is assigned. Cross-server parent/child requests are not supported "

@@ -58,8 +58,8 @@ def wrap_functions(request):
 
 class TestSystem(object):
     def test_system_basic(self, sys):
-        assert 1 == len(sys._commands)
-        assert "foo" == sys._commands[0].name
+        assert len(sys._bg_commands) == 1
+        assert sys._bg_commands[0].name == "foo"
 
     def test_system(self):
         @system(bg_name="sys", bg_version="1.0.0")
@@ -70,8 +70,8 @@ class TestSystem(object):
 
         assert SystemClass._bg_name == "sys"
         assert SystemClass._bg_version == "1.0.0"
-        assert 1 == len(SystemClass._commands)
-        assert "foo" == SystemClass._commands[0].name
+        assert len(SystemClass._bg_commands) == 1
+        assert SystemClass._bg_commands[0].name == "foo"
 
 
 class TestParameter(object):

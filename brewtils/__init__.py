@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from brewtils.__version__ import __version__
 from brewtils.config import get_argument_parser, get_connection_info, load_config
 from brewtils.decorators import command, parameter, system
 from brewtils.log import configure_logging
@@ -6,9 +7,9 @@ from brewtils.plugin import Plugin, RemotePlugin
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.easy_client import get_easy_client, EasyClient
 from brewtils.rest.system_client import SystemClient
-from ._version import __version__ as generated_version
 
 __all__ = [
+    "__version__",
     "command",
     "parameter",
     "system",
@@ -25,7 +26,8 @@ __all__ = [
     "normalize_url_prefix",
 ]
 
-__version__ = generated_version
+# Aliased for compatibility
+generated_version = __version__
 
 
 # Alias old name for compatibility

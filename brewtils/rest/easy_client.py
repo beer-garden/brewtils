@@ -155,37 +155,10 @@ class EasyClient(object):
 
     """
 
-    def __init__(
-        self,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=False,
-        api_version=None,
-        ca_cert=None,
-        client_cert=None,
-        parser=None,
-        logger=None,
-        url_prefix=None,
-        ca_verify=True,
-        **kwargs
-    ):
-        bg_host = bg_host or kwargs.get("host")
-        bg_port = bg_port or kwargs.get("port")
-
+    def __init__(self, parser=None, logger=None, **kwargs):
         self.logger = logger or logging.getLogger(__name__)
         self.parser = parser or SchemaParser()
-
-        self.client = RestClient(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            api_version=api_version,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=url_prefix,
-            ca_verify=ca_verify,
-            **kwargs
-        )
+        self.client = RestClient(**kwargs)
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.

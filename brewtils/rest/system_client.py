@@ -19,60 +19,73 @@ from brewtils.rest.easy_client import EasyClient
 
 
 class SystemClient(object):
-    """High-level client for generating requests for a beer-garden System.
+    """High-level client for generating requests for a Beer-garden System.
 
     SystemClient creation:
-        This class is intended to be the main way to create beer-garden requests. Create an
-        instance with beer-garden connection information (optionally including a url_prefix) and
-        a system name::
+        This class is intended to be the main way to create Beer-garden requests. Create
+        an instance with Beer-garden connection information and a system name::
 
-            client = SystemClient(host, port, 'example_system', ssl_enabled=True, url_prefix=None)
+            client = SystemClient(
+                system_name='example_system',
+                bg_host="host",
+                bg_port=2337,
+            )
 
         Pass additional keyword arguments for more granularity:
 
             version_constraint:
-                Allows specifying a particular system version. Can be a version literal ('1.0.0')
-                or the special value 'latest.' Using 'latest' will allow the the SystemClient to
-                retry a request if it fails due to a missing system (see Creating Requests).
+                Allows specifying a particular system version. Can be a version literal
+                ('1.0.0') or the special value 'latest.' Using 'latest' will allow the
+                SystemClient to retry a request if it fails due to a missing system
+                (see Creating Requests).
 
             default_instance:
-                The instance name to use when creating a request if no other instance name is
-                specified. Since each request must be addressed to a specific instance this is a
-                convenience to prevent needing to specify the 'default' instance for each request.
+                The instance name to use when creating a request if no other instance
+                name is specified. Since each request must be addressed to a specific
+                instance this is a convenience to prevent needing to specify the
+                instance for each request.
 
             always_update:
-                Always attempt to reload the system definition before making a request. This is
-                useful to ensure Requests are always made against the latest version of the system.
-                If not set the System definition will be loaded once (upon making the first
-                request) and then only reloaded if a Request fails.
+                If True the SystemClient will always attempt to reload the system
+                definition before making a request. This is useful to ensure Requests
+                are always made against the latest version of the system.
+                If not set the System definition will be loaded when making the first
+                request and will only be reloaded if a Request fails.
 
     Loading the System:
-        The System definition is lazily loaded, so nothing happens until the first attempt to send
-        a Request. At that point the SystemClient will query beer-garden to get a system definition
-        that matches the system_name and version_constraint. If no matching system can be found a
-        FetchError will be raised. If always_update was set to True this will happen
-        before making each request, not just the first.
+        The System definition is lazily loaded, so nothing happens until the first
+        attempt to send a Request. At that point the SystemClient will query Beer-garden
+        to get a system definition that matches the system_name and version_constraint.
+        If no matching System can be found a FetchError will be raised. If always_update
+        was set to True this will happen before making each request, not only the first.
 
     Making a Request:
         The standard way to create and send requests is by calling object attributes::
 
             request = client.example_command(param_1='example_param')
 
-        In the normal case this will block until the request completes. Request completion is
-        determined by periodically polling beer-garden to check the Request status. The time
-        between polling requests starts at 0.5s and doubles each time the request has still not
-        completed, up to max_delay. If a timeout was specified and the Request has not completed
-        within that time a ``ConnectionTimeoutError`` will be raised.
+        In the normal case this will block until the request completes. Request
+        completion is determined by periodically polling Beer-garden to check the
+        Request status. The time between polling requests starts at 0.5s and doubles
+        each time the request has still not completed, up to max_delay. If a timeout was
+        specified and the Request has not completed within that time a
+        ``ConnectionTimeoutError`` will be raised.
 
-        It is also possible to create the SystemClient in non-blocking mode by specifying
-        blocking=False. In this case the request creation will immediately return a Future and
-        will spawn a separate thread to poll for Request completion. The max_concurrent parameter
-        is used to control the maximum threads available for polling.
+        It is also possible to create the SystemClient in non-blocking mode by
+        specifying blocking=False. In this case the request creation will immediately
+        return a Future and will spawn a separate thread to poll for Request completion.
+        The max_concurrent parameter is used to control the maximum threads available
+        for polling.
 
         .. code-block:: python
 
             # Create a SystemClient with blocking=False
-            client = SystemClient(host, port, 'example_system', ssl_enabled=True, blocking=False)
+            client = SystemClient(
+                system_name='example_system',
+                bg_host="localhost",
+                bg_port=2337,
+                blocking=False,
+            )
 
             # Create and send 5 requests without waiting for request completion
             futures = [client.example_command(param_1=number) for number in range(5)]
@@ -81,73 +94,101 @@ class SystemClient(object):
             concurrent.futures.wait(futures)
 
         If the request creation process fails (e.g. the command failed validation) and
-        version_constraint is 'latest' then the SystemClient will check to see if a different
-        version is available, and if so it will attempt to make the request on that version.
-        This is so users of the SystemClient that don't necessarily care about the target system
-        version don't need to be restarted if the target system is updated.
+        version_constraint is 'latest' then the SystemClient will check to see if a
+        newer version is available, and if so it will attempt to make the request on
+        that version. This is so users of the SystemClient that don't necessarily care
+        about the target system version don't need to be restarted every time the target
+        system is updated.
 
-    Tweaking beer-garden Request Parameters:
-        There are several parameters that control how beer-garden routes / processes a request. To
-        denote these as intended for beer-garden itself (rather than a parameter to be passed to
-        the Plugin) prepend a leading underscore to the argument name.
+        It's also possible to control what happens when a Request results in an ERROR.
+        If the ``raise_on_error`` parameter is set to False (the default) then Requests
+        that are not successful simply result in a Request with a status of ERROR, and
+        it is the plugin developer's responsibility to check for this case. However, if
+        ``raise_on_error`` is set to True then this will result in a
+        ``RequestFailedError`` being raised. This will happen regardless of the value
+        of the ``blocking`` flag.
+
+    Tweaking Beer-garden Request Parameters:
+        There are several parameters that control how beer-garden routes / processes a
+        request. To denote these as intended for Beer-garden itself (rather than a
+        parameter to be passed to the Plugin) prepend a leading underscore to the
+        argument name.
 
         Sending to another instance::
 
-            request = client.example_command(_instance_name='instance_2', param_1='example_param')
+            request = client.example_command(
+                _instance_name="instance_2", param_1="example_param"
+            )
 
         Request with a comment::
 
-            request = client.example_command(_comment='I'm a beer-garden comment!',
-                                             param_1='example_param')
+            request = client.example_command(
+                _comment="I'm a beer-garden comment!", param_1="example_param"
+            )
 
-        Without the leading underscore the arguments would be treated the same as param_1 -
-        another parameter to be passed to the plugin.
+        Without the leading underscore the arguments would be treated the same as
+        "param_1" - another parameter to be passed to the plugin.
 
-    :param host: beer-garden REST API hostname.
-    :param port: beer-garden REST API port.
-    :param system_name: The name of the system to use.
-    :param version_constraint: The system version to use. Can be specific or 'latest'.
-    :param default_instance: The instance to use if not specified when creating a request.
-    :param always_update: Should check for a newer System version before each request.
-    :param timeout: Length of time to wait for a request to complete. 'None' means wait forever.
-    :param max_delay: Maximum time to wait between checking the status of a created request.
-    :param api_version: beer-garden API version.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
-    :param ca_cert: beer-garden REST API server CA certificate.
-    :param blocking: Block after request creation until the request completes.
-    :param max_concurrent: Maximum number of concurrent requests allowed.
-    :param client_cert: The client certificate to use when making requests.
-    :param url_prefix: beer-garden REST API URL Prefix.
-    :param ca_verify: Flag indicating whether to verify server certificate when making a request.
-    :param raise_on_error: Raises an error if the request ends in an error state.
-    :param username: Username for Beergarden authentication
-    :param password: Password for Beergarden authentication
-    :param access_token: Access token for Beergarden authentication
-    :param refresh_token: Refresh token for Beergarden authentication
-    :param client_timeout: Max time to will wait for server response
+        Request that raises::
+
+            client = SystemClient(system_name="foo", bg_host="localhost", bg_port=2337)
+
+            try:
+                client.command_that_errors(_raise_on_error=True)
+            except RequestFailedError:
+                print("I could have just ignored this")
+
+    Args:
+        system_name (str): Name of the System to make Requests on
+        version_constraint (str): System version to make Requests on. Can be specific
+        ('1.0.0') or 'latest'.
+        default_instance (str): Name of the Instance to make Requests on
+        always_update (bool): Whether to check if a newer version of the System exists
+        before making each Request
+        timeout (int): Seconds to wait for a request to complete. 'None' means wait
+        forever.
+        max_delay (int): Maximum number of seconds to wait between status checks for a
+        created request
+        blocking (bool): Flag indicating whether Request creation will block until the
+        Request is complete or return a Future that will complete when the Request does
+        max_concurrent (int): Maximum number of concurrent requests allowed.
+        Only has an effect when blocking=False.
+        raise_on_error (bool): Flag controlling whether created Requests that complete
+        with an ERROR state should raise an exception.
+
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+        with Beer-garden. Useful if Beer-garden is running on a URL path other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+        authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+        Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout: Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
     """
 
     def __init__(
         self,
-        bg_host=None,
-        bg_port=None,
         system_name=None,
         version_constraint="latest",
         default_instance="default",
         always_update=False,
         timeout=None,
         max_delay=30,
-        api_version=None,
-        ssl_enabled=False,
-        ca_cert=None,
         blocking=True,
         max_concurrent=None,
-        client_cert=None,
-        url_prefix=None,
-        ca_verify=True,
         raise_on_error=False,
         **kwargs
     ):
+        self._logger = logging.getLogger(__name__)
+
         self._system_name = system_name
         self._version_constraint = version_constraint
         self._default_instance = default_instance
@@ -156,9 +197,9 @@ class SystemClient(object):
         self._max_delay = max_delay
         self._blocking = blocking
         self._raise_on_error = raise_on_error
-        self._bg_host = bg_host or kwargs.get("host")
-        self._bg_port = bg_port or kwargs.get("port")
-        self._logger = logging.getLogger(__name__)
+
+        self._bg_host = kwargs.pop("bg_host", None) or kwargs.pop("host")
+        self._bg_port = kwargs.pop("bg_port", None) or kwargs.pop("port")
 
         self._loaded = False
         self._system = None
@@ -171,15 +212,7 @@ class SystemClient(object):
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
         self._easy_client = EasyClient(
-            bg_host=self._bg_host,
-            bg_port=self._bg_port,
-            ssl_enabled=ssl_enabled,
-            api_version=api_version,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=url_prefix,
-            ca_verify=ca_verify,
-            **kwargs
+            bg_host=self._bg_host, bg_port=self._bg_port, **kwargs
         )
 
     def __getattr__(self, item):

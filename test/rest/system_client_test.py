@@ -90,6 +90,18 @@ def easy_client_patch(monkeypatch, easy_client):
     )
 
 
+class TestCreate(object):
+    def test_alternate_kwargs(self):
+        client = SystemClient(host="localhost", port=3000, system_name="system")
+        assert client._bg_host == "localhost"
+        assert client._bg_port == 3000
+
+    @pytest.mark.parametrize("kwargs", [{"host": "localhost"}, {"port": 3000}])
+    def test_missing_kwargs(self, kwargs):
+        with pytest.raises(Exception):
+            SystemClient(**kwargs)
+
+
 class TestLoadBgSystem(object):
     def test_lazy_system_loading(self, client):
         assert client._loaded is False

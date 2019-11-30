@@ -174,46 +174,33 @@ class SystemClient(object):
         refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    def __init__(
-        self,
-        system_name=None,
-        version_constraint="latest",
-        default_instance="default",
-        always_update=False,
-        timeout=None,
-        max_delay=30,
-        blocking=True,
-        max_concurrent=None,
-        raise_on_error=False,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         self._logger = logging.getLogger(__name__)
 
-        self._system_name = system_name
-        self._version_constraint = version_constraint
-        self._default_instance = default_instance
-        self._always_update = always_update
-        self._timeout = timeout
-        self._max_delay = max_delay
-        self._blocking = blocking
-        self._raise_on_error = raise_on_error
+        self._system_name = kwargs.get("system_name")
+        self._version_constraint = kwargs.get("version_constraint", "latest")
+        self._default_instance = kwargs.get("default_instance", "default")
+        self._always_update = kwargs.get("always_update", False)
+        self._timeout = kwargs.get("timeout", None)
+        self._max_delay = kwargs.get("max_delay", 30)
+        self._blocking = kwargs.get("blocking", True)
+        self._raise_on_error = kwargs.get("raise_on_error", False)
+
+        # This is for Python 3.4 compatibility - max_workers MUST be non-None
+        # in that version. This logic is what was added in Python 3.5
+        max_concurrent = kwargs.get("max_concurrent", (cpu_count() or 1) * 5)
+        self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
         self._bg_host = kwargs.pop("bg_host", None) or kwargs.pop("host")
         self._bg_port = kwargs.pop("bg_port", None) or kwargs.pop("port")
 
-        self._loaded = False
-        self._system = None
-        self._commands = None
-
-        # This is for Python 3.4 compatibility - max_workers MUST be non-None
-        # in that version. This logic is what was added in Python 3.5
-        if max_concurrent is None:
-            max_concurrent = (cpu_count() or 1) * 5
-        self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
-
         self._easy_client = EasyClient(
             bg_host=self._bg_host, bg_port=self._bg_port, **kwargs
         )
+
+        self._loaded = False
+        self._system = None
+        self._commands = None
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""

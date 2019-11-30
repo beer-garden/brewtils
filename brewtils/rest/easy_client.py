@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import logging
 import warnings
 
 import requests.exceptions
@@ -35,10 +34,7 @@ def get_easy_client(**kwargs):
     Returns:
         :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
     """
-    parser = kwargs.pop("parser", None)
-    logger = kwargs.pop("logger", None)
-
-    return EasyClient(logger=logger, parser=parser, **get_connection_info(**kwargs))
+    return EasyClient(**get_connection_info(**kwargs))
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
@@ -143,8 +139,6 @@ class EasyClient(object):
         api_version (Optional[int]): The REST API version
         ca_cert (Optional[str]): Path to CA certificate file
         client_cert (Optional[str]): Path to client certificate file
-        parser (Optional[SchemaParser]): Parser to use
-        logger (Optional[Logger]): Logger to use
         url_prefix (Optional[str]): Beergarden REST API prefix
         ca_verify (Optional[bool]): Whether to verify the server cert hostname
         username (Optional[str]): Username for authentication
@@ -155,10 +149,11 @@ class EasyClient(object):
 
     """
 
-    def __init__(self, parser=None, logger=None, **kwargs):
-        self.logger = logger or logging.getLogger(__name__)
-        self.parser = parser or SchemaParser()
+    def __init__(self, **kwargs):
         self.client = RestClient(**kwargs)
+
+        # TODO - This is unnecessary and should be removed
+        self.parser = SchemaParser()
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.

@@ -39,7 +39,8 @@ class TestEasyClient(object):
 
     @pytest.fixture
     def client(self, parser, rest_client):
-        client = EasyClient(host="localhost", port="3000", api_version=1, parser=parser)
+        client = EasyClient(host="localhost", port="3000", api_version=1)
+        client.parser = parser
         client.client = rest_client
         return client
 
@@ -107,9 +108,9 @@ class TestEasyClient(object):
 class EasyClientTest(unittest.TestCase):
     def setUp(self):
         self.parser = Mock(name="parser", spec=SchemaParser)
-        self.client = EasyClient(
-            host="localhost", port="3000", api_version=1, parser=self.parser
-        )
+        self.client = EasyClient(host="localhost", port="3000", api_version=1)
+        self.client.parser = self.parser
+
         self.fake_success_response = Mock(
             ok=True, status_code=200, json=Mock(return_value="payload")
         )

@@ -2,7 +2,6 @@
 
 import functools
 import json
-import logging
 from datetime import datetime
 
 import jwt
@@ -105,7 +104,6 @@ class RestClient(object):
         bg_port=None,
         ssl_enabled=False,
         api_version=None,
-        logger=None,
         ca_cert=None,
         client_cert=None,
         url_prefix=None,
@@ -119,8 +117,6 @@ class RestClient(object):
         bg_port = bg_port or kwargs.get("port")
         if not bg_port:
             raise ValueError('Missing keyword argument "bg_port"')
-
-        self.logger = logger or logging.getLogger(__name__)
 
         # Configure the session to use when making requests
         self.session = Session()

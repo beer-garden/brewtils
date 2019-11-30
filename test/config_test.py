@@ -7,29 +7,35 @@ import warnings
 import pytest
 from mock import Mock
 
-from brewtils.config import load_config, get_argument_parser, get_connection_info
+from brewtils.config import (
+    deprecate_kwargs,
+    get_argument_parser,
+    get_connection_info,
+    load_config,
+)
 from brewtils.errors import ValidationError
 
 
-class TestGetConnectionInfo(object):
-    @pytest.fixture
-    def params(self):
-        return {
-            "bg_host": "bg_host",
-            "bg_port": 1234,
-            "bg_url_prefix": "/beer/",
-            "ssl_enabled": False,
-            "api_version": 1,
-            "ca_cert": "ca_cert",
-            "client_cert": "client_cert",
-            "ca_verify": True,
-            "username": None,
-            "password": None,
-            "access_token": None,
-            "refresh_token": None,
-            "client_timeout": -1.0,
-        }
+@pytest.fixture
+def params():
+    return {
+        "bg_host": "bg_host",
+        "bg_port": 1234,
+        "bg_url_prefix": "/beer/",
+        "ssl_enabled": False,
+        "api_version": 1,
+        "ca_cert": "ca_cert",
+        "client_cert": "client_cert",
+        "ca_verify": True,
+        "username": None,
+        "password": None,
+        "access_token": None,
+        "refresh_token": None,
+        "client_timeout": -1.0,
+    }
 
+
+class TestGetConnectionInfo(object):
     def setup_method(self):
         self.safe_copy = os.environ.copy()
 
@@ -49,30 +55,6 @@ class TestGetConnectionInfo(object):
         os.environ["BG_CA_VERIFY"] = "True"
 
         assert params == get_connection_info()
-
-    def test_deprecated_kwarg_host(self, params):
-        deprecated_params = copy.copy(params)
-        deprecated_params["host"] = deprecated_params.pop("bg_host")
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            assert params == get_connection_info(**deprecated_params)
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "host" in str(w[0].message)
-
-    def test_deprecated_kwarg_port(self, params):
-        deprecated_params = copy.copy(params)
-        deprecated_params["port"] = deprecated_params.pop("bg_port")
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            assert params == get_connection_info(**deprecated_params)
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "port" in str(w[0].message)
 
     def test_deprecated_env(self, params):
         deprecated_params = copy.copy(params)
@@ -178,3 +160,29 @@ class TestLoadConfig(object):
             cli_args = ["--metadata", '{"foo": "bar"}']
 
             assert load_config(cli_args=cli_args).metadata == '{"foo": "bar"}'
+
+
+class TestDeprecateKwargs(object):
+    def test_no_deprecated(self, params):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert params == deprecate_kwargs(**params)
+            assert len(w) == 0
+
+    @pytest.mark.parametrize(
+        "old_name,new_name",
+        [("host", "bg_host"), ("port", "bg_port"), ("url_prefix", "bg_url_prefix")],
+    )
+    def test_deprecated(self, params, old_name, new_name):
+        deprecated_params = copy.copy(params)
+        deprecated_params[old_name] = deprecated_params.pop(new_name)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert params == deprecate_kwargs(**deprecated_params)
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert old_name in str(w[0].message)
+            assert new_name in str(w[0].message)

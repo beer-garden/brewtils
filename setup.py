@@ -41,7 +41,7 @@ setup(
         "simplejson<4",
         "six<2",
         "wrapt<2",
-        "yapconf>=0.2.1",
+        "yapconf>=0.3.7",
     ],
     extras_require={
         ':python_version=="2.7"': ["futures", "funcsigs"],

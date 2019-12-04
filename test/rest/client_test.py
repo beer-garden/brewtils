@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import warnings
 
 import pytest
 from mock import Mock, MagicMock, ANY
@@ -41,8 +42,12 @@ class TestRestClient(object):
         return client
 
     def test_old_positional_args(self, client, url_prefix):
-        test_client = RestClient("host", 80, api_version=1, url_prefix=url_prefix)
-        assert test_client.version_url == client.version_url
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            test_client = RestClient("host", 80, api_version=1, url_prefix=url_prefix)
+            assert test_client.version_url == client.version_url
+            assert len(w) == 2
 
     @pytest.mark.parametrize(
         "kwargs",

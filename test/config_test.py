@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import argparse
 import copy
 import os
 import warnings
 
 import pytest
+from mock import Mock
 
 from brewtils.config import load_config, get_argument_parser, get_connection_info
 from brewtils.errors import ValidationError
@@ -105,11 +107,25 @@ class TestLoadConfig(object):
     def teardown_method(self):
         os.environ = self.safe_copy
 
-    def test_cli(self):
+    def test_cli_from_arg(self):
         cli_args = ["--bg-host", "the_host"]
 
-        config = load_config(cli_args)
+        config = load_config(cli_args=cli_args)
         assert config.bg_host == "the_host"
+
+    def test_cli_from_sys(self, monkeypatch):
+        cli_args = ["filename", "--bg-host", "the_host"]
+        monkeypatch.setattr(argparse, "_sys", Mock(argv=cli_args))
+
+        config = load_config()
+        assert config.bg_host == "the_host"
+
+    def test_ignore_cli(self, monkeypatch):
+        cli_args = ["filename", "--bg-host", "the_host"]
+        monkeypatch.setattr(argparse, "_sys", Mock(argv=cli_args))
+
+        with pytest.raises(ValidationError):
+            load_config(cli_args=False)
 
     def test_cli_custom_argument_parser_vars(self):
         parser = get_argument_parser()

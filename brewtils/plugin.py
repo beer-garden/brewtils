@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 import logging.config
-import sys
 import threading
 
 from requests import ConnectionError as RequestsConnectionError
@@ -156,8 +155,7 @@ class Plugin(object):
 
     def __init__(self, client, system=None, logger=None, metadata=None, **kwargs):
         # Load config before setting up logging so level is configurable
-        # TODO - can change to load_config(**kwargs) if yapconf supports CLI source
-        self.config = load_config(cli_args=sys.argv[1:], **kwargs)
+        self.config = load_config(**kwargs)
 
         # If a logger is specified or the root logger already has handlers then we
         # assume that logging has already been configured

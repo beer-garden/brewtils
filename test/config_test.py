@@ -154,5 +154,11 @@ class TestLoadConfig(object):
     def test_environment(self):
         os.environ["BG_HOST"] = "the_host"
 
-        config = load_config([])
+        config = load_config()
         assert config.bg_host == "the_host"
+
+    def test_ignore_environment(self, monkeypatch):
+        os.environ["BG_HOST"] = "the_host"
+
+        with pytest.raises(ValidationError):
+            load_config(environment=False)

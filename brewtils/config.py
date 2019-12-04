@@ -93,23 +93,26 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
     }
 
 
-def load_config(cli_args=True, argument_parser=None, **kwargs):
+def load_config(cli_args=True, environment=True, argument_parser=None, **kwargs):
     """Load configuration using Yapconf
 
     Configuration will be loaded from these sources, with earlier sources having
     higher priority:
 
         1. ``**kwargs`` passed to this method
-        2. ``cli_args`` passed to this method
-        3. Environment variables using the ``BG_`` prefix
+        2. Command line arguments (if ``cli_args`` argument is not False)
+        3. Environment variables using the ``BG_`` prefix (if ``environment`` argument
+            is not False)
         4. Default values in the brewtils specification
 
     Args:
         cli_args (Union[bool, list], optional): Specifies whether command line should be
-            used as a configuration source.
+            used as a configuration source
             - True: Argparse will use the standard sys.argv[1:]
             - False: Command line arguments will be ignored when loading configuration
             - List of strings: Will be parsed as CLI args (instead of using sys.argv)
+        environment (bool): Specifies whether environment variables (with the ``BG_``
+            prefix) should be used when loading configuration
         argument_parser (ArgumentParser, optional, deprecated): Argument parser to use
             when parsing cli_args. Supplying this allows adding additional arguments
             prior to loading the configuration. This can be useful if your
@@ -158,7 +161,8 @@ def load_config(cli_args=True, argument_parser=None, **kwargs):
             parsed_args, unknown = argument_parser.parse_known_args(cli_args)
             sources.append(("cli_args", vars(parsed_args)))
 
-    sources.append("ENVIRONMENT")
+    if environment:
+        sources.append("ENVIRONMENT")
 
     try:
         config = spec.load_config(*sources)

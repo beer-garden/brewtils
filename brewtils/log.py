@@ -27,7 +27,6 @@ Example:
 
 import copy
 import logging.config
-import os
 import warnings
 
 import brewtils
@@ -66,15 +65,17 @@ DEFAULT_PLUGIN_LOGGING_TEMPLATE = {
     "loggers": DEFAULT_LOGGERS,
 }
 
-# If no logging was configured, this will be used as the logging configuration
-DEFAULT_LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": DEFAULT_FORMATTERS,
-    "handlers": DEFAULT_HANDLERS,
-    "loggers": DEFAULT_LOGGERS,
-    "root": {"level": os.environ.get("BG_LOG_LEVEL", "INFO"), "handlers": ["default"]},
-}
+
+def default_config(level="INFO"):
+    """Will be used if no logging configuration was specified"""
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": DEFAULT_FORMATTERS,
+        "handlers": DEFAULT_HANDLERS,
+        "loggers": DEFAULT_LOGGERS,
+        "root": {"level": level, "handlers": ["default"]},
+    }
 
 
 def configure_logging(system_name=None, **kwargs):

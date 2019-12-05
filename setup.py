@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 def find_version():
-    version_file = "brewtils/_version.py"
+    version_file = "brewtils/__version__.py"
     version_line = open(version_file, "rt").read()
     match_object = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_line, re.M)
 

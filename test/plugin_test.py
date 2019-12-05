@@ -41,8 +41,8 @@ def ez_client(bg_system, bg_instance):
 def client():
     return MagicMock(
         name="client",
-        spec=["command", "_commands", "_bg_name", "_bg_version"],
-        _commands=["command"],
+        spec=["command", "_bg_commands", "_bg_name", "_bg_version"],
+        _bg_commands=["command"],
         _bg_name=None,
         _bg_version=None,
     )

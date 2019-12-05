@@ -441,7 +441,7 @@ class Plugin(object):
                 description=description,
                 version=version,
                 metadata=metadata,
-                commands=getattr(self._client, "_commands"),
+                commands=getattr(self._client, "_bg_commands"),
                 instances=[Instance(name=self.config.instance_name)],
                 max_instances=self.config.max_instances,
                 icon_name=self.config.icon_name,

@@ -231,17 +231,6 @@ class AuthorizationRequired(RestClientError):
 WaitExceededError = TimeoutExceededError
 ConnectionTimeoutError = TimeoutExceededError
 
-BrewmasterModelError = ModelError
-BrewmasterModelValidationError = ModelValidationError
-BrewmasterRestError = RestError
-BrewmasterRestClientError = RestClientError
-BrewmasterRestServerError = RestServerError
-BrewmasterConnectionError = RestConnectionError
-BrewmasterTimeoutError = ConnectionTimeoutError
-BrewmasterFetchError = FetchError
-BrewmasterValidationError = ValidationError
-BrewmasterSaveError = SaveError
-BrewmasterDeleteError = DeleteError
 BGConflictError = ConflictError
 BGRequestFailedError = RequestFailedError
 BGNotFoundError = NotFoundError

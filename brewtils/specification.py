@@ -49,6 +49,17 @@ _CONNECTION_SPEC = {
         "description": "Beergarden API version",
         "required": False,
     },
+    "client_timeout": {
+        "type": "float",
+        "description": "Max time RestClient will wait for server response",
+        "long_description": "This setting controls how long the HTTP(s) client will "
+        "wait when opening a connection to Beergarden before aborting."
+        "This prevents some strange Beergarden server state from causing "
+        "plugins to hang indefinitely."
+        "Set to -1 to disable (this is a bad idea in production code, see "
+        "the Requests documentation).",
+        "default": -1,
+    },
     "username": {
         "type": "str",
         "description": "Username for authentication",
@@ -68,32 +79,6 @@ _CONNECTION_SPEC = {
         "type": "str",
         "description": "Refresh token for authentication",
         "required": False,
-    },
-    "max_attempts": {
-        "type": "int",
-        "description": "Number of times to attempt a request update",
-        "default": -1,
-    },
-    "max_timeout": {
-        "type": "int",
-        "description": "Maximum amount of time to wait between request update retries",
-        "default": 30,
-    },
-    "starting_timeout": {
-        "type": "int",
-        "description": "Initial amount of time to wait before request update retry",
-        "default": 5,
-    },
-    "client_timeout": {
-        "type": "float",
-        "description": "Max time RestClient will wait for server response",
-        "long_description": "This setting controls how long the HTTP(s) client will "
-        "wait when opening a connection to Beergarden before aborting."
-        "This prevents some strange Beergarden server state from causing "
-        "plugins to hang indefinitely."
-        "Set to -1 to disable (this is a bad idea in production code, see "
-        "the Requests documentation).",
-        "default": -1,
     },
 }
 
@@ -141,6 +126,21 @@ _PLUGIN_SPEC = {
     "worker_shutdown_timeout": {
         "type": "int",
         "description": "Time to wait during shutdown to finish processing requests",
+        "default": 5,
+    },
+    "max_attempts": {
+        "type": "int",
+        "description": "Number of times to attempt a request update",
+        "default": -1,
+    },
+    "max_timeout": {
+        "type": "int",
+        "description": "Maximum amount of time to wait between request update retries",
+        "default": 30,
+    },
+    "starting_timeout": {
+        "type": "int",
+        "description": "Initial amount of time to wait before request update retry",
         "default": 5,
     },
 }

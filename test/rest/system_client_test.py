@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-import warnings
 from concurrent.futures import wait
 
 import pytest
@@ -14,7 +13,7 @@ from brewtils.errors import (
     TimeoutExceededError,
     ValidationError,
 )
-from brewtils.rest.system_client import BrewmasterSystemClient, SystemClient
+from brewtils.rest.system_client import SystemClient
 
 
 @pytest.fixture
@@ -89,6 +88,18 @@ def easy_client_patch(monkeypatch, easy_client):
     monkeypatch.setattr(
         brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
     )
+
+
+class TestCreate(object):
+    def test_alternate_kwargs(self):
+        client = SystemClient(host="localhost", port=3000, system_name="system")
+        assert client._bg_host == "localhost"
+        assert client._bg_port == 3000
+
+    @pytest.mark.parametrize("kwargs", [{"host": "localhost"}, {"port": 3000}])
+    def test_missing_kwargs(self, kwargs):
+        with pytest.raises(Exception):
+            SystemClient(**kwargs)
 
 
 class TestLoadBgSystem(object):
@@ -375,18 +386,3 @@ class TestExecuteNonBlocking(object):
 def test_determine_latest(client, versions, latest):
     systems = [Mock(version=version) for version in versions]
     assert client._determine_latest(systems).version == latest
-
-
-class TestBrewmasterSystemClient(object):
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            BrewmasterSystemClient("host", "port", "system")
-            assert len(w) == 1
-
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'BrewmasterSystemClient'" in str(warning)
-            assert "'SystemClient'" in str(warning)
-            assert "3.0" in str(warning)

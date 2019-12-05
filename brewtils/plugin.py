@@ -110,6 +110,7 @@ class Plugin(object):
 
     Args:
         client: Instance of a class annotated with @system.
+
         bg_host (str): Beer-garden hostname
         bg_port (int): Beer-garden port
         bg_url_prefix (str): URL path that will be used as a prefix when communicating
@@ -120,6 +121,13 @@ class Plugin(object):
         ca_verify (bool): Whether to verify Beer-garden server certificate
         client_cert (str): Path to client certificate to use when communicating with
         Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout: Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
+
         system (:py:class:`brewtils.models.System`): A Beer-garden System definition.
         Incompatible with name, version, description, display_name, icon_name,
         max_instances, and metadata parameters.
@@ -130,10 +138,12 @@ class Plugin(object):
         icon_name (str): System icon name
         max_instances (int): System maximum instances
         metadata (dict): System metadata
-        instance_name: Instance name
+        instance_name (str): Instance name
+
         logger: Logger that will be used by the Plugin. Passing a logger will prevent
         the Plugin from preforming any additional logging configuration.
-        worker_shutdown_timeout: Time to wait during shutdown to finish processing
+
+        worker_shutdown_timeout (int): Time to wait during shutdown to finish processing
         max_concurrent (int): Maximum number of requests to process concurrently
         max_attempts (int): Number of times to attempt updating of a Request
         before giving up. Negative numbers are interpreted as no maximum.
@@ -141,16 +151,13 @@ class Plugin(object):
         attempts. Negative numbers are interpreted as no maximum.
         starting_timeout (int): Initial time to wait between Request update attempts.
         Will double on subsequent attempts until reaching max_timeout.
+
         mq_max_attempts (int): Number of times to attempt reconnection to message queue
         before giving up. Negative numbers are interpreted as no maximum.
         mq_max_timeout (int): Maximum amount of time to wait between message queue
         reconnect attempts. Negative numbers are interpreted as no maximum.
         mq_starting_timeout (int): Initial time to wait between message queue reconnect
         attempts. Will double on subsequent attempts until reaching mq_max_timeout.
-        username (str): Username for Beergarden authentication
-        password (str): Password for Beergarden authentication
-        access_token: Access token for Beergarden authentication
-        refresh_token: Refresh token for Beergarden authentication
     """
 
     def __init__(self, client, system=None, logger=None, metadata=None, **kwargs):

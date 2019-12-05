@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import logging
 import warnings
 
 import requests.exceptions
@@ -35,10 +34,7 @@ def get_easy_client(**kwargs):
     Returns:
         :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
     """
-    parser = kwargs.pop("parser", None)
-    logger = kwargs.pop("logger", None)
-
-    return EasyClient(logger=logger, parser=parser, **get_connection_info(**kwargs))
+    return EasyClient(**get_connection_info(**kwargs))
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
@@ -143,8 +139,6 @@ class EasyClient(object):
         api_version (Optional[int]): The REST API version
         ca_cert (Optional[str]): Path to CA certificate file
         client_cert (Optional[str]): Path to client certificate file
-        parser (Optional[SchemaParser]): Parser to use
-        logger (Optional[Logger]): Logger to use
         url_prefix (Optional[str]): Beergarden REST API prefix
         ca_verify (Optional[bool]): Whether to verify the server cert hostname
         username (Optional[str]): Username for authentication
@@ -155,37 +149,11 @@ class EasyClient(object):
 
     """
 
-    def __init__(
-        self,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=False,
-        api_version=None,
-        ca_cert=None,
-        client_cert=None,
-        parser=None,
-        logger=None,
-        url_prefix=None,
-        ca_verify=True,
-        **kwargs
-    ):
-        bg_host = bg_host or kwargs.get("host")
-        bg_port = bg_port or kwargs.get("port")
+    def __init__(self, **kwargs):
+        self.client = RestClient(**kwargs)
 
-        self.logger = logger or logging.getLogger(__name__)
-        self.parser = parser or SchemaParser()
-
-        self.client = RestClient(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            api_version=api_version,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=url_prefix,
-            ca_verify=ca_verify,
-            **kwargs
-        )
+        # TODO - This is unnecessary and should be removed
+        self.parser = SchemaParser()
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.
@@ -743,14 +711,3 @@ class EasyClient(object):
         return self.client.patch_job(
             job_id, self.parser.serialize_patch(operations, many=True)
         )
-
-
-class BrewmasterEasyClient(EasyClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterEasyClient'. This name will be "
-            "removed in version 3.0, please use 'EasyClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

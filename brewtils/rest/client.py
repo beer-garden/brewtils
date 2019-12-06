@@ -82,15 +82,15 @@ class RestClient(object):
         bg_host (str): Beer-garden hostname
         bg_port (int): Beer-garden port
         bg_url_prefix (str): URL path that will be used as a prefix when communicating
-        with Beer-garden. Useful if Beer-garden is running on a URL path other than '/'.
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
         ssl_enabled (bool): Whether to use SSL for Beer-garden communication
         ca_cert (str): Path to certificate file containing the certificate of the
-        authority that issued the Beer-garden server certificate
+            authority that issued the Beer-garden server certificate
         ca_verify (bool): Whether to verify Beer-garden server certificate
         client_cert (str): Path to client certificate to use when communicating with
-        Beer-garden
+            Beer-garden
         api_version (int): Beer-garden API version to use
-        client_timeout: Max time to wait for Beer-garden server response
+        client_timeout (int): Max time to wait for Beer-garden server response
         username (str): Username for Beer-garden authentication
         password (str): Password for Beer-garden authentication
         access_token (str): Access token for Beer-garden authentication

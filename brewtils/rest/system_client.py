@@ -141,33 +141,33 @@ class SystemClient(object):
     Args:
         system_name (str): Name of the System to make Requests on
         version_constraint (str): System version to make Requests on. Can be specific
-        ('1.0.0') or 'latest'.
+            ('1.0.0') or 'latest'.
         default_instance (str): Name of the Instance to make Requests on
         always_update (bool): Whether to check if a newer version of the System exists
-        before making each Request
+            before making each Request. Only relevant if ``version_constraint='latest'``
         timeout (int): Seconds to wait for a request to complete. 'None' means wait
-        forever.
+            forever.
         max_delay (int): Maximum number of seconds to wait between status checks for a
-        created request
-        blocking (bool): Flag indicating whether Request creation will block until the
-        Request is complete or return a Future that will complete when the Request does
+            created request
+        blocking (bool): Flag indicating whether creation will block until the Request
+            is complete or return a Future that will complete when the Request does
         max_concurrent (int): Maximum number of concurrent requests allowed.
-        Only has an effect when blocking=False.
+            Only has an effect when blocking=False.
         raise_on_error (bool): Flag controlling whether created Requests that complete
-        with an ERROR state should raise an exception.
+            with an ERROR state should raise an exception
 
         bg_host (str): Beer-garden hostname
         bg_port (int): Beer-garden port
         bg_url_prefix (str): URL path that will be used as a prefix when communicating
-        with Beer-garden. Useful if Beer-garden is running on a URL path other than '/'.
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
         ssl_enabled (bool): Whether to use SSL for Beer-garden communication
         ca_cert (str): Path to certificate file containing the certificate of the
-        authority that issued the Beer-garden server certificate
+            authority that issued the Beer-garden server certificate
         ca_verify (bool): Whether to verify Beer-garden server certificate
         client_cert (str): Path to client certificate to use when communicating with
-        Beer-garden
+            Beer-garden
         api_version (int): Beer-garden API version to use
-        client_timeout: Max time to wait for Beer-garden server response
+        client_timeout (int): Max time to wait for Beer-garden server response
         username (str): Username for Beer-garden authentication
         password (str): Password for Beer-garden authentication
         access_token (str): Access token for Beer-garden authentication
@@ -207,29 +207,37 @@ class SystemClient(object):
         return self.create_bg_request(item)
 
     def create_bg_request(self, command_name, **kwargs):
-        """Create a callable that will execute a beer-garden request when called.
+        """Create a callable that will execute a Beer-garden request when called.
 
-        Normally you interact with the SystemClient by accessing attributes, but there could be
-        certain cases where you want to create a request without sending it.
+        Normally you interact with the SystemClient by accessing attributes, but there
+        could be certain cases where you want to create a request without sending it.
 
         Example::
 
             client = SystemClient(host, port, 'system', blocking=False)
-            requests = []
 
-            # No arguments
-            requests.append(client.create_bg_request('command_1'))
+            # Create two callables - one with a parameter and one without
+            uncreated_requests = [
+                client.create_bg_request('command_1', arg_1='Hi!'),
+                client.create_bg_request('command_2'),
+            ]
 
-            # arg_1 will be passed as a parameter
-            requests.append(client.create_bg_request('command_2', arg_1='Hi!'))
+            # Calling creates and sends the request
+            # The result of each is a future because blocking=False on the SystemClient
+            futures = [req() for req in uncreated_requests]
 
-            futures = [request() for request in requests]   # Calling creates and sends the request
-            concurrent.futures.wait(futures)                # Wait for all the futures to complete
+            # Wait for all the futures to complete
+            concurrent.futures.wait(futures)
 
-        :param command_name: The name of the command that will be sent.
-        :param kwargs: Additional arguments to pass to send_bg_request.
-        :raise AttributeError: The system does not have a command with the given command_name.
-        :return: A partial that will create and execute a beer-garden request when called.
+        Args:
+            command_name (str): Name of the Command to send
+            kwargs (dict): Will be passed as parameters when creating the Request
+
+        Returns:
+            Partial that will create and execute a Beer-garden request when called
+
+        Raises:
+            AttributeError: System does not have a Command with the given command_name
         """
 
         if not self._loaded or self._always_update:
@@ -253,18 +261,25 @@ class SystemClient(object):
             )
 
     def send_bg_request(self, **kwargs):
-        """Actually create a Request and send it to beer-garden
+        """Actually create a Request and send it to Beer-garden
 
         .. note::
-            This method is intended for advanced use only, mainly cases where you're using the
-            SystemClient without a predefined System. It assumes that everything needed to
-            construct the request is being passed in kwargs. If this doesn't sound like what you
-            want you should check out create_bg_request.
+            This method is intended for advanced use only, mainly cases where you're
+            using the SystemClient without a predefined System. It assumes that
+            everything needed to construct the request is being passed in ``kwargs``. If
+            this doesn't sound like what you want you should check out
+            ``create_bg_request``.
 
-        :param kwargs: All necessary request parameters, including beer-garden internal parameters
-        :raise ValidationError: If the Request creation failed validation on the server
-        :return: If the SystemClient was created with blocking=True a completed request object,
-            otherwise a Future that will return the Request when it completes.
+        Args:
+            kwargs (dict): All necessary request parameters, including Beer-garden
+                internal parameters
+
+        Returns:
+            blocking=True: A completed Request object
+            blocking=False: A future that will be completed when the Request does
+
+        Raises:
+            ValidationError: Request creation failed validation on the server
         """
         # Need to pop here, otherwise we'll try to send as a request parameter
         raise_on_error = kwargs.pop("_raise_on_error", self._raise_on_error)
@@ -302,14 +317,17 @@ class SystemClient(object):
     def load_bg_system(self):
         """Query beer-garden for a System definition
 
-        This method will make the query to beer-garden for a System matching the name and version
-        constraints specified during SystemClient instance creation.
+        This method will make the query to beer-garden for a System matching the name
+        and version constraints specified during SystemClient instance creation.
 
-        If this method completes successfully the SystemClient will be ready to create and send
-        Requests.
+        If this method completes successfully the SystemClient will be ready to create
+        and send Requests.
 
-        :raise FetchError: If unable to find a matching System
-        :return: None
+        Returns:
+            None
+
+        Raises:
+            FetchError: Unable to find a matching System
         """
 
         if self._version_constraint == "latest":

@@ -132,21 +132,23 @@ class EasyClient(object):
     operations than is exposed by the lower-level RestClient. On the other hand,
     the SystemClient is much better for generating Beergarden Requests.
 
-    Keyword Args:
-        bg_host (str): Beergarden hostname
-        bg_port (int): Beergarden port
-        ssl_enabled (Optional[bool]): Whether to use SSL (HTTP vs HTTPS)
-        api_version (Optional[int]): The REST API version
-        ca_cert (Optional[str]): Path to CA certificate file
-        client_cert (Optional[str]): Path to client certificate file
-        url_prefix (Optional[str]): Beergarden REST API prefix
-        ca_verify (Optional[bool]): Whether to verify the server cert hostname
-        username (Optional[str]): Username for authentication
-        password (Optional[str]): Password for authentication
-        access_token (Optional[str]): Access token for authentication
-        refresh_token (Optional[str]): Refresh token for authentication
-        client_timeout (Optional[float]): Max time to wait for a server response
-
+    Args:
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+            authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+            Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout (int): Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
     """
 
     def __init__(self, **kwargs):

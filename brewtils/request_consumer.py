@@ -400,9 +400,9 @@ class RequestConsumer(threading.Thread):
         Returns:
             None
         """
-        self.logger.debug("Stopping message consuming on channel %i", self._channel)
-
         if self._channel:
+            self.logger.info("Stopping message consuming on channel %i", self._channel)
+
             self._connection.ioloop.add_callback_threadsafe(
                 partial(
                     self._channel.basic_cancel,

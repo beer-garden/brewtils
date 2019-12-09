@@ -472,6 +472,14 @@ class Plugin(object):
         self.admin_consumer.stop()
         self.admin_consumer.join()
 
+        try:
+            self.bm_client.update_instance_status(self.instance.id, "STOPPED")
+        except Exception:
+            self.logger.warning(
+                "Unable to notify Beer-garden that this plugin is STOPPED, so this "
+                "plugin's status may be incorrect in Beer-garden"
+            )
+
         self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _create_standard_consumer(self):
@@ -709,9 +717,6 @@ class Plugin(object):
         :return: Success output message
         """
         self.shutdown_event.set()
-        self.instance = self.bm_client.update_instance_status(
-            self.instance.id, "STOPPED"
-        )
 
         return "Successfully stopped plugin"
 

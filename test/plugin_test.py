@@ -617,7 +617,7 @@ class TestInitialize(object):
             plugin._initialize()
 
 
-def test_shutdown(plugin):
+def test_shutdown(plugin, bm_client, bg_instance):
     plugin.request_consumer = Mock()
     plugin.admin_consumer = Mock()
 
@@ -626,6 +626,18 @@ def test_shutdown(plugin):
     assert plugin.request_consumer.join.called is True
     assert plugin.admin_consumer.stop.called is True
     assert plugin.admin_consumer.join.called is True
+    bm_client.update_instance_status.assert_called_once_with(bg_instance.id, "STOPPED")
+
+
+def test_shutdown_update_error(caplog, plugin, bm_client, bg_instance):
+    plugin.request_consumer = Mock()
+    plugin.admin_consumer = Mock()
+    bm_client.update_instance_status.side_effect = ConnectionError
+
+    with caplog.at_level(level=logging.WARNING):
+        plugin._shutdown()
+
+    assert len(caplog.records) == 1
 
 
 def test_create_request_consumer(plugin, bg_instance):
@@ -817,15 +829,8 @@ class TestAdminMethods(object):
         )
         assert plugin.instance == new_instance
 
-    def test_stop(self, plugin, bm_client, bg_instance):
-        new_instance = Mock()
-        bm_client.update_instance_status.return_value = new_instance
-
+    def test_stop(self, plugin):
         assert plugin._stop(Mock())
-        bm_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, "STOPPED"
-        )
-        assert plugin.instance == new_instance
         assert plugin.shutdown_event.is_set() is True
 
     def test_status(self, plugin, bm_client):

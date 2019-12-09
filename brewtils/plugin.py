@@ -388,24 +388,14 @@ class Plugin(object):
         return admin_processor, request_processor
 
     def _start(self):
-        """Handle start message by marking this instance as running.
-
-        :return: Success output message
-        """
+        """Handle start Request by marking this plugin as running"""
         self._instance = self._ez_client.update_instance_status(
             self._instance.id, "RUNNING"
         )
 
-        return "Successfully started plugin"
-
     def _stop(self):
-        """Handle stop message by marking this instance as stopped.
-
-        :return: Success output message
-        """
+        """Handle stop Request by setting the shutdown event"""
         self._shutdown_event.set()
-
-        return "Successfully stopped plugin"
 
     def _status(self):
         """Handle status message by sending a heartbeat."""

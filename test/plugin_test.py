@@ -446,14 +446,14 @@ class TestAdminMethods(object):
         new_instance = Mock()
         ez_client.update_instance_status.return_value = new_instance
 
-        assert plugin._start()
+        plugin._start()
         ez_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "RUNNING"
         )
         assert plugin._instance == new_instance
 
     def test_stop(self, plugin):
-        assert plugin._stop()
+        plugin._stop()
         assert plugin._shutdown_event.is_set() is True
 
     def test_status(self, plugin, ez_client):

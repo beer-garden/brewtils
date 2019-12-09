@@ -260,13 +260,27 @@ def test_startup(plugin, admin_processor, request_processor):
     assert request_processor.startup.called is True
 
 
-def test_shutdown(plugin):
-    plugin._request_processor = Mock()
-    plugin._admin_processor = Mock()
+class TestShutdown(object):
+    def test_success(self, plugin, ez_client, bg_instance):
+        plugin._request_processor = Mock()
+        plugin._admin_processor = Mock()
 
-    plugin._shutdown()
-    assert plugin._request_processor.shutdown.called is True
-    assert plugin._admin_processor.shutdown.called is True
+        plugin._shutdown()
+        assert plugin._request_processor.shutdown.called is True
+        assert plugin._admin_processor.shutdown.called is True
+        ez_client.update_instance_status.assert_called_once_with(
+            bg_instance.id, "STOPPED"
+        )
+
+    def test_update_error(self, caplog, plugin, ez_client, bg_instance):
+        plugin.request_consumer = Mock()
+        plugin.admin_consumer = Mock()
+        ez_client.update_instance_status.side_effect = ConnectionError
+
+        with caplog.at_level(level=logging.WARNING):
+            plugin._shutdown()
+
+        assert len(caplog.records) == 1
 
 
 class TestInitializeSystem(object):
@@ -416,15 +430,8 @@ class TestAdminMethods(object):
         )
         assert plugin._instance == new_instance
 
-    def test_stop(self, plugin, ez_client, bg_instance):
-        new_instance = Mock()
-        ez_client.update_instance_status.return_value = new_instance
-
+    def test_stop(self, plugin):
         assert plugin._stop()
-        ez_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, "STOPPED"
-        )
-        assert plugin._instance == new_instance
         assert plugin._shutdown_event.is_set() is True
 
     def test_status(self, plugin, ez_client):

@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.4.11
+-----
+Date: 12/9/19
+
+Other Changes
+^^^^^^^^^^^^^
+- Plugins always attempt to notify Beer-garden when terminating (beer-garden/#376)
+
 2.4.10
 -----
 Date: 11/12/19

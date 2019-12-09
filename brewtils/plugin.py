@@ -234,6 +234,14 @@ class Plugin(object):
         self._request_processor.shutdown()
         self._admin_processor.shutdown()
 
+        try:
+            self._ez_client.update_instance_status(self._instance.id, "STOPPED")
+        except Exception:
+            self._logger.warning(
+                "Unable to notify Beer-garden that this plugin is STOPPED, so this "
+                "plugin's status may be incorrect in Beer-garden"
+            )
+
         self._logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
     def _initialize_system(self):
@@ -375,9 +383,6 @@ class Plugin(object):
         :return: Success output message
         """
         self._shutdown_event.set()
-        self._instance = self._ez_client.update_instance_status(
-            self._instance.id, "STOPPED"
-        )
 
         return "Successfully stopped plugin"
 

@@ -10,7 +10,7 @@ import warnings
 import pytest
 import threading
 from mock import MagicMock, Mock
-from requests import ConnectionError
+from requests import ConnectionError as RequestsConnectionError
 
 from brewtils import get_connection_info
 from brewtils.errors import (
@@ -632,7 +632,7 @@ def test_shutdown(plugin, bm_client, bg_instance):
 def test_shutdown_update_error(caplog, plugin, bm_client, bg_instance):
     plugin.request_consumer = Mock()
     plugin.admin_consumer = Mock()
-    bm_client.update_instance_status.side_effect = ConnectionError
+    bm_client.update_instance_status.side_effect = RequestsConnectionError()
 
     with caplog.at_level(level=logging.WARNING):
         plugin._shutdown()
@@ -708,7 +708,7 @@ class TestUpdateRequest(object):
         "ex,raised,bv_down",
         [
             (RestClientError, DiscardMessageException, False),
-            (ConnectionError, RepublishRequestException, True),
+            (RequestsConnectionError, RepublishRequestException, True),
             (ValueError, RepublishRequestException, False),
         ],
     )
@@ -838,7 +838,7 @@ class TestAdminMethods(object):
         bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
 
     @pytest.mark.parametrize(
-        "error,bv_down", [(ConnectionError, True), (ValueError, False)]
+        "error,bv_down", [(RequestsConnectionError, True), (ValueError, False)]
     )
     def test_status_error(self, plugin, bm_client, error, bv_down):
         bm_client.instance_heartbeat.side_effect = error

@@ -6,6 +6,7 @@ import warnings
 
 import pytest
 from mock import MagicMock, Mock, ANY
+from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
 from brewtils import get_connection_info
@@ -275,7 +276,7 @@ class TestShutdown(object):
     def test_update_error(self, caplog, plugin, ez_client, bg_instance):
         plugin.request_consumer = Mock()
         plugin.admin_consumer = Mock()
-        ez_client.update_instance_status.side_effect = ConnectionError
+        ez_client.update_instance_status.side_effect = RequestsConnectionError()
 
         with caplog.at_level(level=logging.WARNING):
             plugin._shutdown()

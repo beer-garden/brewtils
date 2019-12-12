@@ -651,7 +651,7 @@ class PikaConsumer(RequestConsumer):
             None
         """
         if self._channel and self._channel.is_open:
-            self.logger.info("Stopping message consuming on channel %i", self._channel)
+            self.logger.debug("Stopping message consuming on channel %i", self._channel)
 
             self._connection.ioloop.add_callback_threadsafe(
                 partial(

@@ -21,6 +21,7 @@ from brewtils.models import (
     RequestTemplate,
     CronTrigger,
     IntervalTrigger,
+    RequestFile,
 )
 
 
@@ -103,6 +104,11 @@ class TestCommand(object):
     )
     def test_has_same_parameters(self, p1, p2):
         assert not Command(parameters=p1).has_different_parameters(p2)
+
+    def test_parameter_keys_by_type(self):
+        command = Command(parameters=[Parameter(key="key1", type="String")])
+        assert command.parameter_keys_by_type("String") == [["key1"]]
+        assert command.parameter_keys_by_type("Integer") == []
 
     def test_str(self):
         assert "foo" == str(Command(name="foo"))
@@ -214,6 +220,68 @@ class TestParameter(object):
     )
     def test_is_not_different(self, p1, p2):
         assert not p1.is_different(p2)
+
+    @pytest.mark.parametrize(
+        "parameter,desired_type,expected",
+        [
+            (Parameter(key="key1", type="String"), "String", ["key1"]),
+            (Parameter(key="key1", type="String"), "Integer", []),
+            (
+                Parameter(
+                    key="key1",
+                    type="Dictionary",
+                    parameters=[Parameter(key="nested_key", type="String")],
+                ),
+                "String",
+                ["key1", ["nested_key"]],
+            ),
+            (
+                Parameter(
+                    key="key1",
+                    type="Dictionary",
+                    parameters=[Parameter(key="nested_key", type="Integer")],
+                ),
+                "String",
+                [],
+            ),
+            (
+                Parameter(
+                    key="key1",
+                    type="Dictionary",
+                    parameters=[
+                        Parameter(key="nested_key1", type="String"),
+                        Parameter(
+                            key="dict_key1",
+                            type="Dictionary",
+                            parameters=[
+                                Parameter(key="deep_key1", type="String"),
+                                Parameter(key="deep_key2", type="String"),
+                                Parameter(key="deep_key3", type="Integer"),
+                            ],
+                        ),
+                    ],
+                ),
+                "String",
+                ["key1", ["nested_key1"], ["dict_key1", ["deep_key1"], ["deep_key2"]]],
+            ),
+        ],
+    )
+    def test_keys_by_type(self, parameter, desired_type, expected):
+        actual = parameter.keys_by_type(desired_type)
+        assert actual == expected
+
+
+class TestRequestFile(object):
+    @pytest.fixture
+    def request_file(self):
+        return RequestFile(storage_type="gridfs", filename="request_filename")
+
+    def test_str(self, request_file):
+        assert str(request_file) == "request_filename"
+
+    def test_repr(self, request_file):
+        assert "request_filename" in repr(request_file)
+        assert "gridfs" in repr(request_file)
 
 
 class TestRequestTemplate(object):

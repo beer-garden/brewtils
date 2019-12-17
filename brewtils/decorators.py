@@ -291,6 +291,12 @@ def parameter(
 
     param.choices = _format_choices(param.choices)
 
+    # Type info is where type specific information goes. For now, this is specific
+    # to file types. See #289 for more details.
+    param.type_info = {}
+    if param.type == "Bytes":
+        param.type_info = {"storage": "gridfs"}
+
     # Model is another special case - it requires its own handling
     if model is not None:
         param.type = "Dictionary"
@@ -437,6 +443,7 @@ def _generate_nested_params(model_class):
         maximum = parameter_definition.maximum
         minimum = parameter_definition.minimum
         regex = parameter_definition.regex
+        type_info = parameter_definition.type_info
 
         choices = _format_choices(parameter_definition.choices)
 
@@ -461,6 +468,7 @@ def _generate_nested_params(model_class):
                 maximum=maximum,
                 minimum=minimum,
                 regex=regex,
+                type_info=type_info,
             )
         )
     return parameters_to_return
@@ -527,8 +535,14 @@ def _resolve_display_modifiers(
 
 
 def _format_type(param_type):
-    if param_type == str:
-        return "String"
+    if param_type in [str, bytes]:
+        # Python 3 vs 2 differences. If we are in Python 2,
+        # there is no difference between str and bytes, so
+        # just assume they want string.
+        if str is not bytes and param_type == bytes:
+            return "Bytes"
+        else:
+            return "String"
     elif param_type == int:
         return "Integer"
     elif param_type == float:
@@ -537,8 +551,14 @@ def _format_type(param_type):
         return "Boolean"
     elif param_type == dict:
         return "Dictionary"
+    elif str(param_type).lower() == "file":
+        return "Bytes"
+    elif str(param_type).lower() == "datetime":
+        return "DateTime"
+    elif not param_type:
+        return "Any"
     else:
-        return param_type
+        return str(param_type).title()
 
 
 def _format_choices(choices):

@@ -15,6 +15,7 @@ from brewtils.errors import (
     ConflictError,
     RestError,
     WaitExceededError,
+    SaveError,
 )
 from brewtils.rest.easy_client import (
     get_easy_client,
@@ -412,3 +413,38 @@ def test_get_user(client, rest_client, success, bg_principal):
 
     client.get_user(bg_principal.username)
     rest_client.get_user.assert_called_once_with(bg_principal.username)
+
+
+class TestRequestFileUpload(object):
+    def test_stream_to_sink_fail(self, client, rest_client, not_found):
+        def mock_exit(_, exc_type, exc_value, traceback):
+            if exc_value is not None:
+                raise exc_value
+
+        mock_get = Mock(__enter__=Mock(return_value=not_found), __exit__=mock_exit)
+        sink = Mock()
+        rest_client.get_file.return_value = mock_get
+        with pytest.raises(NotFoundError):
+            client.stream_to_sink("file_id", sink)
+
+    def test_stream_to_sink(self, client, rest_client):
+        response = Mock(
+            status_code=200, ok=True, iter_content=Mock(return_value=["chunk"])
+        )
+        mock_get = Mock(__enter__=Mock(return_value=response), __exit__=Mock())
+        sink = Mock()
+        rest_client.get_file.return_value = mock_get
+        client.stream_to_sink("file_id", sink)
+        sink.write.assert_called_with("chunk")
+
+    def test_upload_file(self, client, rest_client, success):
+        file_to_upload = Mock()
+        success.json = Mock(return_value={"upload_id": "SERVER_RESPONSE"})
+        rest_client.post_files.return_value = success
+        assert client.upload_file(file_to_upload, "desired_name") == "SERVER_RESPONSE"
+
+    def test_upload_file_fail(self, client, rest_client, server_error):
+        file_to_upload = Mock()
+        rest_client.post_files.return_value = server_error
+        with pytest.raises(SaveError):
+            assert client.upload_file(file_to_upload, "desired_name")

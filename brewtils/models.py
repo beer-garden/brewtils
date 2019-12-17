@@ -855,6 +855,7 @@ class Job(object):
         success_count=None,
         error_count=None,
         status=None,
+        max_instances=None,
     ):
         self.id = id
         self.name = name
@@ -867,6 +868,7 @@ class Job(object):
         self.success_count = success_count
         self.error_count = error_count
         self.status = status
+        self.max_instances = max_instances
 
     def __str__(self):
         return "%s: %s" % (self.name, self.id)
@@ -903,6 +905,7 @@ class IntervalTrigger(object):
         end_date=None,
         timezone=None,
         jitter=None,
+        reschedule_on_finish=None,
     ):
         self.weeks = weeks
         self.days = days
@@ -913,6 +916,7 @@ class IntervalTrigger(object):
         self.end_date = end_date
         self.timezone = timezone
         self.jitter = jitter
+        self.reschedule_on_finish = reschedule_on_finish
 
     def __str__(self):
         return repr(self)

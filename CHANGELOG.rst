@@ -1,6 +1,58 @@
 Brewtils Changelog
 ==================
 
+2.4.11
+-----
+Date: 12/9/19
+
+Other Changes
+^^^^^^^^^^^^^
+- Plugins always attempt to notify Beer-garden when terminating (beer-garden/#376)
+
+2.4.10
+-----
+Date: 11/12/19
+
+Bug Fixes
+^^^^^^^^^
+- Plugins can now survive a rabbitmq broker restart (beer-garden/#353, beer-garden/#359)
+
+2.4.9
+-----
+Date: 10/30/19
+
+Bug Fixes
+^^^^^^^^^
+- Fixed issue with callbacks in RequestConsumer when using Pika v1 (beer-garden/#328)
+
+2.4.8
+-----
+Date: 9/5/19
+
+New Features
+^^^^^^^^^^^^
+- Better control over how specific error types are logged (beer-garden/#285)
+
+Bug Fixes
+^^^^^^^^^
+- Decorators now work with non-JSON resources loaded from a URL (beer-garden/#310)
+
+2.4.7
+-----
+Date: 6/27/19
+
+New Features
+^^^^^^^^^^^^
+- Can now specify a name and version in the ``system`` decorator (beer-garden/#290)
+
+Bug Fixes
+^^^^^^^^^
+- SystemClient now correctly handles versions with suffixes (beer-garden/#283)
+
+Other Changes
+^^^^^^^^^^^^^
+- Added compatability with Pika v1 (#130)
+
 2.4.6
 -----
 Date: 4/19/19

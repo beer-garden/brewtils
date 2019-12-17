@@ -34,7 +34,8 @@ setup(
         "lark-parser<0.7",
         "marshmallow<3",
         "marshmallow-polyfield<4",
-        "pika<0.14,>=0.11",
+        "packaging<20",
+        "pika<=1.1,>=0.11",
         "pyjwt<2",
         "requests<3",
         "simplejson<4",
@@ -45,7 +46,7 @@ setup(
     extras_require={
         ':python_version=="2.7"': ["futures", "funcsigs"],
         ':python_version<"3.4"': ["enum34"],
-        "test": ["pytest<4"],
+        "test": ["pytest<4", "requests-mock<2"],
     },
     classifiers=[
         "Intended Audience :: Developers",

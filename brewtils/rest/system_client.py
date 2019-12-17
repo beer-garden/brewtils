@@ -3,10 +3,11 @@
 import logging
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from multiprocessing import cpu_count
 
 import time
+from functools import partial
+from packaging.version import parse
 
 from brewtils.errors import (
     FetchError,
@@ -297,11 +298,8 @@ class SystemClient(object):
         """
 
         if self._version_constraint == "latest":
-            systems = self._easy_client.find_systems(name=self._system_name)
-            self._system = (
-                sorted(systems, key=lambda x: x.version, reverse=True)[0]
-                if systems
-                else None
+            self._system = self._determine_latest(
+                self._easy_client.find_systems(name=self._system_name)
             )
         else:
             self._system = self._easy_client.find_unique_system(
@@ -401,6 +399,14 @@ class SystemClient(object):
         resolver = UploadResolver(request, params_to_resolve, self._resolvers)
         request.parameters = resolver.resolve_parameters()
         return request
+
+    @staticmethod
+    def _determine_latest(systems):
+        return (
+            sorted(systems, key=lambda x: parse(x.version), reverse=True)[0]
+            if systems
+            else None
+        )
 
 
 class BrewmasterSystemClient(SystemClient):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from mock import Mock, call, patch
+from mock import Mock, patch
 
 import brewtils.decorators
 from brewtils.decorators import (
@@ -57,9 +57,21 @@ def wrap_functions(request):
 
 
 class TestSystem(object):
-    def test_system(self, sys):
+    def test_system_basic(self, sys):
         assert 1 == len(sys._commands)
         assert "foo" == sys._commands[0].name
+
+    def test_system(self):
+        @system(bg_name="sys", bg_version="1.0.0")
+        class SystemClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert SystemClass._bg_name == "sys"
+        assert SystemClass._bg_version == "1.0.0"
+        assert 1 == len(SystemClass._commands)
+        assert "foo" == SystemClass._commands[0].name
 
 
 class TestParameter(object):
@@ -604,22 +616,38 @@ class TestResolveModifiers(object):
         with pytest.raises(PluginParamError):
             _resolve_display_modifiers(Mock(), Mock(), **args)
 
-    def test_load_url(self, monkeypatch):
+    def test_load_url(self, requests_mock):
         args = {
             "schema": "http://test/schema",
             "form": "http://test/form",
             "template": "http://test/template",
         }
+        expected = {
+            "schema": {"schema": "test"},
+            "form": {"form": "test"},
+            "template": "<html></html>",
+        }
 
-        requests_mock = Mock()
-        requests_mock.get.return_value.text = "{}"
-        monkeypatch.setattr("brewtils.decorators.requests", requests_mock)
-
-        _resolve_display_modifiers(Mock(), Mock(), **args)
-        requests_mock.get.assert_has_calls(
-            [call(args["schema"]), call(args["form"]), call(args["template"])],
-            any_order=True,
+        requests_mock.get(
+            args["schema"],
+            json=expected["schema"],
+            headers={"content-type": "application/json"},
         )
+        requests_mock.get(
+            args["form"],
+            json=expected["form"],
+            headers={"content-type": "application/json"},
+        )
+        requests_mock.get(
+            args["template"],
+            text=expected["template"],
+            headers={"content-type": "text/html"},
+        )
+
+        resolved = _resolve_display_modifiers(Mock(), Mock(), **args)
+        assert resolved["schema"] == expected["schema"]
+        assert resolved["form"] == expected["form"]
+        assert resolved["template"] == expected["template"]
 
     @pytest.mark.parametrize(
         "args,expected",

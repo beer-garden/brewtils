@@ -45,14 +45,27 @@ __all__ = [
 _wrap_functions = False
 
 
-def system(cls):
+def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
-    Creates a ``_commands`` property on the class that holds all registered commands.
+    Creates some properties on the class:
+      * ``_commands``: holds all registered commands
+      * ``_name``: an optional system name
+      * ``_version``: an optional system version
+      * ``_current_request``: Reference to the currently executing request
 
-    :param cls: The class to decorated
-    :return: The decorated class
+    Args:
+        cls: The class to decorated
+        bg_name: Optional plugin name
+        bg_version: Optional plugin version
+
+    Returns:
+        The decorated class
+
     """
+    if cls is None:
+        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
+
     import brewtils.plugin
 
     commands = []
@@ -63,6 +76,8 @@ def system(cls):
             commands.append(method_command)
 
     cls._commands = commands
+    cls._bg_name = bg_name
+    cls._bg_version = bg_version
     cls._current_request = property(
         lambda self: brewtils.plugin.request_context.current_request
     )
@@ -464,7 +479,10 @@ def _resolve_display_modifiers(
     wrapped, command_name, schema=None, form=None, template=None
 ):
     def _load_from_url(url):
-        return json.loads(requests.get(url).text)
+        response = requests.get(url)
+        if response.headers.get("content-type", "").lower() == "application/json":
+            return json.loads(response.text)
+        return response.text
 
     def _load_from_path(path):
         current_dir = os.path.dirname(inspect.getfile(wrapped))

@@ -350,7 +350,7 @@ class TestRequestProcessor(object):
             processor._working_directory = tmpdir
             processor._invoke_command(target_mock, request, headers)
             getattr(target_mock, command).assert_called_with(
-                p1=os.path.join(tmpdir, "some_filename")
+                p1=os.path.join(str(tmpdir), "some_filename")
             )
 
 

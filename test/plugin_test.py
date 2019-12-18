@@ -4,6 +4,7 @@ import logging.config
 import os
 import warnings
 
+import appdirs
 import pytest
 from mock import MagicMock, Mock, ANY
 from requests import ConnectionError as RequestsConnectionError
@@ -252,6 +253,7 @@ class TestPluginRun(object):
 
 
 def test_startup(plugin, admin_processor, request_processor):
+    plugin._ez_client.update_system = Mock(return_value=plugin._system)
     plugin._initialize_processors = Mock(
         return_value=(admin_processor, request_processor)
     )
@@ -259,6 +261,20 @@ def test_startup(plugin, admin_processor, request_processor):
     plugin._startup()
     assert admin_processor.startup.called is True
     assert request_processor.startup.called is True
+    assert plugin._working_directory == appdirs.user_data_dir(
+        os.path.join(plugin._system.name, plugin._instance.name),
+        version=plugin._system.version,
+    )
+
+
+def test_startup_with_working_dir(plugin, admin_processor, request_processor):
+    plugin._working_directory = "foo"
+    plugin._initialize_processors = Mock(
+        return_value=(admin_processor, request_processor)
+    )
+
+    plugin._startup()
+    assert plugin._working_directory == "foo"
 
 
 class TestShutdown(object):

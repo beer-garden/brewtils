@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
 import logging.config
+import os
 import threading
 
+import appdirs
 from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.config import load_config
@@ -23,6 +25,7 @@ from brewtils.request_handling import (
     RequestConsumer,
     RequestProcessor,
 )
+from brewtils.resolvers import DownloadResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 
 # This is what enables request nesting to work easily
@@ -161,6 +164,8 @@ class Plugin(object):
             reconnect attempts. Negative numbers are interpreted as no maximum.
         mq_starting_timeout (int): Initial time to wait between message queue reconnect
             attempts. Will double on subsequent attempts until reaching mq_max_timeout.
+        working_directory (str): Path to a preferred working directory. Only used
+            when working with bytes parameters.
     """
 
     def __init__(self, client, system=None, logger=None, metadata=None, **kwargs):
@@ -187,6 +192,9 @@ class Plugin(object):
         self._shutdown_event = threading.Event()
         self._system = self._setup_system(system, metadata, kwargs)
         self._ez_client = EasyClient(logger=self._logger, **self.config)
+
+        # If None, it will be set during startup
+        self._working_directory = kwargs.get("working_directory")
 
         # These will be created on startup
         self._instance = None
@@ -221,6 +229,12 @@ class Plugin(object):
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
         self._admin_processor, self._request_processor = self._initialize_processors()
+
+        if self._working_directory is None:
+            appname = os.path.join(self._system.name, self._instance.name)
+            self._working_directory = appdirs.user_data_dir(
+                appname, version=self._system.version
+            )
 
         self._logger.debug("Starting up processors")
         self._admin_processor.startup()
@@ -362,6 +376,8 @@ class Plugin(object):
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
             max_workers=self.config.max_concurrent,
+            working_directory=self._working_directory,
+            resolvers=build_resolver_map(self._ez_client),
         )
 
         return admin_processor, request_processor

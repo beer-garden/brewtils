@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import os
 import sys
 import threading
 
@@ -100,7 +101,7 @@ class TestRequestProcessor(object):
             request_mock = Mock()
 
             processor.process_message(target_mock, request_mock, {})
-            invoke_mock.assert_called_once_with(target_mock, request_mock)
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             format_mock.assert_called_once_with(invoke_mock.return_value)
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "SUCCESS"
@@ -128,7 +129,7 @@ class TestRequestProcessor(object):
             invoke_mock.side_effect = ex
 
             processor.process_message(target_mock, request_mock, {})
-            invoke_mock.assert_called_once_with(target_mock, request_mock)
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "ERROR"
             assert request_mock.error_class == type(ex).__name__
@@ -167,7 +168,7 @@ class TestRequestProcessor(object):
             with caplog.at_level(logging.DEBUG):
                 processor.process_message(target_mock, request_mock, {})
 
-            invoke_mock.assert_called_once_with(target_mock, request_mock)
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "ERROR"
             assert request_mock.error_class == "CustomException"
@@ -183,7 +184,7 @@ class TestRequestProcessor(object):
             invoke_mock.side_effect = ValueError("Not JSON")
 
             processor.process_message(target_mock, request_mock, {})
-            invoke_mock.assert_called_once_with(target_mock, request_mock)
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "ERROR"
             assert request_mock.error_class == "ValueError"
@@ -220,7 +221,7 @@ class TestRequestProcessor(object):
                 arguments = ["bar"]
 
             processor.process_message(target_mock, request_mock, {})
-            invoke_mock.assert_called_once_with(target_mock, request_mock)
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "ERROR"
             assert request_mock.error_class == "MyError"
@@ -250,7 +251,7 @@ class TestRequestProcessor(object):
                 arguments = [str(message)]
 
             processor.process_message(target_mock, request_mock, {})
-            invoke_mock.assert_called_once_with(target_mock, request_mock)
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "ERROR"
             assert request_mock.error_class == "MyError"
@@ -284,13 +285,17 @@ class TestRequestProcessor(object):
                 processor._parse("Not a Request")
 
     class TestInvokeCommand(object):
+        @pytest.fixture(autouse=True)
+        def clean_tmpdir(self, tmpdir):
+            tmpdir.remove()
+
         @pytest.mark.parametrize(
             "command,parameters", [("start", {}), ("echo", {"p1": "param"})]
         )
         def test_success(self, processor, target_mock, command, parameters):
             request = Request(command=command, parameters=parameters)
 
-            ret_val = processor._invoke_command(target_mock, request)
+            ret_val = processor._invoke_command(target_mock, request, {})
             assert ret_val == getattr(target_mock, command).return_value
             getattr(target_mock, command).assert_called_once_with(**parameters)
 
@@ -298,7 +303,7 @@ class TestRequestProcessor(object):
             command = "start"
             request = Request(command=command, parameters=None)
 
-            ret_val = processor._invoke_command(target_mock, request)
+            ret_val = processor._invoke_command(target_mock, request, {})
             assert ret_val == getattr(target_mock, command).return_value
             getattr(target_mock, command).assert_called_once_with()
 
@@ -308,7 +313,7 @@ class TestRequestProcessor(object):
             request = Request(command="command", parameters={})
 
             with pytest.raises(RequestProcessingError):
-                processor._invoke_command(target_mock, request)
+                processor._invoke_command(target_mock, request, {})
 
         def test_non_callable_attribute(self, processor, target_mock):
             target_mock.command = "this should be a function"
@@ -316,7 +321,39 @@ class TestRequestProcessor(object):
             request = Request(command="command", parameters={})
 
             with pytest.raises(RequestProcessingError):
-                processor._invoke_command(target_mock, request)
+                processor._invoke_command(target_mock, request, {})
+
+        def test_call_with_resolvers_nothing_to_resolve(
+            self, processor, target_mock,
+        ):
+            command = "foo"
+            request = Request(command=command, parameters={"p1": "param"})
+
+            ret_val = processor._invoke_command(target_mock, request, {})
+            assert ret_val == getattr(target_mock, command).return_value
+            getattr(target_mock, command).assert_called_with(p1="param")
+
+        def test_call_with_resolver(self, processor, target_mock, tmpdir):
+            command = "foo"
+            headers = {"resolve_parameters": '[["p1"]]'}
+            request = Request(
+                command=command,
+                parameters={
+                    "p1": {
+                        "storage_type": "test",
+                        "filename": "some_filename",
+                        "id": "123",
+                    }
+                },
+            )
+
+            resolvers = {"test": Mock(download=Mock(return_value=b"bytes_value"))}
+            processor._resolvers = resolvers
+            processor._working_directory = tmpdir
+            processor._invoke_command(target_mock, request, headers)
+            getattr(target_mock, command).assert_called_with(
+                p1=os.path.join(tmpdir, "some_filename")
+            )
 
 
 class TestEasyRequestUpdater(object):

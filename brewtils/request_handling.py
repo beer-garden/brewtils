@@ -19,6 +19,7 @@ from brewtils.errors import (
     RequestProcessingError,
 )
 from brewtils.models import Request
+from brewtils.resolvers import DownloadResolver
 from brewtils.schema_parser import SchemaParser
 
 
@@ -50,6 +51,8 @@ class RequestProcessor(object):
         logger=None,
         plugin_name=None,
         max_workers=None,
+        resolvers=None,
+        working_directory=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
 
@@ -61,6 +64,8 @@ class RequestProcessor(object):
 
         self._consumer = consumer
         self._consumer.on_message_callback = self.on_message_received
+        self._resolvers = resolvers
+        self._working_directory = working_directory
 
     def on_message_received(self, message, headers):
         """Callback function that will be invoked for received messages
@@ -119,22 +124,11 @@ class RequestProcessor(object):
             # requests across different servers.
             brewtils.plugin.request_context.current_request = request
 
-            output = self._invoke_command(target, request)
-        except Exception as ex:
-            self.logger.log(
-                getattr(ex, "_bg_error_log_level", logging.ERROR),
-                "Plugin %s raised an exception while processing request %s: %s",
-                self._plugin_name,
-                str(request),
-                ex,
-                exc_info=not getattr(ex, "_bg_suppress_stacktrace", False),
-            )
-            request.status = "ERROR"
-            request.output = self._format_error_output(request, ex)
-            request.error_class = type(ex).__name__
+            output = self._invoke_command(target, request, headers)
+        except Exception as exc:
+            self._handle_invoke_failure(request, exc)
         else:
-            request.status = "SUCCESS"
-            request.output = self._format_output(output)
+            self._handle_invoke_success(request, output)
 
         self._updater.update_request(request, headers)
 
@@ -157,6 +151,23 @@ class RequestProcessor(object):
         # Give the updater a chance to shutdown
         self._updater.shutdown()
 
+    def _handle_invoke_success(self, request, output):
+        request.status = "SUCCESS"
+        request.output = self._format_output(output)
+
+    def _handle_invoke_failure(self, request, exc):
+        self.logger.log(
+            getattr(exc, "_bg_error_log_level", logging.ERROR),
+            "Plugin %s raised an exception while processing request %s: %s",
+            self._plugin_name,
+            str(request),
+            exc,
+            exc_info=not getattr(exc, "_bg_suppress_stacktrace", False),
+        )
+        request.status = "ERROR"
+        request.output = self._format_error_output(request, exc)
+        request.error_class = type(exc).__name__
+
     def _parse(self, message):
         """Parse a message using the standard SchemaParser
 
@@ -177,13 +188,13 @@ class RequestProcessor(object):
             )
             raise DiscardMessageException("Error parsing message body")
 
-    @staticmethod
-    def _invoke_command(target, request):
+    def _invoke_command(self, target, request, headers):
         """Invoke the function named in request.command
 
         Args:
             target: The object to search for the function implementation.
             request: The request to process
+            headers: The headers for this request
 
         Returns:
             The output of the function call
@@ -197,9 +208,17 @@ class RequestProcessor(object):
                 "Could not find an implementation of command '%s'" % request.command
             )
 
-        parameters = request.parameters or {}
+        if self._resolvers:
+            keys = json.loads(headers.get("resolve_parameters", "[]"), encoding="utf-8")
+            with DownloadResolver(
+                request, keys, self._resolvers, self._working_directory
+            ) as resolved_params:
+                output = getattr(target, request.command)(**resolved_params)
+        else:
+            parameters = request.parameters or {}
+            output = getattr(target, request.command)(**parameters)
 
-        return getattr(target, request.command)(**parameters)
+        return output
 
     @staticmethod
     def _format_error_output(request, exc):

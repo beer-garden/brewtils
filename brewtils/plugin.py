@@ -25,7 +25,7 @@ from brewtils.request_handling import (
     RequestConsumer,
     RequestProcessor,
 )
-from brewtils.resolvers import DownloadResolver, build_resolver_map
+from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 
 # This is what enables request nesting to work easily

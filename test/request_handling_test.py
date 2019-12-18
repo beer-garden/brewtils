@@ -323,9 +323,7 @@ class TestRequestProcessor(object):
             with pytest.raises(RequestProcessingError):
                 processor._invoke_command(target_mock, request, {})
 
-        def test_call_with_resolvers_nothing_to_resolve(
-            self, processor, target_mock,
-        ):
+        def test_call_with_resolvers_nothing_to_resolve(self, processor, target_mock):
             command = "foo"
             request = Request(command=command, parameters={"p1": "param"})
 

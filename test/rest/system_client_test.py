@@ -18,14 +18,14 @@ from brewtils.rest.system_client import SystemClient
 
 @pytest.fixture
 def command_1():
-    mock = Mock()
+    mock = Mock(parameter_keys_by_type=Mock(return_value=[]))
     type(mock).name = PropertyMock(return_value="command_1")
     return mock
 
 
 @pytest.fixture
 def command_2():
-    mock = Mock()
+    mock = Mock(parameter_keys_by_type=Mock(return_value=[]))
     type(mock).name = PropertyMock(return_value="command_2")
     return mock
 

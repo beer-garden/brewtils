@@ -158,7 +158,7 @@ class TestParameter(object):
     def test_file_type_info(self, cmd):
         wrapped = parameter(cmd, key="foo", type="file")
         assert wrapped._command.get_parameter_by_key("foo").type_info == {
-            "storage": "gridfs",
+            "storage": "gridfs"
         }
 
     def test_values(self, cmd, param_definition):

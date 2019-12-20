@@ -28,6 +28,7 @@ __all__ = [
     "DateTrigger",
     "CronTrigger",
     "IntervalTrigger",
+    "Namespace",
 ]
 
 
@@ -50,6 +51,9 @@ class Events(Enum):
     DB_CREATE = 16
     DB_UPDATE = 17
     DB_DELETE = 18
+    NAMESPACE_CREATED = 19
+    NAMESPACE_UPDATED = 20
+    NAMESPACE_REMOVED = 21
 
 
 class BaseModel(object):
@@ -672,7 +676,6 @@ class Event(BaseModel):
         )
 
 
-
 class Queue(BaseModel):
     schema = "QueueSchema"
 
@@ -980,3 +983,43 @@ class CronTrigger(BaseModel):
         )
 
         return kwargs
+
+
+class Namespace(BaseModel):
+    schema = "NamespaceSchema"
+
+    NAMESPACE_STATUSES = {
+        "INITIALIZING",
+        "RUNNING",
+        "BLOCKED",
+        "STOPPED",
+        "UNRESPONSIVE",
+        "UNKNOWN",
+    }
+
+    def __init__(
+            self,
+            id=None,
+            namespace=None,
+            status=None,
+            status_info=None,
+            connection_type=None,
+            connection_params=None
+
+    ):
+        self.id = id
+        self.namespace = namespace
+        self.status = status.upper() if status else None
+        self.status_info = status_info or {}
+
+        self.connection_type = connection_type
+        self.connection_params = connection_params
+
+    def __str__(self):
+        return "%s" % self.namespace
+
+    def __repr__(self):
+        return "<Namespace: namespace=%s, status=%s>" % (
+            self.namespace,
+            self.status,
+        )

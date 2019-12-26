@@ -9,6 +9,7 @@ import urllib3
 from requests import Session
 from requests.adapters import HTTPAdapter
 
+import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 
@@ -103,30 +104,35 @@ class RestClient(object):
     JSON_HEADERS = {"Content-type": "application/json", "Accept": "text/plain"}
 
     def __init__(self, *args, **kwargs):
-        bg_host = kwargs.get("bg_host") or kwargs.get("host")
-        bg_port = kwargs.get("bg_port") or kwargs.get("port")
-        bg_prefix = kwargs.get("bg_url_prefix") or kwargs.get("url_prefix")
-
-        if not bg_host:
+        self.bg_host = kwargs.get("bg_host") or kwargs.get("host")
+        if not self.bg_host:
             if len(args) > 0:
-                bg_host = args[0]
+                self.bg_host = args[0]
                 _deprecate(
                     "Heads up - passing bg_host as a positional argument is deprecated "
                     "and will be removed in version 4.0"
                 )
             else:
-                raise ValueError('Missing keyword argument "bg_host"')
+                if brewtils.plugin.CONFIG and brewtils.plugin.CONFIG.bg_host:
+                    self.bg_host = brewtils.plugin.CONFIG.bg_host
+                else:
+                    raise ValueError('Missing keyword argument "bg_host"')
 
-        if not bg_port:
+        self.bg_port = kwargs.get("bg_port") or kwargs.get("port")
+        if not self.bg_port:
             if len(args) > 1:
-                bg_port = args[1]
+                self.bg_port = args[1]
                 _deprecate(
                     "Heads up - passing bg_port as a positional argument is deprecated "
                     "and will be removed in version 4.0"
                 )
             else:
-                raise ValueError('Missing keyword argument "bg_port"')
+                if brewtils.plugin.CONFIG and brewtils.plugin.CONFIG.bg_port:
+                    self.bg_port = brewtils.plugin.CONFIG.bg_port
+                else:
+                    raise ValueError('Missing keyword argument "bg_port"')
 
+        self.bg_prefix = kwargs.get("bg_url_prefix") or kwargs.get("url_prefix")
         self.username = kwargs.get("username")
         self.password = kwargs.get("password")
         self.access_token = kwargs.get("access_token")
@@ -154,9 +160,9 @@ class RestClient(object):
         scheme = "https" if kwargs.get("ssl_enabled") else "http"
         self.base_url = "%s://%s:%s%s" % (
             scheme,
-            bg_host,
-            bg_port,
-            normalize_url_prefix(bg_prefix),
+            self.bg_host,
+            self.bg_port,
+            normalize_url_prefix(self.bg_prefix),
         )
         self.version_url = self.base_url + "version"
         self.config_url = self.base_url + "config"

@@ -61,13 +61,18 @@ class TestRestClient(object):
         with pytest.raises(ValueError):
             RestClient(**kwargs)
 
+    def test_args_from_config(self, monkeypatch):
+        monkeypatch.setattr(
+            brewtils.plugin, "CONFIG", Mock(bg_host="localhost", bg_port=3000)
+        )
+
+        client = RestClient()
+        assert client.bg_host == "localhost"
+        assert client.bg_port == 3000
+
     def test_non_versioned_uris(self, client, url_prefix):
         assert client.version_url == "http://host:80" + url_prefix + "version"
         assert client.config_url == "http://host:80" + url_prefix + "config"
-
-    @pytest.fixture(params=["system_url"])
-    def urls(self, client):
-        return client.param
 
     @pytest.mark.parametrize(
         "url,expected",

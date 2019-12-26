@@ -3,6 +3,7 @@ import logging
 import logging.config
 import threading
 
+from box import Box
 from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.config import load_config
@@ -28,10 +29,8 @@ from brewtils.rest.easy_client import EasyClient
 # This is what enables request nesting to work easily
 request_context = threading.local()
 
-# These are not thread-locals - they should be set in the Plugin __init__ and then never
-# touched. This allows us to do sanity checks when creating nested Requests.
-_HOST = ""
-_PORT = None
+# Global config, used to simplify BG client creation and sanity checks.
+CONFIG = None
 
 
 class Plugin(object):
@@ -167,6 +166,10 @@ class Plugin(object):
         # Load config before setting up logging so the log level is configurable
         self.config = load_config(**kwargs)
 
+        # Set the global config so it can be used by SystemClients and such
+        global CONFIG
+        CONFIG = Box(self.config.to_dict(), default_box=True, frozen_box=True)
+
         # If a logger is specified or the root logger already has handlers then we
         # assume that logging has already been configured
         self._custom_logger = True
@@ -178,10 +181,6 @@ class Plugin(object):
                 self._custom_logger = False
 
             self._logger = logging.getLogger(__name__)
-
-        global _HOST, _PORT
-        _HOST = self.config.bg_host
-        _PORT = self.config.bg_port
 
         self._client = client
         self._shutdown_event = threading.Event()

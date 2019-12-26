@@ -23,13 +23,6 @@ from brewtils.models import Instance, System, Command
 from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
-@pytest.fixture(autouse=True)
-def environ():
-    safe_copy = os.environ.copy()
-    yield
-    os.environ = safe_copy
-
-
 @pytest.fixture
 def ez_client(bg_system, bg_instance):
     return Mock(

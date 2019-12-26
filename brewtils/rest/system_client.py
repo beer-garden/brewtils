@@ -191,12 +191,7 @@ class SystemClient(object):
         max_concurrent = kwargs.get("max_concurrent", (cpu_count() or 1) * 5)
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
-        self._bg_host = kwargs.pop("bg_host", None) or kwargs.pop("host")
-        self._bg_port = kwargs.pop("bg_port", None) or kwargs.pop("port")
-
-        self._easy_client = EasyClient(
-            bg_host=self._bg_host, bg_port=self._bg_port, **kwargs
-        )
+        self._easy_client = EasyClient(**kwargs)
 
         self._loaded = False
         self._system = None
@@ -377,8 +372,9 @@ class SystemClient(object):
             return None
 
         if brewtils.plugin.CONFIG and (
-            brewtils.plugin.CONFIG.bg_host.upper() != self._bg_host.upper()
-            or brewtils.plugin.CONFIG.bg_port != self._bg_port
+            brewtils.plugin.CONFIG.bg_host.upper()
+            != self._easy_client.client.bg_host.upper()
+            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
         ):
             self._logger.warning(
                 "A parent request was found, but the destination beer-garden "

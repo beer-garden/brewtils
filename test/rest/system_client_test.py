@@ -69,6 +69,8 @@ def easy_client(system_1):
     mock = Mock(name="easy_client")
     mock.find_unique_system.return_value = system_1
     mock.find_systems.return_value = [system_1]
+    mock.client.bg_host = "localhost"
+    mock.client.bg_port = 3000
     return mock
 
 
@@ -89,18 +91,6 @@ def easy_client_patch(monkeypatch, easy_client):
     monkeypatch.setattr(
         brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
     )
-
-
-class TestCreate(object):
-    def test_alternate_kwargs(self):
-        client = SystemClient(host="localhost", port=3000, system_name="system")
-        assert client._bg_host == "localhost"
-        assert client._bg_port == 3000
-
-    @pytest.mark.parametrize("kwargs", [{"host": "localhost"}, {"port": 3000}])
-    def test_missing_kwargs(self, kwargs):
-        with pytest.raises(Exception):
-            SystemClient(**kwargs)
 
 
 class TestLoadBgSystem(object):

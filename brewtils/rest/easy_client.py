@@ -192,7 +192,7 @@ class EasyClient(object):
         """
         return self.client.get_version(**kwargs)
 
-    @wrap_response(parse_method="parse_logging_config", default_exc=RestConnectionError)
+    @wrap_response(parse_method="parse_logging_config", default_exc=FetchError)
     def get_logging_config(self, system_name):
         """Get logging configuration for a System
 
@@ -557,7 +557,7 @@ class EasyClient(object):
             SchemaParser.serialize_event(event), publishers=publishers
         )
 
-    @wrap_response(parse_method="parse_queue", parse_many=True)
+    @wrap_response(parse_method="parse_queue", parse_many=True, default_exc=FetchError)
     def get_queues(self):
         """Retrieve all queue information
 
@@ -565,7 +565,7 @@ class EasyClient(object):
         """
         return self.client.get_queues()
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_queue(self, queue_name):
         """Cancel and remove all Requests from a message queue
 
@@ -578,7 +578,7 @@ class EasyClient(object):
         """
         return self.client.delete_queue(queue_name)
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_all_queues(self):
         """Cancel and remove all Requests in all queues
 

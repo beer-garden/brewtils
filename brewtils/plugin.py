@@ -15,7 +15,7 @@ from brewtils.errors import (
     RequestProcessingError,
     RestConnectionError,
 )
-from brewtils.log import default_config
+from brewtils.log import default_config, convert_logging_config
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
     HTTPRequestUpdater,
@@ -216,6 +216,7 @@ class Plugin(object):
         )
 
     def _startup(self):
+        self._initialize_logging()
         self._logger.debug("About to start up plugin %s", self.unique_name)
 
         self._system = self._initialize_system()
@@ -243,6 +244,26 @@ class Plugin(object):
             )
 
         self._logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
+
+    def _initialize_logging(self):
+        """Configure logging with Beer-garden's configuration for this plugin.
+
+        This method will ask Beer-garden for a logging configuration specific to this
+        plugin and will apply that configuration to the logging module.
+
+        Note that this method will do nothing if the logging module's configuration was
+        already set or a logger kwarg was given during Plugin construction.
+
+        Returns:
+            None
+
+        """
+        if self._custom_logger:
+            self._logger.debug("Skipping logging init: custom logger detected")
+            return
+
+        bg_log_config = self._ez_client.get_logging_config(self._system.name)
+        logging.config.dictConfig(convert_logging_config(bg_log_config))
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info

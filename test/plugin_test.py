@@ -284,6 +284,27 @@ class TestShutdown(object):
         assert len(caplog.records) == 1
 
 
+class TestInitializeLogging(object):
+    @pytest.fixture(autouse=True)
+    def config_mock(self, monkeypatch):
+        dict_config = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+        return dict_config
+
+    def test_normal(self, plugin, ez_client, config_mock, bg_logging_config):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.return_value = bg_logging_config
+
+        plugin._initialize_logging()
+        assert config_mock.called is True
+
+    def test_custom_logger(self, plugin, ez_client, config_mock):
+        plugin._custom_logger = True
+
+        plugin._initialize_logging()
+        assert config_mock.called is False
+
+
 class TestInitializeSystem(object):
     def test_new_system(self, plugin, ez_client, bg_system, bg_instance):
         ez_client.find_unique_system.return_value = None

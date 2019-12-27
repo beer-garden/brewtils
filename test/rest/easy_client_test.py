@@ -6,6 +6,7 @@ import pytest
 import requests.exceptions
 from mock import ANY, Mock
 
+import brewtils.rest.easy_client
 from brewtils.errors import (
     FetchError,
     ValidationError,
@@ -25,8 +26,10 @@ from brewtils.schema_parser import SchemaParser
 
 
 @pytest.fixture
-def parser():
-    return Mock(name="parser", spec=SchemaParser)
+def parser(monkeypatch):
+    parse_mock = Mock(name="parser", spec=SchemaParser)
+    monkeypatch.setattr(brewtils.rest.easy_client, "SchemaParser", parse_mock)
+    return parse_mock
 
 
 @pytest.fixture

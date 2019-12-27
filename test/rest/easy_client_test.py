@@ -233,7 +233,7 @@ class TestInstances(object):
             rest_client.get_instance.assert_called_once_with("id")
 
             assert len(w) == 1
-            assert w[0].category == FutureWarning
+            assert w[0].category == DeprecationWarning
 
     def test_initialize(self, client, rest_client, success):
         rest_client.patch_instance.return_value = success

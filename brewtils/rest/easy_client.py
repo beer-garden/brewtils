@@ -358,28 +358,22 @@ class EasyClient(object):
         return self.client.get_instance(instance_id)
 
     def get_instance_status(self, instance_id):
-        """Get an Instance
-
-        WARNING: This method currently returns the Instance, not the Instance's status.
-        This behavior will be corrected in 3.0.
-
-        To prepare for this change please use get_instance() instead of this method.
+        """Get an Instance's status
 
         Args:
             instance_id: The Id
 
         Returns:
-            The status
+            The Instance's status
 
         """
         warnings.warn(
-            "This method currently returns the Instance, not the Instance's status. "
-            "This behavior will be corrected in 3.0. To prepare please use "
-            "get_instance() instead of this method.",
-            FutureWarning,
+            "This method is deprecated and scheduled to be removed in 4.0. "
+            "To prepare please use get_instance() instead.",
+            DeprecationWarning,
         )
 
-        return self.get_instance(instance_id)
+        return self.get_instance(instance_id).status
 
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=SaveError

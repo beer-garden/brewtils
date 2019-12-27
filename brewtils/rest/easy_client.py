@@ -640,7 +640,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
 
     def resume_job(self, job_id):
         """Resume a Job
@@ -652,7 +652,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError

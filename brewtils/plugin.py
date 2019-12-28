@@ -168,7 +168,7 @@ class Plugin(object):
 
         # Set the global config so it can be used by SystemClients and such
         global CONFIG
-        CONFIG = Box(self._config.to_dict(), default_box=True, frozen_box=True)
+        CONFIG = Box(self._config.to_dict(), default_box=True)
 
         # If a logger is specified or the root logger already has handlers then we
         # assume that logging has already been configured

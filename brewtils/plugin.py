@@ -30,7 +30,7 @@ from brewtils.rest.easy_client import EasyClient
 request_context = threading.local()
 
 # Global config, used to simplify BG client creation and sanity checks.
-CONFIG = None
+CONFIG = Box(default_box=True)
 
 
 class Plugin(object):

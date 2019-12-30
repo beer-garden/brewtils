@@ -163,8 +163,8 @@ class Plugin(object):
             attempts. Will double on subsequent attempts until reaching mq_max_timeout.
     """
 
-    def __init__(self, client, system=None, logger=None, metadata=None, **kwargs):
-        # Load config before setting up logging so level is configurable
+    def __init__(self, client=None, system=None, logger=None, metadata=None, **kwargs):
+        # Load config before setting up logging so the log level is configurable
         self.config = load_config(**kwargs)
 
         # If a logger is specified or the root logger already has handlers then we
@@ -194,6 +194,12 @@ class Plugin(object):
         self._request_processor = None
 
     def run(self):
+        if not self._client:
+            raise AttributeError(
+                "Unable to start a Plugin without a Client. Please set the 'client' "
+                "attribute to an instance of a class decorated with @brewtils.system"
+            )
+
         self._startup()
         self._logger.info("Plugin %s has started", self.unique_name)
 
@@ -206,6 +212,24 @@ class Plugin(object):
 
         self._shutdown()
         self._logger.info("Plugin %s has terminated", self.unique_name)
+
+    @property
+    def client(self):
+        return self._client
+
+    @client.setter
+    def client(self, new_client):
+        if self._client:
+            raise AttributeError("Sorry, you can't change a plugin's client once set")
+        self._client = new_client
+
+    @property
+    def system(self):
+        return self._system
+
+    @property
+    def instance(self):
+        return self._instance
 
     @property
     def unique_name(self):
@@ -388,24 +412,14 @@ class Plugin(object):
         return admin_processor, request_processor
 
     def _start(self):
-        """Handle start message by marking this instance as running.
-
-        :return: Success output message
-        """
+        """Handle start Request by marking this plugin as running"""
         self._instance = self._ez_client.update_instance_status(
             self._instance.id, "RUNNING"
         )
 
-        return "Successfully started plugin"
-
     def _stop(self):
-        """Handle stop message by marking this instance as stopped.
-
-        :return: Success output message
-        """
+        """Handle stop Request by setting the shutdown event"""
         self._shutdown_event.set()
-
-        return "Successfully stopped plugin"
 
     def _status(self):
         """Handle status message by sending a heartbeat."""
@@ -470,7 +484,7 @@ class Plugin(object):
                 description=description,
                 version=version,
                 metadata=metadata,
-                commands=getattr(self._client, "_bg_commands"),
+                commands=getattr(self._client, "_bg_commands", []),
                 instances=[Instance(name=self.config.instance_name)],
                 max_instances=self.config.max_instances,
                 icon_name=self.config.icon_name,
@@ -484,14 +498,14 @@ class Plugin(object):
         if not system.version:
             raise ValidationError("Plugin system must have a version")
 
-        client_name = getattr(self._client, "_bg_name")
+        client_name = getattr(self._client, "_bg_name", None)
         if client_name and client_name != system.name:
             raise ValidationError(
                 "System name '%s' doesn't match name from client decorator: "
                 "@system(bg_name=%s)" % (system.name, client_name)
             )
 
-        client_version = getattr(self._client, "_bg_version")
+        client_version = getattr(self._client, "_bg_version", None)
         if client_version and client_version != system.version:
             raise ValidationError(
                 "System version '%s' doesn't match version from client decorator: "
@@ -586,21 +600,6 @@ class Plugin(object):
                 "client_timeout",
             )
         }
-
-    @property
-    def client(self):
-        _deprecate("client attribute has been renamed to _client")
-        return self._client
-
-    @property
-    def system(self):
-        _deprecate("system attribute has been renamed to _system")
-        return self._system
-
-    @property
-    def instance(self):
-        _deprecate("instance attribute has been renamed to _instance")
-        return self._instance
 
     @property
     def metadata(self):

@@ -19,7 +19,7 @@ class TestGetConnectionInfo(object):
             "bg_port": 1234,
             "bg_url_prefix": "/beer/",
             "ssl_enabled": False,
-            "api_version": None,
+            "api_version": 1,
             "ca_cert": "ca_cert",
             "client_cert": "client_cert",
             "ca_verify": True,

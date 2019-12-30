@@ -4,10 +4,12 @@ import json
 import warnings
 
 import pytest
+from box import Box
 from mock import Mock, MagicMock, ANY
 
 import brewtils.rest
 from brewtils.rest.client import RestClient
+from yapconf.exceptions import YapconfItemError
 
 
 class TestRestClient(object):
@@ -22,7 +24,11 @@ class TestRestClient(object):
     @pytest.fixture
     def client(self, session_mock, url_prefix):
         client = RestClient(
-            bg_host="host", bg_port=80, api_version=1, url_prefix=url_prefix
+            bg_host="host",
+            bg_port=80,
+            api_version=1,
+            url_prefix=url_prefix,
+            ssl_enabled=False,
         )
         client.session = session_mock
 
@@ -45,25 +51,22 @@ class TestRestClient(object):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            test_client = RestClient("host", 80, api_version=1, url_prefix=url_prefix)
+            test_client = RestClient(
+                "host", 80, api_version=1, url_prefix=url_prefix, ssl_enabled=False
+            )
             assert test_client.version_url == client.version_url
             assert len(w) == 2
 
     @pytest.mark.parametrize(
-        "kwargs",
-        [
-            ({"bg_host": "host"}),
-            ({"bg_port": 80}),
-            ({"bg_host": "host", "bg_port": 80, "api_version": -1}),
-        ],
+        "kwargs", [({"bg_port": 80}), ({"bg_host": "host", "api_version": -1})],
     )
     def test_bad_args(self, kwargs):
-        with pytest.raises(ValueError):
+        with pytest.raises(YapconfItemError):
             RestClient(**kwargs)
 
     def test_args_from_config(self, monkeypatch):
         monkeypatch.setattr(
-            brewtils.plugin, "CONFIG", Mock(bg_host="localhost", bg_port=3000)
+            brewtils.plugin, "CONFIG", Box(bg_host="localhost", bg_port=3000)
         )
 
         client = RestClient()

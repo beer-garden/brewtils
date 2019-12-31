@@ -4,7 +4,6 @@ import json
 import warnings
 
 import pytest
-from box import Box
 from mock import Mock, MagicMock, ANY
 
 import brewtils.rest
@@ -65,9 +64,8 @@ class TestRestClient(object):
             RestClient(**kwargs)
 
     def test_args_from_config(self, monkeypatch):
-        monkeypatch.setattr(
-            brewtils.plugin, "CONFIG", Box(bg_host="localhost", bg_port=3000)
-        )
+        brewtils.plugin.CONFIG.bg_host = "localhost"
+        brewtils.plugin.CONFIG.bg_port = 3000
 
         client = RestClient()
         assert client.bg_host == "localhost"

@@ -3,7 +3,6 @@ import logging
 from concurrent.futures import wait
 
 import pytest
-from box import Box
 from mock import call, Mock, PropertyMock
 from pytest_lazyfixture import lazy_fixture
 
@@ -170,9 +169,8 @@ class TestCreateRequest(object):
         monkeypatch.setattr(
             brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(
-            brewtils.plugin, "CONFIG", Box(bg_host="localhost", bg_port=3000)
-        )
+        brewtils.plugin.CONFIG.bg_host = "localhost"
+        brewtils.plugin.CONFIG.bg_port = 3000
 
         client.command_1()
 
@@ -187,9 +185,8 @@ class TestCreateRequest(object):
         monkeypatch.setattr(
             brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(
-            brewtils.plugin, "CONFIG", Box(bg_host="OTHER_HOST", bg_port=3000)
-        )
+        brewtils.plugin.CONFIG.bg_host = "OTHER_HOST"
+        brewtils.plugin.CONFIG.bg_port = 3000
 
         client.command_1()
 

@@ -31,7 +31,7 @@ class SchemaParser(object):
         "DateTriggerSchema": brewtils.models.DateTrigger,
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
         "CronTriggerSchema": brewtils.models.CronTrigger,
-        "NamespaceSchema": brewtils.models.Namespace
+        "NamespaceSchema": brewtils.models.Namespace,
     }
 
     logger = logging.getLogger(__name__)

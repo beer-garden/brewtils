@@ -451,7 +451,7 @@ class RestClient(object):
         return self.session.get(self.file_url + file_id, **kwargs)
 
     @enable_auth
-    def post_files(self, files):
+    def post_files(self, file_dict):
         """Performs a POST on the file URL.
 
         Files should be in the form:
@@ -459,7 +459,7 @@ class RestClient(object):
             {"identifier": ("desired_filename", open("filename", "rb")) }
 
         Args:
-            files: Dictionary of filename to files
+            file_dict: Dictionary of filename to files
 
         Returns:
             Response to the request.
@@ -467,13 +467,13 @@ class RestClient(object):
         """
 
         # This is here in case we have not authenticated yet. Without this
-        # code, it is possible for us to perform teh POST, which will call
+        # code, it is possible for us to perform the POST, which will call
         # read on each of the files, that method fails with a 4XX, we then
         # authenticate and try again, only to post an empty file.
-        for info in files.values():
+        for info in file_dict.values():
             info[1].seek(0)
 
-        return self.session.post(self.file_url, files=files)
+        return self.session.post(self.file_url, files=file_dict)
 
     @enable_auth
     def get_user(self, user_identifier):

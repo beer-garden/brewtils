@@ -535,14 +535,8 @@ def _resolve_display_modifiers(
 
 
 def _format_type(param_type):
-    if param_type in [str, bytes]:
-        # Python 3 vs 2 differences. If we are in Python 2,
-        # there is no difference between str and bytes, so
-        # just assume they want string.
-        if str is not bytes and param_type == bytes:
-            return "Bytes"
-        else:
-            return "String"
+    if param_type == str:
+        return "String"
     elif param_type == int:
         return "Integer"
     elif param_type == float:

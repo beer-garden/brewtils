@@ -84,12 +84,12 @@ format: ## Run black formatter in-line
 # Linting
 lint: ## check style with flake8
 	flake8 $(MODULE_NAME) $(TEST_DIR)
-	black --check $(MODULE_NAME) $(PYTHON_TEST_DIR)
+	black --check $(MODULE_NAME) $(TEST_DIR)
 
 
 # Testing / Coverage
 test-python: ## run tests quickly with the default Python
-	pytest --tb=no $(TEST_DIR)
+	pytest $(TEST_DIR)
 
 test-tox: ## run tests on every Python version with tox
 	tox
@@ -97,7 +97,7 @@ test-tox: ## run tests on every Python version with tox
 test: test-python ## alias of test-python
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source $(MODULE_NAME) -m pytest
+	coverage run --source $(MODULE_NAME) -m pytest --tb=no
 	coverage report -m
 	coverage html
 

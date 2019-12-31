@@ -2,8 +2,13 @@
 
 import json
 import logging
+import warnings
+from functools import partial
 
 from six import string_types
+
+# Helper to make deprecation easy
+_deprecate = partial(warnings.warn, category=DeprecationWarning, stacklevel=2)
 
 
 class BrewtilsException(Exception):
@@ -226,17 +231,6 @@ class AuthorizationRequired(RestClientError):
 WaitExceededError = TimeoutExceededError
 ConnectionTimeoutError = TimeoutExceededError
 
-BrewmasterModelError = ModelError
-BrewmasterModelValidationError = ModelValidationError
-BrewmasterRestError = RestError
-BrewmasterRestClientError = RestClientError
-BrewmasterRestServerError = RestServerError
-BrewmasterConnectionError = RestConnectionError
-BrewmasterTimeoutError = ConnectionTimeoutError
-BrewmasterFetchError = FetchError
-BrewmasterValidationError = ValidationError
-BrewmasterSaveError = SaveError
-BrewmasterDeleteError = DeleteError
 BGConflictError = ConflictError
 BGRequestFailedError = RequestFailedError
 BGNotFoundError = NotFoundError

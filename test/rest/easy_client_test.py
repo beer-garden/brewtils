@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import unittest
 import warnings
 
 import pytest
 import requests.exceptions
-from mock import ANY, Mock, patch
+from mock import ANY, Mock
 
+import brewtils.rest.easy_client
 from brewtils.errors import (
     FetchError,
     ValidationError,
-    SaveError,
     DeleteError,
     RestConnectionError,
     NotFoundError,
@@ -18,850 +17,401 @@ from brewtils.errors import (
     RestError,
     WaitExceededError,
 )
-from brewtils.models import System
-from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
+from brewtils.rest.easy_client import (
+    get_easy_client,
+    handle_response_failure,
+    EasyClient,
+)
 from brewtils.schema_parser import SchemaParser
 
 
-class TestEasyClient(object):
-    @pytest.fixture
-    def parser(self):
-        return Mock(name="parser", spec=SchemaParser)
+@pytest.fixture
+def parser(monkeypatch):
+    parse_mock = Mock(name="parser", spec=SchemaParser)
+    monkeypatch.setattr(brewtils.rest.easy_client, "SchemaParser", parse_mock)
+    return parse_mock
 
-    @pytest.fixture
-    def rest_client(self):
-        return Mock()
 
-    @pytest.fixture
-    def client(self, parser, rest_client):
-        client = EasyClient(host="localhost", port="3000", api_version=1, parser=parser)
-        client.client = rest_client
-        return client
+@pytest.fixture
+def rest_client():
+    return Mock()
 
-    @pytest.fixture
-    def success(self):
-        return Mock(
-            name="success", ok=True, status_code=200, json=Mock(return_value="payload")
-        )
 
-    @pytest.fixture
-    def client_error(self):
-        return Mock(ok=False, status_code=400, json=Mock(return_value="payload"))
+@pytest.fixture
+def client(parser, rest_client):
+    client = EasyClient(host="localhost", port="3000", api_version=1)
+    client.parser = parser
+    client.client = rest_client
+    return client
 
-    @pytest.fixture
-    def not_found(self):
-        return Mock(ok=False, status_code=404, json=Mock(return_value="payload"))
 
-    @pytest.fixture
-    def wait_exceeded(self):
-        return Mock(ok=False, status_code=408, json=Mock(return_value="payload"))
+def test_get_easy_client():
+    client = get_easy_client(bg_host="bg_host")
+    assert isinstance(client, EasyClient)
 
-    @pytest.fixture
-    def conflict(self):
-        return Mock(ok=False, status_code=409, json=Mock(return_value="payload"))
 
-    @pytest.fixture
-    def server_error(self):
-        return Mock(ok=False, status_code=500, json=Mock(return_value="payload"))
+class TestHandleResponseFailure(object):
+    def test_not_found_allowed(self, not_found):
+        assert handle_response_failure(not_found, raise_404=False) is None
 
-    @pytest.fixture
-    def connection_error(self):
-        return Mock(ok=False, status_code=503, json=Mock(return_value="payload"))
+    def test_not_found_error(self, not_found):
+        with pytest.raises(NotFoundError):
+            handle_response_failure(not_found)
 
-    def test_connect(self, client):
+    def test_wait_exceeded_error(self, wait_exceeded):
+        with pytest.raises(WaitExceededError):
+            handle_response_failure(wait_exceeded)
+
+    def test_conflict_error(self, conflict):
+        with pytest.raises(ConflictError):
+            handle_response_failure(conflict)
+
+    def test_validation_error(self, client_error):
+        with pytest.raises(ValidationError):
+            handle_response_failure(client_error)
+
+    def test_connection_error(self, connection_error):
+        with pytest.raises(RestConnectionError):
+            handle_response_failure(connection_error)
+
+    def test_default_error(self, server_error):
+        with pytest.raises(RestError):
+            handle_response_failure(server_error)
+
+
+class TestConnect(object):
+    """Test the can_connect method
+
+    Actually test failure cases here as this method isn't decorated with @wrap_response
+    """
+
+    def test_success(self, client):
         assert client.can_connect()
 
-    def test_connect_fail(self, client, rest_client):
+    def test_fail(self, client, rest_client):
         rest_client.get_config.side_effect = requests.exceptions.ConnectionError
         assert not client.can_connect()
 
-    def test_connect_error(self, client, rest_client):
+    def test_error(self, client, rest_client):
         rest_client.get_config.side_effect = requests.exceptions.SSLError
         with pytest.raises(requests.exceptions.SSLError):
             client.can_connect()
 
-    def test_get_version(self, client, rest_client, success):
-        rest_client.get_version.return_value = success
-        assert client.get_version() == success
 
-    def test_get_version_error(self, client, rest_client, server_error):
-        rest_client.get_version.return_value = server_error
+def test_get_version(client, rest_client, success):
+    rest_client.get_version.return_value = success
+    assert client.get_version() == success
+
+
+def test_get_logging_config(client, rest_client, parser, success):
+    rest_client.get_logging_config.return_value = success
+
+    output = client.get_logging_config("system")
+    parser.parse_logging_config.assert_called_with(
+        success.json.return_value, many=False
+    )
+    assert output == parser.parse_logging_config.return_value
+
+
+class TestFindSystems(object):
+    def test_success(self, client, rest_client, success):
+        rest_client.get_systems.return_value = success
+        client.find_systems()
+        assert rest_client.get_systems.called is True
+
+    def test_with_params(self, client, rest_client, success):
+        rest_client.get_systems.return_value = success
+        client.find_systems(name="foo")
+        rest_client.get_systems.assert_called_once_with(name="foo")
+
+
+class TestFindUniqueSystem(object):
+    def test_by_id(self, monkeypatch, client, bg_system):
+        monkeypatch.setattr(client, "_find_system_by_id", Mock(return_value=bg_system))
+        assert client.find_unique_system(id=bg_system.id) == bg_system
+
+    def test_none(self, monkeypatch, client, bg_system):
+        monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
+        assert client.find_unique_system() is None
+
+    def test_one(self, monkeypatch, client, bg_system):
+        monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
+        assert client.find_unique_system() == bg_system
+
+    def test_multiple(self, monkeypatch, client):
+        monkeypatch.setattr(client, "find_systems", Mock(return_value=["s1", "s2"]))
         with pytest.raises(FetchError):
-            client.get_version()
-
-    def test_get_logging_config(self, client, rest_client, parser, success):
-        rest_client.get_logging_config.return_value = success
-
-        output = client.get_logging_config("system")
-        parser.parse_logging_config.assert_called_with(
-            success.json.return_value, many=False
-        )
-        assert output == parser.parse_logging_config.return_value
-
-
-class EasyClientTest(unittest.TestCase):
-    def setUp(self):
-        self.parser = Mock(name="parser", spec=SchemaParser)
-        self.client = EasyClient(
-            host="localhost", port="3000", api_version=1, parser=self.parser
-        )
-        self.fake_success_response = Mock(
-            ok=True, status_code=200, json=Mock(return_value="payload")
-        )
-        self.fake_client_error_response = Mock(
-            ok=False, status_code=400, json=Mock(return_value="payload")
-        )
-        self.fake_not_found_error_response = Mock(
-            ok=False, status_code=404, json=Mock(return_value="payload")
-        )
-        self.fake_wait_exceeded_response = Mock(
-            ok=False, status_code=408, json=Mock(return_value="payload")
-        )
-        self.fake_conflict_error_response = Mock(
-            ok=False, status_code=409, json=Mock(return_value="payload")
-        )
-        self.fake_server_error_response = Mock(
-            ok=False, status_code=500, json=Mock(return_value="payload")
-        )
-        self.fake_connection_error_response = Mock(
-            ok=False, status_code=503, json=Mock(return_value="payload")
-        )
-
-    @patch("brewtils.rest.client.RestClient.get_logging_config")
-    def test_get_logging_config_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(
-            RestConnectionError, self.client.get_logging_config, "system_name"
-        )
-
-    # Find systems
-    @patch("brewtils.rest.client.RestClient.get_systems")
-    def test_find_systems_call_get_systems(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.client.find_systems()
-        mock_get.assert_called()
-
-    @patch("brewtils.rest.client.RestClient.get_systems")
-    def test_find_systems_with_params_get_systems(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.client.find_systems(name="foo")
-        mock_get.assert_called_with(name="foo")
-
-    @patch("brewtils.rest.client.RestClient.get_systems")
-    def test_find_systems_server_error(self, mock_get):
-        mock_get.return_value = self.fake_server_error_response
-        self.assertRaises(FetchError, self.client.find_systems)
-
-    @patch("brewtils.rest.client.RestClient.get_systems")
-    def test_find_systems_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.find_systems)
-
-    @patch("brewtils.rest.client.RestClient.get_systems")
-    def test_find_systems_call_parser(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.client.find_systems()
-        self.parser.parse_system.assert_called_with("payload", many=True)
-
-    @patch("brewtils.rest.easy_client.EasyClient._find_system_by_id")
-    def test_find_unique_system_by_id(self, find_mock):
-        system_mock = Mock()
-        find_mock.return_value = system_mock
-
-        self.assertEqual(system_mock, self.client.find_unique_system(id="id"))
-        find_mock.assert_called_with("id")
-
-    def test_find_unique_system_none(self):
-        self.client.find_systems = Mock(return_value=None)
-        self.assertIsNone(self.client.find_unique_system())
-
-    def test_find_unique_system_one(self):
-        self.client.find_systems = Mock(return_value=["system1"])
-        self.assertEqual("system1", self.client.find_unique_system())
-
-    def test_find_unique_system_multiple(self):
-        self.client.find_systems = Mock(return_value=["system1", "system2"])
-        self.assertRaises(FetchError, self.client.find_unique_system)
-
-    @patch("brewtils.rest.client.RestClient.get_system")
-    def test_find_system_by_id(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.parser.parse_system = Mock(return_value="system")
-
-        self.assertEqual(self.client._find_system_by_id("id", foo="bar"), "system")
-        self.parser.parse_system.assert_called_with("payload", many=False)
-        mock_get.assert_called_with("id", foo="bar")
-
-    @patch("brewtils.rest.client.RestClient.get_system")
-    def test_find_system_by_id_404(self, mock_get):
-        mock_get.return_value = self.fake_not_found_error_response
-
-        self.assertIsNone(self.client._find_system_by_id("id", foo="bar"))
-        mock_get.assert_called_with("id", foo="bar")
-
-    @patch("brewtils.rest.client.RestClient.get_system")
-    def test_find_system_by_id_server_error(self, mock_get):
-        mock_get.return_value = self.fake_server_error_response
-
-        self.assertRaises(FetchError, self.client._find_system_by_id, "id")
-        mock_get.assert_called_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_system")
-    def test_find_system_by_id_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client._find_system_by_id, "id")
-
-    # Create system
-    @patch("brewtils.rest.client.RestClient.post_systems")
-    def test_create_system(self, mock_post):
-        mock_post.return_value = self.fake_success_response
-        self.parser.serialize_system = Mock(return_value="json_system")
-        self.parser.parse_system = Mock(return_value="system_response")
-
-        self.assertEqual("system_response", self.client.create_system("system"))
-        self.parser.serialize_system.assert_called_with("system")
-        self.parser.parse_system.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.client.RestClient.post_systems")
-    def test_create_system_client_error(self, mock_post):
-        mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.create_system, "system")
-
-    @patch("brewtils.rest.client.RestClient.post_systems")
-    def test_create_system_server_error(self, mock_post):
-        mock_post.return_value = self.fake_server_error_response
-        self.assertRaises(SaveError, self.client.create_system, "system")
-
-    @patch("brewtils.rest.client.RestClient.post_systems")
-    def test_create_system_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.create_system, "system")
-
-    # Update request
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system(self, mock_patch):
-        mock_patch.return_value = self.fake_success_response
-        self.parser.serialize_command = Mock(return_value="new_commands")
-
-        self.client.update_system("id", new_commands="new_commands")
-        self.parser.parse_system.assert_called_with("payload", many=False)
-        self.assertEqual(1, mock_patch.call_count)
-        payload = mock_patch.call_args[0][1]
-        self.assertNotEqual(-1, payload.find("new_commands"))
-
-    @patch("brewtils.rest.easy_client.PatchOperation")
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_add_instance(self, mock_patch, MockPatch):
-        MockPatch.return_value = "patch"
-        mock_patch.return_value = self.fake_success_response
-        self.parser.serialize_instance = Mock(return_value="new_instance")
-
-        self.client.update_system("id", add_instance="new_instance")
-        MockPatch.assert_called_with("add", "/instance", "new_instance")
-        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_system.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.easy_client.PatchOperation")
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_metadata(self, mock_patch, MockPatch):
-        MockPatch.return_value = "patch"
-        mock_patch.return_value = self.fake_success_response
-        metadata = {"foo": "bar"}
-
-        self.client.update_system("id", new_commands=None, metadata=metadata)
-        MockPatch.assert_called_with("update", "/metadata", {"foo": "bar"})
-        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_system.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.easy_client.PatchOperation")
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_kwargs(self, mock_patch, MockPatch):
-        MockPatch.return_value = "patch"
-        mock_patch.return_value = self.fake_success_response
-
-        self.client.update_system("id", new_commands=None, display_name="foo")
-        MockPatch.assert_called_with("replace", "/display_name", "foo")
-        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_system.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_client_error(self, mock_patch):
-        mock_patch.return_value = self.fake_client_error_response
-
-        self.assertRaises(ValidationError, self.client.update_system, "id")
-        mock_patch.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_invalid_id(self, mock_patch):
-        mock_patch.return_value = self.fake_not_found_error_response
-
-        self.assertRaises(NotFoundError, self.client.update_system, "id")
-        mock_patch.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_conflict(self, mock_patch):
-        mock_patch.return_value = self.fake_conflict_error_response
-
-        self.assertRaises(ConflictError, self.client.update_system, "id")
-        mock_patch.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_server_error(self, mock_patch):
-        mock_patch.return_value = self.fake_server_error_response
-
-        self.assertRaises(SaveError, self.client.update_system, "id")
-        mock_patch.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_system")
-    def test_update_system_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.update_system, "system")
-
-    # Remove system
-    @patch("brewtils.rest.easy_client.EasyClient._remove_system_by_id")
-    @patch("brewtils.rest.easy_client.EasyClient.find_unique_system")
-    def test_remove_system(self, find_mock, remove_mock):
-        find_mock.return_value = System(id="id")
-        remove_mock.return_value = "delete_response"
-
-        self.assertEqual(
-            "delete_response", self.client.remove_system(search="search params")
-        )
-        find_mock.assert_called_once_with(search="search params")
-        remove_mock.assert_called_once_with("id")
-
-    @patch("brewtils.rest.easy_client.EasyClient._remove_system_by_id")
-    @patch("brewtils.rest.easy_client.EasyClient.find_unique_system")
-    def test_remove_system_none_found(self, find_mock, remove_mock):
-        find_mock.return_value = None
-
-        self.assertRaises(FetchError, self.client.remove_system, search="search params")
-        self.assertFalse(remove_mock.called)
-        find_mock.assert_called_once_with(search="search params")
-
-    @patch("brewtils.rest.client.RestClient.delete_system")
-    def test_remove_system_by_id(self, mock_delete):
-        mock_delete.return_value = self.fake_success_response
-
-        self.assertTrue(self.client._remove_system_by_id("foo"))
-        mock_delete.assert_called_with("foo")
-
-    @patch("brewtils.rest.client.RestClient.delete_system")
-    def test_remove_system_by_id_client_error(self, mock_remove):
-        mock_remove.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client._remove_system_by_id, "foo")
-
-    @patch("brewtils.rest.client.RestClient.delete_system")
-    def test_remove_system_by_id_server_error(self, mock_remove):
-        mock_remove.return_value = self.fake_server_error_response
-        self.assertRaises(DeleteError, self.client._remove_system_by_id, "foo")
-
-    @patch("brewtils.rest.client.RestClient.delete_system")
-    def test_remove_system_by_id_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client._remove_system_by_id, "foo")
-
-    def test_remove_system_by_id_none(self):
-        self.assertRaises(DeleteError, self.client._remove_system_by_id, None)
-
-    # Initialize instance
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_initialize_instance(self, request_mock):
-        request_mock.return_value = self.fake_success_response
-
-        self.client.initialize_instance("id")
-        self.assertTrue(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_initialize_instance_client_error(self, request_mock):
-        request_mock.return_value = self.fake_client_error_response
-
-        self.assertRaises(ValidationError, self.client.initialize_instance, "id")
-        self.assertFalse(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_initialize_instance_server_error(self, request_mock):
-        request_mock.return_value = self.fake_server_error_response
-
-        self.assertRaises(SaveError, self.client.initialize_instance, "id")
-        self.assertFalse(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_initialize_instance_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.initialize_instance, "id")
-
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance(self, request_mock):
-        request_mock.return_value = self.fake_success_response
-
-        self.client.get_instance("id")
-        self.assertTrue(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_client_error(self, request_mock):
-        request_mock.return_value = self.fake_client_error_response
-
-        self.assertRaises(ValidationError, self.client.get_instance, "id")
-        self.assertFalse(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_server_error(self, request_mock):
-        request_mock.return_value = self.fake_server_error_response
-
-        self.assertRaises(FetchError, self.client.get_instance, "id")
-        self.assertFalse(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.get_instance, "id")
-
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status(self, request_mock):
-        request_mock.return_value = self.fake_success_response
+            client.find_unique_system()
+
+
+class TestFindSystemById(object):
+    def test_success(self, client, rest_client, success):
+        rest_client.get_system.return_value = success
+        assert client._find_system_by_id("id")
+
+    def test_404(self, client, rest_client, not_found):
+        rest_client.get_system.return_value = not_found
+        assert client._find_system_by_id("id") is None
+
+
+def test_create_system(client, rest_client, success, bg_system):
+    rest_client.post_systems.return_value = success
+    client.create_system(bg_system)
+    assert rest_client.post_systems.called is True
+
+
+class TestUpdateSystem(object):
+    def test_new_commands(self, client, rest_client, parser, success, bg_command):
+        rest_client.patch_system.return_value = success
+
+        client.update_system("id", new_commands=[bg_command])
+        operation = parser.serialize_patch.call_args[0][0][0]
+        assert operation.path == "/commands"
+
+    def test_add_instance(self, client, rest_client, parser, success, bg_instance):
+        rest_client.patch_system.return_value = success
+
+        client.update_system("id", add_instance=bg_instance)
+        operation = parser.serialize_patch.call_args[0][0][0]
+        assert operation.path == "/instance"
+
+    def test_update_metadata(self, client, rest_client, parser, success):
+        rest_client.patch_system.return_value = success
+
+        client.update_system("id", metadata={"hello": "world"})
+        operation = parser.serialize_patch.call_args[0][0][0]
+        assert operation.path == "/metadata"
+
+    def test_update_kwargs(self, client, rest_client, parser, success):
+        rest_client.patch_system.return_value = success
+
+        client.update_system("id", display_name="foo")
+        operation = parser.serialize_patch.call_args[0][0][0]
+        assert operation.path == "/display_name"
+
+
+class TestRemoveSystem(object):
+    def test_params(self, monkeypatch, client, rest_client, success, bg_system):
+        monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
+        rest_client.get_system.return_value = success
+
+        assert client.remove_system(search="params") is True
+        rest_client.delete_system.assert_called_once_with(bg_system.id)
+
+    def test_not_found(self, monkeypatch, client, rest_client, success, bg_system):
+        monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
+        rest_client.get_system.return_value = success
+
+        with pytest.raises(FetchError):
+            client.remove_system(search="params")
+
+    def test_remove_system_by_id(self, client, rest_client, success, bg_system):
+        rest_client.delete_system.return_value = success
+
+        assert client._remove_system_by_id(bg_system.id)
+
+    def test_remove_system_by_id_none(self, client):
+        with pytest.raises(DeleteError):
+            client._remove_system_by_id(None)
+
+
+class TestInstances(object):
+    def test_get(self, client, rest_client, success):
+        rest_client.get_instance.return_value = success
+
+        client.get_instance("id")
+        rest_client.get_instance.assert_called_once_with("id")
+        assert rest_client.get_instance.called is True
+
+    def test_get_status(self, client, rest_client, success):
+        rest_client.get_instance.return_value = success
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            self.client.get_instance_status("id")
-            self.assertTrue(self.parser.parse_instance.called)
-            request_mock.assert_called_once_with("id")
+            client.get_instance_status("id")
+            rest_client.get_instance.assert_called_once_with("id")
 
-            self.assertEqual(1, len(w))
-            self.assertEqual(w[0].category, FutureWarning)
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status_client_error(self, request_mock):
-        request_mock.return_value = self.fake_client_error_response
+    def test_initialize(self, client, rest_client, success):
+        rest_client.patch_instance.return_value = success
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        client.initialize_instance("id")
+        rest_client.patch_instance.assert_called_once_with("id", ANY)
+        assert rest_client.patch_instance.called is True
 
-            self.assertRaises(ValidationError, self.client.get_instance_status, "id")
-            self.assertFalse(self.parser.parse_instance.called)
-            request_mock.assert_called_once_with("id")
+    def test_update_status(self, client, rest_client, success):
+        rest_client.patch_instance.return_value = success
 
-            self.assertEqual(1, len(w))
-            self.assertEqual(w[0].category, FutureWarning)
+        client.update_instance_status("id", "status")
+        rest_client.patch_instance.assert_called_once_with("id", ANY)
 
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status_server_error(self, request_mock):
-        request_mock.return_value = self.fake_server_error_response
+    def test_heartbeat(self, client, rest_client, success):
+        rest_client.patch_instance.return_value = success
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        assert client.instance_heartbeat("id") is True
+        rest_client.patch_instance.assert_called_once_with("id", ANY)
 
-            self.assertRaises(FetchError, self.client.get_instance_status, "id")
-            self.assertFalse(self.parser.parse_instance.called)
-            request_mock.assert_called_once_with("id")
+    def test_remove(self, client, rest_client, success):
+        rest_client.delete_instance.return_value = success
 
-            self.assertEqual(1, len(w))
-            self.assertEqual(w[0].category, FutureWarning)
+        assert client.remove_instance("foo") is True
+        rest_client.delete_instance.assert_called_with("foo")
 
-    @patch("brewtils.rest.client.RestClient.get_instance")
-    def test_get_instance_status_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            self.assertRaises(
-                RestConnectionError, self.client.get_instance_status, "id"
-            )
-
-            self.assertEqual(1, len(w))
-            self.assertEqual(w[0].category, FutureWarning)
+    def test_remove_none(self, client):
+        with pytest.raises(DeleteError):
+            client.remove_instance(None)
 
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_update_instance_status(self, request_mock):
-        request_mock.return_value = self.fake_success_response
 
-        self.client.update_instance_status("id", "status")
-        self.assertTrue(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_update_instance_status_client_error(self, request_mock):
-        request_mock.return_value = self.fake_client_error_response
-
-        self.assertRaises(
-            ValidationError, self.client.update_instance_status, "id", "status"
-        )
-        self.assertFalse(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_update_instance_status_server_error(self, request_mock):
-        request_mock.return_value = self.fake_server_error_response
-
-        self.assertRaises(SaveError, self.client.update_instance_status, "id", "status")
-        self.assertFalse(self.parser.parse_instance.called)
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_update_instance_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(
-            RestConnectionError, self.client.update_instance_status, "id", "status"
-        )
-
-    # Instance heartbeat
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_instance_heartbeat(self, request_mock):
-        request_mock.return_value = self.fake_success_response
-
-        self.assertTrue(self.client.instance_heartbeat("id"))
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_instance_heartbeat_client_error(self, request_mock):
-        request_mock.return_value = self.fake_client_error_response
-
-        self.assertRaises(ValidationError, self.client.instance_heartbeat, "id")
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_instance_heartbeat_server_error(self, request_mock):
-        request_mock.return_value = self.fake_server_error_response
-
-        self.assertRaises(SaveError, self.client.instance_heartbeat, "id")
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_instance")
-    def test_instance_heartbeat_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.instance_heartbeat, "id")
-
-    @patch("brewtils.rest.client.RestClient.delete_instance")
-    def test_remove_instance(self, mock_delete):
-        mock_delete.return_value = self.fake_success_response
-
-        self.assertTrue(self.client.remove_instance("foo"))
-        mock_delete.assert_called_with("foo")
-
-    @patch("brewtils.rest.client.RestClient.delete_instance")
-    def test_remove_instance_client_error(self, mock_remove):
-        mock_remove.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.remove_instance, "foo")
-
-    @patch("brewtils.rest.client.RestClient.delete_instance")
-    def test_remove_instance_server_error(self, mock_remove):
-        mock_remove.return_value = self.fake_server_error_response
-        self.assertRaises(DeleteError, self.client.remove_instance, "foo")
-
-    @patch("brewtils.rest.client.RestClient.delete_instance")
-    def test_remove_instance_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.remove_instance, "foo")
-
-    def test_remove_instance_none(self):
-        self.assertRaises(DeleteError, self.client.remove_instance, None)
-
-    # Find requests
-    @patch("brewtils.rest.easy_client.EasyClient._find_request_by_id")
-    def test_find_unique_request_by_id(self, find_mock):
-        self.client.find_unique_request(id="id")
-        find_mock.assert_called_with("id")
-
-    def test_find_unique_request_none(self):
-        self.client.find_requests = Mock(return_value=None)
-        self.assertIsNone(self.client.find_unique_request())
-
-    def test_find_unique_request_one(self):
-        self.client.find_requests = Mock(return_value=["request1"])
-        self.assertEqual("request1", self.client.find_unique_request())
-
-    def test_find_unique_request_multiple(self):
-        self.client.find_requests = Mock(return_value=["request1", "request2"])
-        self.assertRaises(FetchError, self.client.find_unique_request)
-
-    @patch("brewtils.rest.client.RestClient.get_requests")
-    def test_find_requests(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.parser.parse_request = Mock(return_value="request")
-
-        self.assertEqual("request", self.client.find_requests(search="params"))
-        self.parser.parse_request.assert_called_with("payload", many=True)
-        mock_get.assert_called_with(search="params")
-
-    @patch("brewtils.rest.client.RestClient.get_requests")
-    def test_find_requests_error(self, mock_get):
-        mock_get.return_value = self.fake_server_error_response
-
-        self.assertRaises(FetchError, self.client.find_requests, search="params")
-        mock_get.assert_called_with(search="params")
-
-    @patch("brewtils.rest.client.RestClient.get_requests")
-    def test_find_requests_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(
-            RestConnectionError, self.client.find_requests, search="params"
-        )
-
-    @patch("brewtils.rest.client.RestClient.get_request")
-    def test_find_request_by_id(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.parser.parse_request = Mock(return_value="request")
-
-        self.assertEqual(self.client._find_request_by_id("id"), "request")
-        self.parser.parse_request.assert_called_with("payload", many=False)
-        mock_get.assert_called_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_request")
-    def test_find_request_by_id_404(self, mock_get):
-        mock_get.return_value = self.fake_not_found_error_response
-
-        self.assertIsNone(self.client._find_request_by_id("id"))
-        mock_get.assert_called_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_request")
-    def test_find_request_by_id_server_error(self, mock_get):
-        mock_get.return_value = self.fake_server_error_response
-
-        self.assertRaises(FetchError, self.client._find_request_by_id, "id")
-        mock_get.assert_called_with("id")
-
-    @patch("brewtils.rest.client.RestClient.get_request")
-    def test_find_request_by_id_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client._find_request_by_id, "id")
-
-    # Create request
-    @patch("brewtils.rest.client.RestClient.post_requests")
-    def test_create_request(self, mock_post):
-        mock_post.return_value = self.fake_success_response
-        self.parser.serialize_request = Mock(return_value="json_request")
-        self.parser.parse_request = Mock(return_value="request_response")
-
-        self.assertEqual("request_response", self.client.create_request("request"))
-        self.parser.serialize_request.assert_called_with("request")
-        self.parser.parse_request.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.client.RestClient.post_requests")
-    def test_create_request_errors(self, mock_post):
-        mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.create_request, "request")
-
-        mock_post.return_value = self.fake_wait_exceeded_response
-        self.assertRaises(WaitExceededError, self.client.create_request, "request")
-
-        mock_post.return_value = self.fake_server_error_response
-        self.assertRaises(SaveError, self.client.create_request, "request")
-
-        mock_post.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.create_request, "request")
-
-    # Update request
-    @patch("brewtils.rest.client.RestClient.patch_request")
-    def test_update_request(self, request_mock):
-        request_mock.return_value = self.fake_success_response
-
-        self.client.update_request(
-            "id", status="new_status", output="new_output", error_class="ValueError"
-        )
-        self.parser.parse_request.assert_called_with("payload", many=False)
-        self.assertEqual(1, request_mock.call_count)
-        payload = request_mock.call_args[0][1]
-        self.assertNotEqual(-1, payload.find("new_status"))
-        self.assertNotEqual(-1, payload.find("new_output"))
-        self.assertNotEqual(-1, payload.find("ValueError"))
-
-    @patch("brewtils.rest.client.RestClient.patch_request")
-    def test_update_request_client_error(self, request_mock):
-        request_mock.return_value = self.fake_client_error_response
-
-        self.assertRaises(ValidationError, self.client.update_request, "id")
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_request")
-    def test_update_request_server_error(self, request_mock):
-        request_mock.return_value = self.fake_server_error_response
-
-        self.assertRaises(SaveError, self.client.update_request, "id")
-        request_mock.assert_called_once_with("id", ANY)
-
-    @patch("brewtils.rest.client.RestClient.patch_request")
-    def test_update_request_connection_error(self, request_mock):
-        request_mock.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.update_request, "id")
-
-    # Publish Event
-    @patch("brewtils.rest.client.RestClient.post_event")
-    def test_publish_event(self, mock_post):
-        mock_post.return_value = self.fake_success_response
-        self.assertTrue(self.client.publish_event(Mock()))
-
-    @patch("brewtils.rest.client.RestClient.post_event")
-    def test_publish_event_errors(self, mock_post):
-        mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.publish_event, "system")
-
-        mock_post.return_value = self.fake_server_error_response
-        self.assertRaises(RestError, self.client.publish_event, "system")
-
-        mock_post.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.publish_event, "system")
-
-    # Queues
-    @patch("brewtils.rest.client.RestClient.get_queues")
-    def test_get_queues(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.client.get_queues()
-        self.assertTrue(self.parser.parse_queue.called)
-
-    @patch("brewtils.rest.client.RestClient.get_queues")
-    def test_get_queues_errors(self, mock_get):
-        mock_get.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.get_queues)
-
-        mock_get.return_value = self.fake_server_error_response
-        self.assertRaises(RestError, self.client.get_queues)
-
-        mock_get.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.get_queues)
-
-    @patch("brewtils.rest.client.RestClient.delete_queue")
-    def test_clear_queue(self, mock_delete):
-        mock_delete.return_value = self.fake_success_response
-        self.assertTrue(self.client.clear_queue("queue"))
-
-    @patch("brewtils.rest.client.RestClient.delete_queue")
-    def test_clear_queue_errors(self, mock_delete):
-        mock_delete.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.clear_queue, "queue")
-
-        mock_delete.return_value = self.fake_server_error_response
-        self.assertRaises(RestError, self.client.clear_queue, "queue")
-
-        mock_delete.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.clear_queue, "queue")
-
-    @patch("brewtils.rest.client.RestClient.delete_queues")
-    def test_clear_all_queues(self, mock_delete):
-        mock_delete.return_value = self.fake_success_response
-        self.assertTrue(self.client.clear_all_queues())
-
-    @patch("brewtils.rest.client.RestClient.delete_queues")
-    def test_clear_all_queues_errors(self, mock_delete):
-        mock_delete.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.clear_all_queues)
-
-        mock_delete.return_value = self.fake_server_error_response
-        self.assertRaises(RestError, self.client.clear_all_queues)
-
-        mock_delete.return_value = self.fake_connection_error_response
-        self.assertRaises(RestConnectionError, self.client.clear_all_queues)
-
-    # Find Jobs
-    @patch("brewtils.rest.client.RestClient.get_jobs")
-    def test_find_jobs(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.parser.parse_job = Mock(return_value="job")
-
-        self.assertEqual("job", self.client.find_jobs(search="params"))
-        self.parser.parse_job.assert_called_with("payload", many=True)
-        mock_get.assert_called_with(search="params")
-
-    @patch("brewtils.rest.client.RestClient.get_jobs")
-    def test_find_jobs_error(self, mock_get):
-        mock_get.return_value = self.fake_server_error_response
-
-        self.assertRaises(FetchError, self.client.find_jobs, search="params")
-        mock_get.assert_called_with(search="params")
-
-    # Create Jobs
-    @patch("brewtils.rest.client.RestClient.post_jobs")
-    def test_create_job(self, mock_post):
-        mock_post.return_value = self.fake_success_response
-        self.parser.serialize_job = Mock(return_value="json_job")
-        self.parser.parse_job = Mock(return_value="job_response")
-
-        self.assertEqual("job_response", self.client.create_job("job"))
-        self.parser.serialize_job.assert_called_with("job")
-        self.parser.parse_job.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.client.RestClient.post_jobs")
-    def test_create_job_error(self, mock_post):
-        mock_post.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.create_job, "job")
-
-    # Remove Job
-    @patch("brewtils.rest.client.RestClient.delete_job")
-    def test_delete_job(self, mock_delete):
-        mock_delete.return_value = self.fake_success_response
-        self.assertEqual(True, self.client.remove_job("job_id"))
-
-    @patch("brewtils.rest.client.RestClient.delete_job")
-    def test_delete_job_error(self, mock_delete):
-        mock_delete.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.remove_job, "job_id")
-
-    # Pause Job
-    @patch("brewtils.rest.easy_client.PatchOperation")
-    @patch("brewtils.rest.client.RestClient.patch_job")
-    def test_pause_job(self, mock_patch, MockPatch):
-        MockPatch.return_value = "patch"
-        mock_patch.return_value = self.fake_success_response
-
-        self.client.pause_job("id")
-        MockPatch.assert_called_with("update", "/status", "PAUSED")
-        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_job.assert_called_with("payload", many=False)
-
-    @patch("brewtils.rest.client.RestClient.patch_job")
-    def test_pause_job_error(self, mock_patch):
-        mock_patch.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.pause_job, "id")
-
-    @patch("brewtils.rest.easy_client.PatchOperation")
-    @patch("brewtils.rest.client.RestClient.patch_job")
-    def test_resume_job(self, mock_patch, MockPatch):
-        MockPatch.return_value = "patch"
-        mock_patch.return_value = self.fake_success_response
-
-        self.client.resume_job("id")
-        MockPatch.assert_called_with("update", "/status", "RUNNING")
-        self.parser.serialize_patch.assert_called_with(["patch"], many=True)
-        self.parser.parse_job.assert_called_with("payload", many=False)
-
-    # Users
-    @patch("brewtils.rest.client.RestClient.get_user")
-    def test_who_am_i(self, mock_get):
-        self.client.who_am_i()
-        mock_get.assert_called_with("anonymous")
-
-    @patch("brewtils.rest.client.RestClient.get_user")
-    def test_get_user(self, mock_get):
-        mock_get.return_value = self.fake_success_response
-        self.client.get_user("identifier")
-        self.assertTrue(self.parser.parse_principal.called)
-
-    @patch("brewtils.rest.client.RestClient.get_user")
-    def test_get_user_errors(self, mock_get):
-        mock_get.return_value = self.fake_client_error_response
-        self.assertRaises(ValidationError, self.client.get_user, "identifier")
-
-        mock_get.return_value = self.fake_not_found_error_response
-        self.assertRaises(NotFoundError, self.client.get_user, "identifier")
-
-
-class BrewmasterEasyClientTest(unittest.TestCase):
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            BrewmasterEasyClient("host", "port")
-            self.assertEqual(1, len(w))
-
-            warning = w[0]
-            self.assertEqual(warning.category, DeprecationWarning)
-            self.assertIn("'BrewmasterEasyClient'", str(warning))
-            self.assertIn("'EasyClient'", str(warning))
-            self.assertIn("3.0", str(warning))
+class TestFindUniqueRequest(object):
+    def test_by_id(self, monkeypatch, client):
+        monkeypatch.setattr(client, "_find_request_by_id", Mock(return_value="r1"))
+
+        assert client.find_unique_request(id="id") == "r1"
+
+    def test_none(self, monkeypatch, client):
+        monkeypatch.setattr(client, "find_requests", Mock(return_value=None))
+
+        assert client.find_unique_request() is None
+
+    def test_one(self, monkeypatch, client, bg_request):
+        monkeypatch.setattr(client, "find_requests", Mock(return_value=[bg_request]))
+        assert client.find_unique_request() == bg_request
+
+    def test_multiple(self, monkeypatch, client):
+        monkeypatch.setattr(client, "find_requests", Mock(return_value=["r1", "r2"]))
+
+        with pytest.raises(FetchError):
+            client.find_unique_request()
+
+
+def test_find_requests(client, rest_client, success):
+    rest_client.get_requests.return_value = success
+
+    client.find_requests(search="params")
+    rest_client.get_requests.assert_called_once_with(search="params")
+
+
+class TestFindRequestById(object):
+    def test_success(self, client, rest_client, success):
+        rest_client.get_request.return_value = success
+
+        assert client._find_request_by_id("id")
+        rest_client.get_request.assert_called_once_with("id")
+
+    def test_not_found(self, client, rest_client, not_found):
+        rest_client.get_request.return_value = not_found
+
+        assert client._find_request_by_id("id") is None
+        rest_client.get_request.assert_called_once_with("id")
+
+
+def test_create_request(client, rest_client, success, bg_request):
+    rest_client.post_requests.return_value = success
+
+    assert client.create_request(bg_request)
+    assert rest_client.post_requests.called is True
+
+
+def test_update_request(client, rest_client, parser, success, bg_request):
+    rest_client.patch_request.return_value = success
+
+    assert client.update_request(
+        "id", status="new_status", output="new_output", error_class="ValueError"
+    )
+    assert rest_client.patch_request.called is True
+
+    patch_paths = [p.path for p in parser.serialize_patch.call_args[0][0]]
+    assert "/status" in patch_paths
+    assert "/output" in patch_paths
+    assert "/error_class" in patch_paths
+
+
+def test_publish_event(client, rest_client, success, bg_event):
+    rest_client.post_event.return_value = success
+
+    assert client.publish_event(bg_event) is True
+
+
+class TestQueues(object):
+    def test_get(self, client, rest_client, success):
+        rest_client.get_queues.return_value = success
+
+        assert client.get_queues()
+        assert rest_client.get_queues.called is True
+
+    def test_clear(self, client, rest_client, success):
+        rest_client.delete_queue.return_value = success
+
+        assert client.clear_queue("queue") is True
+        assert rest_client.delete_queue.called is True
+
+    def test_clear_all(self, client, rest_client, success):
+        rest_client.delete_queues.return_value = success
+
+        assert client.clear_all_queues() is True
+        assert rest_client.delete_queues.called is True
+
+
+class TestJobs(object):
+    def test_find(self, client, rest_client, success):
+        rest_client.get_jobs.return_value = success
+
+        assert client.find_jobs(search="params")
+        rest_client.get_jobs.assert_called_once_with(search="params")
+
+    def test_create(self, client, rest_client, success, bg_job):
+        rest_client.post_jobs.return_value = success
+
+        assert client.create_job(bg_job)
+        assert rest_client.post_jobs.called is True
+
+    def test_delete(self, client, rest_client, success, bg_job):
+        rest_client.delete_job.return_value = success
+
+        assert client.remove_job(bg_job.id) is True
+        assert rest_client.delete_job.called is True
+
+    def test_pause(self, client, rest_client, parser, success, bg_job):
+        rest_client.patch_job.return_value = success
+
+        client.pause_job(bg_job.id)
+        assert rest_client.patch_job.called is True
+
+        patch_op = parser.serialize_patch.call_args[0][0][0]
+        assert patch_op.path == "/status"
+        assert patch_op.value == "PAUSED"
+
+    def test_resume(self, client, rest_client, parser, success, bg_job):
+        rest_client.patch_job.return_value = success
+
+        client.resume_job(bg_job.id)
+        assert rest_client.patch_job.called is True
+
+        patch_op = parser.serialize_patch.call_args[0][0][0]
+        assert patch_op.path == "/status"
+        assert patch_op.value == "RUNNING"
+
+
+class TestWhoAmI(object):
+    def test_user(self, client, rest_client, success):
+        rest_client.get_user.return_value = success
+
+        client.who_am_i()
+        rest_client.get_user.assert_called_once_with(rest_client.username)
+
+    def test_anonymous(self, client, rest_client, success):
+        rest_client.get_user.return_value = success
+        rest_client.username = None
+
+        client.who_am_i()
+        rest_client.get_user.assert_called_once_with("anonymous")
+
+
+def test_get_user(client, rest_client, success, bg_principal):
+    rest_client.get_user.return_value = success
+
+    client.get_user(bg_principal.username)
+    rest_client.get_user.assert_called_once_with(bg_principal.username)

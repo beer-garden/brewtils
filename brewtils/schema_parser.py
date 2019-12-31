@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import warnings
 
 import six
 
@@ -454,21 +453,10 @@ class SchemaParser(object):
 
         return json.dumps(multiple) if to_string else multiple
 
-    @staticmethod
-    def _get_schema_name(model):
+    @classmethod
+    def _get_schema_name(cls, model):
         if isinstance(model, brewtils.models.BaseModel):
             # Use type() here because Command has an instance attribute named "schema"
             return type(model).schema
 
         return None
-
-
-class BrewmasterSchemaParser(SchemaParser):
-    def __init__(self):
-        warnings.warn(
-            "Reference made to 'BrewmasterSchemaParser'. This name will be removed in "
-            "version 3.0, please use 'SchemaParser' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterSchemaParser, self).__init__()

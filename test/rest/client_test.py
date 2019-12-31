@@ -7,7 +7,7 @@ import pytest
 from mock import Mock, MagicMock, ANY
 
 import brewtils.rest
-from brewtils.rest.client import RestClient, BrewmasterRestClient
+from brewtils.rest.client import RestClient
 
 
 class TestRestClient(object):
@@ -42,8 +42,12 @@ class TestRestClient(object):
         return client
 
     def test_old_positional_args(self, client, url_prefix):
-        test_client = RestClient("host", 80, api_version=1, url_prefix=url_prefix)
-        assert test_client.version_url == client.version_url
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            test_client = RestClient("host", 80, api_version=1, url_prefix=url_prefix)
+            assert test_client.version_url == client.version_url
+            assert len(w) == 2
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -308,18 +312,3 @@ class TestRestClient(object):
         client = RestClient(bg_host="host", bg_port=80, api_version=1, ca_verify=False)
         assert client.session.verify is False
         assert urllib_mock.disable_warnings.called is True
-
-
-class TestBrewmasterRestClient(object):
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            BrewmasterRestClient("host", "port")
-            assert len(w) == 1
-
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'BrewmasterRestClient'" in str(warning)
-            assert "'RestClient'" in str(warning)
-            assert "3.0" in str(warning)

@@ -49,9 +49,9 @@ def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
     Creates some properties on the class:
-      * ``_commands``: holds all registered commands
-      * ``_name``: an optional system name
-      * ``_version``: an optional system version
+      * ``_bg_name``: an optional system name
+      * ``_bg_version``: an optional system version
+      * ``_bg_commands``: holds all registered commands
       * ``_current_request``: Reference to the currently executing request
 
     Args:
@@ -75,9 +75,9 @@ def system(cls=None, bg_name=None, bg_version=None):
         if method_command:
             commands.append(method_command)
 
-    cls._commands = commands
     cls._bg_name = bg_name
     cls._bg_version = bg_version
+    cls._bg_commands = commands
     cls._current_request = property(
         lambda self: brewtils.plugin.request_context.current_request
     )

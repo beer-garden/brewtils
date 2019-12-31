@@ -302,23 +302,39 @@ class Parameter(BaseModel):
 class RequestTemplate(BaseModel):
     schema = "RequestTemplateSchema"
 
+    TEMPLATE_FIELDS = [
+        "system",
+        "system_version",
+        "instance_name",
+        "command",
+        "command_type",
+        "parameters",
+        "comment",
+        "metadata",
+        "output_type",
+    ]
+
     def __init__(
         self,
         system=None,
         system_version=None,
         instance_name=None,
         command=None,
+        command_type=None,
         parameters=None,
         comment=None,
         metadata=None,
+        output_type=None,
     ):
         self.system = system
         self.system_version = system_version
         self.instance_name = instance_name
         self.command = command
+        self.command_type = command_type
         self.parameters = parameters
         self.comment = comment
         self.metadata = metadata or {}
+        self.output_type = output_type
 
     def __str__(self):
         return self.command
@@ -366,17 +382,17 @@ class Request(RequestTemplate):
             system_version=system_version,
             instance_name=instance_name,
             command=command,
+            command_type=command_type,
             parameters=parameters,
             comment=comment,
             metadata=metadata,
+            output_type=output_type,
         )
         self.id = id
         self.parent = parent
         self.children = children
         self.output = output
-        self.output_type = output_type
         self._status = status
-        self.command_type = command_type
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class
@@ -384,16 +400,21 @@ class Request(RequestTemplate):
         self.requester = requester
 
     @classmethod
-    def from_template(cls, template):
-        return Request(
-            system=template.system,
-            system_version=template.system_version,
-            instance_name=template.instance_name,
-            command=template.command,
-            parameters=template.parameters,
-            comment=template.comment,
-            metadata=template.metadata,
-        )
+    def from_template(cls, template, **kwargs):
+        """Create a Request instance from a RequestTemplate
+
+        Args:
+            template: The RequestTemplate to use
+            **kwargs: Optional overrides to use in place of the template's attributes
+
+        Returns:
+            The new Request instance
+        """
+        request_params = {
+            k: kwargs.get(k, getattr(template, k))
+            for k in RequestTemplate.TEMPLATE_FIELDS
+        }
+        return Request(**request_params)
 
     def __repr__(self):
         return (

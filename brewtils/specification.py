@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
 
-SPECIFICATION = {
+_CONNECTION_SPEC = {
     "bg_host": {
         "type": "str",
-        "description": "The beergarden server FQDN",
+        "description": "Beergarden server FQDN",
         "required": True,
         "env_name": "HOST",
         "alt_env_names": ["WEB_HOST"],
     },
     "bg_port": {
         "type": "int",
-        "description": "The beergarden server port",
+        "description": "Beergarden server port",
         "default": 2337,
         "env_name": "PORT",
         "alt_env_names": ["WEB_PORT"],
+    },
+    "bg_url_prefix": {
+        "type": "str",
+        "description": "Beergarden server path",
+        "default": "/",
+        "env_name": "URL_PREFIX",
+        "cli_name": "url_prefix",
     },
     "ca_cert": {
         "type": "str",
@@ -28,24 +35,30 @@ SPECIFICATION = {
     },
     "client_cert": {
         "type": "str",
-        "description": "Client certificate to use with beergarden",
+        "description": "Client certificate to use with Beergarden",
         "required": False,
         "alt_env_names": ["SSL_CLIENT_CERT"],
     },
     "ssl_enabled": {
         "type": "bool",
-        "description": "Use SSL when communicating with beergarden",
+        "description": "Use SSL when communicating with Beergarden",
         "default": True,
-    },
-    "url_prefix": {
-        "type": "str",
-        "description": "The beergarden server path",
-        "default": "/",
     },
     "api_version": {
         "type": "int",
         "description": "Beergarden API version",
         "required": False,
+    },
+    "client_timeout": {
+        "type": "float",
+        "description": "Max time RestClient will wait for server response",
+        "long_description": "This setting controls how long the HTTP(s) client will "
+        "wait when opening a connection to Beergarden before aborting."
+        "This prevents some strange Beergarden server state from causing "
+        "plugins to hang indefinitely."
+        "Set to -1 to disable (this is a bad idea in production code, see "
+        "the Requests documentation).",
+        "default": -1,
     },
     "username": {
         "type": "str",
@@ -67,15 +80,95 @@ SPECIFICATION = {
         "description": "Refresh token for authentication",
         "required": False,
     },
-    "client_timeout": {
-        "type": "float",
-        "description": "Max time RestClient will wait for server response",
-        "long_description": "This setting controls how long the HTTP(s) client will wait "
-        "when opening a connection to Beergarden before aborting."
-        "This prevents some strange Beergarden server state from causing "
-        "plugins to hang indefinitely."
-        "Set to -1 to disable (this is a bad idea in production code, see "
-        "the Requests documentation).",
-        "default": -1,
+}
+
+_SYSTEM_SPEC = {
+    "name": {"type": "str", "description": "The system name", "required": False},
+    "version": {"type": "str", "description": "The system version", "required": False},
+    "description": {
+        "type": "str",
+        "description": "The system description",
+        "required": False,
+    },
+    "max_instances": {
+        "type": "int",
+        "description": "The system max instances",
+        "default": 1,
+    },
+    "icon_name": {
+        "type": "str",
+        "description": "The system icon name",
+        "required": False,
+    },
+    "display_name": {
+        "type": "str",
+        "description": "The system display name",
+        "required": False,
     },
 }
+
+_PLUGIN_SPEC = {
+    "instance_name": {
+        "type": "str",
+        "description": "The instance name",
+        "default": "default",
+    },
+    "log_level": {
+        "type": "str",
+        "description": "The log level to use",
+        "default": "INFO",
+    },
+    "max_concurrent": {
+        "type": "int",
+        "description": "Maximum number of requests to process concurrently",
+        "default": 5,
+    },
+    "worker_shutdown_timeout": {
+        "type": "int",
+        "description": "Time to wait during shutdown to finish processing requests",
+        "default": 5,
+    },
+    "max_attempts": {
+        "type": "int",
+        "description": "Number of times to attempt a request update",
+        "default": -1,
+    },
+    "max_timeout": {
+        "type": "int",
+        "description": "Maximum amount of time to wait between request update retries",
+        "default": 30,
+    },
+    "starting_timeout": {
+        "type": "int",
+        "description": "Initial amount of time to wait before request update retry",
+        "default": 5,
+    },
+}
+
+_MQ_SPEC = {
+    "type": "dict",
+    "items": {
+        "max_attempts": {
+            "type": "int",
+            "description": "Number of times to attempt reconnection to message queue"
+            "before giving up (default -1 aka never)",
+            "default": -1,
+        },
+        "max_timeout": {
+            "type": "int",
+            "description": "Maximum amount of time to wait between reconnect tries",
+            "default": 30,
+        },
+        "starting_timeout": {
+            "type": "int",
+            "description": "Initial amount of time to wait before reconnect try",
+            "default": 5,
+        },
+    },
+}
+
+SPECIFICATION = {"mq": _MQ_SPEC}
+
+SPECIFICATION.update(_SYSTEM_SPEC)
+SPECIFICATION.update(_PLUGIN_SPEC)
+SPECIFICATION.update(_CONNECTION_SPEC)

@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 def find_version():
-    version_file = "brewtils/_version.py"
+    version_file = "brewtils/__version__.py"
     version_line = open(version_file, "rt").read()
     match_object = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_line, re.M)
 
@@ -41,7 +41,7 @@ setup(
         "simplejson<4",
         "six<2",
         "wrapt<2",
-        "yapconf>=0.2.1",
+        "yapconf>=0.3.7",
     ],
     extras_require={
         ':python_version=="2.7"': ["futures", "funcsigs"],

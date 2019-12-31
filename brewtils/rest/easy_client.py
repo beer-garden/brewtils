@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import logging
 import warnings
 
 import requests.exceptions
 import wrapt
 
+from brewtils.config import get_connection_info
 from brewtils.errors import (
     FetchError,
     ValidationError,
@@ -19,6 +19,22 @@ from brewtils.errors import (
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
+
+
+def get_easy_client(**kwargs):
+    """Easy way to get an EasyClient
+
+    The benefit to this method over creating an EasyClient directly is that
+    this method will also search the environment for parameters. Kwargs passed
+    to this method will take priority, however.
+
+    Args:
+        **kwargs: Options for configuring the EasyClient
+
+    Returns:
+        :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
+    """
+    return EasyClient(**get_connection_info(**kwargs))
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
@@ -94,12 +110,10 @@ def wrap_response(
             if return_boolean:
                 return True
 
-            if not hasattr(instance.parser, parse_method):
+            if not hasattr(SchemaParser, parse_method):
                 return response
 
-            return getattr(instance.parser, parse_method)(
-                response.json(), many=parse_many
-            )
+            return getattr(SchemaParser, parse_method)(response.json(), many=parse_many)
         else:
             handle_response_failure(
                 response, default_exc=default_exc, raise_404=raise_404
@@ -116,56 +130,27 @@ class EasyClient(object):
     operations than is exposed by the lower-level RestClient. On the other hand,
     the SystemClient is much better for generating Beergarden Requests.
 
-    Keyword Args:
-        bg_host (str): Beergarden hostname
-        bg_port (int): Beergarden port
-        ssl_enabled (Optional[bool]): Whether to use SSL (HTTP vs HTTPS)
-        api_version (Optional[int]): The REST API version
-        ca_cert (Optional[str]): Path to CA certificate file
-        client_cert (Optional[str]): Path to client certificate file
-        parser (Optional[SchemaParser]): Parser to use
-        logger (Optional[Logger]): Logger to use
-        url_prefix (Optional[str]): Beergarden REST API prefix
-        ca_verify (Optional[bool]): Whether to verify the server cert hostname
-        username (Optional[str]): Username for authentication
-        password (Optional[str]): Password for authentication
-        access_token (Optional[str]): Access token for authentication
-        refresh_token (Optional[str]): Refresh token for authentication
-        client_timeout (Optional[float]): Max time to wait for a server response
-
+    Args:
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+            authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+            Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout (int): Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    def __init__(
-        self,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=False,
-        api_version=None,
-        ca_cert=None,
-        client_cert=None,
-        parser=None,
-        logger=None,
-        url_prefix=None,
-        ca_verify=True,
-        **kwargs
-    ):
-        bg_host = bg_host or kwargs.get("host")
-        bg_port = bg_port or kwargs.get("port")
-
-        self.logger = logger or logging.getLogger(__name__)
-        self.parser = parser or SchemaParser()
-
-        self.client = RestClient(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            api_version=api_version,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=url_prefix,
-            ca_verify=ca_verify,
-            **kwargs
-        )
+    def __init__(self, **kwargs):
+        self.client = RestClient(**kwargs)
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.
@@ -207,7 +192,7 @@ class EasyClient(object):
         """
         return self.client.get_version(**kwargs)
 
-    @wrap_response(parse_method="parse_logging_config", default_exc=RestConnectionError)
+    @wrap_response(parse_method="parse_logging_config", default_exc=FetchError)
     def get_logging_config(self, system_name):
         """Get logging configuration for a System
 
@@ -274,7 +259,7 @@ class EasyClient(object):
             System: The newly-created system
 
         """
-        return self.client.post_systems(self.parser.serialize_system(system))
+        return self.client.post_systems(SchemaParser.serialize_system(system))
 
     @wrap_response(parse_method="parse_system", parse_many=False, default_exc=SaveError)
     def update_system(self, system_id, new_commands=None, **kwargs):
@@ -300,13 +285,13 @@ class EasyClient(object):
         add_instance = kwargs.pop("add_instance", None)
 
         if new_commands:
-            commands = self.parser.serialize_command(
+            commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )
             operations.append(PatchOperation("replace", "/commands", commands))
 
         if add_instance:
-            instance = self.parser.serialize_instance(add_instance, to_string=False)
+            instance = SchemaParser.serialize_instance(add_instance, to_string=False)
             operations.append(PatchOperation("add", "/instance", instance))
 
         if metadata:
@@ -317,7 +302,7 @@ class EasyClient(object):
                 operations.append(PatchOperation("replace", "/%s" % key, value))
 
         return self.client.patch_system(
-            system_id, self.parser.serialize_patch(operations, many=True)
+            system_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
     def remove_system(self, **kwargs):
@@ -354,7 +339,7 @@ class EasyClient(object):
 
         """
         return self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(PatchOperation("initialize"))
+            instance_id, SchemaParser.serialize_patch(PatchOperation("initialize"))
         )
 
     @wrap_response(
@@ -373,28 +358,22 @@ class EasyClient(object):
         return self.client.get_instance(instance_id)
 
     def get_instance_status(self, instance_id):
-        """Get an Instance
-
-        WARNING: This method currently returns the Instance, not the Instance's status.
-        This behavior will be corrected in 3.0.
-
-        To prepare for this change please use get_instance() instead of this method.
+        """Get an Instance's status
 
         Args:
             instance_id: The Id
 
         Returns:
-            The status
+            The Instance's status
 
         """
         warnings.warn(
-            "This method currently returns the Instance, not the Instance's status. "
-            "This behavior will be corrected in 3.0. To prepare please use "
-            "get_instance() instead of this method.",
-            FutureWarning,
+            "This method is deprecated and scheduled to be removed in 4.0. "
+            "To prepare please use get_instance() instead.",
+            DeprecationWarning,
         )
 
-        return self.get_instance(instance_id)
+        return self.get_instance(instance_id).status
 
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=SaveError
@@ -412,7 +391,7 @@ class EasyClient(object):
         """
         return self.client.patch_instance(
             instance_id,
-            self.parser.serialize_patch(
+            SchemaParser.serialize_patch(
                 PatchOperation("replace", "/status", new_status)
             ),
         )
@@ -429,7 +408,7 @@ class EasyClient(object):
 
         """
         return self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(PatchOperation("heartbeat"))
+            instance_id, SchemaParser.serialize_patch(PatchOperation("heartbeat"))
         )
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
@@ -512,7 +491,7 @@ class EasyClient(object):
 
         """
         return self.client.post_requests(
-            self.parser.serialize_request(request), **kwargs
+            SchemaParser.serialize_request(request), **kwargs
         )
 
     @wrap_response(
@@ -541,7 +520,7 @@ class EasyClient(object):
             operations.append(PatchOperation("replace", "/error_class", error_class))
 
         return self.client.patch_request(
-            request_id, self.parser.serialize_patch(operations, many=True)
+            request_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
     @wrap_response(return_boolean=True)
@@ -569,10 +548,10 @@ class EasyClient(object):
         event = args[0] if args else Event(**kwargs)
 
         return self.client.post_event(
-            self.parser.serialize_event(event), publishers=publishers
+            SchemaParser.serialize_event(event), publishers=publishers
         )
 
-    @wrap_response(parse_method="parse_queue", parse_many=True)
+    @wrap_response(parse_method="parse_queue", parse_many=True, default_exc=FetchError)
     def get_queues(self):
         """Retrieve all queue information
 
@@ -580,7 +559,7 @@ class EasyClient(object):
         """
         return self.client.get_queues()
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_queue(self, queue_name):
         """Cancel and remove all Requests from a message queue
 
@@ -593,7 +572,7 @@ class EasyClient(object):
         """
         return self.client.delete_queue(queue_name)
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_all_queues(self):
         """Cancel and remove all Requests in all queues
 
@@ -627,7 +606,7 @@ class EasyClient(object):
             Job: The newly-created Job
 
         """
-        return self.client.post_jobs(self.parser.serialize_job(job))
+        return self.client.post_jobs(SchemaParser.serialize_job(job))
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def remove_job(self, job_id):
@@ -655,7 +634,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
 
     def resume_job(self, job_id):
         """Resume a Job
@@ -667,7 +646,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError
@@ -721,16 +700,5 @@ class EasyClient(object):
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def _patch_job(self, job_id, operations):
         return self.client.patch_job(
-            job_id, self.parser.serialize_patch(operations, many=True)
+            job_id, SchemaParser.serialize_patch(operations, many=True)
         )
-
-
-class BrewmasterEasyClient(EasyClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterEasyClient'. This name will be "
-            "removed in version 3.0, please use 'EasyClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

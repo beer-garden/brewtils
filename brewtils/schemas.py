@@ -161,9 +161,11 @@ class RequestTemplateSchema(BaseSchema):
     system_version = fields.Str(allow_none=True)
     instance_name = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    command_type = fields.Str(allow_none=True)
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    output_type = fields.Str(allow_none=True)
 
 
 class RequestSchema(RequestTemplateSchema):
@@ -173,9 +175,7 @@ class RequestSchema(RequestTemplateSchema):
         "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
     )
     output = fields.Str(allow_none=True)
-    output_type = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    command_type = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")

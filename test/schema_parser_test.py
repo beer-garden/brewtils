@@ -4,7 +4,6 @@
 from __future__ import unicode_literals
 
 import copy
-import warnings
 
 import pytest
 from marshmallow.exceptions import MarshmallowError
@@ -12,7 +11,7 @@ from pytest_lazyfixture import lazy_fixture
 
 import brewtils.models
 from brewtils.models import System
-from brewtils.schema_parser import SchemaParser, BrewmasterSchemaParser
+from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
     assert_parameter_equal,
     assert_command_equal,
@@ -671,17 +670,3 @@ class TestRoundTrip(object):
 
         assert len(serialized) == 1
         assert serialized[0] == patch_dict_no_envelop
-
-
-def test_deprecation():
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-
-        BrewmasterSchemaParser()
-        assert len(w) == 1
-
-        warning = w[0]
-        assert warning.category == DeprecationWarning
-        assert "'BrewmasterSchemaParser'" in str(warning)
-        assert "'SchemaParser'" in str(warning)
-        assert "3.0" in str(warning)

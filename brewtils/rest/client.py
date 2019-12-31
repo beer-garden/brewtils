@@ -2,8 +2,6 @@
 
 import functools
 import json
-import logging
-import warnings
 from datetime import datetime
 
 import jwt
@@ -11,6 +9,7 @@ import urllib3
 from requests import Session
 from requests.adapters import HTTPAdapter
 
+from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 
 
@@ -73,59 +72,77 @@ class TimeoutAdapter(HTTPAdapter):
 
 
 class RestClient(object):
-    """Simple Rest Client for communicating to with beer-garden.
+    """HTTP client for communicating with Beer-garden.
 
-    The is the low-level client responsible for making the actual REST calls. Other clients
-    (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by providing useful
-    abstractions.
+    The is the low-level client responsible for making the actual REST calls. Other
+    clients (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by
+    providing useful abstractions.
 
-    :param bg_host: beer-garden REST API hostname.
-    :param bg_port: beer-garden REST API port.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
-    :param api_version: The beer-garden REST API version. Will default to the latest version.
-    :param logger: The logger to use. If None one will be created.
-    :param ca_cert: beer-garden REST API server CA certificate.
-    :param client_cert: The client certificate to use when making requests.
-    :param url_prefix: beer-garden REST API Url Prefix.
-    :param ca_verify: Flag indicating whether to verify server certificate when making a request.
-    :param username: Username for Beergarden authentication
-    :param password: Password for Beergarden authentication
-    :param access_token: Access token for Beergarden authentication
-    :param refresh_token: Refresh token for Beergarden authentication
-    :param client_timeout: Max time to will wait for server response
+    Args:
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+            authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+            Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout (int): Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    # The Latest Version Currently released
+    # Latest API version currently released
     LATEST_VERSION = 1
 
     JSON_HEADERS = {"Content-type": "application/json", "Accept": "text/plain"}
 
-    def __init__(
-        self,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=False,
-        api_version=None,
-        logger=None,
-        ca_cert=None,
-        client_cert=None,
-        url_prefix=None,
-        ca_verify=True,
-        **kwargs
-    ):
-        bg_host = bg_host or kwargs.get("host")
+    def __init__(self, *args, **kwargs):
+        bg_host = kwargs.get("bg_host") or kwargs.get("host")
+        bg_port = kwargs.get("bg_port") or kwargs.get("port")
+        bg_prefix = kwargs.get("bg_url_prefix") or kwargs.get("url_prefix")
+
         if not bg_host:
-            raise ValueError('Missing keyword argument "bg_host"')
+            if len(args) > 0:
+                bg_host = args[0]
+                _deprecate(
+                    "Heads up - passing bg_host as a positional argument is deprecated "
+                    "and will be removed in version 4.0"
+                )
+            else:
+                raise ValueError('Missing keyword argument "bg_host"')
 
-        bg_port = bg_port or kwargs.get("port")
         if not bg_port:
-            raise ValueError('Missing keyword argument "bg_port"')
+            if len(args) > 1:
+                bg_port = args[1]
+                _deprecate(
+                    "Heads up - passing bg_port as a positional argument is deprecated "
+                    "and will be removed in version 4.0"
+                )
+            else:
+                raise ValueError('Missing keyword argument "bg_port"')
 
-        self.logger = logger or logging.getLogger(__name__)
+        self.username = kwargs.get("username")
+        self.password = kwargs.get("password")
+        self.access_token = kwargs.get("access_token")
+        self.refresh_token = kwargs.get("refresh_token")
 
         # Configure the session to use when making requests
         self.session = Session()
-        timeout = kwargs.get("client_timeout", None)
+        self.session.cert = kwargs.get("client_cert")
+
+        if not kwargs.get("ca_verify", True):
+            urllib3.disable_warnings()
+            self.session.verify = False
+        elif kwargs.get("ca_cert"):
+            self.session.verify = kwargs.get("ca_cert")
+
+        timeout = kwargs.get("client_timeout")
         if timeout == -1:
             timeout = None
 
@@ -133,32 +150,18 @@ class RestClient(object):
         self.session.mount("https://", TimeoutAdapter(timeout=timeout))
         self.session.mount("http://", TimeoutAdapter(timeout=timeout))
 
-        if not ca_verify:
-            urllib3.disable_warnings()
-            self.session.verify = False
-        elif ca_cert:
-            self.session.verify = ca_cert
-
-        if client_cert:
-            self.session.cert = client_cert
-
-        self.username = kwargs.get("username", None)
-        self.password = kwargs.get("password", None)
-        self.access_token = kwargs.get("access_token", None)
-        self.refresh_token = kwargs.get("refresh_token", None)
-
         # Configure the beer-garden URLs
-        scheme = "https" if ssl_enabled else "http"
+        scheme = "https" if kwargs.get("ssl_enabled") else "http"
         self.base_url = "%s://%s:%s%s" % (
             scheme,
             bg_host,
             bg_port,
-            normalize_url_prefix(url_prefix),
+            normalize_url_prefix(bg_prefix),
         )
         self.version_url = self.base_url + "version"
         self.config_url = self.base_url + "config"
 
-        api_version = api_version or self.LATEST_VERSION
+        api_version = kwargs.get("api_version") or self.LATEST_VERSION
         if api_version == 1:
             self.system_url = self.base_url + "api/v1/systems/"
             self.instance_url = self.base_url + "api/v1/instances/"
@@ -172,7 +175,7 @@ class RestClient(object):
 
             self.event_url = self.base_url + "api/vbeta/events/"
         else:
-            raise ValueError("Invalid beer-garden API version: %s" % api_version)
+            raise ValueError("Invalid Beer-garden API version: %s" % api_version)
 
     @enable_auth
     def get_version(self, **kwargs):
@@ -498,14 +501,3 @@ class RestClient(object):
             self.session.headers["Authorization"] = "Bearer " + self.access_token
 
         return response
-
-
-class BrewmasterRestClient(RestClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterRestClient'. This name will be removed in version "
-            "3.0, please use 'RestClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterRestClient, self).__init__(*args, **kwargs)

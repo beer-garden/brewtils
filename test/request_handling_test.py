@@ -6,7 +6,7 @@ import threading
 
 import pytest
 from mock import Mock, MagicMock, ANY
-from requests import ConnectionError
+from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.errors import (
     RequestProcessingError,
@@ -355,7 +355,7 @@ class TestEasyRequestUpdater(object):
             "ex,raised,bv_down",
             [
                 (RestClientError, DiscardMessageException, False),
-                (ConnectionError, RepublishRequestException, True),
+                (RequestsConnectionError, RepublishRequestException, True),
                 (ValueError, RepublishRequestException, False),
             ],
         )

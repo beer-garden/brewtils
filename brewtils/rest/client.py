@@ -111,6 +111,7 @@ class RestClient(object):
         self.bg_host = self._config.bg_host
         self.bg_port = self._config.bg_port
         self.bg_prefix = self._config.bg_url_prefix
+        self.api_version = self._config.api_version
         self.username = self._config.username
         self.password = self._config.password
         self.access_token = self._config.access_token
@@ -144,8 +145,7 @@ class RestClient(object):
         self.version_url = self.base_url + "version"
         self.config_url = self.base_url + "config"
 
-        api_version = self._config.api_version or self.LATEST_VERSION
-        if api_version == 1:
+        if self.api_version == 1:
             self.system_url = self.base_url + "api/v1/systems/"
             self.instance_url = self.base_url + "api/v1/instances/"
             self.command_url = self.base_url + "api/v1/commands/"
@@ -158,7 +158,7 @@ class RestClient(object):
 
             self.event_url = self.base_url + "api/vbeta/events/"
         else:
-            raise ValueError("Invalid Beer-garden API version: %s" % api_version)
+            raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
     @staticmethod
     def _load_config(args, kwargs):

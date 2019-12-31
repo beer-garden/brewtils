@@ -453,8 +453,8 @@ class SchemaParser(object):
 
         return json.dumps(multiple) if to_string else multiple
 
-    @staticmethod
-    def _get_schema_name(model):
+    @classmethod
+    def _get_schema_name(cls, model):
         if isinstance(model, brewtils.models.BaseModel):
             # Use type() here because Command has an instance attribute named "schema"
             return type(model).schema

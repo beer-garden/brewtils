@@ -73,7 +73,7 @@ def plugin(
     return plugin
 
 
-class TestPluginInit(object):
+class TestInit(object):
     def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
             Plugin(client)
@@ -208,7 +208,7 @@ class TestPluginInit(object):
         assert plugin.config.ca_verify is False
 
 
-class TestPluginRun(object):
+class TestRun(object):
     def test_normal(self, plugin):
         plugin._shutdown_event = Mock()
 
@@ -220,6 +220,14 @@ class TestPluginRun(object):
         plugin.run()
         assert startup_mock.called is True
         assert shutdown_mock.called is True
+
+    def test_missing_client(self, bg_system):
+        """Create a Plugin with no client, set it once, but never change"""
+        # Don't use the plugin fixture as it already has a client
+        plug = Plugin(bg_host="localhost", system=bg_system)
+
+        with pytest.raises(AttributeError):
+            plug.run()
 
     def test_error(self, caplog, plugin):
         plugin._shutdown_event = Mock(wait=Mock(side_effect=ValueError))
@@ -250,6 +258,29 @@ class TestPluginRun(object):
         assert startup_mock.called is True
         assert shutdown_mock.called is True
         assert len(caplog.records) == 0
+
+
+class TestProperties(object):
+    def test_client(self, plugin, client):
+        assert plugin.client == client
+
+    def test_client_setter(self, client, bg_system):
+        """Create a Plugin with no client, set it once, but never change"""
+        # Don't use the plugin fixture as it already has a client
+        plug = Plugin(bg_host="localhost", system=bg_system)
+        assert plug.client is None
+
+        plug.client = client
+        assert plug.client == client
+
+        with pytest.raises(AttributeError):
+            plug.client = None
+
+    def test_system(self, plugin, bg_system):
+        assert plugin.system == bg_system
+
+    def test_instance(self, plugin, bg_instance):
+        assert plugin.instance == bg_instance
 
 
 def test_startup(plugin, admin_processor, request_processor):
@@ -298,6 +329,27 @@ class TestShutdown(object):
             plugin._shutdown()
 
         assert len(caplog.records) == 1
+
+
+class TestInitializeLogging(object):
+    @pytest.fixture(autouse=True)
+    def config_mock(self, monkeypatch):
+        dict_config = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+        return dict_config
+
+    def test_normal(self, plugin, ez_client, config_mock, bg_logging_config):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.return_value = bg_logging_config
+
+        plugin._initialize_logging()
+        assert config_mock.called is True
+
+    def test_custom_logger(self, plugin, ez_client, config_mock):
+        plugin._custom_logger = True
+
+        plugin._initialize_logging()
+        assert config_mock.called is False
 
 
 class TestInitializeSystem(object):
@@ -441,14 +493,14 @@ class TestAdminMethods(object):
         new_instance = Mock()
         ez_client.update_instance_status.return_value = new_instance
 
-        assert plugin._start()
+        plugin._start()
         ez_client.update_instance_status.assert_called_once_with(
             bg_instance.id, "RUNNING"
         )
         assert plugin._instance == new_instance
 
     def test_stop(self, plugin):
-        assert plugin._stop()
+        plugin._stop()
         assert plugin._shutdown_event.is_set() is True
 
     def test_status(self, plugin, ez_client):
@@ -588,9 +640,6 @@ class TestDeprecations(object):
             "max_concurrent",
             "instance_name",
             "connection_parameters",
-            "client",
-            "system",
-            "instance",
             "metadata",
             "bm_client",
             "shutdown_event",

@@ -111,12 +111,10 @@ def wrap_response(
             if return_boolean:
                 return True
 
-            if not hasattr(instance.parser, parse_method):
+            if not hasattr(SchemaParser, parse_method):
                 return response
 
-            return getattr(instance.parser, parse_method)(
-                response.json(), many=parse_many
-            )
+            return getattr(SchemaParser, parse_method)(response.json(), many=parse_many)
         else:
             handle_response_failure(
                 response, default_exc=default_exc, raise_404=raise_404
@@ -154,9 +152,6 @@ class EasyClient(object):
 
     def __init__(self, **kwargs):
         self.client = RestClient(**kwargs)
-
-        # TODO - This is unnecessary and should be removed
-        self.parser = SchemaParser()
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.
@@ -198,7 +193,7 @@ class EasyClient(object):
         """
         return self.client.get_version(**kwargs)
 
-    @wrap_response(parse_method="parse_logging_config", default_exc=RestConnectionError)
+    @wrap_response(parse_method="parse_logging_config", default_exc=FetchError)
     def get_logging_config(self, system_name):
         """Get logging configuration for a System
 
@@ -265,7 +260,7 @@ class EasyClient(object):
             System: The newly-created system
 
         """
-        return self.client.post_systems(self.parser.serialize_system(system))
+        return self.client.post_systems(SchemaParser.serialize_system(system))
 
     @wrap_response(parse_method="parse_system", parse_many=False, default_exc=SaveError)
     def update_system(self, system_id, new_commands=None, **kwargs):
@@ -291,13 +286,13 @@ class EasyClient(object):
         add_instance = kwargs.pop("add_instance", None)
 
         if new_commands:
-            commands = self.parser.serialize_command(
+            commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )
             operations.append(PatchOperation("replace", "/commands", commands))
 
         if add_instance:
-            instance = self.parser.serialize_instance(add_instance, to_string=False)
+            instance = SchemaParser.serialize_instance(add_instance, to_string=False)
             operations.append(PatchOperation("add", "/instance", instance))
 
         if metadata:
@@ -308,7 +303,7 @@ class EasyClient(object):
                 operations.append(PatchOperation("replace", "/%s" % key, value))
 
         return self.client.patch_system(
-            system_id, self.parser.serialize_patch(operations, many=True)
+            system_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
     def remove_system(self, **kwargs):
@@ -345,7 +340,7 @@ class EasyClient(object):
 
         """
         return self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(PatchOperation("initialize"))
+            instance_id, SchemaParser.serialize_patch(PatchOperation("initialize"))
         )
 
     @wrap_response(
@@ -364,28 +359,22 @@ class EasyClient(object):
         return self.client.get_instance(instance_id)
 
     def get_instance_status(self, instance_id):
-        """Get an Instance
-
-        WARNING: This method currently returns the Instance, not the Instance's status.
-        This behavior will be corrected in 3.0.
-
-        To prepare for this change please use get_instance() instead of this method.
+        """Get an Instance's status
 
         Args:
             instance_id: The Id
 
         Returns:
-            The status
+            The Instance's status
 
         """
         warnings.warn(
-            "This method currently returns the Instance, not the Instance's status. "
-            "This behavior will be corrected in 3.0. To prepare please use "
-            "get_instance() instead of this method.",
-            FutureWarning,
+            "This method is deprecated and scheduled to be removed in 4.0. "
+            "To prepare please use get_instance() instead.",
+            DeprecationWarning,
         )
 
-        return self.get_instance(instance_id)
+        return self.get_instance(instance_id).status
 
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=SaveError
@@ -403,7 +392,7 @@ class EasyClient(object):
         """
         return self.client.patch_instance(
             instance_id,
-            self.parser.serialize_patch(
+            SchemaParser.serialize_patch(
                 PatchOperation("replace", "/status", new_status)
             ),
         )
@@ -420,7 +409,7 @@ class EasyClient(object):
 
         """
         return self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(PatchOperation("heartbeat"))
+            instance_id, SchemaParser.serialize_patch(PatchOperation("heartbeat"))
         )
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
@@ -503,7 +492,7 @@ class EasyClient(object):
 
         """
         return self.client.post_requests(
-            self.parser.serialize_request(request), **kwargs
+            SchemaParser.serialize_request(request), **kwargs
         )
 
     @wrap_response(
@@ -532,7 +521,7 @@ class EasyClient(object):
             operations.append(PatchOperation("replace", "/error_class", error_class))
 
         return self.client.patch_request(
-            request_id, self.parser.serialize_patch(operations, many=True)
+            request_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
     @wrap_response(return_boolean=True)
@@ -560,10 +549,10 @@ class EasyClient(object):
         event = args[0] if args else Event(**kwargs)
 
         return self.client.post_event(
-            self.parser.serialize_event(event), publishers=publishers
+            SchemaParser.serialize_event(event), publishers=publishers
         )
 
-    @wrap_response(parse_method="parse_queue", parse_many=True)
+    @wrap_response(parse_method="parse_queue", parse_many=True, default_exc=FetchError)
     def get_queues(self):
         """Retrieve all queue information
 
@@ -571,7 +560,7 @@ class EasyClient(object):
         """
         return self.client.get_queues()
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_queue(self, queue_name):
         """Cancel and remove all Requests from a message queue
 
@@ -584,7 +573,7 @@ class EasyClient(object):
         """
         return self.client.delete_queue(queue_name)
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_all_queues(self):
         """Cancel and remove all Requests in all queues
 
@@ -618,7 +607,7 @@ class EasyClient(object):
             Job: The newly-created Job
 
         """
-        return self.client.post_jobs(self.parser.serialize_job(job))
+        return self.client.post_jobs(SchemaParser.serialize_job(job))
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def remove_job(self, job_id):
@@ -646,7 +635,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
 
     def resume_job(self, job_id):
         """Resume a Job
@@ -658,7 +647,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
     def stream_to_sink(self, file_id, sink, **kwargs):
         """Stream the given file id to the sink.
@@ -771,5 +760,5 @@ class EasyClient(object):
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def _patch_job(self, job_id, operations):
         return self.client.patch_job(
-            job_id, self.parser.serialize_patch(operations, many=True)
+            job_id, SchemaParser.serialize_patch(operations, many=True)
         )

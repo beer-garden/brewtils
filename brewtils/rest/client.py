@@ -9,7 +9,7 @@ import urllib3
 from requests import Session
 from requests.adapters import HTTPAdapter
 
-import brewtils.plugin as plugin
+import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
@@ -199,7 +199,7 @@ class RestClient(object):
             )
             positional["bg_port"] = args[1]
 
-        return spec.load_config(*[kwargs, renamed, positional, plugin.CONFIG])
+        return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
 
     @enable_auth
     def get_version(self, **kwargs):

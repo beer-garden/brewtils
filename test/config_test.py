@@ -162,3 +162,16 @@ class TestLoadConfig(object):
 
         with pytest.raises(ValidationError):
             load_config(environment=False)
+
+    def test_metadata_kwarg(self):
+        os.environ["BG_HOST"] = "the_host"
+
+        config = load_config(metadata={"foo": "bar"})
+        assert config.metadata == '{"foo": "bar"}'
+
+    def test_metadata_env(self):
+        os.environ["BG_HOST"] = "the_host"
+        os.environ["BG_METADATA"] = '{"foo": "bar"}'
+
+        config = load_config()
+        assert config.metadata == '{"foo": "bar"}'

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 import logging.config
 import threading
@@ -163,7 +164,7 @@ class Plugin(object):
             attempts. Will double on subsequent attempts until reaching mq_max_timeout.
     """
 
-    def __init__(self, client=None, system=None, logger=None, metadata=None, **kwargs):
+    def __init__(self, client=None, system=None, logger=None, **kwargs):
         # Load config before setting up logging so the log level is configurable
         self.config = load_config(**kwargs)
 
@@ -185,7 +186,7 @@ class Plugin(object):
 
         self._client = client
         self._shutdown_event = threading.Event()
-        self._system = self._setup_system(system, metadata, kwargs)
+        self._system = self._setup_system(system, kwargs)
         self._ez_client = EasyClient(logger=self._logger, **self.config)
 
         # These will be created on startup
@@ -443,7 +444,7 @@ class Plugin(object):
                 "Unable to process message - currently shutting down"
             )
 
-    def _setup_system(self, system, metadata, plugin_kwargs):
+    def _setup_system(self, system, plugin_kwargs):
         helper_keywords = {
             "name",
             "version",
@@ -455,7 +456,7 @@ class Plugin(object):
         }
 
         if system:
-            if metadata or helper_keywords.intersection(plugin_kwargs.keys()):
+            if helper_keywords.intersection(plugin_kwargs.keys()):
                 raise ValidationError(
                     "Sorry, you can't provide a complete system definition as well as "
                     "system creation helper kwargs %s" % helper_keywords
@@ -483,7 +484,7 @@ class Plugin(object):
                 name=name,
                 description=description,
                 version=version,
-                metadata=metadata,
+                metadata=json.loads(self.config.metadata),
                 commands=getattr(self._client, "_bg_commands", []),
                 instances=[Instance(name=self.config.instance_name)],
                 max_instances=self.config.max_instances,

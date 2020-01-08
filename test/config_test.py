@@ -101,12 +101,6 @@ class TestGetConnectionInfo(object):
 
 
 class TestLoadConfig(object):
-    def setup_method(self):
-        self.safe_copy = os.environ.copy()
-
-    def teardown_method(self):
-        os.environ = self.safe_copy
-
     def test_cli_from_arg(self):
         cli_args = ["--bg-host", "the_host"]
 
@@ -162,3 +156,25 @@ class TestLoadConfig(object):
 
         with pytest.raises(ValidationError):
             load_config(environment=False)
+
+    class TestMetadata(object):
+        @pytest.fixture(autouse=True)
+        def host_env(self):
+            """Just always set this so load_config doesn't fail"""
+            os.environ["BG_HOST"] = "the_host"
+
+        def test_kwarg_dict(self):
+            assert load_config(metadata={"foo": "bar"}).metadata == '{"foo": "bar"}'
+
+        def test_kwarg_str(self):
+            assert load_config(metadata='{"foo": "bar"}').metadata == '{"foo": "bar"}'
+
+        def test_env(self):
+            os.environ["BG_METADATA"] = '{"foo": "bar"}'
+
+            assert load_config().metadata == '{"foo": "bar"}'
+
+        def test_cli(self):
+            cli_args = ["--metadata", '{"foo": "bar"}']
+
+            assert load_config(cli_args=cli_args).metadata == '{"foo": "bar"}'

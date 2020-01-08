@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
 
+
+def _is_json_dict(s):
+    import json
+
+    try:
+        return isinstance(json.loads(s), dict)
+    except json.decoder.JSONDecodeError:
+        return False
+
+
 _CONNECTION_SPEC = {
     "bg_host": {
         "type": "str",
@@ -104,6 +114,13 @@ _SYSTEM_SPEC = {
         "type": "str",
         "description": "The system display name",
         "required": False,
+    },
+    "metadata": {
+        "type": "str",
+        "description": "The system metadata, in JSON string form."
+        'Something like \'{"foo": "bar"}\'',
+        "default": "{}",
+        "validator": _is_json_dict,
     },
 }
 

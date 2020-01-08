@@ -528,17 +528,17 @@ class TestSetupSystem(object):
             {"icon_name": "foo"},
             {"display_name": "foo"},
             {"max_instances": 1},
-            {"metadata": {"foo": "bar"}},
+            {"metadata": '{"foo": "bar"}'},
         ],
     )
     def test_extra_params(self, plugin, bg_system, extra_args):
         with pytest.raises(ValidationError, match="system creation helper"):
-            plugin._setup_system(bg_system, {}, extra_args)
+            plugin._setup_system(bg_system, extra_args)
 
     def test_no_instances(self, plugin):
         system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
-            plugin._setup_system(system, {}, {})
+            plugin._setup_system(system, {})
 
     def test_max_instances(self, plugin):
         system = System(
@@ -546,7 +546,7 @@ class TestSetupSystem(object):
             version="1.0.0",
             instances=[Instance(name="1"), Instance(name="2")],
         )
-        new_system = plugin._setup_system(system, {}, {})
+        new_system = plugin._setup_system(system, {})
         assert new_system.max_instances == 2
 
     def test_construct_system(self, plugin):
@@ -557,10 +557,11 @@ class TestSetupSystem(object):
                 "description": "desc",
                 "icon_name": "icon",
                 "display_name": "display_name",
+                "metadata": '{"foo": "bar"}',
             }
         )
 
-        new_system = plugin._setup_system(None, {"foo": "bar"}, {})
+        new_system = plugin._setup_system(None, {})
         self._validate_system(new_system)
 
     def test_construct_from_client(self, plugin, client):
@@ -569,7 +570,7 @@ class TestSetupSystem(object):
         client._bg_version = "1.0.0"
         client.__doc__ = "Description\nSome more stuff"
 
-        new_system = plugin._setup_system(None, {}, {})
+        new_system = plugin._setup_system(None, {})
         assert new_system.name == "name"
         assert new_system.version == "1.0.0"
         assert new_system.description == "Description"
@@ -579,7 +580,7 @@ class TestSetupSystem(object):
         client._bg_name = "system"
         client._bg_version = "1.0.0"
 
-        new_system = plugin._setup_system(bg_system, {}, {})
+        new_system = plugin._setup_system(bg_system, {})
         assert new_system.name == "system"
         assert new_system.version == "1.0.0"
 
@@ -587,7 +588,7 @@ class TestSetupSystem(object):
     def test_missing_params(self, plugin, kwargs):
         plugin.config.update(kwargs)
         with pytest.raises(ValidationError):
-            plugin._setup_system(None, {}, kwargs)
+            plugin._setup_system(None, kwargs)
 
     @pytest.mark.parametrize(
         "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
@@ -595,7 +596,7 @@ class TestSetupSystem(object):
     def test_decorator_mismatch(self, plugin, client, bg_system, attr, value):
         setattr(client, attr, value)
         with pytest.raises(ValidationError, match="doesn't match"):
-            plugin._setup_system(bg_system, {}, {})
+            plugin._setup_system(bg_system, {})
 
     @staticmethod
     def _validate_system(new_system):

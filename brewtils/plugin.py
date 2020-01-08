@@ -169,6 +169,12 @@ class Plugin(object):
 
         # Set the global config so it can be used by SystemClients and such
         global CONFIG
+        if len(CONFIG):
+            print(
+                "Global CONFIG object is not empty! If multiple plugins are running in "
+                "this process please ensure any [System|Easy|Rest]Clients are passed "
+                "connection information as kwargs - auto-discovery may be incorrect."
+            )
         CONFIG = Box(self._config.to_dict(), default_box=True)
 
         # If a logger is specified or the root logger already has handlers then we

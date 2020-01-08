@@ -70,6 +70,14 @@ class TestInit(object):
         with pytest.raises(ValidationError):
             Plugin(client)
 
+    def test_existing_config(self, capsys, bg_system):
+        brewtils.plugin.CONFIG.foo = "bar"
+
+        Plugin(bg_host="localhost", system=bg_system)
+        out = capsys.readouterr().out
+
+        assert "CONFIG" in out
+
     @pytest.mark.parametrize(
         "instance_name,expected_unique",
         [(None, "system[default]-1.0.0"), ("unique", "system[unique]-1.0.0")],

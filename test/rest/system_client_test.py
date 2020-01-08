@@ -195,6 +195,25 @@ class TestCreateRequest(object):
         assert len(caplog.records) == 1
         assert caplog.records[0].levelno == logging.WARNING
 
+    def test_create_request_manual_parent_no_context(
+        self, client, easy_client, mock_success, bg_request
+    ):
+        easy_client.create_request.return_value = mock_success
+
+        client.command_1(_parent=bg_request)
+        assert easy_client.create_request.call_args[0][0].parent == bg_request
+
+    def test_create_request_manual_parent_context(
+        self, monkeypatch, client, easy_client, mock_success, bg_request
+    ):
+        easy_client.create_request.return_value = mock_success
+        monkeypatch.setattr(
+            brewtils.plugin, "request_context", Mock(current_request=Mock(id="1")),
+        )
+
+        client.command_1(_parent=bg_request)
+        assert easy_client.create_request.call_args[0][0].parent == bg_request
+
     @pytest.mark.parametrize(
         "kwargs",
         [

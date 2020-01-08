@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import json
 import warnings
 from argparse import ArgumentParser
 
@@ -7,8 +7,8 @@ from yapconf import YapconfSpec
 from yapconf.exceptions import YapconfItemNotFound
 
 from brewtils.errors import ValidationError
-from brewtils.specification import SPECIFICATION
 from brewtils.rest import normalize_url_prefix
+from brewtils.specification import SPECIFICATION
 
 
 def get_argument_parser():
@@ -147,6 +147,12 @@ def load_config(cli_args=True, environment=True, argument_parser=None, **kwargs)
                 stacklevel=2,
             )
             kwargs["bg_port"] = kwargs.pop("port")
+
+        # Metadata is a little weird because yapconf doesn't support raw dicts, so we
+        # need to make it a json string in that case
+        metadata = kwargs.get("metadata")
+        if isinstance(metadata, dict):
+            kwargs["metadata"] = json.dumps(metadata)
 
         sources.append(("kwargs", kwargs))
 

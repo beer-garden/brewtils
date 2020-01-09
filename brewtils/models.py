@@ -51,9 +51,9 @@ class Events(Enum):
     DB_CREATE = 16
     DB_UPDATE = 17
     DB_DELETE = 18
-    NAMESPACE_CREATED = 19
-    NAMESPACE_UPDATED = 20
-    NAMESPACE_REMOVED = 21
+    GARDEN_CREATED = 19
+    GARDEN_UPDATED = 20
+    GARDEN_REMOVED = 21
 
 
 class BaseModel(object):
@@ -1006,10 +1006,10 @@ class CronTrigger(BaseModel):
         return kwargs
 
 
-class Namespace(BaseModel):
-    schema = "NamespaceSchema"
+class Garden(BaseModel):
+    schema = "GardenSchema"
 
-    NAMESPACE_STATUSES = {
+    GARDEN_STATUSES = {
         "INITIALIZING",
         "RUNNING",
         "BLOCKED",
@@ -1021,14 +1021,14 @@ class Namespace(BaseModel):
     def __init__(
         self,
         id=None,
-        namespace=None,
+        garden_name=None,
         status=None,
         status_info=None,
         connection_type=None,
         connection_params=None,
     ):
         self.id = id
-        self.namespace = namespace
+        self.garden_name = garden_name
         self.status = status.upper() if status else None
         self.status_info = status_info or {}
 
@@ -1036,7 +1036,7 @@ class Namespace(BaseModel):
         self.connection_params = connection_params
 
     def __str__(self):
-        return "%s" % self.namespace
+        return "%s" % self.garden_name
 
     def __repr__(self):
-        return "<Namespace: namespace=%s, status=%s>" % (self.namespace, self.status)
+        return "<Garden: garden_name=%s, status=%s>" % (self.garden_name, self.status)

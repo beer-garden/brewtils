@@ -26,7 +26,7 @@ __all__ = [
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
-    "NamespaceSchema",
+    "GardenSchema",
 ]
 
 
@@ -304,9 +304,9 @@ class CronTriggerSchema(BaseSchema):
     jitter = fields.Int(allow_none=True)
 
 
-class NamespaceSchema(BaseSchema):
+class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
-    namespace = fields.Str(allow_none=True)
+    garden_name = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
     status_info = fields.Nested("StatusInfoSchema", allow_none=True)
     connection_type = fields.Str(allow_none=True)

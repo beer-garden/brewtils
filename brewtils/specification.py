@@ -135,6 +135,7 @@ _PLUGIN_SPEC = {
         "type": "str",
         "description": "The log level to use",
         "default": "INFO",
+        "bootstrap": True,
     },
     "max_concurrent": {
         "type": "int",

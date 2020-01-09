@@ -76,7 +76,9 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
     return {key: config[key] for key in _CONNECTION_SPEC}
 
 
-def load_config(cli_args=True, environment=True, argument_parser=None, **kwargs):
+def load_config(
+    cli_args=True, environment=True, argument_parser=None, bootstrap=False, **kwargs
+):
     """Load configuration using Yapconf
 
     Configuration will be loaded from these sources, with earlier sources having
@@ -154,7 +156,7 @@ def load_config(cli_args=True, environment=True, argument_parser=None, **kwargs)
         sources.append("ENVIRONMENT")
 
     try:
-        config = spec.load_config(*sources)
+        config = spec.load_config(*sources, bootstrap=bootstrap)
     except YapconfItemNotFound as ex:
         if ex.item.name == "bg_host":
             raise ValidationError(
@@ -167,6 +169,7 @@ def load_config(cli_args=True, environment=True, argument_parser=None, **kwargs)
         raise
 
     # Make sure the url_prefix is normal
-    config.bg_url_prefix = normalize_url_prefix(config.bg_url_prefix)
+    if "bg_url_prefix" in config:
+        config.bg_url_prefix = normalize_url_prefix(config.bg_url_prefix)
 
     return config

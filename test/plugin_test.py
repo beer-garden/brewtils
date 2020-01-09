@@ -5,7 +5,7 @@ import os
 import warnings
 
 import pytest
-from mock import MagicMock, Mock, ANY
+from mock import MagicMock, Mock, ANY, call
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
@@ -24,10 +24,12 @@ from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
 @pytest.fixture
-def ez_client(bg_system, bg_instance):
+def ez_client(bg_system, bg_instance, bg_logging_config):
     return Mock(
+        name="ez_client",
         create_system=Mock(return_value=bg_system),
         initialize_instance=Mock(return_value=bg_instance),
+        get_logging_config=Mock(return_value=bg_logging_config),
     )
 
 
@@ -54,11 +56,18 @@ def request_processor():
 
 @pytest.fixture
 def plugin(
-    client, ez_client, bg_system, bg_instance, admin_processor, request_processor
+    monkeypatch,
+    client,
+    ez_client,
+    bg_system,
+    bg_instance,
+    admin_processor,
+    request_processor,
 ):
+    monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=ez_client))
+
     plugin = Plugin(client, bg_host="localhost", system=bg_system)
     plugin._instance = bg_instance
-    plugin._ez_client = ez_client
     plugin._admin_processor = admin_processor
     plugin._request_processor = request_processor
 
@@ -70,13 +79,13 @@ class TestInit(object):
         with pytest.raises(ValidationError):
             Plugin(client)
 
-    def test_existing_config(self, capsys, bg_system):
+    def test_existing_config(self, caplog, bg_system):
         brewtils.plugin.CONFIG.foo = "bar"
 
-        Plugin(bg_host="localhost", system=bg_system)
-        out = capsys.readouterr().out
+        with caplog.at_level(logging.WARNING):
+            Plugin(bg_host="localhost", system=bg_system)
 
-        assert "CONFIG" in out
+        assert "Global CONFIG" in caplog.messages[0]
 
     @pytest.mark.parametrize(
         "instance_name,expected_unique",
@@ -104,7 +113,7 @@ class TestInit(object):
         assert plugin._config.ssl_enabled is True
         assert plugin._config.ca_verify is True
 
-    def test_default_logger(self, monkeypatch, client):
+    def test_default_logger(self, monkeypatch, client, ez_client):
         """Test that the default logging configuration is used.
 
         This needs to be tested separately because pytest (understandably) does some
@@ -113,13 +122,28 @@ class TestInit(object):
 
         """
         dict_config = Mock()
+        convert_logging = Mock()
 
         monkeypatch.setattr(logging, "root", Mock(handlers=[]))
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+        monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=ez_client))
+        monkeypatch.setattr(
+            brewtils.plugin,
+            "convert_logging_config",
+            Mock(return_value=convert_logging),
+        )
 
-        plugin = Plugin(client, bg_host="localhost", name="test", version="1")
-        dict_config.assert_called_once_with(default_config(level="INFO"))
+        plugin = Plugin(
+            client, bg_host="localhost", name="test", version="1", log_level="WARNING"
+        )
         assert logging.getLogger("brewtils.plugin") == plugin._logger
+
+        # Config will happen twice - once with the bootstrap level default config and
+        # once as part of the call to _initialize_logging
+        assert dict_config.call_count == 2
+        dict_config.assert_has_calls(
+            [call(default_config(level="WARNING")), call(convert_logging)]
+        )
 
     def test_kwargs(self, client, bg_system):
         logger = Mock()

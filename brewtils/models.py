@@ -28,7 +28,7 @@ __all__ = [
     "DateTrigger",
     "CronTrigger",
     "IntervalTrigger",
-    "Namespace",
+    "Garden",
 ]
 
 

@@ -4,6 +4,7 @@ import logging
 import logging.config
 import threading
 
+from box import Box
 from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.config import load_config
@@ -29,10 +30,8 @@ from brewtils.rest.easy_client import EasyClient
 # This is what enables request nesting to work easily
 request_context = threading.local()
 
-# These are not thread-locals - they should be set in the Plugin __init__ and then never
-# touched. This allows us to do sanity checks when creating nested Requests.
-_HOST = ""
-_PORT = None
+# Global config, used to simplify BG client creation and sanity checks.
+CONFIG = Box(default_box=True)
 
 
 class Plugin(object):
@@ -166,7 +165,17 @@ class Plugin(object):
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
         # Load config before setting up logging so the log level is configurable
-        self.config = load_config(**kwargs)
+        self._config = load_config(**kwargs)
+
+        # Set the global config so it can be used by SystemClients and such
+        global CONFIG
+        if len(CONFIG):
+            print(
+                "Global CONFIG object is not empty! If multiple plugins are running in "
+                "this process please ensure any [System|Easy|Rest]Clients are passed "
+                "connection information as kwargs - auto-discovery may be incorrect."
+            )
+        CONFIG = Box(self._config.to_dict(), default_box=True)
 
         # If a logger is specified or the root logger already has handlers then we
         # assume that logging has already been configured
@@ -175,19 +184,15 @@ class Plugin(object):
             self._logger = logger
         else:
             if len(logging.root.handlers) == 0:
-                logging.config.dictConfig(default_config(level=self.config.log_level))
+                logging.config.dictConfig(default_config(level=self._config.log_level))
                 self._custom_logger = False
 
             self._logger = logging.getLogger(__name__)
 
-        global _HOST, _PORT
-        _HOST = self.config.bg_host
-        _PORT = self.config.bg_port
-
         self._client = client
         self._shutdown_event = threading.Event()
         self._system = self._setup_system(system, kwargs)
-        self._ez_client = EasyClient(logger=self._logger, **self.config)
+        self._ez_client = EasyClient(logger=self._logger, **self._config)
 
         # These will be created on startup
         self._instance = None
@@ -236,7 +241,7 @@ class Plugin(object):
     def unique_name(self):
         return "%s[%s]-%s" % (
             self._system.name,
-            self.config.instance_name,
+            self._config.instance_name,
             self._system.version,
         )
 
@@ -340,21 +345,21 @@ class Plugin(object):
         }
 
         # And if this particular instance doesn't exist we want to add it
-        if not existing_system.has_instance(self.config.instance_name):
-            update_kwargs["add_instance"] = Instance(name=self.config.instance_name)
+        if not existing_system.has_instance(self._config.instance_name):
+            update_kwargs["add_instance"] = Instance(name=self._config.instance_name)
 
         return self._ez_client.update_system(existing_system.id, **update_kwargs)
 
     def _initialize_instance(self):
         # Sanity check to make sure an instance with this name was registered
-        if not self._system.has_instance(self.config.instance_name):
+        if not self._system.has_instance(self._config.instance_name):
             raise PluginValidationError(
                 "Unable to find registered instance with name '%s'"
-                % self.config.instance_name
+                % self._config.instance_name
             )
 
         return self._ez_client.initialize_instance(
-            self._system.get_instance(self.config.instance_name).id
+            self._system.get_instance(self._config.instance_name).id
         )
 
     def _initialize_processors(self):
@@ -365,9 +370,9 @@ class Plugin(object):
         if "ssl" in connection_info:
             connection_info["ssl"].update(
                 {
-                    "ca_cert": self.config.ca_cert,
-                    "ca_verify": self.config.ca_verify,
-                    "client_cert": self.config.client_cert,
+                    "ca_cert": self._config.ca_cert,
+                    "ca_verify": self._config.ca_verify,
+                    "client_cert": self._config.client_cert,
                 }
             )
 
@@ -376,9 +381,9 @@ class Plugin(object):
             "connection_type": self._instance.queue_type,
             "connection_info": connection_info,
             "panic_event": self._shutdown_event,
-            "max_reconnect_attempts": self.config.mq.max_attempts,
-            "max_reconnect_timeout": self.config.mq.max_timeout,
-            "starting_reconnect_timeout": self.config.mq.starting_timeout,
+            "max_reconnect_attempts": self._config.mq.max_attempts,
+            "max_reconnect_timeout": self._config.mq.max_timeout,
+            "starting_reconnect_timeout": self._config.mq.starting_timeout,
         }
         admin_consumer = RequestConsumer.create(
             thread_name="Admin Consumer",
@@ -389,7 +394,7 @@ class Plugin(object):
         request_consumer = RequestConsumer.create(
             thread_name="Request Consumer",
             queue_name=self._instance.queue_info["request"]["name"],
-            max_concurrent=self.config.max_concurrent,
+            max_concurrent=self._config.max_concurrent,
             **common_args
         )
 
@@ -407,7 +412,7 @@ class Plugin(object):
             consumer=request_consumer,
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
-            max_workers=self.config.max_concurrent,
+            max_workers=self._config.max_concurrent,
         )
 
         return admin_processor, request_processor
@@ -473,10 +478,10 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = self.config.name or getattr(self._client, "_bg_name")
-            version = self.config.version or getattr(self._client, "_bg_version")
+            name = self._config.name or getattr(self._client, "_bg_name")
+            version = self._config.version or getattr(self._client, "_bg_version")
 
-            description = self.config.description
+            description = self._config.description
             if not description and self._client.__doc__:
                 description = self._client.__doc__.split("\n")[0]
 
@@ -484,12 +489,12 @@ class Plugin(object):
                 name=name,
                 description=description,
                 version=version,
-                metadata=json.loads(self.config.metadata),
+                metadata=json.loads(self._config.metadata),
                 commands=getattr(self._client, "_bg_commands", []),
-                instances=[Instance(name=self.config.instance_name)],
-                max_instances=self.config.max_instances,
-                icon_name=self.config.icon_name,
-                display_name=self.config.display_name,
+                instances=[Instance(name=self._config.instance_name)],
+                max_instances=self._config.max_instances,
+                icon_name=self._config.icon_name,
+                display_name=self._config.display_name,
             )
 
         # Make sure the System definition makes sense
@@ -519,72 +524,72 @@ class Plugin(object):
     @property
     def bg_host(self):
         _deprecate("bg_host has moved into config (plugin.config.bg_host)")
-        return self.config.bg_host
+        return self._config.bg_host
 
     @property
     def bg_port(self):
         _deprecate("bg_port has moved into config (plugin.config.bg_port)")
-        return self.config.bg_port
+        return self._config.bg_port
 
     @property
     def ssl_enabled(self):
         _deprecate("ssl_enabled has moved into config (plugin.config.ssl_enabled)")
-        return self.config.ssl_enabled
+        return self._config.ssl_enabled
 
     @property
     def ca_cert(self):
         _deprecate("ca_cert has moved into config (plugin.config.ca_cert)")
-        return self.config.ca_cert
+        return self._config.ca_cert
 
     @property
     def client_cert(self):
         _deprecate("client_cert has moved into config (plugin.config.client_cert)")
-        return self.config.client_cert
+        return self._config.client_cert
 
     @property
     def bg_url_prefix(self):
         _deprecate("bg_url_prefix has moved into config (plugin.config.bg_url_prefix)")
-        return self.config.bg_url_prefix
+        return self._config.bg_url_prefix
 
     @property
     def ca_verify(self):
         _deprecate("ca_verify has moved into config (plugin.config.ca_verify)")
-        return self.config.ca_verify
+        return self._config.ca_verify
 
     @property
     def max_attempts(self):
         _deprecate("max_attempts has moved into config (plugin.config.max_attempts)")
-        return self.config.max_attempts
+        return self._config.max_attempts
 
     @property
     def max_timeout(self):
         _deprecate("max_timeout has moved into config (plugin.config.max_timeout)")
-        return self.config.max_timeout
+        return self._config.max_timeout
 
     @property
     def starting_timeout(self):
         _deprecate(
             "starting_timeout has moved into config (plugin.config.starting_timeout)"
         )
-        return self.config.starting_timeout
+        return self._config.starting_timeout
 
     @property
     def max_concurrent(self):
         _deprecate(
             "max_concurrent has moved into config (plugin.config.max_concurrent)"
         )
-        return self.config.max_concurrent
+        return self._config.max_concurrent
 
     @property
     def instance_name(self):
         _deprecate("instance_name has moved into config (plugin.config.instance_name)")
-        return self.config.instance_name
+        return self._config.instance_name
 
     @property
     def connection_parameters(self):
         _deprecate("connection_parameters attribute was removed, please use 'config'")
         return {
-            key: self.config[key]
+            key: self._config[key]
             for key in (
                 "bg_host",
                 "bg_port",

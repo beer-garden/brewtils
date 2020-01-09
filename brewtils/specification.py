@@ -57,7 +57,8 @@ _CONNECTION_SPEC = {
     "api_version": {
         "type": "int",
         "description": "Beergarden API version",
-        "required": False,
+        "default": 1,
+        "choices": [1],
     },
     "client_timeout": {
         "type": "float",

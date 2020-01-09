@@ -23,13 +23,6 @@ from brewtils.models import Instance, System, Command
 from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
-@pytest.fixture(autouse=True)
-def environ():
-    safe_copy = os.environ.copy()
-    yield
-    os.environ = safe_copy
-
-
 @pytest.fixture
 def ez_client(bg_system, bg_instance):
     return Mock(
@@ -77,6 +70,14 @@ class TestInit(object):
         with pytest.raises(ValidationError):
             Plugin(client)
 
+    def test_existing_config(self, capsys, bg_system):
+        brewtils.plugin.CONFIG.foo = "bar"
+
+        Plugin(bg_host="localhost", system=bg_system)
+        out = capsys.readouterr().out
+
+        assert "CONFIG" in out
+
     @pytest.mark.parametrize(
         "instance_name,expected_unique",
         [(None, "system[default]-1.0.0"), ("unique", "system[unique]-1.0.0")],
@@ -96,12 +97,12 @@ class TestInit(object):
 
     def test_defaults(self, plugin):
         assert plugin._logger == logging.getLogger("brewtils.plugin")
-        assert plugin.config.instance_name == "default"
-        assert plugin.config.bg_host == "localhost"
-        assert plugin.config.bg_port == 2337
-        assert plugin.config.bg_url_prefix == "/"
-        assert plugin.config.ssl_enabled is True
-        assert plugin.config.ca_verify is True
+        assert plugin._config.instance_name == "default"
+        assert plugin._config.bg_host == "localhost"
+        assert plugin._config.bg_port == 2337
+        assert plugin._config.bg_url_prefix == "/"
+        assert plugin._config.ssl_enabled is True
+        assert plugin._config.ca_verify is True
 
     def test_default_logger(self, monkeypatch, client):
         """Test that the default logging configuration is used.
@@ -136,11 +137,11 @@ class TestInit(object):
         )
 
         assert plugin._logger == logger
-        assert plugin.config.bg_host == "host1"
-        assert plugin.config.bg_port == 2338
-        assert plugin.config.bg_url_prefix == "/beer/"
-        assert plugin.config.ssl_enabled is False
-        assert plugin.config.ca_verify is False
+        assert plugin._config.bg_host == "host1"
+        assert plugin._config.bg_port == 2338
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is False
+        assert plugin._config.ca_verify is False
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -151,11 +152,11 @@ class TestInit(object):
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
-        assert plugin.config.bg_host == "remotehost"
-        assert plugin.config.bg_port == 7332
-        assert plugin.config.bg_url_prefix == "/beer/"
-        assert plugin.config.ssl_enabled is False
-        assert plugin.config.ca_verify is False
+        assert plugin._config.bg_host == "remotehost"
+        assert plugin._config.bg_port == 7332
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is False
+        assert plugin._config.ca_verify is False
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -175,11 +176,11 @@ class TestInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.config.bg_host == "localhost"
-        assert plugin.config.bg_port == 2337
-        assert plugin.config.bg_url_prefix == "/beer/"
-        assert plugin.config.ssl_enabled is True
-        assert plugin.config.ca_verify is True
+        assert plugin._config.bg_host == "localhost"
+        assert plugin._config.bg_port == 2337
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is True
+        assert plugin._config.ca_verify is True
 
     def test_cli(self, client, bg_system):
         args = [
@@ -200,11 +201,11 @@ class TestInit(object):
             **get_connection_info(cli_args=args)
         )
 
-        assert plugin.config.bg_host == "remotehost"
-        assert plugin.config.bg_port == 2338
-        assert plugin.config.bg_url_prefix == "/beer/"
-        assert plugin.config.ssl_enabled is False
-        assert plugin.config.ca_verify is False
+        assert plugin._config.bg_host == "remotehost"
+        assert plugin._config.bg_port == 2338
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is False
+        assert plugin._config.ca_verify is False
 
 
 class TestRun(object):
@@ -408,7 +409,7 @@ class TestInitializeSystem(object):
         ez_client.find_unique_system.return_value = existing_system
 
         new_name = "foo_instance"
-        plugin.config.instance_name = new_name
+        plugin._config.instance_name = new_name
 
         plugin._initialize_system()
         assert ez_client.create_system.called is False
@@ -453,15 +454,15 @@ class TestInitializeProcessors(object):
             create_mock = Mock()
             monkeypatch.setattr(brewtils.plugin.RequestConsumer, "create", create_mock)
 
-            plugin.config.ca_cert = Mock()
-            plugin.config.ca_verify = Mock()
-            plugin.config.client_cert = Mock()
+            plugin._config.ca_cert = Mock()
+            plugin._config.ca_verify = Mock()
+            plugin._config.client_cert = Mock()
 
             plugin._initialize_processors()
             connection_info = create_mock.call_args_list[0][1]["connection_info"]
-            assert connection_info["ssl"]["ca_cert"] == plugin.config.ca_cert
-            assert connection_info["ssl"]["ca_verify"] == plugin.config.ca_verify
-            assert connection_info["ssl"]["client_cert"] == plugin.config.client_cert
+            assert connection_info["ssl"]["ca_cert"] == plugin._config.ca_cert
+            assert connection_info["ssl"]["ca_verify"] == plugin._config.ca_verify
+            assert connection_info["ssl"]["client_cert"] == plugin._config.client_cert
 
     def test_queue_names(self, plugin, bg_instance):
         request_queue = bg_instance.queue_info["request"]["name"]
@@ -550,7 +551,7 @@ class TestSetupSystem(object):
         assert new_system.max_instances == 2
 
     def test_construct_system(self, plugin):
-        plugin.config.update(
+        plugin._config.update(
             {
                 "name": "name",
                 "version": "1.0.0",
@@ -586,7 +587,7 @@ class TestSetupSystem(object):
 
     @pytest.mark.parametrize("kwargs", [{"name": "foo"}, {"version": "foo"}])
     def test_missing_params(self, plugin, kwargs):
-        plugin.config.update(kwargs)
+        plugin._config.update(kwargs)
         with pytest.raises(ValidationError):
             plugin._setup_system(None, kwargs)
 

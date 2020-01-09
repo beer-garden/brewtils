@@ -78,7 +78,7 @@ clean: clean-build clean-docs clean-python clean-test ## remove everything but s
 
 # Formatting
 format: ## Run black formatter in-line
-	black $(MODULE_NAME) $(TEST_DIR)
+	black -t py27 $(MODULE_NAME) $(TEST_DIR)
 
 
 # Linting

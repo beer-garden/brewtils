@@ -5,7 +5,7 @@ import os
 import warnings
 
 import pytest
-from mock import MagicMock, Mock, ANY, call
+from mock import MagicMock, Mock, ANY
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
@@ -138,12 +138,15 @@ class TestInit(object):
         )
         assert logging.getLogger("brewtils.plugin") == plugin._logger
 
+        # TODO - Enable this once plugin logging is in a better state
         # Config will happen twice - once with the bootstrap level default config and
         # once as part of the call to _initialize_logging
-        assert dict_config.call_count == 2
-        dict_config.assert_has_calls(
-            [call(default_config(level="WARNING")), call(convert_logging)]
-        )
+        # assert dict_config.call_count == 2
+        # dict_config.assert_has_calls(
+        #     [call(default_config(level="WARNING")), call(convert_logging)]
+        # )
+        assert dict_config.call_count == 1
+        dict_config.assert_called_once_with(default_config(level="WARNING"))
 
     def test_kwargs(self, client, bg_system):
         logger = Mock()

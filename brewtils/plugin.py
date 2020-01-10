@@ -207,7 +207,8 @@ class Plugin(object):
 
         # And with _system and _ez_client we can ask for the real logging config
         # (unless _custom_logger is True, in which case this does nothing)
-        self._initialize_logging()
+        # TODO - Enable this once plugin logging is in a better state
+        # self._initialize_logging()
 
     def run(self):
         if not self._client:

@@ -26,6 +26,7 @@ __all__ = [
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
+    "GardenSchema",
 ]
 
 
@@ -90,7 +91,6 @@ class BaseSchema(Schema):
 
 
 class ChoicesSchema(BaseSchema):
-
     type = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
     value = fields.Raw(allow_none=True, many=True)
@@ -99,7 +99,6 @@ class ChoicesSchema(BaseSchema):
 
 
 class ParameterSchema(BaseSchema):
-
     key = fields.Str(allow_none=True)
     type = fields.Str(allow_none=True)
     multi = fields.Bool(allow_none=True)
@@ -117,7 +116,6 @@ class ParameterSchema(BaseSchema):
 
 
 class CommandSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
@@ -132,7 +130,6 @@ class CommandSchema(BaseSchema):
 
 
 class InstanceSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
@@ -145,7 +142,6 @@ class InstanceSchema(BaseSchema):
 
 
 class SystemSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
@@ -173,7 +169,6 @@ class RequestTemplateSchema(BaseSchema):
 
 
 class RequestSchema(RequestTemplateSchema):
-
     id = fields.Str(allow_none=True)
     parent = fields.Nested("self", exclude=("children",), allow_none=True)
     children = fields.Nested(
@@ -189,12 +184,10 @@ class RequestSchema(RequestTemplateSchema):
 
 
 class StatusInfoSchema(BaseSchema):
-
     heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
 
 
 class PatchSchema(BaseSchema):
-
     operation = fields.Str(allow_none=True)
     path = fields.Str(allow_none=True)
     value = fields.Raw(allow_none=True)
@@ -231,14 +224,12 @@ class PatchSchema(BaseSchema):
 
 
 class LoggingConfigSchema(BaseSchema):
-
     level = fields.Str(allow_none=True)
     formatters = fields.Dict(allow_none=True)
     handlers = fields.Dict(allow_none=True)
 
 
 class EventSchema(BaseSchema):
-
     name = fields.Str(allow_none=True)
     payload = fields.Dict(allow_none=True)
     error = fields.Bool(allow_none=True)
@@ -247,7 +238,6 @@ class EventSchema(BaseSchema):
 
 
 class QueueSchema(BaseSchema):
-
     name = fields.Str(allow_none=True)
     system = fields.Str(allow_none=True)
     version = fields.Str(allow_none=True)
@@ -258,7 +248,6 @@ class QueueSchema(BaseSchema):
 
 
 class PrincipalSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
     roles = fields.Nested("RoleSchema", many=True, allow_none=True)
@@ -268,7 +257,6 @@ class PrincipalSchema(BaseSchema):
 
 
 class RoleSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
@@ -277,7 +265,6 @@ class RoleSchema(BaseSchema):
 
 
 class RefreshTokenSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
     expires = DateTime(allow_none=True, format="epoch", example="1500065932000")
@@ -285,13 +272,11 @@ class RefreshTokenSchema(BaseSchema):
 
 
 class DateTriggerSchema(BaseSchema):
-
     run_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
     timezone = fields.Str(allow_none=True)
 
 
 class IntervalTriggerSchema(BaseSchema):
-
     weeks = fields.Int(allow_none=True)
     days = fields.Int(allow_none=True)
     hours = fields.Int(allow_none=True)
@@ -305,7 +290,6 @@ class IntervalTriggerSchema(BaseSchema):
 
 
 class CronTriggerSchema(BaseSchema):
-
     year = fields.Str(allow_none=True)
     month = fields.Str(allow_none=True)
     day = fields.Str(allow_none=True)
@@ -318,6 +302,16 @@ class CronTriggerSchema(BaseSchema):
     end_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
+
+
+class GardenSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    garden_name = fields.Str(allow_none=True)
+    status = fields.Str(allow_none=True)
+    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    connection_type = fields.Str(allow_none=True)
+    connection_params = fields.Dict(allow_none=True)
+    metadata = fields.Dict(allow_none=True)
 
 
 TRIGGER_TYPE_TO_SCHEMA = {
@@ -346,7 +340,6 @@ def deserialize_trigger_selector(_, data):
 
 
 class JobSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     trigger_type = fields.Str(allow_none=True)

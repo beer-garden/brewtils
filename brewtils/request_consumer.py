@@ -3,10 +3,11 @@ import logging
 import threading
 from functools import partial
 
-from pika import BlockingConnection, URLParameters, BasicProperties, SelectConnection
+from pika import BasicProperties, BlockingConnection, SelectConnection, URLParameters
+from pika.spec import PERSISTENT_DELIVERY_MODE
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.queues import PikaClient, PIKA_ONE
+from brewtils.queues import PIKA_ONE, PikaClient
 from brewtils.schema_parser import SchemaParser
 
 
@@ -222,6 +223,7 @@ class RequestConsumer(threading.Thread):
                             content_type="text/plain",
                             headers=headers,
                             priority=1,
+                            delivery_mode=PERSISTENT_DELIVERY_MODE,
                         )
                         c.channel().basic_publish(
                             exchange=basic_deliver.exchange,

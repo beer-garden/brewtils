@@ -169,43 +169,54 @@ class Plugin(object):
     """
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
-        # Load config before setting up logging so the log level is configurable
-        self._config = load_config(**kwargs)
+        # These will be created on startup
+        self._instance = None
+        self._admin_processor = None
+        self._request_processor = None
 
-        # Set the global config so it can be used by SystemClients and such
-        global CONFIG
-        if len(CONFIG):
-            print(
-                "Global CONFIG object is not empty! If multiple plugins are running in "
-                "this process please ensure any [System|Easy|Rest]Clients are passed "
-                "connection information as kwargs - auto-discovery may be incorrect."
-            )
-        CONFIG = Box(self._config.to_dict(), default_box=True)
+        self._client = client
+        self._shutdown_event = threading.Event()
 
-        # If a logger is specified or the root logger already has handlers then we
-        # assume that logging has already been configured
+        # First thing to do is set a basic logging config, if necessary. If a logger is
+        # specified or the root logger already has handlers then we assume that
+        # configuration is already done and we don't modify it.
         self._custom_logger = True
         if logger:
             self._logger = logger
         else:
             if len(logging.root.handlers) == 0:
-                logging.config.dictConfig(default_config(level=self._config.log_level))
                 self._custom_logger = False
+
+                # log_level is the only bootstrap config item
+                boot_config = load_config(bootstrap=True, **kwargs)
+                logging.config.dictConfig(default_config(level=boot_config.log_level))
 
             self._logger = logging.getLogger(__name__)
 
-        self._client = client
-        self._shutdown_event = threading.Event()
+        # Now that some logging configuration is set we can load the real config
+        self._config = load_config(**kwargs)
+
+        # If global config has already been set that's a warning
+        global CONFIG
+        if len(CONFIG):
+            self._logger.warning(
+                "Global CONFIG object is not empty! If multiple plugins are running in "
+                "this process please ensure any [System|Easy|Rest]Clients are passed "
+                "connection information as kwargs as auto-discovery may be incorrect."
+            )
+        CONFIG = Box(self._config.to_dict(), default_box=True)
+
+        # Now that the config is loaded we can set _system and _ez_client
         self._system = self._setup_system(system, kwargs)
         self._ez_client = EasyClient(logger=self._logger, **self._config)
 
         # If None, it will be set during startup
         self._working_directory = kwargs.get("working_directory")
 
-        # These will be created on startup
-        self._instance = None
-        self._admin_processor = None
-        self._request_processor = None
+        # And with _system and _ez_client we can ask for the real logging config
+        # (unless _custom_logger is True, in which case this does nothing)
+        # TODO - Enable this once plugin logging is in a better state
+        # self._initialize_logging()
 
     def run(self):
         if not self._client:
@@ -254,7 +265,6 @@ class Plugin(object):
         )
 
     def _startup(self):
-        self._initialize_logging()
         self._logger.debug("About to start up plugin %s", self.unique_name)
 
         self._system = self._initialize_system()

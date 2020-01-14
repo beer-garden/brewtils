@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import logging
 import ssl as pyssl
+import warnings
 from functools import partial
 
 from pika import (
@@ -23,6 +24,13 @@ from brewtils.request_handling import RequestConsumer
 from brewtils.schema_parser import SchemaParser
 
 PIKA_ONE = pika_version.startswith("1.")
+
+if not PIKA_ONE:
+    warnings.warn(
+        "Support for pika < 1 is deprecated and will be removed in a future release.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
 
 class PikaClient(object):

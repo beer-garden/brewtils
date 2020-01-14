@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import ssl
+import warnings
 from concurrent.futures import Future
 
 import pika.spec
@@ -19,6 +20,17 @@ host = "localhost"
 port = 5672
 user = "user"
 password = "password"
+
+
+def test_old_module():
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        # noinspection PyUnresolvedReferences
+        import brewtils.queues
+
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "brewtils.pika" in str(w[0].message)
 
 
 class TestPikaClient(object):

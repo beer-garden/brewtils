@@ -68,6 +68,8 @@ def easy_client(system_1):
     mock = Mock(name="easy_client")
     mock.find_unique_system.return_value = system_1
     mock.find_systems.return_value = [system_1]
+    mock.client.bg_host = "localhost"
+    mock.client.bg_port = 3000
     return mock
 
 
@@ -88,18 +90,6 @@ def easy_client_patch(monkeypatch, easy_client):
     monkeypatch.setattr(
         brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
     )
-
-
-class TestCreate(object):
-    def test_alternate_kwargs(self):
-        client = SystemClient(host="localhost", port=3000, system_name="system")
-        assert client._bg_host == "localhost"
-        assert client._bg_port == 3000
-
-    @pytest.mark.parametrize("kwargs", [{"host": "localhost"}, {"port": 3000}])
-    def test_missing_kwargs(self, kwargs):
-        with pytest.raises(Exception):
-            SystemClient(**kwargs)
 
 
 class TestLoadBgSystem(object):
@@ -179,8 +169,8 @@ class TestCreateRequest(object):
         monkeypatch.setattr(
             brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(brewtils.plugin, "_HOST", "localhost")
-        monkeypatch.setattr(brewtils.plugin, "_PORT", 3000)
+        brewtils.plugin.CONFIG.bg_host = "localhost"
+        brewtils.plugin.CONFIG.bg_port = 3000
 
         client.command_1()
 
@@ -195,8 +185,8 @@ class TestCreateRequest(object):
         monkeypatch.setattr(
             brewtils.plugin, "request_context", Mock(current_request=parent_request)
         )
-        monkeypatch.setattr(brewtils.plugin, "_HOST", "OTHER_HOST")
-        monkeypatch.setattr(brewtils.plugin, "_PORT", 3000)
+        brewtils.plugin.CONFIG.bg_host = "OTHER_HOST"
+        brewtils.plugin.CONFIG.bg_port = 3000
 
         client.command_1()
 
@@ -204,6 +194,25 @@ class TestCreateRequest(object):
         assert parent is None
         assert len(caplog.records) == 1
         assert caplog.records[0].levelno == logging.WARNING
+
+    def test_create_request_manual_parent_no_context(
+        self, client, easy_client, mock_success, bg_request
+    ):
+        easy_client.create_request.return_value = mock_success
+
+        client.command_1(_parent=bg_request)
+        assert easy_client.create_request.call_args[0][0].parent == bg_request
+
+    def test_create_request_manual_parent_context(
+        self, monkeypatch, client, easy_client, mock_success, bg_request
+    ):
+        easy_client.create_request.return_value = mock_success
+        monkeypatch.setattr(
+            brewtils.plugin, "request_context", Mock(current_request=Mock(id="1")),
+        )
+
+        client.command_1(_parent=bg_request)
+        assert easy_client.create_request.call_args[0][0].parent == bg_request
 
     @pytest.mark.parametrize(
         "kwargs",

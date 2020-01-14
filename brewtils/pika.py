@@ -16,6 +16,7 @@ from pika import (
     URLParameters,
 )
 from pika.exceptions import AMQPError
+from pika.spec import PERSISTENT_DELIVERY_MODE
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
 from brewtils.request_handling import RequestConsumer
@@ -467,6 +468,7 @@ class PikaConsumer(RequestConsumer):
                             content_type="text/plain",
                             headers=headers,
                             priority=1,
+                            delivery_mode=PERSISTENT_DELIVERY_MODE,
                         )
                         c.channel().basic_publish(
                             exchange=basic_deliver.exchange,

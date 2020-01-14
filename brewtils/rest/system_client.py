@@ -192,12 +192,7 @@ class SystemClient(object):
         max_concurrent = kwargs.get("max_concurrent", (cpu_count() or 1) * 5)
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
-        self._bg_host = kwargs.pop("bg_host", None) or kwargs.pop("host")
-        self._bg_port = kwargs.pop("bg_port", None) or kwargs.pop("port")
-
-        self._easy_client = EasyClient(
-            bg_host=self._bg_host, bg_port=self._bg_port, **kwargs
-        )
+        self._easy_client = EasyClient(**kwargs)
         self._resolvers = build_resolver_map(self._easy_client)
 
         self._loaded = False
@@ -378,9 +373,10 @@ class SystemClient(object):
         if parent is None:
             return None
 
-        if (
-            getattr(brewtils.plugin, "_HOST").upper() != self._bg_host.upper()
-            or getattr(brewtils.plugin, "_PORT") != self._bg_port
+        if brewtils.plugin.CONFIG and (
+            brewtils.plugin.CONFIG.bg_host.upper()
+            != self._easy_client.client.bg_host.upper()
+            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
         ):
             self._logger.warning(
                 "A parent request was found, but the destination beer-garden "
@@ -404,8 +400,7 @@ class SystemClient(object):
         comment = kwargs.pop("_comment", None)
         output_type = kwargs.pop("_output_type", None)
         metadata = kwargs.pop("_metadata", {})
-
-        parent = self._get_parent_for_request()
+        parent = kwargs.pop("_parent", self._get_parent_for_request())
 
         if system_display:
             metadata["system_display_name"] = system_display

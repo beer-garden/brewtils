@@ -9,8 +9,11 @@ import urllib3
 from requests import Session
 from requests.adapters import HTTPAdapter
 
+import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
+from brewtils.specification import _CONNECTION_SPEC
+from yapconf import YapconfSpec
 
 
 def enable_auth(method):
@@ -103,66 +106,46 @@ class RestClient(object):
     JSON_HEADERS = {"Content-type": "application/json", "Accept": "text/plain"}
 
     def __init__(self, *args, **kwargs):
-        bg_host = kwargs.get("bg_host") or kwargs.get("host")
-        bg_port = kwargs.get("bg_port") or kwargs.get("port")
-        bg_prefix = kwargs.get("bg_url_prefix") or kwargs.get("url_prefix")
+        self._config = self._load_config(args, kwargs)
 
-        if not bg_host:
-            if len(args) > 0:
-                bg_host = args[0]
-                _deprecate(
-                    "Heads up - passing bg_host as a positional argument is deprecated "
-                    "and will be removed in version 4.0"
-                )
-            else:
-                raise ValueError('Missing keyword argument "bg_host"')
-
-        if not bg_port:
-            if len(args) > 1:
-                bg_port = args[1]
-                _deprecate(
-                    "Heads up - passing bg_port as a positional argument is deprecated "
-                    "and will be removed in version 4.0"
-                )
-            else:
-                raise ValueError('Missing keyword argument "bg_port"')
-
-        self.username = kwargs.get("username")
-        self.password = kwargs.get("password")
-        self.access_token = kwargs.get("access_token")
-        self.refresh_token = kwargs.get("refresh_token")
+        self.bg_host = self._config.bg_host
+        self.bg_port = self._config.bg_port
+        self.bg_prefix = self._config.bg_url_prefix
+        self.api_version = self._config.api_version
+        self.username = self._config.username
+        self.password = self._config.password
+        self.access_token = self._config.access_token
+        self.refresh_token = self._config.refresh_token
 
         # Configure the session to use when making requests
         self.session = Session()
-        self.session.cert = kwargs.get("client_cert")
+        self.session.cert = self._config.client_cert
 
-        if not kwargs.get("ca_verify", True):
+        if not self._config.ca_verify:
             urllib3.disable_warnings()
             self.session.verify = False
-        elif kwargs.get("ca_cert"):
-            self.session.verify = kwargs.get("ca_cert")
+        elif self._config.ca_cert:
+            self.session.verify = self._config.ca_cert
 
-        timeout = kwargs.get("client_timeout")
-        if timeout == -1:
-            timeout = None
+        client_timeout = self._config.client_timeout
+        if client_timeout == -1:
+            client_timeout = None
 
         # Having two is kind of strange to me, but this is what Requests does
-        self.session.mount("https://", TimeoutAdapter(timeout=timeout))
-        self.session.mount("http://", TimeoutAdapter(timeout=timeout))
+        self.session.mount("https://", TimeoutAdapter(timeout=client_timeout))
+        self.session.mount("http://", TimeoutAdapter(timeout=client_timeout))
 
         # Configure the beer-garden URLs
-        scheme = "https" if kwargs.get("ssl_enabled") else "http"
         self.base_url = "%s://%s:%s%s" % (
-            scheme,
-            bg_host,
-            bg_port,
-            normalize_url_prefix(bg_prefix),
+            "https" if self._config.ssl_enabled else "http",
+            self.bg_host,
+            self.bg_port,
+            normalize_url_prefix(self.bg_prefix),
         )
         self.version_url = self.base_url + "version"
         self.config_url = self.base_url + "config"
 
-        api_version = kwargs.get("api_version") or self.LATEST_VERSION
-        if api_version == 1:
+        if self.api_version == 1:
             self.system_url = self.base_url + "api/v1/systems/"
             self.instance_url = self.base_url + "api/v1/instances/"
             self.command_url = self.base_url + "api/v1/commands/"
@@ -176,7 +159,48 @@ class RestClient(object):
             self.event_url = self.base_url + "api/vbeta/events/"
             self.file_url = self.base_url + "api/vbeta/files/"
         else:
-            raise ValueError("Invalid Beer-garden API version: %s" % api_version)
+            raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
+
+    @staticmethod
+    def _load_config(args, kwargs):
+        """Load a config based on the CONNECTION section of the Brewtils Specification
+
+        This will load a configuration with the following source precedence:
+
+        1. kwargs
+        2. kwargs with "old" names ("host", "port", "url_prefix")
+        3. host and port passed as positional arguments
+        4. the global configuration (brewtils.plugin.CONFIG)
+
+        Args:
+            args: DEPRECATED - host and port
+            kwargs: Standard connection arguments to be used
+
+        Returns:
+            The resolved configuration object
+        """
+        spec = YapconfSpec(_CONNECTION_SPEC)
+
+        renamed = {}
+        for key in ["host", "port", "url_prefix"]:
+            if kwargs.get(key):
+                renamed["bg_" + key] = kwargs.get(key)
+
+        positional = {}
+        if len(args) > 0:
+            _deprecate(
+                "Heads up - passing bg_host as a positional argument is deprecated "
+                "and will be removed in version 4.0"
+            )
+            positional["bg_host"] = args[0]
+        if len(args) > 1:
+            _deprecate(
+                "Heads up - passing bg_port as a positional argument is deprecated "
+                "and will be removed in version 4.0"
+            )
+            positional["bg_port"] = args[1]
+
+        return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
 
     @enable_auth
     def get_version(self, **kwargs):

@@ -29,6 +29,7 @@ __all__ = [
     "DateTrigger",
     "CronTrigger",
     "IntervalTrigger",
+    "Garden",
 ]
 
 
@@ -39,9 +40,11 @@ class Events(Enum):
     BARTENDER_STOPPED = 4
     REQUEST_CREATED = 5
     REQUEST_STARTED = 6
+    REQUEST_UPDATED = 22
     REQUEST_COMPLETED = 7
     INSTANCE_INITIALIZED = 8
     INSTANCE_STARTED = 9
+    INSTANCE_UPDATED = 23
     INSTANCE_STOPPED = 10
     SYSTEM_CREATED = 11
     SYSTEM_UPDATED = 12
@@ -51,7 +54,10 @@ class Events(Enum):
     DB_CREATE = 16
     DB_UPDATE = 17
     DB_DELETE = 18
-    FILE_CREATED = 19
+    GARDEN_CREATED = 19
+    GARDEN_UPDATED = 20
+    GARDEN_REMOVED = 21
+    FILE_CREATED = 24
 
 
 class BaseModel(object):
@@ -1070,3 +1076,39 @@ class CronTrigger(BaseModel):
         )
 
         return kwargs
+
+
+class Garden(BaseModel):
+    schema = "GardenSchema"
+
+    GARDEN_STATUSES = {
+        "INITIALIZING",
+        "RUNNING",
+        "BLOCKED",
+        "STOPPED",
+        "UNRESPONSIVE",
+        "UNKNOWN",
+    }
+
+    def __init__(
+        self,
+        id=None,
+        garden_name=None,
+        status=None,
+        status_info=None,
+        connection_type=None,
+        connection_params=None,
+    ):
+        self.id = id
+        self.garden_name = garden_name
+        self.status = status.upper() if status else None
+        self.status_info = status_info or {}
+
+        self.connection_type = connection_type
+        self.connection_params = connection_params
+
+    def __str__(self):
+        return "%s" % self.garden_name
+
+    def __repr__(self):
+        return "<Garden: garden_name=%s, status=%s>" % (self.garden_name, self.status)

@@ -1,6 +1,22 @@
 Brewtils Changelog
 ==================
 
+2.4.13
+-----
+Date: 1/13/20
+
+Bug Fixes
+^^^^^^^^^
+- Requests republished to rabbit are now persistent (beer-garden/#397)
+
+2.4.12
+-----
+Date: 1/10/20
+
+Other Changes
+^^^^^^^^^^^^^
+- Reverting a log message level that was incorrectly set to INFO
+
 2.4.11
 -----
 Date: 12/9/19

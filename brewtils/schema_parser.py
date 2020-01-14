@@ -16,6 +16,7 @@ class SchemaParser(object):
         "InstanceSchema": brewtils.models.Instance,
         "CommandSchema": brewtils.models.Command,
         "ParameterSchema": brewtils.models.Parameter,
+        "RequestFileSchema": brewtils.models.RequestFile,
         "RequestTemplateSchema": brewtils.models.RequestTemplate,
         "RequestSchema": brewtils.models.Request,
         "PatchSchema": brewtils.models.PatchOperation,
@@ -86,6 +87,19 @@ class SchemaParser(object):
         """
         return cls.parse(
             parameter, brewtils.models.Parameter, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_request_file(cls, request_file, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a request file model object
+
+        :param request_file: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A RequestFile object
+        """
+        return cls.parse(
+            request_file, brewtils.models.RequestFile, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -310,6 +324,17 @@ class SchemaParser(object):
         :return: Serialized representation of parameter
         """
         return cls.serialize(parameter, to_string=to_string, **kwargs)
+
+    @classmethod
+    def serialize_request_file(cls, request_file, to_string=True, **kwargs):
+        """Convert a request file model into serialized form
+
+        :param request_file: The request file object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation of request file
+        """
+        return cls.serialize(request_file, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize_request(cls, request, to_string=True, **kwargs):

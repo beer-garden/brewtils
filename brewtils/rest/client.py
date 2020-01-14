@@ -157,6 +157,7 @@ class RestClient(object):
             self.user_url = self.base_url + "api/v1/users/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
+            self.file_url = self.base_url + "api/vbeta/files/"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -459,6 +460,44 @@ class RestClient(object):
         :return: Response to the request
         """
         return self.session.delete(self.job_url + job_id)
+
+    @enable_auth
+    def get_file(self, file_id, **kwargs):
+        """Performs a GET on the specific File URL
+
+        Args:
+            file_id: ID of the file to get.
+
+        Returns:
+            Response to the request.
+
+        """
+        return self.session.get(self.file_url + file_id, **kwargs)
+
+    @enable_auth
+    def post_files(self, file_dict):
+        """Performs a POST on the file URL.
+
+        Files should be in the form:
+
+            {"identifier": ("desired_filename", open("filename", "rb")) }
+
+        Args:
+            file_dict: Dictionary of filename to files
+
+        Returns:
+            Response to the request.
+
+        """
+
+        # This is here in case we have not authenticated yet. Without this
+        # code, it is possible for us to perform the POST, which will call
+        # read on each of the files, that method fails with a 4XX, we then
+        # authenticate and try again, only to post an empty file.
+        for info in file_dict.values():
+            info[1].seek(0)
+
+        return self.session.post(self.file_url, files=file_dict)
 
     @enable_auth
     def get_user(self, user_identifier):

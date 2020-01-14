@@ -24,6 +24,7 @@ from brewtils.models import (
     RequestTemplate,
     IntervalTrigger,
     DateTrigger,
+    RequestFile,
 )
 
 
@@ -97,6 +98,7 @@ def nested_parameter_dict():
         "minimum": None,
         "regex": None,
         "form_input_type": None,
+        "type_info": {},
     }
 
 
@@ -118,6 +120,7 @@ def parameter_dict(nested_parameter_dict, choices_dict):
         "minimum": 1,
         "regex": ".*",
         "form_input_type": None,
+        "type_info": {},
     }
 
 
@@ -584,6 +587,12 @@ def bg_interval_trigger(interval_trigger_dict, ts_dt):
 
 
 @pytest.fixture
+def request_file_dict():
+    """A request file represented as a dictionary."""
+    return {"storage_type": "gridfs", "filename": "request_filename"}
+
+
+@pytest.fixture
 def cron_trigger_dict(ts_epoch):
     """A cron trigger as a dictionary."""
     return {
@@ -623,3 +632,9 @@ def bg_date_trigger(date_trigger_dict, ts_dt):
     dict_copy = copy.deepcopy(date_trigger_dict)
     dict_copy["run_date"] = ts_dt
     return DateTrigger(**dict_copy)
+
+
+@pytest.fixture
+def bg_request_file(request_file_dict):
+    """A request file as a model"""
+    return RequestFile(**request_file_dict)

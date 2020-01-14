@@ -15,6 +15,7 @@ from brewtils.errors import (
     ValidationError,
 )
 from brewtils.models import Request
+from brewtils.resolvers import build_resolver_map, UploadResolver
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -192,6 +193,7 @@ class SystemClient(object):
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
         self._easy_client = EasyClient(**kwargs)
+        self._resolvers = build_resolver_map(self._easy_client)
 
         self._loaded = False
         self._system = None
@@ -412,7 +414,7 @@ class SystemClient(object):
         if instance_name is None:
             raise ValidationError("Unable to send a request with no instance name")
 
-        return Request(
+        request = Request(
             command=command,
             system=system_name,
             system_version=system_version,
@@ -423,6 +425,10 @@ class SystemClient(object):
             metadata=metadata,
             parameters=kwargs,
         )
+        bytes_params = self._commands[command].parameter_keys_by_type("Bytes")
+        resolver = UploadResolver(request, bytes_params, self._resolvers)
+        request.parameters = resolver.resolve_parameters()
+        return request
 
     @staticmethod
     def _determine_latest(systems):

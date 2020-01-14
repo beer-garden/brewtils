@@ -311,6 +311,7 @@ class TestProperties(object):
 
 
 def test_startup(plugin, admin_processor, request_processor):
+    plugin._ez_client.update_system = Mock(return_value=plugin._system)
     plugin._initialize_processors = Mock(
         return_value=(admin_processor, request_processor)
     )
@@ -318,6 +319,7 @@ def test_startup(plugin, admin_processor, request_processor):
     plugin._startup()
     assert admin_processor.startup.called is True
     assert request_processor.startup.called is True
+    assert plugin._config.working_directory is not None
 
 
 class TestShutdown(object):

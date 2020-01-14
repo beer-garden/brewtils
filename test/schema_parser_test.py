@@ -25,6 +25,7 @@ from brewtils.test.comparable import (
     assert_principal_equal,
     assert_role_equal,
     assert_job_equal,
+    assert_request_file_equal,
 )
 
 
@@ -138,6 +139,12 @@ class TestParse(object):
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
             ),
+            (
+                brewtils.models.RequestFile,
+                lazy_fixture("request_file_dict"),
+                assert_request_file_equal,
+                lazy_fixture("bg_request_file"),
+            ),
         ],
     )
     def test_single(self, model, data, assertion, expected):
@@ -230,6 +237,12 @@ class TestParse(object):
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
             ),
+            (
+                "parse_request_file",
+                lazy_fixture("request_file_dict"),
+                assert_request_file_equal,
+                lazy_fixture("bg_request_file"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, assertion, expected):
@@ -320,6 +333,12 @@ class TestParse(object):
                 lazy_fixture("interval_job_dict"),
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
+            ),
+            (
+                brewtils.models.RequestFile,
+                lazy_fixture("request_file_dict"),
+                assert_request_file_equal,
+                lazy_fixture("bg_request_file"),
             ),
         ],
     )

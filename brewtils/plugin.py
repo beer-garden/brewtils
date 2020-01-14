@@ -2,8 +2,10 @@
 import json
 import logging
 import logging.config
+import os
 import threading
 
+import appdirs
 from box import Box
 from requests import ConnectionError as RequestsConnectionError
 
@@ -25,6 +27,7 @@ from brewtils.request_handling import (
     RequestConsumer,
     RequestProcessor,
 )
+from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 
 # This is what enables request nesting to work easily
@@ -161,6 +164,8 @@ class Plugin(object):
             reconnect attempts. Negative numbers are interpreted as no maximum.
         mq_starting_timeout (int): Initial time to wait between message queue reconnect
             attempts. Will double on subsequent attempts until reaching mq_max_timeout.
+        working_directory (str): Path to a preferred working directory. Only used
+            when working with bytes parameters.
     """
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
@@ -262,6 +267,12 @@ class Plugin(object):
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
         self._admin_processor, self._request_processor = self._initialize_processors()
+
+        if self._config.working_directory is None:
+            self._config.working_directory = appdirs.user_data_dir(
+                os.path.join(self._system.name, self._instance.name),
+                version=self._system.version,
+            )
 
         self._logger.debug("Starting up processors")
         self._admin_processor.startup()
@@ -423,6 +434,8 @@ class Plugin(object):
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
+            working_directory=self._config.working_directory,
+            resolvers=build_resolver_map(self._ez_client),
         )
 
         return admin_processor, request_processor

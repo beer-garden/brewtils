@@ -24,6 +24,7 @@ __all__ = [
     "Role",
     "RefreshToken",
     "Job",
+    "RequestFile",
     "RequestTemplate",
     "DateTrigger",
     "CronTrigger",
@@ -56,6 +57,7 @@ class Events(Enum):
     GARDEN_CREATED = 19
     GARDEN_UPDATED = 20
     GARDEN_REMOVED = 21
+    FILE_CREATED = 24
 
 
 class BaseModel(object):
@@ -106,6 +108,19 @@ class Command(BaseModel):
         :return list_of_parameters:
         """
         return [p.key for p in self.parameters]
+
+    def parameter_keys_by_type(self, desired_type):
+        """Returns all parameter keys for the desired type.
+
+        :param desired_type:
+        :return: An array of array of key names.
+        """
+        keys = []
+        for param in self.parameters:
+            key = param.keys_by_type(desired_type)
+            if key:
+                keys.append(key)
+        return keys
 
     def get_parameter_by_key(self, key):
         """Given a Key, it will return the parameter (or None) with that key
@@ -220,6 +235,7 @@ class Parameter(BaseModel):
         "Dictionary",
         "Date",
         "DateTime",
+        "Bytes",
     )
     FORM_INPUT_TYPES = ("textarea",)
 
@@ -239,6 +255,7 @@ class Parameter(BaseModel):
         minimum=None,
         regex=None,
         form_input_type=None,
+        type_info=None,
     ):
         self.key = key
         self.type = type
@@ -254,6 +271,7 @@ class Parameter(BaseModel):
         self.minimum = minimum
         self.regex = regex
         self.form_input_type = form_input_type
+        self.type_info = type_info or {}
 
     def __str__(self):
         return self.key
@@ -265,6 +283,39 @@ class Parameter(BaseModel):
             self.description,
         )
 
+    def keys_by_type(self, desired_type):
+        """Gets all keys by the specificed type.
+
+        Since parameters can be nested, this method will also return all
+        keys of all nested parameters. The return value is a possibly
+        nested list, where the first value of each list is going to be a
+        string, while the next value is a list.
+
+        Args:
+            desired_type: Desired type
+
+        Returns:
+            An empty list if the type does not exist, otherwise it will
+            be a list containing at least one entry which is a string,
+            each subsequent entry is a nested list with the same
+            structure.
+        """
+        keys = []
+        if self.type == desired_type:
+            keys.append(self.key)
+
+        if not self.parameters:
+            return keys
+
+        for param in self.parameters:
+            nested_keys = param.keys_by_type(desired_type)
+            if nested_keys:
+                if not keys:
+                    keys = [self.key]
+
+                keys.append(nested_keys)
+        return keys
+
     def is_different(self, other):
         if not type(other) is type(self):
             return True
@@ -272,6 +323,7 @@ class Parameter(BaseModel):
         fields_to_compare = [
             "key",
             "type",
+            "type_info",
             "multi",
             "optional",
             "default",
@@ -299,6 +351,24 @@ class Parameter(BaseModel):
                 return True
 
         return False
+
+
+class RequestFile(BaseModel):
+
+    schema = "RequestFileSchema"
+
+    def __init__(self, storage_type=None, filename=None):
+        self.storage_type = storage_type
+        self.filename = filename
+
+    def __str__(self):
+        return self.filename
+
+    def __repr__(self):
+        return "<RequestFile: filename=%s, storage_type=%s>" % (
+            self.filename,
+            self.storage_type,
+        )
 
 
 class RequestTemplate(BaseModel):

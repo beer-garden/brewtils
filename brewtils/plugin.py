@@ -29,6 +29,7 @@ from brewtils.request_handling import (
 )
 from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
+from brewtils.specification import _CONNECTION_SPEC
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -546,93 +547,74 @@ class Plugin(object):
     # These are provided for backward-compatibility
     @property
     def bg_host(self):
-        _deprecate("bg_host has moved into config (plugin.config.bg_host)")
+        _deprecate("bg_host is now in _config (plugin._config.bg_host)")
         return self._config.bg_host
 
     @property
     def bg_port(self):
-        _deprecate("bg_port has moved into config (plugin.config.bg_port)")
+        _deprecate("bg_port is now in _config (plugin._config.bg_port)")
         return self._config.bg_port
 
     @property
     def ssl_enabled(self):
-        _deprecate("ssl_enabled has moved into config (plugin.config.ssl_enabled)")
+        _deprecate("ssl_enabled is now in _config (plugin._config.ssl_enabled)")
         return self._config.ssl_enabled
 
     @property
     def ca_cert(self):
-        _deprecate("ca_cert has moved into config (plugin.config.ca_cert)")
+        _deprecate("ca_cert is now in _config (plugin._config.ca_cert)")
         return self._config.ca_cert
 
     @property
     def client_cert(self):
-        _deprecate("client_cert has moved into config (plugin.config.client_cert)")
+        _deprecate("client_cert is now in _config (plugin._config.client_cert)")
         return self._config.client_cert
 
     @property
     def bg_url_prefix(self):
-        _deprecate("bg_url_prefix has moved into config (plugin.config.bg_url_prefix)")
+        _deprecate("bg_url_prefix is now in _config (plugin._config.bg_url_prefix)")
         return self._config.bg_url_prefix
 
     @property
     def ca_verify(self):
-        _deprecate("ca_verify has moved into config (plugin.config.ca_verify)")
+        _deprecate("ca_verify is now in _config (plugin._config.ca_verify)")
         return self._config.ca_verify
 
     @property
     def max_attempts(self):
-        _deprecate("max_attempts has moved into config (plugin.config.max_attempts)")
+        _deprecate("max_attempts is now in _config (plugin._config.max_attempts)")
         return self._config.max_attempts
 
     @property
     def max_timeout(self):
-        _deprecate("max_timeout has moved into config (plugin.config.max_timeout)")
+        _deprecate("max_timeout has moved into _config (plugin._config.max_timeout)")
         return self._config.max_timeout
 
     @property
     def starting_timeout(self):
         _deprecate(
-            "starting_timeout has moved into config (plugin.config.starting_timeout)"
+            "starting_timeout is now in _config (plugin._config.starting_timeout)"
         )
         return self._config.starting_timeout
 
     @property
     def max_concurrent(self):
-        _deprecate(
-            "max_concurrent has moved into config (plugin.config.max_concurrent)"
-        )
+        _deprecate("max_concurrent is now in _config (plugin._config.max_concurrent)")
         return self._config.max_concurrent
 
     @property
     def instance_name(self):
-        _deprecate("instance_name has moved into config (plugin.config.instance_name)")
+        _deprecate("instance_name is now in _config (plugin._config.instance_name)")
         return self._config.instance_name
 
     @property
     def connection_parameters(self):
-        _deprecate("connection_parameters attribute was removed, please use 'config'")
-        return {
-            key: self._config[key]
-            for key in (
-                "bg_host",
-                "bg_port",
-                "bg_url_prefix",
-                "ssl_enabled",
-                "api_version",
-                "ca_cert",
-                "client_cert",
-                "ca_verify",
-                "username",
-                "password",
-                "access_token",
-                "refresh_token",
-                "client_timeout",
-            )
-        }
+        _deprecate("connection_parameters attribute was removed, please use '_config'")
+        return {key: self._config[key] for key in _CONNECTION_SPEC}
 
     @property
     def metadata(self):
-        _deprecate("metadata attribute has been renamed to _metadata")
+        _deprecate("metadata is a part of the system attribute (plugin.system.metadata")
         return self._system.metadata
 
     @property

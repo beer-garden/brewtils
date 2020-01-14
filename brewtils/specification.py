@@ -162,6 +162,11 @@ _PLUGIN_SPEC = {
         "description": "Initial amount of time to wait before request update retry",
         "default": 5,
     },
+    "working_directory": {
+        "type": "str",
+        "description": "Working directory to use as a staging area for file parameters",
+        "required": False,
+    },
 }
 
 _MQ_SPEC = {

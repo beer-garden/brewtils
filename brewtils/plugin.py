@@ -210,9 +210,6 @@ class Plugin(object):
         self._system = self._setup_system(system, kwargs)
         self._ez_client = EasyClient(logger=self._logger, **self._config)
 
-        # If None, it will be set during startup
-        self._working_directory = kwargs.get("working_directory")
-
         # And with _system and _ez_client we can ask for the real logging config
         # (unless _custom_logger is True, in which case this does nothing)
         # TODO - Enable this once plugin logging is in a better state
@@ -271,10 +268,10 @@ class Plugin(object):
         self._instance = self._initialize_instance()
         self._admin_processor, self._request_processor = self._initialize_processors()
 
-        if self._working_directory is None:
-            appname = os.path.join(self._system.name, self._instance.name)
-            self._working_directory = appdirs.user_data_dir(
-                appname, version=self._system.version
+        if self._config.working_directory is None:
+            self._config.working_directory = appdirs.user_data_dir(
+                os.path.join(self._system.name, self._instance.name),
+                version=self._system.version,
             )
 
         self._logger.debug("Starting up processors")
@@ -437,7 +434,7 @@ class Plugin(object):
             validation_funcs=[self._validate_system, self._validate_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
-            working_directory=self._working_directory,
+            working_directory=self._config.working_directory,
             resolvers=build_resolver_map(self._ez_client),
         )
 

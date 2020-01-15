@@ -77,7 +77,7 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
 
 def wrap_response(
     return_boolean=False,
-    parse_method="",
+    parse_method=None,
     parse_many=False,
     default_exc=RestError,
     raise_404=True,
@@ -86,8 +86,8 @@ def wrap_response(
 
     Args:
         return_boolean: If True, a successful response will also return True
-        parse_method: The response's json will be passed to this method of the SchemaParser
-        parse_many: This will be passed as the 'many' parameter when parsing the response
+        parse_method: Response json will be passed to this method of the SchemaParser
+        parse_many: Will be passed as the 'many' parameter when parsing the response
         default_exc: Will be passed to handle_response_failure for failed responses
         raise_404: Will be passed to handle_response_failure for failed responses
 
@@ -111,8 +111,8 @@ def wrap_response(
             if return_boolean:
                 return True
 
-            if not hasattr(SchemaParser, parse_method):
-                return response
+            if parse_method is None:
+                return response.json()
 
             return getattr(SchemaParser, parse_method)(response.json(), many=parse_many)
         else:

@@ -101,7 +101,7 @@ class TestConnect(object):
 
 def test_get_version(client, rest_client, success):
     rest_client.get_version.return_value = success
-    assert client.get_version() == success
+    assert client.get_version() == success.json()
 
 
 def test_get_logging_config(client, rest_client, parser, success):

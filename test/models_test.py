@@ -4,24 +4,23 @@ import pytz
 from mock import Mock, PropertyMock
 from pytest_lazyfixture import lazy_fixture
 
-from brewtils.errors import RequestStatusTransitionError
 from brewtils.models import (
+    Choices,
     Command,
+    CronTrigger,
+    Event,
     Instance,
+    IntervalTrigger,
+    LoggingConfig,
     Parameter,
     PatchOperation,
-    Request,
-    System,
-    Choices,
-    LoggingConfig,
-    Event,
-    Queue,
     Principal,
-    Role,
-    RequestTemplate,
-    CronTrigger,
-    IntervalTrigger,
+    Queue,
+    Request,
     RequestFile,
+    RequestTemplate,
+    Role,
+    System,
 )
 
 
@@ -317,20 +316,9 @@ class TestRequest(object):
         assert "name" in repr(request1)
         assert "CREATED" in repr(request1)
 
-    def test_set_valid_status(self):
-        request = Request(status="CREATED")
-        request.status = "RECEIVED"
-        request.status = "IN_PROGRESS"
-        request.status = "SUCCESS"
-
-    @pytest.mark.parametrize(
-        "start,end",
-        [("SUCCESS", "IN_PROGRESS"), ("SUCCESS", "ERROR"), ("IN_PROGRESS", "CREATED")],
-    )
-    def test_invalid_status_transitions(self, start, end):
-        request = Request(status=start)
-        with pytest.raises(RequestStatusTransitionError):
-            request.status = end
+    def test_set_status(self, request1):
+        request1.status = "RECEIVED"
+        assert request1._status == "RECEIVED"
 
     def test_is_ephemeral(self, request1):
         assert not request1.is_ephemeral

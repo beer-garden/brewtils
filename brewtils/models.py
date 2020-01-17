@@ -5,8 +5,6 @@ from enum import Enum
 import pytz
 import six
 
-from brewtils.errors import RequestStatusTransitionError
-
 __all__ = [
     "BaseModel",
     "System",
@@ -505,6 +503,10 @@ class Request(RequestTemplate):
     def status(self):
         return self._status
 
+    @status.setter
+    def status(self, value):
+        self._status = value
+
     @property
     def is_ephemeral(self):
         return self.command_type and self.command_type.upper() == "EPHEMERAL"
@@ -512,28 +514,6 @@ class Request(RequestTemplate):
     @property
     def is_json(self):
         return self.output_type and self.output_type.upper() == "JSON"
-
-    @status.setter
-    def status(self, value):
-        if self._status in self.COMPLETED_STATUSES:
-            raise RequestStatusTransitionError(
-                "Status for a request cannot be updated once it has been "
-                "completed. Current status: {0} Requested status: {1}".format(
-                    self.status, value
-                )
-            )
-
-        elif self._status == "IN_PROGRESS" and value not in self.COMPLETED_STATUSES + (
-            "IN_PROGRESS",
-        ):
-            raise RequestStatusTransitionError(
-                "A request cannot go from IN_PROGRESS to a non-completed "
-                "status. Completed statuses are {0}. You requested: {1}".format(
-                    self.COMPLETED_STATUSES, value
-                )
-            )
-
-        self._status = value
 
 
 class System(BaseModel):

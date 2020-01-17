@@ -103,17 +103,21 @@ class Command(BaseModel):
         return "<Command: %s>" % self.name
 
     def parameter_keys(self):
-        """Convenience Method for returning all the keys of this command's parameters.
+        """Get a list of all Parameter keys
 
-        :return list_of_parameters:
+        Returns:
+            list[str]: A list containing each Parameter's key attribute
         """
         return [p.key for p in self.parameters]
 
     def parameter_keys_by_type(self, desired_type):
-        """Returns all parameter keys for the desired type.
+        """Get a list of all Parameter keys, filtered by Parameter type
 
-        :param desired_type:
-        :return: An array of array of key names.
+        Args:
+            desired_type (str): Parameter type
+
+        Returns:
+            list[str]: A list containing matching Parameters' key attribute
         """
         keys = []
         for param in self.parameters:
@@ -123,10 +127,15 @@ class Command(BaseModel):
         return keys
 
     def get_parameter_by_key(self, key):
-        """Given a Key, it will return the parameter (or None) with that key
+        """Lookup a Parameter using a given key
 
-        :param key:
-        :return parameter:
+        Args:
+            key (str): The Parameter key to use
+
+        Returns:
+            Parameter (Optional): A Parameter with the given key
+
+            If a Parameter with the given key does not exist None will be returned.
         """
         for parameter in self.parameters:
             if parameter.key == key:
@@ -135,11 +144,13 @@ class Command(BaseModel):
         return None
 
     def has_different_parameters(self, parameters):
-        """Given a set of parameters, determines if the parameters provided differ from the
-        parameters already defined on this command.
+        """Determine if parameters differ from the current parameters
 
-        :param parameters:
-        :return boolean:
+        Args:
+            parameters (Sequence[Parameter]): Parameter collection for comparison
+
+        Returns:
+            bool: True if the given Parameters differ, False if they are identical
         """
         if len(parameters) != len(self.parameters):
             return True
@@ -284,21 +295,19 @@ class Parameter(BaseModel):
         )
 
     def keys_by_type(self, desired_type):
-        """Gets all keys by the specificed type.
+        """Gets all keys by the specified type.
 
-        Since parameters can be nested, this method will also return all
-        keys of all nested parameters. The return value is a possibly
-        nested list, where the first value of each list is going to be a
-        string, while the next value is a list.
+        Since parameters can be nested, this method will also return all keys of all
+        nested parameters. The return value is a possibly nested list, where the first
+        value of each list is going to be a string, while the next value is a list.
 
         Args:
-            desired_type: Desired type
+            desired_type (str): Desired type
 
         Returns:
-            An empty list if the type does not exist, otherwise it will
-            be a list containing at least one entry which is a string,
-            each subsequent entry is a nested list with the same
-            structure.
+            An empty list if the type does not exist, otherwise it will be a list
+            containing at least one entry which is a string, each subsequent entry is a
+            nested list with the same structure.
         """
         keys = []
         if self.type == desired_type:
@@ -576,16 +585,22 @@ class System(BaseModel):
     def has_instance(self, name):
         """Determine if an instance currently exists in the system
 
-        :param name: The name of the instance to search
-        :return: True if an instance with the given name exists for this system, False otherwise.
+        Args:
+            name (str): The instance name
+
+        Returns:
+            bool: True if an instance with the given name exists, False otherwise
         """
         return True if self.get_instance(name) else False
 
     def get_instance(self, name):
         """Get an instance that currently exists in the system
 
-        :param name: The name of the instance to search
-        :return: The instance with the given name exists for this system, None otherwise
+        Args:
+            name (str): The instance name
+
+        Returns:
+            Instance: The instance if it exists, None otherwise
         """
         for instance in self.instances:
             if instance.name == name:
@@ -595,8 +610,11 @@ class System(BaseModel):
     def get_command_by_name(self, command_name):
         """Retrieve a particular command from the system
 
-        :param command_name: Name of the command to retrieve
-        :return: The command object. None if the given command name does not exist in this system.
+        Args:
+            command_name (str): The command name
+
+        Returns:
+            Command: The command if it exists, None otherwise
         """
         for command in self.commands:
             if command.name == command_name:
@@ -607,8 +625,11 @@ class System(BaseModel):
     def has_different_commands(self, commands):
         """Check if a set of commands is different than the current commands
 
-        :param commands: The set commands to compare against the current set
-        :return: True if the sets are different, False if the sets are the same
+        Args:
+            commands (Sequence[Command]): Command collection for comparison
+
+        Returns:
+            bool: True if the given Commands differ, False if they are identical
         """
         if len(commands) != len(self.commands):
             return True
@@ -680,12 +701,16 @@ class LoggingConfig(BaseModel):
     def get_plugin_log_config(self, **kwargs):
         """Get a specific plugin logging configuration.
 
-        It is possible for different systems to have different logging configurations. This method
-        will create the correct plugin logging configuration and return it. If a specific logger
-        is not found for a system, then the current logging configuration will be returned.
+        It is possible for different systems to have different logging configurations.
+        This method will create the correct plugin logging configuration and return it.
+        If a specific logger is not found for a system, then the current logging
+        configuration will be returned.
 
-        :param kwargs: Identifying information for a system (i.e. system_name)
-        :return:
+        Keyword Args:
+            Identifying information for a system (i.e. system_name)
+
+        Returns:
+            The logging configuration for this system
         """
         system_name = kwargs.pop("system_name", None)
         specific_logger = self._loggers.get(system_name, {})

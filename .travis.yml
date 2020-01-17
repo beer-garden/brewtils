@@ -5,6 +5,7 @@ dist: xenial
 
 python:
   - 3.7
+  - 3.8
   - 3.6
   - 3.5
   - 3.4
@@ -16,6 +17,8 @@ env:
 
 matrix:
   exclude:
+    - python: 3.8
+      env: PIKA_VERSION=0.13.1
     - python: 3.6
       env: PIKA_VERSION=0.13.1
     - python: 3.5

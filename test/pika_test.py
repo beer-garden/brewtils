@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import runpy
 import ssl
+import warnings
 from concurrent.futures import Future
 
 import pika.spec
@@ -19,6 +21,31 @@ host = "localhost"
 port = 5672
 user = "user"
 password = "password"
+
+
+class TestDeprecations(object):
+    def test_old_module(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            # noinspection PyUnresolvedReferences
+            # noinspection PyDeprecation
+            import brewtils.queues  # noqa F401
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "brewtils.pika" in str(w[0].message)
+
+    @pytest.mark.skipif(PIKA_ONE, reason="Using pika 1.x")
+    def test_old_pika(self):
+        with warnings.catch_warnings(record=True) as w:
+            # run_module has a RuntimeWarning we don't really need
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            warnings.simplefilter("always", category=DeprecationWarning)
+
+            runpy.run_module("brewtils.pika")
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "pika < 1" in str(w[0].message)
 
 
 class TestPikaClient(object):

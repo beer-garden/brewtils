@@ -67,6 +67,90 @@ If you'd prefer to not load configuration from those sources it's possible to pa
 Plugin(client, bg_host="localhost", cli_args=False, environment=False)
 ```
 
+#### Deferred Client Assignment
+Previously you needed to specify a Client when creating a Plugin:
+
+```python
+@system
+class MyClient:
+    pass
+
+Plugin(MyClient(), bg_host="localhost", ...).run()
+```
+
+This is no longer the case - the new restriction is that a Plugin must have a Client set before calling `run()`.
+
+Why does this matter? Because it allows developers to take advantage of the fact that creating a Plugin will set up a logging configuration for you, and will even respect log levels:
+
+```python
+plugin = Plugin(log_level="DEBUG", bg_host="localhost", ...)
+plugin.client = MyClient()
+plugin.run()
+```
+
+Often Clients are complex things that call out to external services during initialization. In these cases it can be very useful to have logging configured before constructing the Client.
+
+#### Attributes / Properties
+Previously a Plugin instance had a LOT of attributes, mostly configuration values. With the switch to loading all configuration using Yapconf the plugin now stores those in its `_config` attribute.
+
+Properties have been created to maintain backwards compatibility in case any of those attributes are being used. However, most of those values are intended to be internal to the Plugin class. So most of them are marked as deprecated and will eventually be removed.
+
+If you're currently depending on a property marked as deprecated please let us know!
+
+#### Passing metadata in `__init__`
+Previously it was OK to pass `metadata` to a Plugin along with a `system` definition. This is actually an error for the same reason you can't pass any other system attributes along with a system definition - there's no way to determine which should take precedence.
+
+It's still fine to pass `metadata` directly to the Plugin, as long as you're not also passing a `system`. In this case the Plugin will still take care of creating the System for you:
+
+```python
+bg_system = brewtils.models.System(name="foo", version="1")
+
+# This has always been a problem - passing a system AND system properties is not allowed:
+Plugin(system=bg_system, name="bar")
+
+# In version 2 this was allowed, even though it's just as bad:
+Plugin(system=bg_system, metadata={"cool": "stuff"})
+
+# In version 3 you'll need to change to this:
+bg_system.metadata = {"cool": "stuff"}
+Plugin(system=bg_system)
+
+# However, it's still totally fine to pass things the 'normal' way:
+Plugin(name="foo", version="1", metadata={"cool": "stuff"})
+```
+
+#### Internal `_start` and `_stop` method return values
+The `_start` and `_stop` methods both previously returned a string literal that was not used. These methods now return `None`.
+
+
+### `SystemClient`
+
+#### Alternate Parent
+TODO - This is really a new feature, may not need to be in the Upgrade Guide.
+
+It's now easier to specify an alternate parent Request when using the `SystemClient`:
+
+```python
+req_1 = Request(id="<some request id>")
+
+sys_client = SystemClient(...)
+req_2 = sys_client.command(param="foo", _parent=req_1)
+```
+
+Note that request creation (`req_2` above) will fail if the parent request has already completed.
+
+
+### `EasyClient`
+The `EasyClient` had some changes:
+
+- `get_instance_status` now returns the actual Instance status string, not the Instance itself. It's also been deprecated as `get_instance().status` is identical.
+- `get_version()` now returns the actual version `dict`, not a `requests.Response` object.
+- `pause_job()` and `resume_job()` now return the Job instead of `None`.
+- The default exception for several methods has changed:
+  - `get_logging_config()` default is now `FetchError`
+  - `get_queues()` default is now `FetchError`
+  - `clear_queue()` and `clear_all_queues()` defaults are now `DeleteError`
+
 
 ### General Organization
 
@@ -90,6 +174,10 @@ The version file `_version.py` as been renamed to `__version__.py`. The only nam
 
 Previously `__version__` was imported into the top-level brewtils `__init__.py` as `generated_version`. This will be maintained for compatibility, but note that `__version__` is now listed in the package's `__all__`, whereas `generated_version` is not.
 
+
+### Other
+All the stuff that doesn't fit anywhere else!
+
 #### Ridiculous class `__init__` signatures
 Previously several classes (most notably `Plugin` and all three HTTP clients) defined huge lists of `kwargs`. These have mostly been collapsed into `**kwargs`. The docstrings still list all the valid keyword parameters, so this change helps remove some redundancy. It also removes the possibility of passing those arguments positionally, which is almost always not a good idea.
 
@@ -101,5 +189,20 @@ It's still possible to run into this if you name a Command "_logger", but there'
 #### Client class `_commands` attribute
 Classes decorated with the `@system` decorator previously stored their commands in a class attribute named `_commands`. This has been renamed to `_bg_commands`.
 
-#### Unused `logger` keyword argument
-The `logger` keyword argument has been removed from the `RestClient` and `EasyClient` classes as it was never used. Both classes accept `**kwargs` so this is not a breaking change.
+#### Request Model Validation
+Previously there was validation related to status transitions implemented inside the brewtils Request model. In version 2 this would result in an `RequestStatusTransitionError`:
+
+```python
+request = Request(status="SUCCESS")
+request.status = "IN_PROGRESS"
+```
+
+While this doesn't make much sense (Requests should never go from a completed status to an incomplete one) this validation should only occur when attempting to persist this update to the database.
+
+You'll still see this error if you ask Beer-garden to make a change like this (using `EasyClient.update_request()`, for example) but you won't see it from just changing a model attribute.
+
+#### Unused `logger` keyword arguments
+Several keyword arguments will no longer be honored:
+
+- The `logger` keyword argument has been removed from the `RestClient` and `EasyClient` as it was never used.
+- The `parser` keyword argument is no longer supported by `Plugin` and `EasyClient`. Both classes no longer create and retain a parser instance (instead using `SchemaParser` classmethods directly) so passing a `parser` will have no effect.

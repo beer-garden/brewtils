@@ -3,21 +3,18 @@ This document outlines migration strategies for upgrading to new releases.
 
 
 ## Upgrading to 3.0
-This section describes the changes to expect going from 2.X to 3.X. If you don't care about the gory details and only want the highlights, here you go:
+This section describes the changes to expect going from 2.X to 3.X. There are a bunch, so if you only have time for the highlights here are the ones to care about:
 
-- Plugins no longer default to single-threaded behavior! See the [max concurrent](#max-concurrent) change
-- Plugins now load configuration from the command line and environment variables automatically. See [configuration loading](#configuration-loading)
+- Plugins no longer default to single-threaded behavior! See the [max concurrent](#max-concurrent) change.
+- Plugins now load **all** configuration from the command line and environment variables, and they do it automatically when you create them. See the [Plugin Config](#plugin-config) section.
+- If you're running one Plugin per process (this is strongly recommended) then `SystemClient`, `EasyClient`, and `RestClient` objects created after the Plugin will use the Plugin's connection information. See the [Client Config](#client-config) update.
 
 
-### Plugin Changes
+### Configuration Loading
+The way brewtils handles configuration loading and storage has changed in version 3. This primarially affects the `Plugin` and the `SystemClient`, `EasyClient`, and `RestClient`.
 
-#### Max Concurrent
-Previously the default value of `max_concurrent` when creating a `Plugin` was 1. This was a major source of potential problems as it meant that a `Plugin` using a `SystemClient` to create a Request on itself would be guaranteed to deadlock. `max_concurrent=1` means only one request can be processed at a time, and in this case that request is dependant on another one.
-
-This change needed to wait for a major version because it represents a significant change in how `Plugin`s function by default. Previously the default behavior was essentially single-threaded (a `ThreadPoolExecutor` with only one thread), so any client state could be safely accessed / modified by a command method. **That is no longer the case** - client methods now execute in the context of a `ThreadPoolExecutor` with more than one thread, so any shared state **must** be protected using appropriate locking mechanisms.
-
-#### Configuration Loading
-Previously you needed to pass *everything* to a `Plugin` when creating one. Brewtils provided some helpers to make this less onerous - like `get_connection_info` - which could be used to load some configuration options from the command line and/or the environment. If your plugin was written like this:
+#### Plugin Config
+Previously you needed to pass *everything* to a `Plugin` when initializing. Brewtils provided some helpers to make this less annoying - like `get_connection_info` - which could be used to load some configuration options from the command line and/or the environment. If your plugin was written like this:
 
 ```python
 import sys
@@ -67,6 +64,56 @@ If you'd prefer to not load configuration from those sources it's possible to pa
 Plugin(client, bg_host="localhost", cli_args=False, environment=False)
 ```
 
+#### Client Config
+Plugin developers no longer need to resolve and keep track of Beer-garden connection information themselves in order to create a `SystemClient`, `EasyClient`, or `RestClient`. Brewtils will now take care of this for you as long as you're running one Plugin per process and you create the Plugin first.
+
+In version 2 you needed to keep track of connection info yourself:
+```python
+@system
+class MyClient:
+    def __init__(self, **conn_info):
+        self._sys_client = SystemClient(system_name="bar", **conn_info)
+
+
+def main():
+    # assume host and port are in the environment or command line
+    conn_info = brewtils.get_connection_info(sys.argv[1:])
+
+    client = MyClient(**conn_info)
+    
+    Plugin(
+        client,
+        name="foo",
+        version="1.0.0",
+        **conn_info
+    ).run()
+```
+
+In version 3 as long as you create the Plugin first you don't have to worry about it anymore:
+```python
+@system
+class MyClient:
+    def __init__(self):
+        self._sys_client = SystemClient(system_name="bar")
+
+
+def main():
+    # again, assume host and port are in the environment or command line
+    plugin = Plugin(name="foo", version="1.0.0")
+    plugin.client = MyClient()
+    plugin.run()
+```
+
+
+### Plugin Changes
+
+#### Max Concurrent
+In version 2 Plugins were single-threaded by default. In version 3 this is no longer the case. If you want to retain the old behavior you'll need to set `max_concurrent=1` (the old default value) when creating the plugin.
+
+A `max_concurrent` default value of 1 was a major source of potential problems as it meant that a `Plugin` using a `SystemClient` to create a Request on itself would be guaranteed to deadlock. With this setting only one request can be processed at a time, so if that processing depends on another request there aren't enough threads available and deadlock occurs.
+
+This change needed to wait for a major version because it represents a significant change in how a `Plugin` functions by default. Previously the default behavior was essentially single-threaded (a `ThreadPoolExecutor` with only one thread), so any client state could be safely accessed / modified by a command method. **That is no longer the case** - client methods now execute in the context of a `ThreadPoolExecutor` with more than one thread, so any shared state **must** be protected using appropriate locking mechanisms.
+
 #### Deferred Client Assignment
 Previously you needed to specify a Client when creating a Plugin:
 
@@ -97,7 +144,8 @@ Properties have been created to maintain backwards compatibility in case any of 
 
 If you're currently depending on a property marked as deprecated please let us know!
 
-#### Passing metadata in `__init__`
+#### `__init__` kwarg combinations
+##### `system` and `metadata`
 Previously it was OK to pass `metadata` to a Plugin along with a `system` definition. This is actually an error for the same reason you can't pass any other system attributes along with a system definition - there's no way to determine which should take precedence.
 
 It's still fine to pass `metadata` directly to the Plugin, as long as you're not also passing a `system`. In this case the Plugin will still take care of creating the System for you:
@@ -105,7 +153,7 @@ It's still fine to pass `metadata` directly to the Plugin, as long as you're not
 ```python
 bg_system = brewtils.models.System(name="foo", version="1")
 
-# This has always been a problem - passing a system AND system properties is not allowed:
+# Passing a system AND system properties has always been disallowed, because which name is correct - foo or bar?
 Plugin(system=bg_system, name="bar")
 
 # In version 2 this was allowed, even though it's just as bad:
@@ -117,6 +165,38 @@ Plugin(system=bg_system)
 
 # However, it's still totally fine to pass things the 'normal' way:
 Plugin(name="foo", version="1", metadata={"cool": "stuff"})
+```
+##### `system` and `@system` decorator `name`, `version`
+Note: Setting the system name and version in the client decorator is no longer recommended. Instead, use one of the other configuration sources (CLI, environment variables, or Plugin kwargs) to set the name and version.
+
+Previously it was an error to pass a `system` definition along with specifying the system name or version in the client's `@system` decorator, even if they matched:
+
+```python
+@system(bg_name="foo", bg_version="1.0.0")
+class MyClient:
+    pass
+
+def main():
+    # This always raised a ValidationError, even though the values match
+    system = brewtils.System(name="foo", version="1.0.0")
+    Plugin(MyClient(), system=system)
+```
+
+Now an exception will only be raised if there's a mismatch:
+
+```python
+@system(bg_name="foo", bg_version="1.0.0")
+class MyClient:
+    pass
+
+def main():
+    # raises a ValidationError since names don't match
+    system = brewtils.System(name="bar", version="1.0.0")
+    Plugin(MyClient(), system=system)
+
+    # But this is now OK
+    system = brewtils.System(name="foo", version="1.0.0")
+    Plugin(MyClient(), system=system)
 ```
 
 #### Internal `_start` and `_stop` method return values
@@ -141,9 +221,9 @@ Note that request creation (`req_2` above) will fail if the parent request has a
 
 
 ### `EasyClient`
-The `EasyClient` had some changes:
+The `EasyClient` had some API changes:
 
-- `get_instance_status` now returns the actual Instance status string, not the Instance itself. It's also been deprecated as `get_instance().status` is identical.
+- `get_instance_status()` now returns the actual Instance status string, not the Instance itself. It's also been deprecated as `get_instance().status` is identical.
 - `get_version()` now returns the actual version `dict`, not a `requests.Response` object.
 - `pause_job()` and `resume_job()` now return the Job instead of `None`.
 - The default exception for several methods has changed:
@@ -155,7 +235,7 @@ The `EasyClient` had some changes:
 ### General Organization
 
 #### Brewtils `__all__`
-Two deprecated names have been removed from the top-level brewtils `__all__`. The names are still available from the top-level brewtils package so imports will still work but they will be removed completely in a future release.
+Two deprecated names have been removed from the top-level brewtils `__all__`. The names are still available from the top-level brewtils package so imports will still work, but they will be removed completely in a future release.
 
 - `RemotePlugin`
 - `get_bg_connection_parameters`
@@ -184,7 +264,7 @@ Previously several classes (most notably `Plugin` and all three HTTP clients) de
 #### `SystemClient` attributes
 The `logger` attribute of the `SystemClient` has been renamed to `_logger`. Every `SystemClient` attribute essentially precludes the attribute name from being used as a Beer-garden Command name. This change helps minimize that issue - now all public `SystemClient` methods have `_bg_` somewhere in them, which should hopefully prevent any accidental collisions.
 
-It's still possible to run into this if you name a Command "_logger", but there's only so much we can do - our classes need attributes :smile:
+It's still possible to run into this if you name a Command "_logger", but there's only so much we can do - our classes need attributes too :smile:
 
 #### Client class `_commands` attribute
 Classes decorated with the `@system` decorator previously stored their commands in a class attribute named `_commands`. This has been renamed to `_bg_commands`.
@@ -201,8 +281,8 @@ While this doesn't make much sense (Requests should never go from a completed st
 
 You'll still see this error if you ask Beer-garden to make a change like this (using `EasyClient.update_request()`, for example) but you won't see it from just changing a model attribute.
 
-#### Unused `logger` keyword arguments
+#### Unused keyword arguments
 Several keyword arguments will no longer be honored:
 
 - The `logger` keyword argument has been removed from the `RestClient` and `EasyClient` as it was never used.
-- The `parser` keyword argument is no longer supported by `Plugin` and `EasyClient`. Both classes no longer create and retain a parser instance (instead using `SchemaParser` classmethods directly) so passing a `parser` will have no effect.
+- The `parser` keyword argument is no longer supported by `Plugin` and `EasyClient`. Both classes no longer create and retain a parser instance (instead using `SchemaParser` class methods directly) so passing a `parser` will have no effect.

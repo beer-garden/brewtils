@@ -11,22 +11,22 @@ This section describes the changes to expect going from 2.X to 3.X. There are a 
 
 
 ### Configuration Loading
-The way brewtils handles configuration loading and storage has changed in version 3. This primarially affects the `Plugin` and the `SystemClient`, `EasyClient`, and `RestClient`.
+The way brewtils handles configuration loading and storage has changed in version 3. This primarily affects the `Plugin` and the `SystemClient`, `EasyClient`, and `RestClient`.
 
 #### Plugin Config
-Previously you needed to pass *everything* to a `Plugin` when initializing. Brewtils provided some helpers to make this less annoying - like `get_connection_info` - which could be used to load some configuration options from the command line and/or the environment. If your plugin was written like this:
+Previously you needed to pass *everything* to a `Plugin` when initializing. Brewtils provided some helpers to make this easier - like `get_connection_info` - which could be used to load connection-type configuration options from the command line and/or the environment. If your plugin was written like this:
 
 ```python
-import sys
-
-from brewtils import Plugin, get_connection_info
+@brewtils.system
+class MyClient:
+    pass
 
 def main():
-    Plugin(
-        client,  # Assume client is defined somewhere else
+    brewtils.Plugin(
+        MyClient(),
         system_name="foo",
         system_version="1.0.0",
-        **get_connection_info(sys.argv[1:])
+        **brewtils.get_connection_info(sys.argv[1:])
     ).run()
 ```
 
@@ -43,10 +43,12 @@ BG_HOST=localhost python my_plugin.py
 Now you no longer need to call any additional methods when initializing the `Plugin`, brewtils will take care of that for you behind the scenes. It's also possible now to load (almost) all `Plugin` parameters from the command line or environment variables. For example, the plugin above can now be written like this:
 
 ```python
-from brewtils import Plugin
+@brewtils.system
+class MyClient:
+    pass
 
 def main():
-    Plugin(client).run()   # Again, assume client is defined somewhere else
+    Plugin(client).run()
 ```
 
 And it can be run like this:
@@ -59,7 +61,23 @@ Or this:
 BG_HOST=localhost BG_SYSTEM_NAME=foo BG_SYSTEM_VERSION=1.0.0 python my_plugin.py
 ```
 
-If you'd prefer to not load configuration from those sources it's possible to pass arguments to the `Plugin` to suppress that behavior:
+It's still perfectly fine to pass things as kwargs, and these values will take precedence over values found in the command line arguments or environment:
+```python
+@brewtils.system
+class MyClient:
+    pass
+
+def main():
+    brewtils.Plugin(
+        MyClient(),
+        system_name="foo",
+        system_version="1.0.0",
+        bg_host="localhost",
+        bg_port=2337,
+    ).run()
+```
+
+If you'd prefer to not load configuration from the new sources it's possible to pass arguments to the `Plugin` to suppress that behavior. However, this isn't recommended as the plugin will no longer work correctly as a local plugin:
 ```python
 Plugin(client, bg_host="localhost", cli_args=False, environment=False)
 ```

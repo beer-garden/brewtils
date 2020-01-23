@@ -56,6 +56,11 @@ class Events(Enum):
     GARDEN_UPDATED = 20
     GARDEN_REMOVED = 21
     FILE_CREATED = 24
+    GARDEN_STARTED = 25
+    GARDEN_STOPPED = 26
+    # TODO - should these be external API events?
+    INSTANCE_STOP_REQUESTED = 27
+    INSTANCE_START_REQUESTED = 28
 
 
 class BaseModel(object):

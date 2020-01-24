@@ -45,7 +45,6 @@ setup(
     extras_require={
         ':python_version=="2.7"': ["futures", "funcsigs"],
         ':python_version<"3.4"': ["enum34"],
-        "test": ["pytest<4", "requests-mock<2"],
     },
     classifiers=[
         "Intended Audience :: Developers",

@@ -255,6 +255,9 @@ class SchemaParser(object):
             A model object
 
         """
+        if data is None:
+            raise TypeError("Data can not be None")
+
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
 

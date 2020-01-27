@@ -21,7 +21,7 @@ with open("README.rst") as readme_file:
 setup(
     name="brewtils",
     version=find_version(),
-    description="Utilities for building and running beer-garden Systems",
+    description="Beer-garden plugin and utility library",
     long_description=readme,
     url="https://beer-garden.io/",
     author="The Beer-garden Team",
@@ -47,7 +47,6 @@ setup(
     extras_require={
         ':python_version=="2.7"': ["futures", "funcsigs"],
         ':python_version<"3.4"': ["enum34"],
-        "test": ["pytest<4", "requests-mock<2"],
     },
     classifiers=[
         "Intended Audience :: Developers",

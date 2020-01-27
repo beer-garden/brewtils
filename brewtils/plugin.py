@@ -288,7 +288,7 @@ class Plugin(object):
         self._admin_processor.shutdown()
 
         try:
-            self._ez_client.update_instance_status(self._instance.id, "STOPPED")
+            self._ez_client.update_instance(self._instance.id, new_status="STOPPED")
         except Exception:
             self._logger.warning(
                 "Unable to notify Beer-garden that this plugin is STOPPED, so this "
@@ -443,8 +443,8 @@ class Plugin(object):
 
     def _start(self):
         """Handle start Request by marking this plugin as running"""
-        self._instance = self._ez_client.update_instance_status(
-            self._instance.id, "RUNNING"
+        self._instance = self._ez_client.update_instance(
+            self._instance.id, new_status="RUNNING"
         )
 
     def _stop(self):

@@ -330,14 +330,14 @@ class TestShutdown(object):
         plugin._shutdown()
         assert plugin._request_processor.shutdown.called is True
         assert plugin._admin_processor.shutdown.called is True
-        ez_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, "STOPPED"
+        ez_client.update_instance.assert_called_once_with(
+            bg_instance.id, new_status="STOPPED"
         )
 
     def test_update_error(self, caplog, plugin, ez_client, bg_instance):
         plugin.request_consumer = Mock()
         plugin.admin_consumer = Mock()
-        ez_client.update_instance_status.side_effect = RequestsConnectionError()
+        ez_client.update_instance.side_effect = RequestsConnectionError()
 
         with caplog.at_level(level=logging.WARNING):
             plugin._shutdown()
@@ -505,11 +505,11 @@ class TestInitializeProcessors(object):
 class TestAdminMethods(object):
     def test_start(self, plugin, ez_client, bg_instance):
         new_instance = Mock()
-        ez_client.update_instance_status.return_value = new_instance
+        ez_client.update_instance.return_value = new_instance
 
         plugin._start()
-        ez_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, "RUNNING"
+        ez_client.update_instance.assert_called_once_with(
+            bg_instance.id, new_status="RUNNING"
         )
         assert plugin._instance == new_instance
 

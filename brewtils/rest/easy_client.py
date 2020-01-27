@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import warnings
 
 import requests.exceptions
 import six
@@ -7,15 +6,16 @@ import wrapt
 
 from brewtils.config import get_connection_info
 from brewtils.errors import (
-    FetchError,
-    ValidationError,
-    SaveError,
-    DeleteError,
-    RestConnectionError,
-    NotFoundError,
     ConflictError,
+    DeleteError,
+    FetchError,
+    NotFoundError,
+    RestConnectionError,
     RestError,
+    SaveError,
+    ValidationError,
     WaitExceededError,
+    _deprecate,
 )
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
@@ -358,6 +358,37 @@ class EasyClient(object):
         """
         return self.client.get_instance(instance_id)
 
+    @wrap_response(
+        parse_method="parse_instance", parse_many=False, default_exc=SaveError
+    )
+    def update_instance(self, instance_id, **kwargs):
+        """Update an Instance status
+
+        Args:
+            instance_id (str): The Instance ID
+
+        Keyword Args:
+            new_status (str): The new status
+            metadata (dict): Will be added to existing instance metadata
+
+        Returns:
+            Instance: The updated Instance
+
+        """
+        operations = []
+        new_status = kwargs.pop("new_status", None)
+        metadata = kwargs.pop("metadata", {})
+
+        if new_status:
+            operations.append(PatchOperation("replace", "/status", new_status))
+
+        if metadata:
+            operations.append(PatchOperation("update", "/metadata", metadata))
+
+        return self.client.patch_instance(
+            instance_id, SchemaParser.serialize_patch(operations, many=True)
+        )
+
     def get_instance_status(self, instance_id):
         """Get an Instance's status
 
@@ -368,17 +399,13 @@ class EasyClient(object):
             The Instance's status
 
         """
-        warnings.warn(
+        _deprecate(
             "This method is deprecated and scheduled to be removed in 4.0. "
-            "To prepare please use get_instance() instead.",
-            DeprecationWarning,
+            "Please use get_instance() instead."
         )
 
         return self.get_instance(instance_id).status
 
-    @wrap_response(
-        parse_method="parse_instance", parse_many=False, default_exc=SaveError
-    )
     def update_instance_status(self, instance_id, new_status):
         """Update an Instance status
 
@@ -390,12 +417,12 @@ class EasyClient(object):
             Instance: The updated Instance
 
         """
-        return self.client.patch_instance(
-            instance_id,
-            SchemaParser.serialize_patch(
-                PatchOperation("replace", "/status", new_status)
-            ),
+        _deprecate(
+            "This method is deprecated and scheduled to be removed in 4.0. "
+            "Please use update_instance() instead."
         )
+
+        return self.update_instance(instance_id, new_status=new_status)
 
     @wrap_response(return_boolean=True, default_exc=SaveError)
     def instance_heartbeat(self, instance_id):

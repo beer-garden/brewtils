@@ -243,11 +243,23 @@ class TestInstances(object):
         rest_client.patch_instance.assert_called_once_with("id", ANY)
         assert rest_client.patch_instance.called is True
 
+    def test_update(self, client, rest_client, success):
+        rest_client.patch_instance.return_value = success
+
+        client.update_instance("id", new_status="status", metadata={"meta": "update"})
+        rest_client.patch_instance.assert_called_once_with("id", ANY)
+
     def test_update_status(self, client, rest_client, success):
         rest_client.patch_instance.return_value = success
 
-        client.update_instance_status("id", "status")
-        rest_client.patch_instance.assert_called_once_with("id", ANY)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.update_instance_status("id", "status")
+            rest_client.patch_instance.assert_called_once_with("id", ANY)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_heartbeat(self, client, rest_client, success):
         rest_client.patch_instance.return_value = success

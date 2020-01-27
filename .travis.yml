@@ -14,19 +14,11 @@ env:
   - PIKA_VERSION=0.13.1
   - PIKA_VERSION=1.1.0
 
-matrix:
-  exclude:
-    - python: 3.6
-      env: PIKA_VERSION=0.13.1
-    - python: 3.5
-      env: PIKA_VERSION=0.13.1
-    - python: 3.4
-      env: PIKA_VERSION=0.13.1
-
 stages:
   - lint
   - test
   - deploy
+    if: tag IS present
 
 # This is for the "test" stage
 install:
@@ -37,6 +29,13 @@ script: make coverage
 after_success: codecov
 
 jobs:
+  exclude:
+    - python: 3.6
+      env: PIKA_VERSION=0.13.1
+    - python: 3.5
+      env: PIKA_VERSION=0.13.1
+    - python: 3.4
+      env: PIKA_VERSION=0.13.1
   include:
     - stage: lint
       install: pip install black flake8
@@ -44,7 +43,6 @@ jobs:
       after_success: skip
 
     - stage: deploy
-      if: tag IS present
       install: pip install twine wheel
       script: skip
       after_success: true

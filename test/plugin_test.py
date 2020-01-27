@@ -455,9 +455,18 @@ class TestInitializeSystem(object):
 
 
 class TestInitializeInstance(object):
-    def test_success(self, plugin, ez_client, bg_instance):
+    def test_remote(self, plugin, ez_client, bg_instance):
         plugin._initialize_instance()
-        ez_client.initialize_instance.assert_called_once_with(bg_instance.id)
+        ez_client.initialize_instance.assert_called_once_with(
+            bg_instance.id, runner_id=None
+        )
+
+    def test_local(self, plugin, ez_client, bg_instance):
+        plugin._config.runner_id = "ABC"
+        plugin._initialize_instance()
+        ez_client.initialize_instance.assert_called_once_with(
+            bg_instance.id, runner_id="ABC"
+        )
 
     def test_unregistered_instance(self, plugin, ez_client, bg_system):
         bg_system.has_instance = Mock(return_value=False)

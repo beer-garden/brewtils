@@ -136,6 +136,11 @@ _PLUGIN_SPEC = {
         "description": "The instance name",
         "default": "default",
     },
+    "runner_id": {
+        "type": "str",
+        "description": "The PluginRunner ID, if applicable",
+        "required": False,
+    },
     "log_level": {
         "type": "str",
         "description": "The log level to use",

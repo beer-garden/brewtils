@@ -333,18 +333,22 @@ class EasyClient(object):
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=SaveError
     )
-    def initialize_instance(self, instance_id):
+    def initialize_instance(self, instance_id, runner_id=None):
         """Start an Instance
 
         Args:
             instance_id (str): The Instance ID
+            runner_id (str): The PluginRunner ID, if any
 
         Returns:
             Instance: The updated Instance
 
         """
         return self.client.patch_instance(
-            instance_id, SchemaParser.serialize_patch(PatchOperation("initialize"))
+            instance_id,
+            SchemaParser.serialize_patch(
+                PatchOperation(operation="initialize", value={"runner_id": runner_id})
+            ),
         )
 
     @wrap_response(

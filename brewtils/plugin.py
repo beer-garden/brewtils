@@ -379,6 +379,7 @@ class Plugin(object):
         return self._ez_client.update_system(existing_system.id, **update_kwargs)
 
     def _initialize_instance(self):
+        """Let Beer-garden know this instance is ready to process Requests"""
         # Sanity check to make sure an instance with this name was registered
         if not self._system.has_instance(self._config.instance_name):
             raise PluginValidationError(
@@ -387,7 +388,8 @@ class Plugin(object):
             )
 
         return self._ez_client.initialize_instance(
-            self._system.get_instance(self._config.instance_name).id
+            self._system.get_instance(self._config.instance_name).id,
+            runner_id=self._config.runner_id,
         )
 
     def _initialize_processors(self):

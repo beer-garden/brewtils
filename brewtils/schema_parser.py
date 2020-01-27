@@ -252,6 +252,9 @@ class SchemaParser(object):
 
     @classmethod
     def _do_parse(cls, data, schema, from_string=False):
+        if data is None:
+            raise TypeError("Data can not be None")
+
         if from_string and not isinstance(data, six.string_types):
             raise TypeError("When from_string=True data must be a string-type")
 

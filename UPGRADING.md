@@ -249,6 +249,8 @@ The `EasyClient` had some API changes:
   - `get_queues()` default is now `FetchError`
   - `clear_queue()` and `clear_all_queues()` defaults are now `DeleteError`
 
+Also, a new method `update_instance()` was added; `update_instance_status()` is now deprecated.
+
 
 ### General Organization
 

@@ -222,6 +222,12 @@ class AuthorizationRequired(RestClientError):
     pass
 
 
+class TooLargeError(RestClientError):
+    """Error indicating a 413 was raised on the server"""
+
+    pass
+
+
 # Alias old names
 WaitExceededError = TimeoutExceededError
 ConnectionTimeoutError = TimeoutExceededError

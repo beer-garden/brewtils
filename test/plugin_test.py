@@ -26,6 +26,7 @@ from brewtils.errors import (
     ErrorLogLevelInfo,
     ErrorLogLevelDebug,
     SuppressStacktrace,
+    TooLargeError,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
 from brewtils.models import Instance, Request, System, Command
@@ -710,6 +711,7 @@ class TestUpdateRequest(object):
             (RestClientError, DiscardMessageException, False),
             (RequestsConnectionError, RepublishRequestException, True),
             (ValueError, RepublishRequestException, False),
+            (TooLargeError, RepublishRequestException, False),
         ],
     )
     def test_errors(self, plugin, bm_client, bg_request, ex, raised, bv_down):

@@ -17,6 +17,7 @@ from brewtils.errors import (
     ConflictError,
     RestError,
     WaitExceededError,
+    TooLargeError,
 )
 from brewtils.models import System
 from brewtils.rest.easy_client import EasyClient, BrewmasterEasyClient
@@ -119,6 +120,9 @@ class EasyClientTest(unittest.TestCase):
         )
         self.fake_conflict_error_response = Mock(
             ok=False, status_code=409, json=Mock(return_value="payload")
+        )
+        self.fake_too_large_error_response = Mock(
+            ok=False, status_code=413, json=Mock(return_value="payload")
         )
         self.fake_server_error_response = Mock(
             ok=False, status_code=500, json=Mock(return_value="payload")
@@ -666,6 +670,13 @@ class EasyClientTest(unittest.TestCase):
         request_mock.return_value = self.fake_client_error_response
 
         self.assertRaises(ValidationError, self.client.update_request, "id")
+        request_mock.assert_called_once_with("id", ANY)
+
+    @patch("brewtils.rest.client.RestClient.patch_request")
+    def test_update_request_too_large_error(self, request_mock):
+        request_mock.return_value = self.fake_too_large_error_response
+
+        self.assertRaises(TooLargeError, self.client.update_request, "id")
         request_mock.assert_called_once_with("id", ANY)
 
     @patch("brewtils.rest.client.RestClient.patch_request")

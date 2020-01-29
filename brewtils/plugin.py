@@ -22,6 +22,7 @@ from brewtils.errors import (
     PluginValidationError,
     RestClientError,
     TooLargeError,
+    BGGivesUpError,
     parse_exception_as_json,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
@@ -578,7 +579,7 @@ class Plugin(object):
                         "It is possible for this request to have "
                         "succeeded, but we cannot update beer-garden "
                         "with that information.",
-                        error_class="BGGivesUpError",
+                        error_class=BGGivesUpError.__name__,
                     )
             except Exception as ex:
                 self._handle_request_update_failure(request, headers, ex)
@@ -618,7 +619,7 @@ class Plugin(object):
                     id=request.id,
                     status="ERROR",
                     output="Request size greater than 16MB",
-                    error_class="BGGivesUpError",
+                    error_class=BGGivesUpError.__name__,
                 ),
                 headers,
             )

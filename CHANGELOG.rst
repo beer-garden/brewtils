@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.4.14
+-----
+Date: 1/30/20
+
+Bug Fixes
+^^^^^^^^^
+- Better error handling if a request exceeds 16MB size limit (beer-garden/#308)
+
 2.4.13
 -----
 Date: 1/13/20

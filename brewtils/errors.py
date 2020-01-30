@@ -99,6 +99,21 @@ class RequestProcessException(BrewtilsException):
     pass
 
 
+class BGGivesUpError(RequestProcessException):
+    """Special exception that indicates Beer-garden is giving up
+
+    This exception is not raised directly, instead it's a special value for a request's
+    error_class attribute. It indicates the request may have information that has not
+    been persisted to the database, but Beer-garden is choosing to abandon further
+    attempts to update it.
+
+    Typically indicates a request output is too large or the maximum number of update
+    retry attempts has been reached.
+    """
+
+    pass
+
+
 class AckAndContinueException(RequestProcessException):
     pass
 
@@ -223,6 +238,12 @@ class RequestForbidden(RestClientError):
 
 class AuthorizationRequired(RestClientError):
     """Error indicating a 401 was raised on the server"""
+
+    pass
+
+
+class TooLargeError(RestClientError):
+    """Error indicating a 413 was raised on the server"""
 
     pass
 

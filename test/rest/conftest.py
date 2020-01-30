@@ -32,6 +32,11 @@ def conflict():
 
 
 @pytest.fixture
+def too_large():
+    return Mock(ok=False, status_code=413, json=Mock(return_value="payload"))
+
+
+@pytest.fixture
 def server_error():
     return Mock(ok=False, status_code=500, json=Mock(return_value="payload"))
 

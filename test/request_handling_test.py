@@ -6,23 +6,24 @@ import sys
 import threading
 
 import pytest
-from mock import Mock, MagicMock, ANY
+from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.errors import (
-    RequestProcessingError,
     DiscardMessageException,
     ErrorLogLevelCritical,
-    ErrorLogLevelError,
-    ErrorLogLevelWarning,
-    ErrorLogLevelInfo,
     ErrorLogLevelDebug,
-    SuppressStacktrace,
-    RestClientError,
+    ErrorLogLevelError,
+    ErrorLogLevelInfo,
+    ErrorLogLevelWarning,
     RepublishRequestException,
+    RequestProcessingError,
+    RestClientError,
+    SuppressStacktrace,
+    TooLargeError,
 )
 from brewtils.models import Request
-from brewtils.request_handling import RequestProcessor, HTTPRequestUpdater
+from brewtils.request_handling import HTTPRequestUpdater, RequestProcessor
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import assert_request_equal
 
@@ -354,7 +355,7 @@ class TestRequestProcessor(object):
             )
 
 
-class TestEasyRequestUpdater(object):
+class TestHTTPRequestUpdater(object):
     @pytest.fixture
     def client(self):
         return Mock()
@@ -392,6 +393,7 @@ class TestEasyRequestUpdater(object):
                 (RestClientError, DiscardMessageException, False),
                 (RequestsConnectionError, RepublishRequestException, True),
                 (ValueError, RepublishRequestException, False),
+                (TooLargeError, RepublishRequestException, False),
             ],
         )
         def test_errors(self, updater, client, bg_request, ex, raised, bv_down):

@@ -11,12 +11,14 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
 from brewtils.errors import (
+    BGGivesUpError,
     DiscardMessageException,
-    parse_exception_as_json,
     RepublishRequestException,
-    RestConnectionError,
-    RestClientError,
     RequestProcessingError,
+    RestClientError,
+    RestConnectionError,
+    TooLargeError,
+    parse_exception_as_json,
 )
 from brewtils.models import Request
 from brewtils.resolvers import DownloadResolver
@@ -436,6 +438,24 @@ class HTTPRequestUpdater(RequestUpdater):
                 )
             )
             raise RepublishRequestException(request, headers)
+
+        elif isinstance(exc, TooLargeError):
+            self.logger.error(
+                "Error updating request {0} - the request exceeds the 16MB size "
+                "limitation. The status of this request will be marked as ERROR, but "
+                "it's possible the request actually completed successfully. If this "
+                "happens often please contact the plugin developer.".format(request.id)
+            )
+
+            raise RepublishRequestException(
+                Request(
+                    id=request.id,
+                    status="ERROR",
+                    output="Request size greater than 16MB",
+                    error_class=BGGivesUpError.__name__,
+                ),
+                headers,
+            )
 
         elif isinstance(exc, RestClientError):
             message = (

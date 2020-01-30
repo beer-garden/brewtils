@@ -13,6 +13,7 @@ from brewtils.errors import (
     RestConnectionError,
     RestError,
     SaveError,
+    TooLargeError,
     ValidationError,
     WaitExceededError,
     _deprecate,
@@ -54,6 +55,7 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         NotFoundError: Status code 404 and raise_404 is True
         WaitExceededError: Status code 408
         ConflictError: Status code 409
+        TooLargeError: Status code 413
         ValidationError: Any other 4xx status codes
         RestConnectionError: Status code 503
         default_exc: Any other status code
@@ -67,6 +69,8 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         raise WaitExceededError(response.json())
     elif response.status_code == 409:
         raise ConflictError(response.json())
+    elif response.status_code == 413:
+        raise TooLargeError(response.json())
     elif 400 <= response.status_code < 500:
         raise ValidationError(response.json())
     elif response.status_code == 503:

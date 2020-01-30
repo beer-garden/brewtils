@@ -17,6 +17,7 @@ from brewtils.errors import (
     RestError,
     WaitExceededError,
     SaveError,
+    TooLargeError,
 )
 from brewtils.rest.easy_client import (
     get_easy_client,
@@ -66,6 +67,10 @@ class TestHandleResponseFailure(object):
     def test_conflict_error(self, conflict):
         with pytest.raises(ConflictError):
             handle_response_failure(conflict)
+
+    def test_too_large_error(self, too_large):
+        with pytest.raises(TooLargeError):
+            handle_response_failure(too_large)
 
     def test_validation_error(self, client_error):
         with pytest.raises(ValidationError):

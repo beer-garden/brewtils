@@ -447,15 +447,11 @@ class HTTPRequestUpdater(RequestUpdater):
                 "happens often please contact the plugin developer.".format(request.id)
             )
 
-            raise RepublishRequestException(
-                Request(
-                    id=request.id,
-                    status="ERROR",
-                    output="Request size greater than 16MB",
-                    error_class=BGGivesUpError.__name__,
-                ),
-                headers,
-            )
+            request.status = "ERROR"
+            request.output = "Request size greater than 16MB"
+            request.error_class = BGGivesUpError.__name__
+
+            raise RepublishRequestException(request, headers)
 
         elif isinstance(exc, RestClientError):
             message = (

@@ -21,6 +21,8 @@ from brewtils.errors import (
     RestConnectionError,
     PluginValidationError,
     RestClientError,
+    TooLargeError,
+    BGGivesUpError,
     parse_exception_as_json,
 )
 from brewtils.log import DEFAULT_LOGGING_CONFIG
@@ -577,7 +579,7 @@ class Plugin(object):
                         "It is possible for this request to have "
                         "succeeded, but we cannot update beer-garden "
                         "with that information.",
-                        error_class="BGGivesUpError",
+                        error_class=BGGivesUpError.__name__,
                     )
             except Exception as ex:
                 self._handle_request_update_failure(request, headers, ex)
@@ -603,6 +605,24 @@ class Plugin(object):
                 )
             )
             raise RepublishRequestException(request, headers)
+
+        elif isinstance(exc, TooLargeError):
+            self.logger.error(
+                "Error updating request {0} - the request exceeds the 16MB size "
+                "limitation. The status of this request will be marked as ERROR, but "
+                "it's possible the request actually completed successfully. If this "
+                "happens often please contact the plugin developer.".format(request.id)
+            )
+
+            raise RepublishRequestException(
+                Request(
+                    id=request.id,
+                    status="ERROR",
+                    output="Request size greater than 16MB",
+                    error_class=BGGivesUpError.__name__,
+                ),
+                headers,
+            )
 
         elif isinstance(exc, RestClientError):
             message = (

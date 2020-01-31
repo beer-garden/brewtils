@@ -231,6 +231,7 @@ def child_request_dict(ts_epoch):
         "system": "child_system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace":"default",
         "command": "say",
         "id": "58542eb571afd47ead90d25f",
         "parameters": {},

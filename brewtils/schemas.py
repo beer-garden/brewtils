@@ -154,6 +154,7 @@ class SystemSchema(BaseSchema):
     commands = fields.Nested("CommandSchema", many=True, allow_none=True)
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    namespace = fields.Str(allow_none=True)
 
 
 class RequestFileSchema(BaseSchema):
@@ -168,6 +169,7 @@ class RequestTemplateSchema(BaseSchema):
     system = fields.Str(allow_none=True)
     system_version = fields.Str(allow_none=True)
     instance_name = fields.Str(allow_none=True)
+    namespace = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
     command_type = fields.Str(allow_none=True)
     parameters = fields.Dict(allow_none=True)
@@ -243,6 +245,7 @@ class EventSchema(BaseSchema):
     error = fields.Bool(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    namespace = fields.Str(allow_none=True)
 
 
 class QueueSchema(BaseSchema):

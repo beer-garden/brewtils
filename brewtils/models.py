@@ -348,7 +348,13 @@ class RequestTemplate(BaseModel):
         return (
             "<RequestTemplate: command=%s, system=%s, system_version=%s, "
             "instance_name=%s, namespace=%s>"
-            % (self.command, self.system, self.system_version, self.instance_name, self.namespace)
+            % (
+                self.command,
+                self.system,
+                self.system_version,
+                self.instance_name,
+                self.namespace,
+            )
         )
 
 
@@ -433,7 +439,7 @@ class Request(RequestTemplate):
                 self.system,
                 self.system_version,
                 self.instance_name,
-                self.namespace
+                self.namespace,
             )
         )
 
@@ -507,7 +513,11 @@ class System(BaseModel):
         return "%s-%s" % (self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s, namespace=%s>" % (self.name, self.version, self.namespace)
+        return "<System: name=%s, version=%s, namespace=%s>" % (
+            self.name,
+            self.version,
+            self.namespace,
+        )
 
     @property
     def instance_names(self):

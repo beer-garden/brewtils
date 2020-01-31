@@ -208,7 +208,7 @@ class TestCreateRequest(object):
     ):
         easy_client.create_request.return_value = mock_success
         monkeypatch.setattr(
-            brewtils.plugin, "request_context", Mock(current_request=Mock(id="1")),
+            brewtils.plugin, "request_context", Mock(current_request=Mock(id="1"))
         )
 
         client.command_1(_parent=bg_request)

@@ -173,7 +173,7 @@ class Plugin(object):
         # Set the global config so it can be used by SystemClients and such
         global CONFIG
         if len(CONFIG):
-            print(
+            print (
                 "Global CONFIG object is not empty! If multiple plugins are running in "
                 "this process please ensure any [System|Easy|Rest]Clients are passed "
                 "connection information as kwargs - auto-discovery may be incorrect."

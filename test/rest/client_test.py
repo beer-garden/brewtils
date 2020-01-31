@@ -57,7 +57,7 @@ class TestRestClient(object):
             assert len(w) == 2
 
     @pytest.mark.parametrize(
-        "kwargs", [({"bg_port": 80}), ({"bg_host": "host", "api_version": -1})],
+        "kwargs", [({"bg_port": 80}), ({"bg_host": "host", "api_version": -1})]
     )
     def test_bad_args(self, kwargs):
         with pytest.raises(YapconfItemError):

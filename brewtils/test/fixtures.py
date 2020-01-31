@@ -207,6 +207,9 @@ def system_dict(instance_dict, command_dict, system_id):
         "icon_name": "fa-beer",
         "display_name": "non-offensive",
         "metadata": {"some": "stuff"},
+        "namespace":"default",
+        "garden_name":"foo",
+
     }
 
 
@@ -259,6 +262,7 @@ def parent_request_dict(ts_epoch):
         "system": "parent_system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "default",
         "command": "say",
         "id": "58542eb571afd47ead90d25d",
         "parent": None,
@@ -293,6 +297,7 @@ def request_template_dict():
         "system": "system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "default",
         "command": "speak",
         "command_type": "ACTION",
         "parameters": {"message": "hey!"},
@@ -315,6 +320,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "system": "system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "default",
         "command": "speak",
         "id": "58542eb571afd47ead90d25e",
         "parent": parent_request_dict,

@@ -295,6 +295,7 @@ class TestSystem(object):
             version="1.0.0",
             instances=[Instance(name="foo")],
             commands=[command1],
+            namespace="default",
         )
 
     def test_get_command_by_name_found(self, default_system):

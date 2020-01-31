@@ -64,6 +64,7 @@ class Plugin(object):
         - ``icon_name``
         - ``metadata``
         - ``display_name``
+        - ``namespace`` (required, but default will be set by Beer Garden Application)
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -87,6 +88,7 @@ class Plugin(object):
             instance_name="default",
             description="A Test",
             bg_host="localhost",
+            namespace="foo"
         )
 
     Plugins use `Yapconf <https://github.com/loganasherjones/yapconf>`_ for
@@ -145,6 +147,7 @@ class Plugin(object):
         max_instances (int): System maximum instances
         metadata (dict): System metadata
         instance_name (str): Instance name
+        namespace (str): Name Space
 
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
@@ -256,7 +259,8 @@ class Plugin(object):
 
     @property
     def unique_name(self):
-        return "%s[%s]-%s" % (
+        return "%s--%s[%s]-%s" % (
+            self._system.namespace,
             self._system.name,
             self._config.instance_name,
             self._system.version,
@@ -509,10 +513,12 @@ class Plugin(object):
             if not description and self._client.__doc__:
                 description = self._client.__doc__.split("\n")[0]
 
+            namespace = self._config.namespace or getattr(self._client, "_namespace")
             system = System(
                 name=name,
                 description=description,
                 version=version,
+                namespace=namespace,
                 metadata=json.loads(self._config.metadata),
                 commands=getattr(self._client, "_bg_commands", []),
                 instances=[Instance(name=self._config.instance_name)],

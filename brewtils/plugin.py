@@ -338,7 +338,9 @@ class Plugin(object):
 
         """
         existing_system = self._ez_client.find_unique_system(
-            name=self._system.name, version=self._system.version
+            name=self._system.name,
+            version=self._system.version,
+            namespace=self._system.namespace,
         )
 
         if not existing_system:
@@ -350,15 +352,15 @@ class Plugin(object):
                 # If multiple instances are starting up at once and this is a new system
                 # the create can return a conflict. In that case just try the get again
                 existing_system = self._ez_client.find_unique_system(
-                    name=self._system.name, version=self._system.version
+                    name=self._system.name,
+                    version=self._system.version,
+                    namespace=self._system.namespace,
                 )
 
         # If we STILL can't find a system something is really wrong
         if not existing_system:
             raise PluginValidationError(
-                "Unable to find or create system {0}-{1}".format(
-                    self._system.name, self._system.version
-                )
+                "Unable to find or create system {0}".format(self._system)
             )
 
         # We always update with these fields

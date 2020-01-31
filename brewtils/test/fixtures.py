@@ -210,9 +210,8 @@ def system_dict(instance_dict, command_dict, system_id):
         "icon_name": "fa-beer",
         "display_name": "non-offensive",
         "metadata": {"some": "stuff"},
-        "namespace":"default",
-        "garden_name":"foo",
-
+        "namespace": "default",
+        "garden_name": "foo",
     }
 
 

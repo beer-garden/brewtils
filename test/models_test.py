@@ -351,6 +351,7 @@ class TestSystem(object):
             version="1.0.0",
             instances=[Instance(name="foo")],
             commands=[command1],
+            namespace="ns",
         )
 
     def test_get_command_by_name_found(self, default_system):
@@ -406,9 +407,10 @@ class TestSystem(object):
         assert not default_system.has_different_commands([command])
 
     def test_str(self, default_system):
-        assert str(default_system) == "foo-1.0.0"
+        assert str(default_system) == "ns:foo-1.0.0"
 
     def test_repr(self, default_system):
+        assert "ns" in repr(default_system)
         assert "foo" in repr(default_system)
         assert "1.0.0" in repr(default_system)
 
@@ -512,14 +514,15 @@ class TestEvent(object):
             error=False,
             payload={"request": "request"},
             metadata={},
+            namespace="ns",
         )
 
     def test_str(self, event):
-        assert str(event) == "REQUEST_CREATED: {'request': 'request'}, {}"
+        assert str(event) == "ns REQUEST_CREATED: {'request': 'request'}, {}"
 
     def test_repr(self, event):
         assert (
-            repr(event) == "<Event: name=REQUEST_CREATED, error=False, "
+            repr(event) == "<Event: namespace=ns, name=REQUEST_CREATED, error=False, "
             "payload={'request': 'request'}, metadata={}>"
         )
 

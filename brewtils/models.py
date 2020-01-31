@@ -393,6 +393,7 @@ class RequestTemplate(BaseModel):
         "system",
         "system_version",
         "instance_name",
+        "namespace",
         "command",
         "command_type",
         "parameters",
@@ -406,6 +407,7 @@ class RequestTemplate(BaseModel):
         system=None,
         system_version=None,
         instance_name=None,
+        namespace=None,
         command=None,
         command_type=None,
         parameters=None,
@@ -416,6 +418,7 @@ class RequestTemplate(BaseModel):
         self.system = system
         self.system_version = system_version
         self.instance_name = instance_name
+        self.namespace = namespace
         self.command = command
         self.command_type = command_type
         self.parameters = parameters
@@ -429,8 +432,14 @@ class RequestTemplate(BaseModel):
     def __repr__(self):
         return (
             "<RequestTemplate: command=%s, system=%s, system_version=%s, "
-            "instance_name=%s>"
-            % (self.command, self.system, self.system_version, self.instance_name)
+            "instance_name=%s, namespace=%s>"
+            % (
+                self.command,
+                self.system,
+                self.system_version,
+                self.instance_name,
+                self.namespace,
+            )
         )
 
 
@@ -447,6 +456,7 @@ class Request(RequestTemplate):
         system=None,
         system_version=None,
         instance_name=None,
+        namespace=None,
         command=None,
         id=None,
         parent=None,
@@ -468,6 +478,7 @@ class Request(RequestTemplate):
             system=system,
             system_version=system_version,
             instance_name=instance_name,
+            namespace=namespace,
             command=command,
             command_type=command_type,
             parameters=parameters,
@@ -506,13 +517,14 @@ class Request(RequestTemplate):
     def __repr__(self):
         return (
             "<Request: command=%s, status=%s, system=%s, system_version=%s, "
-            "instance_name=%s>"
+            "instance_name=%s, namespace=%s>"
             % (
                 self.command,
                 self.status,
                 self.system,
                 self.system_version,
                 self.instance_name,
+                self.namespace,
             )
         )
 
@@ -548,6 +560,7 @@ class System(BaseModel):
         icon_name=None,
         display_name=None,
         metadata=None,
+        namespace=None,
     ):
         self.name = name
         self.description = description
@@ -559,12 +572,17 @@ class System(BaseModel):
         self.icon_name = icon_name
         self.display_name = display_name
         self.metadata = metadata or {}
+        self.namespace = namespace
 
     def __str__(self):
-        return "%s-%s" % (self.name, self.version)
+        return "%s:%s-%s" % (self.namespace, self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s>" % (self.name, self.version)
+        return "<System: name=%s, version=%s, namespace=%s>" % (
+            self.name,
+            self.version,
+            self.namespace,
+        )
 
     @property
     def instance_names(self):
@@ -762,19 +780,32 @@ class Event(BaseModel):
     schema = "EventSchema"
 
     def __init__(
-        self, name=None, payload=None, error=None, metadata=None, timestamp=None
+        self,
+        name=None,
+        payload=None,
+        error=None,
+        metadata=None,
+        timestamp=None,
+        namespace=None,
     ):
         self.name = name
         self.payload = payload
         self.error = error
         self.metadata = metadata or {}
         self.timestamp = timestamp
+        self.namespace = namespace
 
     def __str__(self):
-        return "%s: %s, %s" % (self.name, self.payload, self.metadata)
+        return "%s %s: %s, %s" % (
+            self.namespace,
+            self.name,
+            self.payload,
+            self.metadata,
+        )
 
     def __repr__(self):
-        return "<Event: name=%s, error=%s, payload=%s, metadata=%s>" % (
+        return "<Event: namespace=%s, name=%s, error=%s, payload=%s, metadata=%s>" % (
+            self.namespace,
             self.name,
             self.error,
             self.payload,

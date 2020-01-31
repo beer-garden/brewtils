@@ -123,6 +123,11 @@ _SYSTEM_SPEC = {
         "default": "{}",
         "validator": _is_json_dict,
     },
+    "namespace": {
+        "type": "str",
+        "description": "The namespace this system will be created in",
+        "required": False,
+    },
 }
 
 _PLUGIN_SPEC = {

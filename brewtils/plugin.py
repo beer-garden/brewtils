@@ -60,6 +60,7 @@ class Plugin(object):
         - ``name`` (required)
         - ``version`` (required)
         - ``instance_name`` (required, but defaults to "default")
+        - ``namespace``
         - ``description``
         - ``icon_name``
         - ``metadata``
@@ -85,6 +86,7 @@ class Plugin(object):
             name="Test",
             version="1.0.0",
             instance_name="default",
+            namespace="test plugins",
             description="A Test",
             bg_host="localhost",
         )
@@ -145,6 +147,7 @@ class Plugin(object):
         max_instances (int): System maximum instances
         metadata (dict): System metadata
         instance_name (str): Instance name
+        namespace (str): Namespace name
 
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
@@ -256,7 +259,8 @@ class Plugin(object):
 
     @property
     def unique_name(self):
-        return "%s[%s]-%s" % (
+        return "%s:%s[%s]-%s" % (
+            self._system.namespace,
             self._system.name,
             self._config.instance_name,
             self._system.version,
@@ -482,6 +486,7 @@ class Plugin(object):
             "display_name",
             "max_instances",
             "metadata",
+            "namespace",
         }
 
         if system:
@@ -513,6 +518,7 @@ class Plugin(object):
                 name=name,
                 description=description,
                 version=version,
+                namespace=self._config.namespace,
                 metadata=json.loads(self._config.metadata),
                 commands=getattr(self._client, "_bg_commands", []),
                 instances=[Instance(name=self._config.instance_name)],

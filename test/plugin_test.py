@@ -89,7 +89,7 @@ class TestInit(object):
 
     @pytest.mark.parametrize(
         "instance_name,expected_unique",
-        [(None, "system[default]-1.0.0"), ("unique", "system[unique]-1.0.0")],
+        [(None, "ns:system[default]-1.0.0"), ("unique", "ns:system[unique]-1.0.0")],
     )
     def test_init_with_instance_name_unique_name_check(
         self, client, bg_system, instance_name, expected_unique

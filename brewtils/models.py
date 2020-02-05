@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from enum import Enum, auto
+from enum import Enum
 
 import pytz
 import six

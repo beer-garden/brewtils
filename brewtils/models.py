@@ -32,43 +32,44 @@ __all__ = [
 
 
 class Events(Enum):
-    BREWVIEW_STARTED = (1, 'UPDATE', 'GardenSchema')
-    BREWVIEW_STOPPED = (2, 'UPDATE', 'GardenSchema')
-    BARTENDER_STARTED = (3, 'UPDATE', 'GardenSchema')
-    BARTENDER_STOPPED = (4, 'UPDATE', 'GardenSchema')
-    REQUEST_CREATED = (5, 'CREATE', 'RequestSchema')
-    REQUEST_STARTED = (6, 'UPDATE', 'RequestSchema')
-    REQUEST_UPDATED = (7, 'UPDATE', 'RequestSchema')
-    REQUEST_COMPLETED = (8, 'UPDATE', 'RequestSchema')
-    INSTANCE_INITIALIZED = (9, 'UPDATE', 'InstanceSchema')
-    INSTANCE_STARTED = (10, 'UPDATE', 'InstanceSchema')
-    INSTANCE_UPDATED = (11, 'UPDATE', 'InstanceSchema')
-    INSTANCE_STOPPED = (12, 'UPDATE', 'InstanceSchema')
-    SYSTEM_CREATED = (13, 'CREATE', 'SystemSchema')
-    SYSTEM_UPDATED = (14, 'UPDATE', 'SystemSchema')
-    SYSTEM_REMOVED = (15, 'DELETE', 'SystemSchema')
-    QUEUE_CLEARED = (16, 'DELETE', 'QueueSchema')
-    ALL_QUEUES_CLEARED = (17, 'DELETE', 'QueueSchema')
-    DB_CREATE = (18, 'CREATE', None)
-    DB_UPDATE = (19, 'UPDATE', None)
-    DB_DELETE = (20, 'DELETE', None)
-    GARDEN_CREATED = (21, 'CREATE', 'GardenSchema')
-    GARDEN_UPDATED = (22, 'UPDATE', 'GardenSchema')
-    GARDEN_REMOVED = (23, 'DELETE', 'GardenSchema')
-    FILE_CREATED = (24, 'CREATE', 'RequestFileSchema')
-    GARDEN_STARTED = (25, 'UPDATE', 'GardenSchema')
-    GARDEN_STOPPED = (26, 'UPDATE', 'GardenSchema')
-    ENTRY_STARTED = (27, 'CREATE', None)
-    ENTRY_STOPPED = (28, 'DELETE', None)
+    BREWVIEW_STARTED = (1, "UPDATE", "GardenSchema")
+    BREWVIEW_STOPPED = (2, "UPDATE", "GardenSchema")
+    BARTENDER_STARTED = (3, "UPDATE", "GardenSchema")
+    BARTENDER_STOPPED = (4, "UPDATE", "GardenSchema")
+    REQUEST_CREATED = (5, "CREATE", "RequestSchema")
+    REQUEST_STARTED = (6, "UPDATE", "RequestSchema")
+    REQUEST_UPDATED = (7, "UPDATE", "RequestSchema")
+    REQUEST_COMPLETED = (8, "UPDATE", "RequestSchema")
+    INSTANCE_INITIALIZED = (9, "UPDATE", "InstanceSchema")
+    INSTANCE_STARTED = (10, "UPDATE", "InstanceSchema")
+    INSTANCE_UPDATED = (11, "UPDATE", "InstanceSchema")
+    INSTANCE_STOPPED = (12, "UPDATE", "InstanceSchema")
+    SYSTEM_CREATED = (13, "CREATE", "SystemSchema")
+    SYSTEM_UPDATED = (14, "UPDATE", "SystemSchema")
+    SYSTEM_REMOVED = (15, "DELETE", "SystemSchema")
+    QUEUE_CLEARED = (16, "DELETE", "QueueSchema")
+    ALL_QUEUES_CLEARED = (17, "DELETE", "QueueSchema")
+    DB_CREATE = (18, "CREATE", None)
+    DB_UPDATE = (19, "UPDATE", None)
+    DB_DELETE = (20, "DELETE", None)
+    GARDEN_CREATED = (21, "CREATE", "GardenSchema")
+    GARDEN_UPDATED = (22, "UPDATE", "GardenSchema")
+    GARDEN_REMOVED = (23, "DELETE", "GardenSchema")
+    FILE_CREATED = (24, "CREATE", "RequestFileSchema")
+    GARDEN_STARTED = (25, "UPDATE", "GardenSchema")
+    GARDEN_STOPPED = (26, "UPDATE", "GardenSchema")
+    ENTRY_STARTED = (27, "CREATE", None)
+    ENTRY_STOPPED = (28, "DELETE", None)
 
     # TODO - should these be external API events?
-    INSTANCE_STOP_REQUESTED = (29, 'UPDATE', 'InstanceSchema')
-    INSTANCE_START_REQUESTED = (30, 'UPDATE', 'InstanceSchema')
+    INSTANCE_STOP_REQUESTED = (29, "UPDATE", "InstanceSchema")
+    INSTANCE_START_REQUESTED = (30, "UPDATE", "InstanceSchema")
 
     def __init__(self, num, route_type, route_class):
         self.num = num
         self.route_type = route_type
         self.route_class = route_class
+
 
 class BaseModel(object):
     schema = None

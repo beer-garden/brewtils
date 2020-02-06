@@ -251,6 +251,8 @@ The `EasyClient` had some API changes:
 
 Also, a new method `update_instance()` was added; `update_instance_status()` is now deprecated.
 
+Finally, `get_system()` and `get_request()` methods that raise a `NotFoundError` if the system or request isn't found were added. The existing `find_*` and `find_unique_*` methods are unchanged.
+
 
 ### General Organization
 

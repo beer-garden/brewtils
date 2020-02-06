@@ -210,6 +210,21 @@ class EasyClient(object):
         """
         return self.client.get_logging_config(system_name=system_name)
 
+    @wrap_response(
+        parse_method="parse_system", parse_many=False, default_exc=FetchError
+    )
+    def get_system(self, system_id, **kwargs):
+        """Get a System
+
+        Args:
+            system_id: The Id
+
+        Returns:
+            The System
+
+        """
+        return self.client.get_system(system_id, **kwargs)
+
     def find_unique_system(self, **kwargs):
         """Find a unique system
 
@@ -228,7 +243,10 @@ class EasyClient(object):
 
         """
         if "id" in kwargs:
-            return self._find_system_by_id(kwargs.pop("id"), **kwargs)
+            try:
+                return self.get_system(kwargs.pop("id"), **kwargs)
+            except NotFoundError:
+                return None
         else:
             systems = self.find_systems(**kwargs)
 
@@ -766,15 +784,6 @@ class EasyClient(object):
 
         """
         return self.get_user(self.client.username or "anonymous")
-
-    @wrap_response(
-        parse_method="parse_system",
-        parse_many=False,
-        default_exc=FetchError,
-        raise_404=False,
-    )
-    def _find_system_by_id(self, system_id, **kwargs):
-        return self.client.get_system(system_id, **kwargs)
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def _remove_system_by_id(self, system_id):

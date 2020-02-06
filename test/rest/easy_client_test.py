@@ -119,106 +119,112 @@ def test_get_logging_config(client, rest_client, parser, success):
     assert output == parser.parse_logging_config.return_value
 
 
-class TestFindSystems(object):
-    def test_success(self, client, rest_client, success):
-        rest_client.get_systems.return_value = success
-        client.find_systems()
-        assert rest_client.get_systems.called is True
+class TestSystems(object):
+    class TestGet(object):
+        def test_success(self, client, rest_client, bg_system, success, parser):
+            rest_client.get_system.return_value = success
+            parser.parse_system.return_value = bg_system
 
-    def test_with_params(self, client, rest_client, success):
-        rest_client.get_systems.return_value = success
-        client.find_systems(name="foo")
-        rest_client.get_systems.assert_called_once_with(name="foo")
+            assert client.get_system(bg_system.id) == bg_system
 
+        def test_404(self, client, rest_client, bg_system, not_found):
+            rest_client.get_system.return_value = not_found
 
-class TestFindUniqueSystem(object):
-    def test_by_id(self, monkeypatch, client, bg_system):
-        monkeypatch.setattr(client, "_find_system_by_id", Mock(return_value=bg_system))
-        assert client.find_unique_system(id=bg_system.id) == bg_system
+            with pytest.raises(NotFoundError):
+                client.get_system(bg_system.id)
 
-    def test_none(self, monkeypatch, client, bg_system):
-        monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
-        assert client.find_unique_system() is None
+    class TestFind(object):
+        def test_success(self, client, rest_client, success):
+            rest_client.get_systems.return_value = success
+            client.find_systems()
+            assert rest_client.get_systems.called is True
 
-    def test_one(self, monkeypatch, client, bg_system):
-        monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
-        assert client.find_unique_system() == bg_system
+        def test_with_params(self, client, rest_client, success):
+            rest_client.get_systems.return_value = success
+            client.find_systems(name="foo")
+            rest_client.get_systems.assert_called_once_with(name="foo")
 
-    def test_multiple(self, monkeypatch, client):
-        monkeypatch.setattr(client, "find_systems", Mock(return_value=["s1", "s2"]))
-        with pytest.raises(FetchError):
-            client.find_unique_system()
+    class TestFindUnique(object):
+        def test_by_id(self, client, rest_client, bg_system, success, parser):
+            rest_client.get_system.return_value = success
+            parser.parse_system.return_value = bg_system
 
+            assert client.find_unique_system(id=bg_system.id) == bg_system
 
-class TestFindSystemById(object):
-    def test_success(self, client, rest_client, success):
-        rest_client.get_system.return_value = success
-        assert client._find_system_by_id("id")
+        def test_by_id_404(self, client, rest_client, bg_system, not_found):
+            rest_client.get_system.return_value = not_found
+            assert client.find_unique_system(id=bg_system.id) is None
 
-    def test_404(self, client, rest_client, not_found):
-        rest_client.get_system.return_value = not_found
-        assert client._find_system_by_id("id") is None
+        def test_none(self, monkeypatch, client, bg_system):
+            monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
+            assert client.find_unique_system() is None
 
+        def test_one(self, monkeypatch, client, bg_system):
+            monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
+            assert client.find_unique_system() == bg_system
 
-def test_create_system(client, rest_client, success, bg_system):
-    rest_client.post_systems.return_value = success
-    client.create_system(bg_system)
-    assert rest_client.post_systems.called is True
+        def test_multiple(self, monkeypatch, client):
+            monkeypatch.setattr(client, "find_systems", Mock(return_value=["s1", "s2"]))
+            with pytest.raises(FetchError):
+                client.find_unique_system()
 
+    def test_create(self, client, rest_client, success, bg_system):
+        rest_client.post_systems.return_value = success
+        client.create_system(bg_system)
+        assert rest_client.post_systems.called is True
 
-class TestUpdateSystem(object):
-    def test_new_commands(self, client, rest_client, parser, success, bg_command):
-        rest_client.patch_system.return_value = success
+    class TestUpdate(object):
+        def test_new_commands(self, client, rest_client, parser, success, bg_command):
+            rest_client.patch_system.return_value = success
 
-        client.update_system("id", new_commands=[bg_command])
-        operation = parser.serialize_patch.call_args[0][0][0]
-        assert operation.path == "/commands"
+            client.update_system("id", new_commands=[bg_command])
+            operation = parser.serialize_patch.call_args[0][0][0]
+            assert operation.path == "/commands"
 
-    def test_add_instance(self, client, rest_client, parser, success, bg_instance):
-        rest_client.patch_system.return_value = success
+        def test_add_instance(self, client, rest_client, parser, success, bg_instance):
+            rest_client.patch_system.return_value = success
 
-        client.update_system("id", add_instance=bg_instance)
-        operation = parser.serialize_patch.call_args[0][0][0]
-        assert operation.path == "/instance"
+            client.update_system("id", add_instance=bg_instance)
+            operation = parser.serialize_patch.call_args[0][0][0]
+            assert operation.path == "/instance"
 
-    def test_update_metadata(self, client, rest_client, parser, success):
-        rest_client.patch_system.return_value = success
+        def test_update_metadata(self, client, rest_client, parser, success):
+            rest_client.patch_system.return_value = success
 
-        client.update_system("id", metadata={"hello": "world"})
-        operation = parser.serialize_patch.call_args[0][0][0]
-        assert operation.path == "/metadata"
+            client.update_system("id", metadata={"hello": "world"})
+            operation = parser.serialize_patch.call_args[0][0][0]
+            assert operation.path == "/metadata"
 
-    def test_update_kwargs(self, client, rest_client, parser, success):
-        rest_client.patch_system.return_value = success
+        def test_update_kwargs(self, client, rest_client, parser, success):
+            rest_client.patch_system.return_value = success
 
-        client.update_system("id", display_name="foo")
-        operation = parser.serialize_patch.call_args[0][0][0]
-        assert operation.path == "/display_name"
+            client.update_system("id", display_name="foo")
+            operation = parser.serialize_patch.call_args[0][0][0]
+            assert operation.path == "/display_name"
 
+    class TestRemove(object):
+        def test_params(self, monkeypatch, client, rest_client, success, bg_system):
+            monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
+            rest_client.get_system.return_value = success
 
-class TestRemoveSystem(object):
-    def test_params(self, monkeypatch, client, rest_client, success, bg_system):
-        monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
-        rest_client.get_system.return_value = success
+            assert client.remove_system(search="params") is True
+            rest_client.delete_system.assert_called_once_with(bg_system.id)
 
-        assert client.remove_system(search="params") is True
-        rest_client.delete_system.assert_called_once_with(bg_system.id)
+        def test_not_found(self, monkeypatch, client, rest_client, success, bg_system):
+            monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
+            rest_client.get_system.return_value = success
 
-    def test_not_found(self, monkeypatch, client, rest_client, success, bg_system):
-        monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
-        rest_client.get_system.return_value = success
+            with pytest.raises(FetchError):
+                client.remove_system(search="params")
 
-        with pytest.raises(FetchError):
-            client.remove_system(search="params")
+        def test_remove_system_by_id(self, client, rest_client, success, bg_system):
+            rest_client.delete_system.return_value = success
 
-    def test_remove_system_by_id(self, client, rest_client, success, bg_system):
-        rest_client.delete_system.return_value = success
+            assert client._remove_system_by_id(bg_system.id)
 
-        assert client._remove_system_by_id(bg_system.id)
-
-    def test_remove_system_by_id_none(self, client):
-        with pytest.raises(DeleteError):
-            client._remove_system_by_id(None)
+        def test_remove_system_by_id_none(self, client):
+            with pytest.raises(DeleteError):
+                client._remove_system_by_id(None)
 
 
 class TestInstances(object):

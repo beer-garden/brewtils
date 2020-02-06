@@ -481,6 +481,21 @@ class EasyClient(object):
 
         return self.client.delete_instance(instance_id)
 
+    @wrap_response(
+        parse_method="parse_request", parse_many=False, default_exc=FetchError
+    )
+    def get_request(self, request_id):
+        """Get a Request
+
+        Args:
+            request_id: The Id
+
+        Returns:
+            The Request
+
+        """
+        return self.client.get_request(request_id)
+
     def find_unique_request(self, **kwargs):
         """Find a unique request
 
@@ -499,7 +514,10 @@ class EasyClient(object):
 
         """
         if "id" in kwargs:
-            return self._find_request_by_id(kwargs.pop("id"))
+            try:
+                return self.get_request(kwargs.pop("id"))
+            except NotFoundError:
+                return None
         else:
             all_requests = self.find_requests(**kwargs)
 
@@ -791,15 +809,6 @@ class EasyClient(object):
             raise DeleteError("Cannot delete a system without an id")
 
         return self.client.delete_system(system_id)
-
-    @wrap_response(
-        parse_method="parse_request",
-        parse_many=False,
-        default_exc=FetchError,
-        raise_404=False,
-    )
-    def _find_request_by_id(self, request_id):
-        return self.client.get_request(request_id)
 
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def _patch_job(self, job_id, operations):

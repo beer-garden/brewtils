@@ -289,68 +289,74 @@ class TestInstances(object):
             client.remove_instance(None)
 
 
-class TestFindUniqueRequest(object):
-    def test_by_id(self, monkeypatch, client):
-        monkeypatch.setattr(client, "_find_request_by_id", Mock(return_value="r1"))
+class TestRequests(object):
+    class TestGet(object):
+        def test_success(self, client, rest_client, bg_request, success, parser):
+            rest_client.get_request.return_value = success
+            parser.parse_request.return_value = bg_request
 
-        assert client.find_unique_request(id="id") == "r1"
+            assert client.get_request(bg_request.id) == bg_request
 
-    def test_none(self, monkeypatch, client):
-        monkeypatch.setattr(client, "find_requests", Mock(return_value=None))
+        def test_404(self, client, rest_client, bg_request, not_found):
+            rest_client.get_request.return_value = not_found
 
-        assert client.find_unique_request() is None
+            with pytest.raises(NotFoundError):
+                client.get_request(bg_request.id)
 
-    def test_one(self, monkeypatch, client, bg_request):
-        monkeypatch.setattr(client, "find_requests", Mock(return_value=[bg_request]))
-        assert client.find_unique_request() == bg_request
+    class TestFindUnique(object):
+        def test_by_id(self, client, rest_client, bg_request, success, parser):
+            rest_client.get_request.return_value = success
+            parser.parse_request.return_value = bg_request
 
-    def test_multiple(self, monkeypatch, client):
-        monkeypatch.setattr(client, "find_requests", Mock(return_value=["r1", "r2"]))
+            assert client.find_unique_request(id=bg_request.id) == bg_request
 
-        with pytest.raises(FetchError):
-            client.find_unique_request()
+        def test_by_id_404(self, client, rest_client, bg_request, not_found):
+            rest_client.get_request.return_value = not_found
+            assert client.find_unique_request(id=bg_request.id) is None
 
+        def test_none(self, monkeypatch, client):
+            monkeypatch.setattr(client, "find_requests", Mock(return_value=None))
 
-def test_find_requests(client, rest_client, success):
-    rest_client.get_requests.return_value = success
+            assert client.find_unique_request() is None
 
-    client.find_requests(search="params")
-    rest_client.get_requests.assert_called_once_with(search="params")
+        def test_one(self, monkeypatch, client, bg_request):
+            monkeypatch.setattr(
+                client, "find_requests", Mock(return_value=[bg_request])
+            )
+            assert client.find_unique_request() == bg_request
 
+        def test_multiple(self, monkeypatch, client):
+            monkeypatch.setattr(
+                client, "find_requests", Mock(return_value=["r1", "r2"])
+            )
 
-class TestFindRequestById(object):
-    def test_success(self, client, rest_client, success):
-        rest_client.get_request.return_value = success
+            with pytest.raises(FetchError):
+                client.find_unique_request()
 
-        assert client._find_request_by_id("id")
-        rest_client.get_request.assert_called_once_with("id")
+    def test_find(self, client, rest_client, success):
+        rest_client.get_requests.return_value = success
 
-    def test_not_found(self, client, rest_client, not_found):
-        rest_client.get_request.return_value = not_found
+        client.find_requests(search="params")
+        rest_client.get_requests.assert_called_once_with(search="params")
 
-        assert client._find_request_by_id("id") is None
-        rest_client.get_request.assert_called_once_with("id")
+    def test_create(self, client, rest_client, success, bg_request):
+        rest_client.post_requests.return_value = success
 
+        assert client.create_request(bg_request)
+        assert rest_client.post_requests.called is True
 
-def test_create_request(client, rest_client, success, bg_request):
-    rest_client.post_requests.return_value = success
+    def test_update(self, client, rest_client, parser, success, bg_request):
+        rest_client.patch_request.return_value = success
 
-    assert client.create_request(bg_request)
-    assert rest_client.post_requests.called is True
+        assert client.update_request(
+            "id", status="new_status", output="new_output", error_class="ValueError"
+        )
+        assert rest_client.patch_request.called is True
 
-
-def test_update_request(client, rest_client, parser, success, bg_request):
-    rest_client.patch_request.return_value = success
-
-    assert client.update_request(
-        "id", status="new_status", output="new_output", error_class="ValueError"
-    )
-    assert rest_client.patch_request.called is True
-
-    patch_paths = [p.path for p in parser.serialize_patch.call_args[0][0]]
-    assert "/status" in patch_paths
-    assert "/output" in patch_paths
-    assert "/error_class" in patch_paths
+        patch_paths = [p.path for p in parser.serialize_patch.call_args[0][0]]
+        assert "/status" in patch_paths
+        assert "/output" in patch_paths
+        assert "/error_class" in patch_paths
 
 
 def test_publish_event(client, rest_client, success, bg_event):

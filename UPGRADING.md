@@ -266,6 +266,14 @@ Two names have been removed from the top-level brewtils package completely as th
 - `SPECIFICATION` lives in `brewtils.specification`
 - `ValidationError` lives in `brewtils.errors`
 
+#### Module Moves
+The items defined in the `brewtils.queues` module have been moved to the `brewtils.pika` module. These are:
+
+- `PIKA_ONE`
+- `PikaClient`
+
+The `brewtils.queues` module is now deprecated.
+
 #### `Brewmaster` References
 All names that include `Brewmaster` have been removed. These have been deprecated since forever. If you're still using any of them just chop off the `Brewmaster` part and you'll be good to go!
 
@@ -306,3 +314,6 @@ Several keyword arguments will no longer be honored:
 
 - The `logger` keyword argument has been removed from the `RestClient` and `EasyClient` as it was never used.
 - The `parser` keyword argument is no longer supported by `Plugin` and `EasyClient`. Both classes no longer create and retain a parser instance (instead using `SchemaParser` class methods directly) so passing a `parser` will have no effect.
+
+#### Pika Version
+Previously pika versions 0.11.x and 1.x were equally valid. Pika versions lower than 1 are now deprecated and support will be removed in a future release.

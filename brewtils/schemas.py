@@ -158,7 +158,6 @@ class SystemSchema(BaseSchema):
 
 
 class RequestFileSchema(BaseSchema):
-
     storage_type = fields.Str(allow_none=True)
     filename = fields.Str(allow_none=True)
 
@@ -367,3 +366,49 @@ class JobSchema(BaseSchema):
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
+
+FORWARD_TYPE_TO_SCHEMA = {
+    "command": CommandSchema,
+    "instance": InstanceSchema,
+    "system": SystemSchema,
+    "loggingConfig": LoggingConfigSchema,
+    "event": EventSchema,
+    "queue": QueueSchema,
+    "garden": GardenSchema,
+    "job": JobSchema,
+    "patch": PatchSchema,
+}
+
+
+def serialize_forward_selector(_, obj):
+    try:
+        return FORWARD_TYPE_TO_SCHEMA[obj.brewtils_obj_type]()
+    except KeyError:
+        pass
+
+    raise TypeError("Could not detect %s trigger type schema" % obj.brewtils_obj_type)
+
+
+def deserialize_forward_selector(_, data):
+    try:
+        return FORWARD_TYPE_TO_SCHEMA[data["brewtils_obj_type"]]()
+    except KeyError:
+        pass
+
+    raise TypeError("Could not detect %s trigger type schema" % data["brewtils_obj_type"])
+
+
+class ForwardSchema(BaseSchema):
+    brewtils_obj_type = fields.Str(allow_none=True)
+    brewtils_obj = PolyField(
+        allow_none=True,
+        serialization_schema_selector=serialize_forward_selector,
+        deserialization_schema_selector=deserialize_forward_selector,
+    )
+
+    obj_id = fields.Str(allow_none=True)
+    route_class = fields.Str(allow_none=True)
+    route_type = fields.Str(allow_none=True)
+    garden_name = fields.Str(allow_none=True)
+    src_garden_name = fields.Str(allow_none=True)
+    extra_kwargs = fields.raw(allow_none=True)

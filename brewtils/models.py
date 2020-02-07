@@ -782,34 +782,33 @@ class Event(BaseModel):
     def __init__(
         self,
         name=None,
-        payload=None,
-        error=None,
+        namespace=None,
         metadata=None,
         timestamp=None,
-        namespace=None,
+        payload_type=None,
+        payload=None,
+        error=None,
+        error_message=None,
     ):
         self.name = name
-        self.payload = payload
-        self.error = error
+        self.namespace = namespace
         self.metadata = metadata or {}
         self.timestamp = timestamp
-        self.namespace = namespace
+        self.payload_type = payload_type
+        self.payload = payload
+        self.error = error
+        self.error_message = error_message
 
     def __str__(self):
-        return "%s %s: %s, %s" % (
-            self.namespace,
-            self.name,
-            self.payload,
-            self.metadata,
-        )
+        return "%s: %s" % (self.namespace, self.name)
 
     def __repr__(self):
-        return "<Event: namespace=%s, name=%s, error=%s, payload=%s, metadata=%s>" % (
+        return "<Event: namespace=%s, name=%s, error=%s, metadata=%s, payload=%r>" % (
             self.namespace,
             self.name,
             self.error,
-            self.payload,
             self.metadata,
+            self.payload,
         )
 
 

@@ -218,15 +218,17 @@ def assert_event_equal(obj1, obj2, do_raise=False):
 
     _assert(obj1.payload_type == obj2.payload_type, "Payload types were not equal")
 
-    m_assert = getattr(
-        brewtils.test.comparable, "assert_%s_equal" % obj1.payload_type.lower()
-    )
+    comparison_func_name = "_assert_wrapper"
+    if obj1.payload_type:
+        comparison_func_name = "assert_%s_equal" % obj1.payload_type.lower()
+
+    payload_compare = getattr(brewtils.test.comparable, comparison_func_name)
 
     return _assert_wrapper(
         obj1,
         obj2,
         expected_type=Event,
-        deep_fields={"payload": partial(m_assert, do_raise=True)},
+        deep_fields={"payload": partial(payload_compare, do_raise=True)},
         do_raise=do_raise,
     )
 

@@ -411,6 +411,7 @@ def event_dict(ts_epoch, request_dict):
     return {
         "name": "REQUEST_CREATED",
         "namespace": "ns",
+        "garden": "beer",
         "metadata": {"extra": "info"},
         "timestamp": ts_epoch,
         "payload_type": "Request",

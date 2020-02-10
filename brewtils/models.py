@@ -783,6 +783,7 @@ class Event(BaseModel):
         self,
         name=None,
         namespace=None,
+        garden=None,
         metadata=None,
         timestamp=None,
         payload_type=None,
@@ -792,6 +793,7 @@ class Event(BaseModel):
     ):
         self.name = name
         self.namespace = namespace
+        self.garden = garden
         self.metadata = metadata or {}
         self.timestamp = timestamp
         self.payload_type = payload_type

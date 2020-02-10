@@ -260,6 +260,7 @@ class EventSchema(BaseSchema):
 
     name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
+    garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
 

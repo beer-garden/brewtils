@@ -210,6 +210,21 @@ class EasyClient(object):
         """
         return self.client.get_logging_config(system_name=system_name)
 
+    @wrap_response(
+        parse_method="parse_system", parse_many=False, default_exc=FetchError
+    )
+    def get_system(self, system_id, **kwargs):
+        """Get a System
+
+        Args:
+            system_id: The Id
+
+        Returns:
+            The System
+
+        """
+        return self.client.get_system(system_id, **kwargs)
+
     def find_unique_system(self, **kwargs):
         """Find a unique system
 
@@ -228,7 +243,10 @@ class EasyClient(object):
 
         """
         if "id" in kwargs:
-            return self._find_system_by_id(kwargs.pop("id"), **kwargs)
+            try:
+                return self.get_system(kwargs.pop("id"), **kwargs)
+            except NotFoundError:
+                return None
         else:
             systems = self.find_systems(**kwargs)
 
@@ -463,6 +481,21 @@ class EasyClient(object):
 
         return self.client.delete_instance(instance_id)
 
+    @wrap_response(
+        parse_method="parse_request", parse_many=False, default_exc=FetchError
+    )
+    def get_request(self, request_id):
+        """Get a Request
+
+        Args:
+            request_id: The Id
+
+        Returns:
+            The Request
+
+        """
+        return self.client.get_request(request_id)
+
     def find_unique_request(self, **kwargs):
         """Find a unique request
 
@@ -481,7 +514,10 @@ class EasyClient(object):
 
         """
         if "id" in kwargs:
-            return self._find_request_by_id(kwargs.pop("id"))
+            try:
+                return self.get_request(kwargs.pop("id"))
+            except NotFoundError:
+                return None
         else:
             all_requests = self.find_requests(**kwargs)
 
@@ -767,30 +803,12 @@ class EasyClient(object):
         """
         return self.get_user(self.client.username or "anonymous")
 
-    @wrap_response(
-        parse_method="parse_system",
-        parse_many=False,
-        default_exc=FetchError,
-        raise_404=False,
-    )
-    def _find_system_by_id(self, system_id, **kwargs):
-        return self.client.get_system(system_id, **kwargs)
-
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def _remove_system_by_id(self, system_id):
         if system_id is None:
             raise DeleteError("Cannot delete a system without an id")
 
         return self.client.delete_system(system_id)
-
-    @wrap_response(
-        parse_method="parse_request",
-        parse_many=False,
-        default_exc=FetchError,
-        raise_404=False,
-    )
-    def _find_request_by_id(self, request_id):
-        return self.client.get_request(request_id)
 
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def _patch_job(self, job_id, operations):

@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 import pytest
 import pytz
-from mock import Mock, PropertyMock
-from pytest_lazyfixture import lazy_fixture
-
 from brewtils.models import (
     Choices,
     Command,
     CronTrigger,
-    Event,
     Instance,
     IntervalTrigger,
     LoggingConfig,
@@ -22,6 +18,8 @@ from brewtils.models import (
     Role,
     System,
 )
+from mock import Mock, PropertyMock
+from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -507,23 +505,13 @@ class TestLoggingConfig(object):
 
 
 class TestEvent(object):
-    @pytest.fixture
-    def event(self):
-        return Event(
-            name="REQUEST_CREATED",
-            error=False,
-            payload={"request": "request"},
-            metadata={},
-            namespace="ns",
-        )
+    def test_str(self, bg_event):
+        assert str(bg_event) == "ns: REQUEST_CREATED"
 
-    def test_str(self, event):
-        assert str(event) == "ns REQUEST_CREATED: {'request': 'request'}, {}"
-
-    def test_repr(self, event):
+    def test_repr(self, bg_event, bg_request):
         assert (
-            repr(event) == "<Event: namespace=ns, name=REQUEST_CREATED, error=False, "
-            "payload={'request': 'request'}, metadata={}>"
+            repr(bg_event) == "<Event: namespace=ns, name=REQUEST_CREATED, "
+            "error=False, metadata={'extra': 'info'}, payload=%r>" % bg_request
         )
 
 

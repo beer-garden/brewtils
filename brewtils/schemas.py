@@ -30,6 +30,23 @@ __all__ = [
     "GardenSchema",
 ]
 
+# This will be updated after all the schema classes are defined
+model_schema_map = {}
+
+
+def _serialize_model(_, obj):
+    if obj.payload_type not in model_schema_map:
+        raise TypeError("Invalid payload type %s" % obj.payload_type)
+
+    return model_schema_map.get(obj.payload_type)()
+
+
+def _deserialize_model(_, data):
+    if data["payload_type"] not in model_schema_map:
+        raise TypeError("Invalid payload type %s" % data["payload_type"])
+
+    return model_schema_map.get(data["payload_type"])()
+
 
 class DateTime(fields.DateTime):
     """Class that adds methods for (de)serializing DateTime fields as an epoch"""
@@ -240,12 +257,22 @@ class LoggingConfigSchema(BaseSchema):
 
 
 class EventSchema(BaseSchema):
+
     name = fields.Str(allow_none=True)
-    payload = fields.Dict(allow_none=True)
-    error = fields.Bool(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    namespace = fields.Str(allow_none=True)
+
+    payload_type = fields.Str(allow_none=True)
+    payload = PolyField(
+        allow_none=True,
+        serialization_schema_selector=_serialize_model,
+        deserialization_schema_selector=_deserialize_model,
+    )
+
+    error = fields.Bool(allow_none=True)
+    error_message = fields.Str(allow_none=True)
 
 
 class QueueSchema(BaseSchema):
@@ -367,3 +394,28 @@ class JobSchema(BaseSchema):
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
+
+
+model_schema_map.update(
+    {
+        "Choices": ChoicesSchema,
+        "Command": CommandSchema,
+        "CronTrigger": CronTriggerSchema,
+        "DateTrigger": DateTriggerSchema,
+        "Event": EventSchema,
+        "Garden": GardenSchema,
+        "Instance": InstanceSchema,
+        "IntervalTrigger": IntervalTriggerSchema,
+        "Job": JobSchema,
+        "LoggingConfig": LoggingConfigSchema,
+        "Queue": QueueSchema,
+        "Parameter": ParameterSchema,
+        "Principal": PrincipalSchema,
+        "RefreshToken": RefreshTokenSchema,
+        "Request": RequestSchema,
+        "RequestFile": RequestFileSchema,
+        "RequestTemplate": RequestTemplateSchema,
+        "Role": RoleSchema,
+        "System": SystemSchema,
+    }
+)

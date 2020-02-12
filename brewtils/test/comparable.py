@@ -175,7 +175,6 @@ assert_instance_equal = partial(_assert_wrapper, expected_type=Instance)
 assert_choices_equal = partial(_assert_wrapper, expected_type=Choices)
 assert_patch_equal = partial(_assert_wrapper, expected_type=PatchOperation)
 assert_logging_config_equal = partial(_assert_wrapper, expected_type=LoggingConfig)
-assert_event_equal = partial(_assert_wrapper, expected_type=Event)
 assert_queue_equal = partial(_assert_wrapper, expected_type=Queue)
 assert_request_template_equal = partial(_assert_wrapper, expected_type=RequestTemplate)
 assert_trigger_equal = partial(
@@ -211,6 +210,25 @@ def assert_parameter_equal(obj1, obj2, do_raise=False):
             "parameters": partial(assert_parameter_equal, do_raise=True),
             "choices": partial(assert_choices_equal, do_raise=True),
         },
+        do_raise=do_raise,
+    )
+
+
+def assert_event_equal(obj1, obj2, do_raise=False):
+
+    _assert(obj1.payload_type == obj2.payload_type, "Payload types were not equal")
+
+    comparison_func_name = "_assert_wrapper"
+    if obj1.payload_type:
+        comparison_func_name = "assert_%s_equal" % obj1.payload_type.lower()
+
+    payload_compare = getattr(brewtils.test.comparable, comparison_func_name)
+
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Event,
+        deep_fields={"payload": partial(payload_compare, do_raise=True)},
         do_raise=do_raise,
     )
 

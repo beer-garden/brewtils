@@ -28,6 +28,7 @@ __all__ = [
     "IntervalTriggerSchema",
     "CronTriggerSchema",
     "GardenSchema",
+    "ForwardSchema",
 ]
 
 
@@ -367,6 +368,7 @@ class JobSchema(BaseSchema):
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
 
+
 FORWARD_TYPE_TO_SCHEMA = {
     "command": CommandSchema,
     "instance": InstanceSchema,
@@ -377,6 +379,7 @@ FORWARD_TYPE_TO_SCHEMA = {
     "garden": GardenSchema,
     "job": JobSchema,
     "patch": PatchSchema,
+    "str": fields.Str(allow_none=True),
 }
 
 
@@ -395,20 +398,25 @@ def deserialize_forward_selector(_, data):
     except KeyError:
         pass
 
-    raise TypeError("Could not detect %s trigger type schema" % data["brewtils_obj_type"])
+    raise TypeError(
+        "Could not detect %s trigger type schema" % data["brewtils_obj_type"]
+    )
 
 
 class ForwardSchema(BaseSchema):
-    brewtils_obj_type = fields.Str(allow_none=True)
-    brewtils_obj = PolyField(
+    args = PolyField(
         allow_none=True,
         serialization_schema_selector=serialize_forward_selector,
         deserialization_schema_selector=deserialize_forward_selector,
+        many=True,
+    )
+    kwargs = PolyField(
+        allow_none=True,
+        serialization_schema_selector=serialize_forward_selector,
+        deserialization_schema_selector=deserialize_forward_selector,
+        many=True,
     )
 
-    obj_id = fields.Str(allow_none=True)
-    route_class = fields.Str(allow_none=True)
-    route_type = fields.Str(allow_none=True)
-    garden_name = fields.Str(allow_none=True)
-    src_garden_name = fields.Str(allow_none=True)
-    extra_kwargs = fields.raw(allow_none=True)
+    target_garden_name = fields.Str(allow_none=True)
+    source_garden_name = fields.Str(allow_none=True)
+    forward_type = fields.Str(allow_none=True)

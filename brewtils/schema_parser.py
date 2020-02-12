@@ -242,6 +242,19 @@ class SchemaParser(object):
         )
 
     @classmethod
+    def parse_forward(cls, forward, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a garden model object
+
+        :param forward: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Forward object
+        """
+        return cls.parse(
+            forward, brewtils.models.Forward, from_string=from_string, **kwargs
+        )
+
+    @classmethod
     def parse(cls, data, model_class, from_string=False, **kwargs):
         """Convert a JSON string or dictionary into a model object
 
@@ -451,6 +464,17 @@ class SchemaParser(object):
         :return: Serialized representation of instance
         """
         return cls.serialize(garden, to_string=to_string, **kwargs)
+
+    @classmethod
+    def serialize_forward(cls, forward, to_string=True, **kwargs):
+        """Convert an garden model into serialized form
+
+        :param forward: The instance object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation of instance
+        """
+        return cls.serialize(forward, to_string=to_string, **kwargs)
 
     @classmethod
     def serialize(cls, model, to_string=False, **kwargs):

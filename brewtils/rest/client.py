@@ -155,7 +155,6 @@ class RestClient(object):
             self.job_url = self.base_url + "api/v1/jobs/"
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
-            self.forward_url = self.base_url + "api/v1/forward/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
             self.file_url = self.base_url + "api/vbeta/files/"
@@ -508,15 +507,6 @@ class RestClient(object):
         :param user_identifier: ID or username of User
         """
         return self.session.get(self.user_url + user_identifier)
-
-    @enable_auth
-    def post_forward(self, forward):
-        """ Performs a POST of a Forward object
-
-        :param forward: Forward request object
-        :return: Response of request
-        """
-        return self.session.post(self.forward_url, data=forward)
 
     def get_tokens(self, username=None, password=None):
         """Use a username and password to get access and refresh tokens

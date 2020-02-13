@@ -1158,7 +1158,7 @@ class Garden(BaseModel):
         return "<Garden: garden_name=%s, status=%s>" % (self.garden_name, self.status)
 
 
-class Forward(BaseModel):
+class Operation(BaseModel):
     schema = "ForwardSchema"
 
     def __init__(

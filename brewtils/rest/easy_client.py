@@ -310,13 +310,6 @@ class EasyClient(object):
             system_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
-    def post_forward(self, forward):
-        """Posts a Forward request
-        :param forward: Forward request object
-        :return: Response of request
-        """
-        return self.client.post_forward(SchemaParser.serialize_forward(forward))
-
     def remove_system(self, **kwargs):
         """Remove a unique System
 

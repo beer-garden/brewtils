@@ -369,7 +369,7 @@ class JobSchema(BaseSchema):
     max_instances = fields.Int(allow_none=True)
 
 
-FORWARD_TYPE_TO_SCHEMA = {
+OPERATION_TYPE_TO_SCHEMA = {
     "command": CommandSchema,
     "instance": InstanceSchema,
     "system": SystemSchema,
@@ -383,18 +383,18 @@ FORWARD_TYPE_TO_SCHEMA = {
 }
 
 
-def serialize_forward_selector(_, obj):
+def serialize_operation_selector(_, obj):
     try:
-        return FORWARD_TYPE_TO_SCHEMA[obj.brewtils_obj_type]()
+        return OPERATION_TYPE_TO_SCHEMA[obj.brewtils_obj_type]()
     except KeyError:
         pass
 
     raise TypeError("Could not detect %s trigger type schema" % obj.brewtils_obj_type)
 
 
-def deserialize_forward_selector(_, data):
+def deserialize_operation_selector(_, data):
     try:
-        return FORWARD_TYPE_TO_SCHEMA[data["brewtils_obj_type"]]()
+        return OPERATION_TYPE_TO_SCHEMA[data["brewtils_obj_type"]]()
     except KeyError:
         pass
 
@@ -403,17 +403,17 @@ def deserialize_forward_selector(_, data):
     )
 
 
-class ForwardSchema(BaseSchema):
+class OperationSchema(BaseSchema):
     args = PolyField(
         allow_none=True,
-        serialization_schema_selector=serialize_forward_selector,
-        deserialization_schema_selector=deserialize_forward_selector,
+        serialization_schema_selector=serialize_operation_selector,
+        deserialization_schema_selector=deserialize_operation_selector,
         many=True,
     )
     kwargs = PolyField(
         allow_none=True,
-        serialization_schema_selector=serialize_forward_selector,
-        deserialization_schema_selector=deserialize_forward_selector,
+        serialization_schema_selector=serialize_operation_selector,
+        deserialization_schema_selector=deserialize_operation_selector,
         many=True,
     )
 

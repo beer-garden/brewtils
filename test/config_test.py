@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 import copy
+import logging
 import os
 import warnings
 
@@ -8,7 +9,7 @@ import pytest
 from mock import Mock
 
 from brewtils.config import (
-    deprecate_kwargs,
+    _translate_kwargs,
     get_argument_parser,
     get_connection_info,
     load_config,
@@ -162,27 +163,49 @@ class TestLoadConfig(object):
             assert load_config(cli_args=cli_args).metadata == '{"foo": "bar"}'
 
 
-class TestDeprecateKwargs(object):
-    def test_no_deprecated(self, params):
+class TestTranslateKwargs(object):
+    def test_no_translation(self, params):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            assert params == deprecate_kwargs(**params)
+            assert params == _translate_kwargs(**params)
             assert len(w) == 0
 
     @pytest.mark.parametrize(
-        "old_name,new_name",
-        [("host", "bg_host"), ("port", "bg_port"), ("url_prefix", "bg_url_prefix")],
+        "old_name,new_name,warning",
+        [
+            ("host", "bg_host", True),
+            ("port", "bg_port", True),
+            ("url_prefix", "bg_url_prefix", False),
+        ],
     )
-    def test_deprecated(self, params, old_name, new_name):
+    def test_translation(self, params, old_name, new_name, warning):
         deprecated_params = copy.copy(params)
         deprecated_params[old_name] = deprecated_params.pop(new_name)
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            assert params == deprecate_kwargs(**deprecated_params)
+            assert params == _translate_kwargs(**deprecated_params)
 
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert old_name in str(w[0].message)
-            assert new_name in str(w[0].message)
+            if warning:
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert old_name in str(w[0].message)
+                assert new_name in str(w[0].message)
+            else:
+                assert len(w) == 0
+
+    @pytest.mark.parametrize(
+        "old_name,new_name",
+        [("host", "bg_host"), ("port", "bg_port"), ("url_prefix", "bg_url_prefix")],
+    )
+    def test_both_kwargs(self, caplog, params, old_name, new_name):
+        deprecated_params = copy.copy(params)
+        deprecated_params[old_name] = deprecated_params[new_name]
+
+        with caplog.at_level(logging.WARNING):
+            assert params == _translate_kwargs(**deprecated_params)
+
+            assert len(caplog.records) == 1
+            assert old_name in str(caplog.records[0].message)
+            assert new_name in str(caplog.records[0].message)

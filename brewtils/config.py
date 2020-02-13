@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 from argparse import ArgumentParser
 
 from yapconf import YapconfSpec
@@ -8,6 +9,8 @@ from yapconf.exceptions import YapconfItemNotFound
 from brewtils.errors import ValidationError, _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import SPECIFICATION, _CONNECTION_SPEC
+
+logger = logging.getLogger(__name__)
 
 
 def get_argument_parser():
@@ -113,7 +116,7 @@ def load_config(
 
     if kwargs:
         # First deprecate / translate items with multiple names
-        mangled_kwargs = deprecate_kwargs(**kwargs)
+        mangled_kwargs = _translate_kwargs(**kwargs)
 
         # Metadata is a little weird because yapconf doesn't support raw dicts, so we
         # need to make it a json string in that case
@@ -155,7 +158,7 @@ def load_config(
     return config
 
 
-def deprecate_kwargs(**kwargs):
+def _translate_kwargs(**kwargs):
     """Helper function to translate between ambiguously named parameters
 
     This functions exists to help with backwards compatibility. Confusion exists around
@@ -172,19 +175,31 @@ def deprecate_kwargs(**kwargs):
         kwargs: Keyword arguments to translate
 
     """
-    kwarg_mapping = {
-        "host": "bg_host",
-        "port": "bg_port",
-        "url_prefix": "bg_url_prefix",
-    }
+    name_map = [
+        # (old_name, new_name, show_deprecation)
+        ("host", "bg_host", True),
+        ("port", "bg_port", True),
+        ("url_prefix", "bg_url_prefix", False),
+    ]
 
-    for old_name, new_name in kwarg_mapping.items():
-        if new_name not in kwargs and old_name in kwargs:
-            _deprecate(
-                "Looks like you're using the '%s' keyword argument. This name will "
-                "be removed in version 4.0, please use '%s' instead."
-                % (old_name, new_name)
-            )
-            kwargs[new_name] = kwargs.pop(old_name)
+    for old_name, new_name, show_deprecation in name_map:
+        if old_name in kwargs:
+            old_value = kwargs.pop(old_name)
+
+            if new_name in kwargs:
+                logger.warning(
+                    "Looks like you passed both the '%s' and '%s' keyword arguments. "
+                    "As these are aliases only the value from '%s' will be used."
+                    % (old_name, new_name, new_name)
+                )
+            else:
+                if show_deprecation:
+                    _deprecate(
+                        "Looks like you're using the '%s' keyword argument. This name "
+                        "will be removed in version 4.0, please use '%s' instead."
+                        % (old_name, new_name)
+                    )
+
+                kwargs[new_name] = old_value
 
     return kwargs

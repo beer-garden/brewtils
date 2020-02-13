@@ -1159,7 +1159,7 @@ class Garden(BaseModel):
 
 
 class Operation(BaseModel):
-    schema = "ForwardSchema"
+    schema = "OperationSchema"
 
     def __init__(
         self,
@@ -1167,10 +1167,10 @@ class Operation(BaseModel):
         kwargs={},
         target_garden_name=None,
         source_garden_name=None,
-        forward_type=None,
+        operation_type=None,
     ):
         self.args = args
         self.kwargs = kwargs
         self.target_garden_name = target_garden_name
         self.source_garden_name = source_garden_name
-        self.forward_type = forward_type
+        self.operation_type = operation_type

@@ -1163,8 +1163,8 @@ class Forward(BaseModel):
 
     def __init__(
         self,
-        args=None,
-        kwargs=None,
+        args=[],
+        kwargs={},
         target_garden_name=None,
         source_garden_name=None,
         forward_type=None,

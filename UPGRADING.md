@@ -317,5 +317,25 @@ Several keyword arguments will no longer be honored:
 - The `logger` keyword argument has been removed from the `RestClient` and `EasyClient` as it was never used.
 - The `parser` keyword argument is no longer supported by `Plugin` and `EasyClient`. Both classes no longer create and retain a parser instance (instead using `SchemaParser` class methods directly) so passing a `parser` will have no effect.
 
+### Keyword argument aliases
+In v2 there was inconsistency surrounding a few keyword parameter names. These parameters represent the same thing but were named differently in different places:
+- `bg_host` and `host`
+- `bg_port` and `port`
+- `bg_url_prefix` and `url_prefix`
+
+In v3 the names with the `bg_` prefix are preferred. Passing both a prefixed name and a non-prefixed name will result in a warning, and the prefixed value will be used.
+
+The `host` and `port` names are now officially deprecated. Using them will continue to work, but that support will be removed in v4.
+
+Note that this only matters when passing keyword arguments to a class directly:
+
+```python
+# Will result in a DeprecationWarning, but will function as expected
+plugin = Plugin(host="localhost")
+
+# Will log a warning, "localhost" will be used
+plugin = Plugin(host="bad_host", bg_host="localhost")
+```
+
 #### Pika Version
 Previously pika versions 0.11.x and 1.x were equally valid. Pika versions lower than 1 are now deprecated and support will be removed in a future release.

@@ -2,10 +2,11 @@
 
 import calendar
 import datetime
+from functools import partial
 
 import marshmallow
 import simplejson
-from marshmallow import Schema, post_load, pre_load, fields
+from marshmallow import Schema, fields, post_load, pre_load
 from marshmallow.utils import UTC
 from marshmallow_polyfield import PolyField
 
@@ -30,6 +31,51 @@ __all__ = [
     "GardenSchema",
     "OperationSchema",
 ]
+
+# This will be updated after all the schema classes are defined
+model_schema_map = {}
+
+
+def _serialize_model(_, obj, type_field=None, allowed_types=None):
+    model_type = getattr(obj, type_field)
+
+    if model_type not in model_schema_map or (
+        allowed_types and model_type not in allowed_types
+    ):
+        raise TypeError("Invalid model type %s" % model_type)
+
+    return model_schema_map.get(model_type)()
+
+
+def _deserialize_model(_, data, type_field=None, allowed_types=None):
+    if data[type_field] not in model_schema_map or (
+        allowed_types and data[type_field] not in allowed_types
+    ):
+        raise TypeError("Invalid payload type %s" % data[type_field])
+
+    return model_schema_map.get(data[type_field])()
+
+
+class ModelField(PolyField):
+    """Field representing a Brewtils model
+
+    Args:
+        type_field: Schema field that contains the type information for this field
+        allowed_types: A list of allowed model type strings
+        **kwargs: Will be passed to the superclass
+
+    """
+
+    def __init__(self, type_field="payload_type", allowed_types=None, **kwargs):
+        super(ModelField, self).__init__(
+            serialization_schema_selector=partial(
+                _serialize_model, type_field=type_field, allowed_types=allowed_types
+            ),
+            deserialization_schema_selector=partial(
+                _deserialize_model, type_field=type_field, allowed_types=allowed_types
+            ),
+            **kwargs
+        )
 
 
 class DateTime(fields.DateTime):
@@ -240,12 +286,18 @@ class LoggingConfigSchema(BaseSchema):
 
 
 class EventSchema(BaseSchema):
+
     name = fields.Str(allow_none=True)
-    payload = fields.Dict(allow_none=True)
-    error = fields.Bool(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    namespace = fields.Str(allow_none=True)
+
+    payload_type = fields.Str(allow_none=True)
+    payload = ModelField(allow_none=True)
+
+    error = fields.Bool(allow_none=True)
+    error_message = fields.Str(allow_none=True)
 
 
 class QueueSchema(BaseSchema):
@@ -325,39 +377,12 @@ class GardenSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
 
 
-TRIGGER_TYPE_TO_SCHEMA = {
-    "interval": IntervalTriggerSchema,
-    "date": DateTriggerSchema,
-    "cron": CronTriggerSchema,
-}
-
-
-def serialize_trigger_selector(_, obj):
-    try:
-        return TRIGGER_TYPE_TO_SCHEMA[obj.trigger_type]()
-    except KeyError:
-        pass
-
-    raise TypeError("Could not detect %s trigger type schema" % obj.trigger_type)
-
-
-def deserialize_trigger_selector(_, data):
-    try:
-        return TRIGGER_TYPE_TO_SCHEMA[data["trigger_type"]]()
-    except KeyError:
-        pass
-
-    raise TypeError("Could not detect %s trigger type schema" % data["trigger_type"])
-
-
 class JobSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     trigger_type = fields.Str(allow_none=True)
-    trigger = PolyField(
-        allow_none=True,
-        serialization_schema_selector=serialize_trigger_selector,
-        deserialization_schema_selector=deserialize_trigger_selector,
+    trigger = ModelField(
+        type_field="trigger_type", allowed_types=["interval", "date", "cron"]
     )
     request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)
@@ -369,54 +394,39 @@ class JobSchema(BaseSchema):
     max_instances = fields.Int(allow_none=True)
 
 
-OPERATION_TYPE_TO_SCHEMA = {
-    "command": CommandSchema,
-    "instance": InstanceSchema,
-    "system": SystemSchema,
-    "loggingConfig": LoggingConfigSchema,
-    "event": EventSchema,
-    "queue": QueueSchema,
-    "garden": GardenSchema,
-    "job": JobSchema,
-    "patch": PatchSchema,
-    "str": fields.Str(allow_none=True),
-}
-
-
-def serialize_operation_selector(_, obj):
-    try:
-        return OPERATION_TYPE_TO_SCHEMA[obj.brewtils_obj_type]()
-    except KeyError:
-        pass
-
-    raise TypeError("Could not detect %s trigger type schema" % obj.brewtils_obj_type)
-
-
-def deserialize_operation_selector(_, data):
-    try:
-        return OPERATION_TYPE_TO_SCHEMA[data["brewtils_obj_type"]]()
-    except KeyError:
-        pass
-
-    raise TypeError(
-        "Could not detect %s trigger type schema" % data["brewtils_obj_type"]
-    )
-
-
 class OperationSchema(BaseSchema):
-    args = PolyField(
-        allow_none=True,
-        serialization_schema_selector=serialize_operation_selector,
-        deserialization_schema_selector=deserialize_operation_selector,
-        many=True,
-    )
-    kwargs = PolyField(
-        allow_none=True,
-        serialization_schema_selector=serialize_operation_selector,
-        deserialization_schema_selector=deserialize_operation_selector,
-        many=True,
-    )
+    args = ModelField(allow_none=True)
+    kwargs = ModelField(allow_none=True)
 
     target_garden_name = fields.Str(allow_none=True)
     source_garden_name = fields.Str(allow_none=True)
     operation_type = fields.Str(allow_none=True)
+
+
+model_schema_map.update(
+    {
+        "Choices": ChoicesSchema,
+        "Command": CommandSchema,
+        "CronTrigger": CronTriggerSchema,
+        "DateTrigger": DateTriggerSchema,
+        "Event": EventSchema,
+        "Garden": GardenSchema,
+        "Instance": InstanceSchema,
+        "IntervalTrigger": IntervalTriggerSchema,
+        "Job": JobSchema,
+        "LoggingConfig": LoggingConfigSchema,
+        "Queue": QueueSchema,
+        "Parameter": ParameterSchema,
+        "Principal": PrincipalSchema,
+        "RefreshToken": RefreshTokenSchema,
+        "Request": RequestSchema,
+        "RequestFile": RequestFileSchema,
+        "RequestTemplate": RequestTemplateSchema,
+        "Role": RoleSchema,
+        "System": SystemSchema,
+        # Compatibility for the Job trigger types
+        "interval": IntervalTriggerSchema,
+        "date": DateTriggerSchema,
+        "cron": CronTriggerSchema,
+    }
+)

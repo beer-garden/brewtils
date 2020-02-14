@@ -410,19 +410,23 @@ def event_dict(ts_epoch, request_dict):
     """An event represented as a dictionary."""
     return {
         "name": "REQUEST_CREATED",
-        "error": False,
-        "payload": {"id": request_dict["id"]},
+        "namespace": "ns",
+        "garden": "beer",
         "metadata": {"extra": "info"},
         "timestamp": ts_epoch,
-        "namespace": "ns",
+        "payload_type": "Request",
+        "payload": request_dict,
+        "error": False,
+        "error_message": None,
     }
 
 
 @pytest.fixture
-def bg_event(event_dict, ts_dt):
+def bg_event(event_dict, ts_dt, bg_request):
     """An event as a model."""
     dict_copy = copy.deepcopy(event_dict)
     dict_copy["timestamp"] = ts_dt
+    dict_copy["payload"] = bg_request
     return Event(**dict_copy)
 
 

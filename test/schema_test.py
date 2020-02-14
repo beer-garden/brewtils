@@ -6,11 +6,11 @@ from pytest_lazyfixture import lazy_fixture
 
 from brewtils.models import System
 from brewtils.schemas import (
-    DateTime,
     BaseSchema,
+    DateTime,
     SystemSchema,
-    serialize_trigger_selector,
-    deserialize_trigger_selector,
+    _deserialize_model,
+    _serialize_model,
 )
 
 
@@ -30,6 +30,8 @@ class TestSchemas(object):
         assert "name" in attributes
         assert "__model__" not in attributes
 
+
+class TestFields(object):
     @pytest.mark.parametrize(
         "dt,localtime,expected",
         [
@@ -45,10 +47,32 @@ class TestSchemas(object):
     def test_from_epoch(self, ts_epoch, ts_dt):
         assert DateTime.from_epoch(ts_epoch) == ts_dt
 
-    def test_serialize_trigger_selector(self):
+    def test_modelfield_serialize_invalid_type(self):
         with pytest.raises(TypeError):
-            serialize_trigger_selector("ignored", Mock(trigger_type="INVALID"))
+            _serialize_model(
+                "ignored", Mock(payload_type="INVALID"), type_field="payload_type"
+            )
 
-    def test_deserialize_trigger_selector(self):
+    def test_modelfield_serialize_unallowed_type(self):
         with pytest.raises(TypeError):
-            deserialize_trigger_selector("ignored", {"trigger_type": "INVALID"})
+            _serialize_model(
+                "ignored",
+                Mock(payload_type="foo"),
+                type_field="payload_type",
+                allowed_types=["bar"],
+            )
+
+    def test_modelfield_deserialize_invalid_type(self):
+        with pytest.raises(TypeError):
+            _deserialize_model(
+                "ignored", {"payload_type": "INVALID"}, type_field="payload_type"
+            )
+
+    def test_modelfield_deserialize_unallowed_type(self):
+        with pytest.raises(TypeError):
+            _deserialize_model(
+                "ignored",
+                {"payload_type": "foo"},
+                type_field="payload_type",
+                allowed_types=["bar"],
+            )

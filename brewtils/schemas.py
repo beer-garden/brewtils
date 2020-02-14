@@ -395,8 +395,11 @@ class JobSchema(BaseSchema):
 
 
 class OperationSchema(BaseSchema):
-    args = ModelField(allow_none=True)
-    kwargs = ModelField(allow_none=True)
+    model_type = fields.Str(allow_none=True)
+    model = ModelField(allow_none=True, type_field="model_type")
+
+    args = fields.List(fields.Str(), allow_none=True)
+    kwargs = fields.Dict(allow_none=True)
 
     target_garden_name = fields.Str(allow_none=True)
     source_garden_name = fields.Str(allow_none=True)

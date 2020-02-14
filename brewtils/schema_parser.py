@@ -32,6 +32,7 @@ class SchemaParser(object):
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
         "CronTriggerSchema": brewtils.models.CronTrigger,
         "GardenSchema": brewtils.models.Garden,
+        "OperationSchema": brewtils.models.Operation,
     }
 
     logger = logging.getLogger(__name__)

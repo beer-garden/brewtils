@@ -184,6 +184,10 @@ class EasyClient(object):
 
         return True
 
+    def get_namespace(self):
+        response = self.client.get_namespace()
+        return response.content
+
     @wrap_response(default_exc=FetchError)
     def get_version(self, **kwargs):
         """Get Bartender, Brew-view, and API version information

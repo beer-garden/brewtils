@@ -200,6 +200,11 @@ class Plugin(object):
         # Now that some logging configuration is set we can load the real config
         self._config = load_config(**kwargs)
 
+        self._ez_client = EasyClient(logger=self._logger, **self._config)
+
+        if self._config.namespace is None:
+            self._config.namespace = self._ez_client.get_namespace()
+
         # If global config has already been set that's a warning
         global CONFIG
         if len(CONFIG):
@@ -212,7 +217,6 @@ class Plugin(object):
 
         # Now that the config is loaded we can set _system and _ez_client
         self._system = self._setup_system(system, kwargs)
-        self._ez_client = EasyClient(logger=self._logger, **self._config)
 
         # And with _system and _ez_client we can ask for the real logging config
         # (unless _custom_logger is True, in which case this does nothing)

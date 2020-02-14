@@ -155,9 +155,11 @@ class RestClient(object):
             self.job_url = self.base_url + "api/v1/jobs/"
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
+            self.namespace_url = self.base_url + "api/v1/namespace/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
             self.file_url = self.base_url + "api/vbeta/files/"
+
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -201,6 +203,14 @@ class RestClient(object):
             positional["bg_port"] = args[1]
 
         return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
+
+    @enable_auth
+    def get_namespace(self, **kwargs):
+        """Perform a GET to the local namespace
+
+        :return: The request response
+        """
+        return self.session.get(self.namespace_url)
 
     @enable_auth
     def get_version(self, **kwargs):

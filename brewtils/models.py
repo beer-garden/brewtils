@@ -28,7 +28,7 @@ __all__ = [
     "CronTrigger",
     "IntervalTrigger",
     "Garden",
-    "Forward",
+    "Operation",
 ]
 
 

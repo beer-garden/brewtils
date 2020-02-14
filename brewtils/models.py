@@ -1164,8 +1164,8 @@ class Operation(BaseModel):
 
     def __init__(
         self,
-        args=[],
-        kwargs={},
+        args=None,
+        kwargs=None,
         target_garden_name=None,
         source_garden_name=None,
         operation_type=None,

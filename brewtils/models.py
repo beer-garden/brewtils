@@ -60,6 +60,7 @@ class Events(Enum):
     GARDEN_STOPPED = 26
     ENTRY_STARTED = 27
     ENTRY_STOPPED = 28
+    HTTP_FORWARD = 29
 
     # TODO - should these be external API events?
     INSTANCE_STOP_REQUESTED = 101

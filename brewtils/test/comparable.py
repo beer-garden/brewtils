@@ -13,24 +13,25 @@ from functools import partial
 
 import brewtils.test
 from brewtils.models import (
-    System,
-    Command,
-    Instance,
-    Parameter,
-    Request,
-    PatchOperation,
-    LoggingConfig,
-    Event,
-    Queue,
     Choices,
-    Principal,
-    Role,
-    Job,
-    IntervalTrigger,
-    DateTrigger,
+    Command,
     CronTrigger,
-    RequestTemplate,
+    DateTrigger,
+    Event,
+    Instance,
+    IntervalTrigger,
+    Job,
+    LoggingConfig,
+    Operation,
+    Parameter,
+    PatchOperation,
+    Principal,
+    Queue,
+    Request,
     RequestFile,
+    RequestTemplate,
+    Role,
+    System,
 )
 
 __all__ = [
@@ -50,6 +51,7 @@ __all__ = [
     "assert_system_equal",
     "assert_job_equal",
     "assert_request_file_equal",
+    "assert_operation_equal",
 ]
 
 
@@ -323,5 +325,24 @@ def assert_job_equal(obj1, obj2, do_raise=False):
             "trigger": partial(assert_trigger_equal, do_raise=True),
             "request_template": partial(assert_request_template_equal, do_raise=True),
         },
+        do_raise=do_raise,
+    )
+
+
+def assert_operation_equal(obj1, obj2, do_raise=False):
+
+    _assert(obj1.model_type == obj2.model_type, "Model types were not equal")
+
+    comparison_func_name = "_assert_wrapper"
+    if obj1.model_type:
+        comparison_func_name = "assert_%s_equal" % obj1.model_type.lower()
+
+    model_compare = getattr(brewtils.test.comparable, comparison_func_name)
+
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Operation,
+        deep_fields={"model": partial(model_compare, do_raise=True)},
         do_raise=do_raise,
     )

@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import json
-import warnings
+import logging
 from argparse import ArgumentParser
 
 from yapconf import YapconfSpec
 from yapconf.exceptions import YapconfItemNotFound
 
-from brewtils.errors import ValidationError
+from brewtils.errors import ValidationError, _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import SPECIFICATION, _CONNECTION_SPEC
+
+logger = logging.getLogger(__name__)
 
 
 def get_argument_parser():
@@ -113,33 +115,16 @@ def load_config(
     sources = []
 
     if kwargs:
-        # Do a little kwarg massaging for backwards compatibility
-        if "bg_host" not in kwargs and "host" in kwargs:
-            warnings.warn(
-                "brewtils.load_config called with 'host' keyword "
-                "argument. This name will be removed in version 3.0, "
-                "please use 'bg_host' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            kwargs["bg_host"] = kwargs.pop("host")
-        if "bg_port" not in kwargs and "port" in kwargs:
-            warnings.warn(
-                "brewtils.load_config called with 'port' keyword "
-                "argument. This name will be removed in version 3.0, "
-                "please use 'bg_port' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            kwargs["bg_port"] = kwargs.pop("port")
+        # First deprecate / translate items with multiple names
+        mangled_kwargs = _translate_kwargs(**kwargs)
 
         # Metadata is a little weird because yapconf doesn't support raw dicts, so we
         # need to make it a json string in that case
         metadata = kwargs.get("metadata")
         if isinstance(metadata, dict):
-            kwargs["metadata"] = json.dumps(metadata)
+            mangled_kwargs["metadata"] = json.dumps(metadata)
 
-        sources.append(("kwargs", kwargs))
+        sources.append(("kwargs", mangled_kwargs))
 
     if cli_args:
         if cli_args is True:
@@ -160,11 +145,9 @@ def load_config(
     except YapconfItemNotFound as ex:
         if ex.item.name == "bg_host":
             raise ValidationError(
-                "Unable to create a plugin without a "
-                "beer-garden host. Please specify one on the "
-                "command line (--bg-host), in the "
-                "environment (BG_HOST), or in kwargs "
-                "(bg_host)"
+                "Unable to create a plugin without a Beer-garden host. Please specify "
+                "one on the command line (--bg-host), in the environment (BG_HOST), or "
+                "in kwargs (bg_host)."
             )
         raise
 
@@ -173,3 +156,50 @@ def load_config(
         config.bg_url_prefix = normalize_url_prefix(config.bg_url_prefix)
 
     return config
+
+
+def _translate_kwargs(**kwargs):
+    """Helper function to translate between ambiguously named parameters
+
+    This functions exists to help with backwards compatibility. Confusion exists around
+    the true name of the "host", "port", and "url_prefix" parameters. Since this only
+    applies when passing kwargs directly (as opposed to other config sources) we need to
+    do the translation before asking yapconf to load the config.
+
+    This function will:
+    - Convert "host" to "bg_host"
+    - Convert "port" to "bg_port"
+    - Convert "url_prefix" to "bg_url_prefix"
+
+    Args:
+        kwargs: Keyword arguments to translate
+
+    """
+    name_map = [
+        # (old_name, new_name, show_deprecation)
+        ("host", "bg_host", True),
+        ("port", "bg_port", True),
+        ("url_prefix", "bg_url_prefix", False),
+    ]
+
+    for old_name, new_name, show_deprecation in name_map:
+        if old_name in kwargs:
+            old_value = kwargs.pop(old_name)
+
+            if new_name in kwargs:
+                logger.warning(
+                    "Looks like you passed both the '%s' and '%s' keyword arguments. "
+                    "As these are aliases only the value from '%s' will be used."
+                    % (old_name, new_name, new_name)
+                )
+            else:
+                if show_deprecation:
+                    _deprecate(
+                        "Looks like you're using the '%s' keyword argument. This name "
+                        "will be removed in version 4.0, please use '%s' instead."
+                        % (old_name, new_name)
+                    )
+
+                kwargs[new_name] = old_value
+
+    return kwargs

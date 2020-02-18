@@ -29,6 +29,7 @@ __all__ = [
     "IntervalTriggerSchema",
     "CronTriggerSchema",
     "GardenSchema",
+    "OperationSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -204,7 +205,6 @@ class SystemSchema(BaseSchema):
 
 
 class RequestFileSchema(BaseSchema):
-
     storage_type = fields.Str(allow_none=True)
     filename = fields.Str(allow_none=True)
 
@@ -392,6 +392,18 @@ class JobSchema(BaseSchema):
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
+
+
+class OperationSchema(BaseSchema):
+    model_type = fields.Str(allow_none=True)
+    model = ModelField(allow_none=True, type_field="model_type")
+
+    args = fields.List(fields.Str(), allow_none=True)
+    kwargs = fields.Dict(allow_none=True)
+
+    target_garden_name = fields.Str(allow_none=True)
+    source_garden_name = fields.Str(allow_none=True)
+    operation_type = fields.Str(allow_none=True)
 
 
 model_schema_map.update(

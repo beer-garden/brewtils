@@ -7,24 +7,25 @@ import pytest
 import pytz
 
 from brewtils.models import (
-    Parameter,
-    Command,
-    Instance,
-    System,
-    Request,
     Choices,
-    PatchOperation,
-    LoggingConfig,
-    Event,
-    Queue,
-    Principal,
-    Role,
-    Job,
+    Command,
     CronTrigger,
-    RequestTemplate,
-    IntervalTrigger,
     DateTrigger,
+    Event,
+    Instance,
+    IntervalTrigger,
+    Job,
+    LoggingConfig,
+    Operation,
+    Parameter,
+    PatchOperation,
+    Principal,
+    Queue,
+    Request,
     RequestFile,
+    RequestTemplate,
+    Role,
+    System,
 )
 
 
@@ -648,3 +649,26 @@ def bg_date_trigger(date_trigger_dict, ts_dt):
 def bg_request_file(request_file_dict):
     """A request file as a model"""
     return RequestFile(**request_file_dict)
+
+
+@pytest.fixture
+def operation_dict(ts_epoch, request_dict):
+    """An operation as a dictionary."""
+
+    return {
+        "model": request_dict,
+        "model_type": "Request",
+        "args": [request_dict["id"]],
+        "kwargs": {"extra": "kwargs"},
+        "target_garden_name": "child",
+        "source_garden_name": "parent",
+        "operation_type": "REQUEST_CREATE",
+    }
+
+
+@pytest.fixture
+def bg_operation(operation_dict, bg_request):
+    """An operation as a model."""
+    dict_copy = copy.deepcopy(operation_dict)
+    dict_copy["model"] = bg_request
+    return Operation(**dict_copy)

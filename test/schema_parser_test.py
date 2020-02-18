@@ -13,19 +13,20 @@ import brewtils.models
 from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
-    assert_parameter_equal,
     assert_command_equal,
-    assert_system_equal,
-    assert_instance_equal,
-    assert_request_equal,
-    assert_patch_equal,
-    assert_logging_config_equal,
     assert_event_equal,
-    assert_queue_equal,
-    assert_principal_equal,
-    assert_role_equal,
+    assert_instance_equal,
     assert_job_equal,
+    assert_logging_config_equal,
+    assert_operation_equal,
+    assert_parameter_equal,
+    assert_patch_equal,
+    assert_principal_equal,
+    assert_queue_equal,
+    assert_request_equal,
     assert_request_file_equal,
+    assert_role_equal,
+    assert_system_equal,
 )
 
 
@@ -145,6 +146,12 @@ class TestParse(object):
                 assert_request_file_equal,
                 lazy_fixture("bg_request_file"),
             ),
+            (
+                brewtils.models.Operation,
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
         ],
     )
     def test_single(self, model, data, assertion, expected):
@@ -243,6 +250,12 @@ class TestParse(object):
                 assert_request_file_equal,
                 lazy_fixture("bg_request_file"),
             ),
+            (
+                "parse_operation",
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, assertion, expected):
@@ -340,6 +353,12 @@ class TestParse(object):
                 assert_request_file_equal,
                 lazy_fixture("bg_request_file"),
             ),
+            (
+                brewtils.models.Operation,
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
         ],
     )
     def test_many(self, model, data, assertion, expected):
@@ -430,6 +449,12 @@ class TestParse(object):
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
             ),
+            (
+                "parse_operation",
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
         ],
     )
     def test_many_specific(self, method, data, assertion, expected):
@@ -478,6 +503,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
+            (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
         ],
     )
     def test_single(self, model, expected):
@@ -540,6 +566,11 @@ class TestSerialize(object):
                 lazy_fixture("bg_interval_job"),
                 lazy_fixture("interval_job_dict"),
             ),
+            (
+                "serialize_operation",
+                lazy_fixture("bg_operation"),
+                lazy_fixture("operation_dict"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, expected):
@@ -563,6 +594,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
+            (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
         ],
     )
     def test_many(self, model, expected):
@@ -633,6 +665,11 @@ class TestRoundTrip(object):
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_cron_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_interval_job")),
+            (
+                brewtils.models.Operation,
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
         ],
     )
     def test_parsed_start(self, model, assertion, data):
@@ -659,6 +696,7 @@ class TestRoundTrip(object):
             (brewtils.models.Job, lazy_fixture("job_dict")),
             (brewtils.models.Job, lazy_fixture("cron_job_dict")),
             (brewtils.models.Job, lazy_fixture("interval_job_dict")),
+            (brewtils.models.Operation, lazy_fixture("operation_dict")),
         ],
     )
     def test_serialized_start(self, model, data):

@@ -28,6 +28,7 @@ __all__ = [
     "CronTrigger",
     "IntervalTrigger",
     "Garden",
+    "Operation",
 ]
 
 
@@ -369,7 +370,6 @@ class Parameter(BaseModel):
 
 
 class RequestFile(BaseModel):
-
     schema = "RequestFileSchema"
 
     def __init__(self, storage_type=None, filename=None):
@@ -1157,3 +1157,34 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return "<Garden: garden_name=%s, status=%s>" % (self.garden_name, self.status)
+
+
+class Operation(BaseModel):
+    schema = "OperationSchema"
+
+    def __init__(
+        self,
+        model=None,
+        model_type=None,
+        args=None,
+        kwargs=None,
+        target_garden_name=None,
+        source_garden_name=None,
+        operation_type=None,
+    ):
+        self.model = model
+        self.model_type = model_type
+        self.args = args or []
+        self.kwargs = kwargs or {}
+        self.target_garden_name = target_garden_name
+        self.source_garden_name = source_garden_name
+        self.operation_type = operation_type
+
+    def __str__(self):
+        return "%s" % self.operation_type
+
+    def __repr__(self):
+        return (
+            "<Operation: operation_type=%s, source_garden_name=%s, target_garden_name=%s>"
+            % (self.operation_type, self.source_garden_name, self.target_garden_name)
+        )

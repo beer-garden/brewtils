@@ -15,6 +15,7 @@ from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
     assert_command_equal,
     assert_event_equal,
+    assert_garden_equal,
     assert_instance_equal,
     assert_job_equal,
     assert_logging_config_equal,
@@ -147,6 +148,12 @@ class TestParse(object):
                 lazy_fixture("bg_request_file"),
             ),
             (
+                brewtils.models.Garden,
+                lazy_fixture("garden_dict"),
+                assert_garden_equal,
+                lazy_fixture("bg_garden"),
+            ),
+            (
                 brewtils.models.Operation,
                 lazy_fixture("operation_dict"),
                 assert_operation_equal,
@@ -249,6 +256,12 @@ class TestParse(object):
                 lazy_fixture("request_file_dict"),
                 assert_request_file_equal,
                 lazy_fixture("bg_request_file"),
+            ),
+            (
+                "parse_garden",
+                lazy_fixture("garden_dict"),
+                assert_garden_equal,
+                lazy_fixture("bg_garden"),
             ),
             (
                 "parse_operation",
@@ -354,6 +367,12 @@ class TestParse(object):
                 lazy_fixture("bg_request_file"),
             ),
             (
+                brewtils.models.Garden,
+                lazy_fixture("garden_dict"),
+                assert_garden_equal,
+                lazy_fixture("bg_garden"),
+            ),
+            (
                 brewtils.models.Operation,
                 lazy_fixture("operation_dict"),
                 assert_operation_equal,
@@ -450,6 +469,12 @@ class TestParse(object):
                 lazy_fixture("bg_interval_job"),
             ),
             (
+                "parse_garden",
+                lazy_fixture("garden_dict"),
+                assert_garden_equal,
+                lazy_fixture("bg_garden"),
+            ),
+            (
                 "parse_operation",
                 lazy_fixture("operation_dict"),
                 assert_operation_equal,
@@ -503,6 +528,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
+            (lazy_fixture("bg_garden"), lazy_fixture("garden_dict")),
             (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
         ],
     )
@@ -567,6 +593,11 @@ class TestSerialize(object):
                 lazy_fixture("interval_job_dict"),
             ),
             (
+                "serialize_garden",
+                lazy_fixture("bg_garden"),
+                lazy_fixture("garden_dict"),
+            ),
+            (
                 "serialize_operation",
                 lazy_fixture("bg_operation"),
                 lazy_fixture("operation_dict"),
@@ -594,6 +625,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
+            (lazy_fixture("bg_garden"), lazy_fixture("garden_dict")),
             (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
         ],
     )
@@ -665,6 +697,7 @@ class TestRoundTrip(object):
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_cron_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_interval_job")),
+            (brewtils.models.Garden, assert_garden_equal, lazy_fixture("bg_garden")),
             (
                 brewtils.models.Operation,
                 assert_operation_equal,
@@ -696,6 +729,7 @@ class TestRoundTrip(object):
             (brewtils.models.Job, lazy_fixture("job_dict")),
             (brewtils.models.Job, lazy_fixture("cron_job_dict")),
             (brewtils.models.Job, lazy_fixture("interval_job_dict")),
+            (brewtils.models.Garden, lazy_fixture("garden_dict")),
             (brewtils.models.Operation, lazy_fixture("operation_dict")),
         ],
     )

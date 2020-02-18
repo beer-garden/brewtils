@@ -18,6 +18,7 @@ from brewtils.models import (
     CronTrigger,
     DateTrigger,
     Event,
+    Garden,
     Instance,
     IntervalTrigger,
     Job,
@@ -183,6 +184,7 @@ assert_trigger_equal = partial(
     _assert_wrapper, expected_type=(CronTrigger, DateTrigger, IntervalTrigger)
 )
 assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
+assert_garden_equal = partial(_assert_wrapper, expected_type=Garden)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):

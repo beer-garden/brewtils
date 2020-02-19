@@ -1142,6 +1142,7 @@ class Garden(BaseModel):
         status=None,
         status_info=None,
         namespaces=None,
+        systems=None,
         connection_type=None,
         connection_params=None,
     ):
@@ -1150,6 +1151,7 @@ class Garden(BaseModel):
         self.status = status.upper() if status else None
         self.status_info = status_info or {}
         self.namespaces = namespaces or []
+        self.systems = systems or []
 
         self.connection_type = connection_type
         self.connection_params = connection_params

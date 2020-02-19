@@ -375,6 +375,7 @@ class GardenSchema(BaseSchema):
     connection_type = fields.Str(allow_none=True)
     connection_params = fields.Dict(allow_none=True)
     namespaces = fields.List(fields.Str(), allow_none=True)
+    systems = fields.List(fields.Str(), allow_none=True)
 
 
 class JobSchema(BaseSchema):

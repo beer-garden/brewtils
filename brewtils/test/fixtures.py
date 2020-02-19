@@ -12,6 +12,7 @@ from brewtils.models import (
     CronTrigger,
     DateTrigger,
     Event,
+    Garden,
     Instance,
     IntervalTrigger,
     Job,
@@ -649,6 +650,28 @@ def bg_date_trigger(date_trigger_dict, ts_dt):
 def bg_request_file(request_file_dict):
     """A request file as a model"""
     return RequestFile(**request_file_dict)
+
+
+@pytest.fixture
+def garden_dict(ts_epoch):
+    """A garden as a dictionary."""
+
+    return {
+        "id": "123f11af55a38e64799fa1c1",
+        "name": "garden",
+        "status": "RUNNING",
+        "status_info": {},
+        "namespaces": ["foo", "bar"],
+        "connection_type": "http",
+        "connection_params": {},
+    }
+
+
+@pytest.fixture
+def bg_garden(garden_dict):
+    """An operation as a model."""
+    dict_copy = copy.deepcopy(garden_dict)
+    return Garden(**dict_copy)
 
 
 @pytest.fixture

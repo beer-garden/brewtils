@@ -1138,25 +1138,27 @@ class Garden(BaseModel):
     def __init__(
         self,
         id=None,
-        garden_name=None,
+        name=None,
         status=None,
         status_info=None,
+        namespaces=None,
         connection_type=None,
         connection_params=None,
     ):
         self.id = id
-        self.garden_name = garden_name
+        self.name = name
         self.status = status.upper() if status else None
         self.status_info = status_info or {}
+        self.namespaces = namespaces or []
 
         self.connection_type = connection_type
         self.connection_params = connection_params
 
     def __str__(self):
-        return "%s" % self.garden_name
+        return "%s" % self.name
 
     def __repr__(self):
-        return "<Garden: garden_name=%s, status=%s>" % (self.garden_name, self.status)
+        return "<Garden: garden_name=%s, status=%s>" % (self.name, self.status)
 
 
 class Operation(BaseModel):

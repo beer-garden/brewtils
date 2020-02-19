@@ -662,6 +662,7 @@ def garden_dict(ts_epoch):
         "status": "RUNNING",
         "status_info": {},
         "namespaces": ["foo", "bar"],
+        "systems": ["ns:description-1.0.0"],
         "connection_type": "http",
         "connection_params": {},
     }

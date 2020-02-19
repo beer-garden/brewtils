@@ -653,7 +653,7 @@ def bg_request_file(request_file_dict):
 
 
 @pytest.fixture
-def garden_dict(ts_epoch):
+def garden_dict(ts_epoch, bg_system):
     """A garden as a dictionary."""
 
     return {
@@ -661,8 +661,8 @@ def garden_dict(ts_epoch):
         "name": "garden",
         "status": "RUNNING",
         "status_info": {},
-        "namespaces": ["foo", "bar"],
-        "systems": ["ns:description-1.0.0"],
+        "namespaces": [bg_system.namespace],
+        "systems": [str(bg_system)],
         "connection_type": "http",
         "connection_params": {},
     }

@@ -382,7 +382,9 @@ class JobSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     trigger_type = fields.Str(allow_none=True)
     trigger = ModelField(
-        type_field="trigger_type", allowed_types=["interval", "date", "cron"]
+        type_field="trigger_type",
+        allowed_types=["interval", "date", "cron"],
+        allow_none=True,
     )
     request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)

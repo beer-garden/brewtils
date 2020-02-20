@@ -37,8 +37,8 @@ class TestFields(object):
         [
             (lazy_fixture("ts_dt"), False, lazy_fixture("ts_epoch")),
             (lazy_fixture("ts_dt"), True, lazy_fixture("ts_epoch")),
-            (lazy_fixture("ts_dt_with_tz"), False, lazy_fixture("ts_epoch_with_tz")),
-            (lazy_fixture("ts_dt_with_tz"), True, lazy_fixture("ts_epoch")),
+            (lazy_fixture("ts_dt_eastern"), False, lazy_fixture("ts_epoch_eastern")),
+            (lazy_fixture("ts_dt_eastern"), True, lazy_fixture("ts_epoch")),
         ],
     )
     def test_to_epoch(self, dt, localtime, expected):

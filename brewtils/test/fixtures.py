@@ -36,33 +36,51 @@ def system_id():
 
 
 @pytest.fixture
-def ts_epoch():
-    """Timestamp as epoch timestamp."""
-    return 1451606400000
-
-
-@pytest.fixture
 def ts_dt():
-    """Timestamp as a datetime."""
+    """Jan 1, 2016 as a naive datetime."""
     return datetime(2016, 1, 1)
 
 
 @pytest.fixture
-def ts_dt_utc():
-    """Timezone-aware datetime (UTC)."""
-    return datetime(2016, 1, 1, tzinfo=pytz.utc)
+def ts_epoch():
+    """Jan 1, 2016 UTC as epoch milliseconds."""
+    return 1451606400000
 
 
 @pytest.fixture
-def ts_dt_with_tz():
-    """Timezone-aware datetime (US/Eastern)."""
+def ts_dt_utc(ts_epoch):
+    """Jan 1, 2016 UTC as timezone-aware datetime."""
+    return datetime.fromtimestamp(ts_epoch / 1000, tz=pytz.utc)
+
+
+@pytest.fixture
+def ts_epoch_eastern():
+    """Jan 1, 2016 US/Eastern as epoch milliseconds."""
+    return 1451624160000
+
+
+@pytest.fixture
+def ts_dt_eastern():
+    """Jan 1, 2016 US/Eastern as timezone-aware datetime."""
     return datetime(2016, 1, 1, tzinfo=pytz.timezone("US/Eastern"))
 
 
 @pytest.fixture
-def ts_epoch_with_tz(ts_epoch):
-    """Corresponding time in (US/Eastern)"""
-    return 1451624160000
+def ts_2_dt(ts_2_epoch):
+    """Feb 2, 2017 as a naive datetime."""
+    return datetime(2017, 2, 2)
+
+
+@pytest.fixture
+def ts_2_epoch():
+    """Feb 2, 2017 UTC as epoch milliseconds."""
+    return 1485993600000
+
+
+@pytest.fixture
+def ts_2_dt_utc(ts_2_epoch):
+    """Feb 2, 2017 UTC as timezone-aware datetime."""
+    return datetime.fromtimestamp(ts_2_epoch / 1000, tz=pytz.utc)
 
 
 @pytest.fixture
@@ -573,7 +591,7 @@ def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger,
 
 
 @pytest.fixture
-def interval_trigger_dict(ts_epoch):
+def interval_trigger_dict(ts_epoch, ts_2_epoch):
     """An interval trigger as a dictionary."""
     return {
         "weeks": 1,
@@ -582,7 +600,7 @@ def interval_trigger_dict(ts_epoch):
         "minutes": 1,
         "seconds": 1,
         "start_date": ts_epoch,
-        "end_date": ts_epoch,
+        "end_date": ts_2_epoch,
         "timezone": "utc",
         "jitter": 1,
         "reschedule_on_finish": False,
@@ -590,11 +608,11 @@ def interval_trigger_dict(ts_epoch):
 
 
 @pytest.fixture
-def bg_interval_trigger(interval_trigger_dict, ts_dt):
+def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt):
     """An interval trigger as a model."""
     dict_copy = copy.deepcopy(interval_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_dt
+    dict_copy["end_date"] = ts_2_dt
     return IntervalTrigger(**dict_copy)
 
 
@@ -605,7 +623,7 @@ def request_file_dict():
 
 
 @pytest.fixture
-def cron_trigger_dict(ts_epoch):
+def cron_trigger_dict(ts_epoch, ts_2_epoch):
     """A cron trigger as a dictionary."""
     return {
         "year": "2020",
@@ -617,18 +635,18 @@ def cron_trigger_dict(ts_epoch):
         "minute": "*/1",
         "second": "*/1",
         "start_date": ts_epoch,
-        "end_date": ts_epoch,
+        "end_date": ts_2_epoch,
         "timezone": "utc",
         "jitter": 1,
     }
 
 
 @pytest.fixture
-def bg_cron_trigger(cron_trigger_dict, ts_dt):
+def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt):
     """A cron trigger as a model."""
     dict_copy = copy.deepcopy(cron_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_dt
+    dict_copy["end_date"] = ts_2_dt
     return CronTrigger(**dict_copy)
 
 

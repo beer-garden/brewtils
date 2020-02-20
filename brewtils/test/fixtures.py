@@ -36,33 +36,33 @@ def system_id():
 
 
 @pytest.fixture
-def ts_epoch():
-    """Timestamp as epoch timestamp."""
-    return 1451606400000
-
-
-@pytest.fixture
 def ts_dt():
-    """Timestamp as a datetime."""
+    """Jan 1, 2016 as a naive datetime."""
     return datetime(2016, 1, 1)
 
 
 @pytest.fixture
-def ts_dt_utc():
-    """Timezone-aware datetime (UTC)."""
-    return datetime(2016, 1, 1, tzinfo=pytz.utc)
+def ts_epoch():
+    """Jan 1, 2016 UTC as epoch milliseconds."""
+    return 1451606400000
 
 
 @pytest.fixture
-def ts_dt_with_tz():
-    """Timezone-aware datetime (US/Eastern)."""
-    return datetime(2016, 1, 1, tzinfo=pytz.timezone("US/Eastern"))
+def ts_dt_utc(ts_epoch):
+    """Jan 1, 2016 UTC as timezone-aware datetime."""
+    return datetime.fromtimestamp(ts_epoch / 1000, tz=pytz.utc)
 
 
 @pytest.fixture
-def ts_epoch_with_tz(ts_epoch):
-    """Corresponding time in (US/Eastern)"""
+def ts_epoch_eastern():
+    """Jan 1, 2016 US/Eastern as epoch milliseconds."""
     return 1451624160000
+
+
+@pytest.fixture
+def ts_dt_eastern():
+    """Jan 1, 2016 US/Eastern as timezone-aware datetime."""
+    return datetime(2016, 1, 1, tzinfo=pytz.timezone("US/Eastern"))
 
 
 @pytest.fixture

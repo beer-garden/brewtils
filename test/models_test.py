@@ -589,11 +589,11 @@ class TestIntervalTrigger(object):
         }
 
     def test_scheduler_kwargs(
-        self, bg_interval_trigger, interval_trigger_dict, ts_dt_utc
+        self, bg_interval_trigger, interval_trigger_dict, ts_dt_utc, ts_2_dt_utc
     ):
         expected = interval_trigger_dict
         expected.update(
-            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_dt_utc}
+            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
         )
         assert bg_interval_trigger.scheduler_kwargs == expected
 

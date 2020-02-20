@@ -591,7 +591,7 @@ def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger,
 
 
 @pytest.fixture
-def interval_trigger_dict(ts_epoch):
+def interval_trigger_dict(ts_epoch, ts_2_epoch):
     """An interval trigger as a dictionary."""
     return {
         "weeks": 1,
@@ -600,7 +600,7 @@ def interval_trigger_dict(ts_epoch):
         "minutes": 1,
         "seconds": 1,
         "start_date": ts_epoch,
-        "end_date": ts_epoch,
+        "end_date": ts_2_epoch,
         "timezone": "utc",
         "jitter": 1,
         "reschedule_on_finish": False,
@@ -608,11 +608,11 @@ def interval_trigger_dict(ts_epoch):
 
 
 @pytest.fixture
-def bg_interval_trigger(interval_trigger_dict, ts_dt):
+def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt):
     """An interval trigger as a model."""
     dict_copy = copy.deepcopy(interval_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_dt
+    dict_copy["end_date"] = ts_2_dt
     return IntervalTrigger(**dict_copy)
 
 
@@ -623,7 +623,7 @@ def request_file_dict():
 
 
 @pytest.fixture
-def cron_trigger_dict(ts_epoch):
+def cron_trigger_dict(ts_epoch, ts_2_epoch):
     """A cron trigger as a dictionary."""
     return {
         "year": "2020",
@@ -635,18 +635,18 @@ def cron_trigger_dict(ts_epoch):
         "minute": "*/1",
         "second": "*/1",
         "start_date": ts_epoch,
-        "end_date": ts_epoch,
+        "end_date": ts_2_epoch,
         "timezone": "utc",
         "jitter": 1,
     }
 
 
 @pytest.fixture
-def bg_cron_trigger(cron_trigger_dict, ts_dt):
+def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt):
     """A cron trigger as a model."""
     dict_copy = copy.deepcopy(cron_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_dt
+    dict_copy["end_date"] = ts_2_dt
     return CronTrigger(**dict_copy)
 
 

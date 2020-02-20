@@ -66,6 +66,24 @@ def ts_dt_eastern():
 
 
 @pytest.fixture
+def ts_2_dt(ts_2_epoch):
+    """Feb 2, 2017 as a naive datetime."""
+    return datetime(2017, 2, 2)
+
+
+@pytest.fixture
+def ts_2_epoch():
+    """Feb 2, 2017 UTC as epoch milliseconds."""
+    return 1485993600000
+
+
+@pytest.fixture
+def ts_2_dt_utc(ts_2_epoch):
+    """Feb 2, 2017 UTC as timezone-aware datetime."""
+    return datetime.fromtimestamp(ts_2_epoch / 1000, tz=pytz.utc)
+
+
+@pytest.fixture
 def choices_dict():
     """Choices as a dictionary."""
     return {

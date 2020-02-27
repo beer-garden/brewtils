@@ -30,6 +30,7 @@ class SystemClient(object):
                 system_name='example_system',
                 bg_host="host",
                 bg_port=2337,
+                namespace='default',
             )
 
         Pass additional keyword arguments for more granularity:
@@ -85,6 +86,7 @@ class SystemClient(object):
                 system_name='example_system',
                 bg_host="localhost",
                 bg_port=2337,
+                namespace='default',
                 blocking=False,
             )
 
@@ -132,7 +134,7 @@ class SystemClient(object):
 
         Request that raises::
 
-            client = SystemClient(system_name="foo", bg_host="localhost", bg_port=2337)
+            client = SystemClient(system_name="foo", namespace='default', bg_host="localhost", bg_port=2337)
 
             try:
                 client.command_that_errors(_raise_on_error=True)
@@ -141,6 +143,7 @@ class SystemClient(object):
 
     Args:
         system_name (str): Name of the System to make Requests on
+        namespace (str): Namespace that the System is hosted on
         version_constraint (str): System version to make Requests on. Can be specific
             ('1.0.0') or 'latest'.
         default_instance (str): Name of the Instance to make Requests on
@@ -179,6 +182,7 @@ class SystemClient(object):
         self._logger = logging.getLogger(__name__)
 
         self._system_name = kwargs.get("system_name")
+        self._namespace = kwargs.get("system_namespace", kwargs.get("namespace", None))
         self._version_constraint = kwargs.get("version_constraint", "latest")
         self._default_instance = kwargs.get("default_instance", "default")
         self._always_update = kwargs.get("always_update", False)
@@ -245,6 +249,7 @@ class SystemClient(object):
                 self.send_bg_request,
                 _command=command_name,
                 _system_name=self._system.name,
+                _namespace=self._namespace,
                 _system_version=self._system.version,
                 _system_display=self._system.display_name,
                 _output_type=self._commands[command_name].output_type,
@@ -396,6 +401,7 @@ class SystemClient(object):
         system_name = kwargs.pop("_system_name", None)
         system_version = kwargs.pop("_system_version", None)
         system_display = kwargs.pop("_system_display", None)
+        namespace = kwargs.pop("_namespace",None)
         instance_name = kwargs.pop("_instance_name", None)
         comment = kwargs.pop("_comment", None)
         output_type = kwargs.pop("_output_type", None)
@@ -424,6 +430,7 @@ class SystemClient(object):
             parent=parent,
             metadata=metadata,
             parameters=kwargs,
+            namespace=namespace
         )
         bytes_params = self._commands[command].parameter_keys_by_type("Bytes")
         resolver = UploadResolver(request, bytes_params, self._resolvers)

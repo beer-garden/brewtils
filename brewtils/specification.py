@@ -91,6 +91,11 @@ _CONNECTION_SPEC = {
         "description": "Refresh token for authentication",
         "required": False,
     },
+    "namespace": {
+        "type": "str",
+        "description": "Namespace for registration",
+        "required": False,
+    },
 }
 
 _SYSTEM_SPEC = {

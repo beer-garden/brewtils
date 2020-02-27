@@ -65,6 +65,7 @@ class Events(Enum):
     # TODO - should these be external API events?
     INSTANCE_STOP_REQUESTED = 101
     INSTANCE_START_REQUESTED = 102
+    SYSTEM_RESCAN_REQUESTED = 103
 
 
 class BaseModel(object):

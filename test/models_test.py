@@ -510,8 +510,10 @@ class TestEvent(object):
 
     def test_repr(self, bg_event, bg_request):
         assert (
-            repr(bg_event) == "<Event: namespace=ns, name=REQUEST_CREATED, "
-            "error=False, metadata={'extra': 'info'}, payload=%r>" % bg_request
+            repr(bg_event) == "<Event: namespace=ns, garden=beer, "
+            "name=REQUEST_CREATED, timestamp=2016-01-01 00:00:00, error=False, "
+            "error_message=None, metadata={'extra': 'info'}, payload_type=Request, "
+            "payload=%r>" % bg_request
         )
 
 

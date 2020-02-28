@@ -237,6 +237,11 @@ req_2 = sys_client.command(param="foo", _parent=req_1)
 
 Note that request creation (`req_2` above) will fail if the parent request has already completed.
 
+#### Timeout Value
+Negative timeout values now mean "wait forever." This matches the behavior of the `timeout` query parameter when POSTing to the request creation endpoint.
+
+Values of `0` and `None` continue to also mean "wait forever."
+
 
 ### `EasyClient`
 The `EasyClient` had some API changes:

@@ -354,7 +354,7 @@ class SystemClient(object):
 
             if timeout and total_wait_time > timeout:
                 raise TimeoutExceededError(
-                    "Timeout waiting for request '%s' " "to complete" % str(request)
+                    "Timeout waiting for request '%s' to complete" % str(request)
                 )
 
             time.sleep(delay_time)
@@ -382,8 +382,7 @@ class SystemClient(object):
                 "A parent request was found, but the destination beer-garden "
                 "appears to be different than the beer-garden to which this plugin "
                 "is assigned. Cross-server parent/child requests are not supported "
-                "at this time. Removing the parent context so the request doesn't "
-                "fail."
+                "at this time. Removing the parent context so the request doesn't fail."
             )
             return None
 

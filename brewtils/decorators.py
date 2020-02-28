@@ -240,7 +240,7 @@ def parameter(
     # Every parameter needs a key, so stop that right here
     if key is None:
         raise PluginParamError(
-            "Found a parameter definition without a key for " "command '%s'" % cmd.name
+            "Found a parameter definition without a key for command '%s'" % cmd.name
         )
 
     # If the command doesn't already have a parameter with this key then the

@@ -353,12 +353,29 @@ class TestWaitForRequest(object):
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
 
     @pytest.mark.usefixtures("sleep_patch")
-    def test_timeout(self, client, easy_client, mock_in_progress):
+    @pytest.mark.parametrize("timeout", [0, None, -1])
+    def test_no_timeout(
+        self, client, easy_client, mock_success, mock_in_progress, timeout
+    ):
+        easy_client.create_request.return_value = mock_in_progress
+        easy_client.find_unique_request.side_effect = [
+            mock_in_progress,
+            mock_in_progress,
+            mock_success,
+        ]
+
+        request = client.command_1(_blocking=False, _timeout=timeout).result()
+
+        assert request.status == mock_success.status
+        assert request.output == mock_success.output
+
+    @pytest.mark.usefixtures("sleep_patch")
+    @pytest.mark.parametrize("timeout", [1, 5, 0.1])
+    def test_timeout(self, client, easy_client, mock_in_progress, timeout):
         easy_client.create_request.return_value = mock_in_progress
         easy_client.find_unique_request.return_value = mock_in_progress
 
-        client._timeout = 1
-        future = client.command_1(_blocking=False)
+        future = client.command_1(_blocking=False, _timeout=timeout)
 
         with pytest.raises(TimeoutExceededError):
             future.result()

@@ -806,12 +806,20 @@ class Event(BaseModel):
         return "%s: %s" % (self.namespace, self.name)
 
     def __repr__(self):
-        return "<Event: namespace=%s, name=%s, error=%s, metadata=%s, payload=%r>" % (
-            self.namespace,
-            self.name,
-            self.error,
-            self.metadata,
-            self.payload,
+        return (
+            "<Event: namespace=%s, garden=%s, name=%s, timestamp=%s, error=%s, "
+            "error_message=%s, metadata=%s, payload_type=%s, payload=%r>"
+            % (
+                self.namespace,
+                self.garden,
+                self.name,
+                self.timestamp,
+                self.error,
+                self.error_message,
+                self.metadata,
+                self.payload_type,
+                self.payload,
+            )
         )
 
 

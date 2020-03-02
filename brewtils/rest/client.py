@@ -3,17 +3,18 @@
 import functools
 import json
 from datetime import datetime
+from typing import Any, Dict, List
 
 import jwt
 import urllib3
-from requests import Session
+from requests import Response, Session
 from requests.adapters import HTTPAdapter
+from yapconf import YapconfSpec
 
 import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
-from yapconf import YapconfSpec
 
 
 def enable_auth(method):
@@ -204,6 +205,7 @@ class RestClient(object):
 
     @enable_auth
     def get_version(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET to the version URL
 
         Args:
@@ -216,6 +218,7 @@ class RestClient(object):
 
     @enable_auth
     def get_config(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET to the config URL
 
         Args:
@@ -228,6 +231,7 @@ class RestClient(object):
 
     @enable_auth
     def get_logging_config(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET to the logging config URL
 
         Args:
@@ -240,6 +244,7 @@ class RestClient(object):
 
     @enable_auth
     def get_systems(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET on the System collection URL
 
         Args:
@@ -252,6 +257,7 @@ class RestClient(object):
 
     @enable_auth
     def get_system(self, system_id, **kwargs):
+        # type: (str, **Any) -> Response
         """Performs a GET on the System URL
 
         Args:
@@ -265,6 +271,7 @@ class RestClient(object):
 
     @enable_auth
     def post_systems(self, payload):
+        # type: (str) -> Response
         """Performs a POST on the System URL
 
         Args:
@@ -279,6 +286,7 @@ class RestClient(object):
 
     @enable_auth
     def patch_system(self, system_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on a System URL
 
         Args:
@@ -294,6 +302,7 @@ class RestClient(object):
 
     @enable_auth
     def delete_system(self, system_id):
+        # type: (str) -> Response
         """Performs a DELETE on a System URL
 
         Args:
@@ -306,6 +315,7 @@ class RestClient(object):
 
     @enable_auth
     def get_instance(self, instance_id):
+        # type: (str) -> Response
         """Performs a GET on the Instance URL
 
         Args:
@@ -318,6 +328,7 @@ class RestClient(object):
 
     @enable_auth
     def patch_instance(self, instance_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on the instance URL
 
         Args:
@@ -335,6 +346,7 @@ class RestClient(object):
 
     @enable_auth
     def delete_instance(self, instance_id):
+        # type: (str) -> Response
         """Performs a DELETE on an Instance URL
 
         Args:
@@ -347,6 +359,7 @@ class RestClient(object):
 
     @enable_auth
     def get_commands(self):
+        # type: () -> Response
         """Performs a GET on the Commands URL
 
         Returns:
@@ -356,6 +369,7 @@ class RestClient(object):
 
     @enable_auth
     def get_command(self, command_id):
+        # type: (str) -> Response
         """Performs a GET on the Command URL
 
         Args:
@@ -368,6 +382,7 @@ class RestClient(object):
 
     @enable_auth
     def get_requests(self, **kwargs):
+        # type: (**Any) -> Response
         """Performs a GET on the Requests URL
 
         Args:
@@ -380,6 +395,7 @@ class RestClient(object):
 
     @enable_auth
     def get_request(self, request_id):
+        # type: (str) -> Response
         """Performs a GET on the Request URL
 
         Args:
@@ -392,6 +408,7 @@ class RestClient(object):
 
     @enable_auth
     def post_requests(self, payload, **kwargs):
+        # type: (str, **Any) -> Response
         """Performs a POST on the Request URL
 
         Args:
@@ -411,6 +428,7 @@ class RestClient(object):
 
     @enable_auth
     def patch_request(self, request_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on the Request URL
 
         Args:
@@ -426,6 +444,7 @@ class RestClient(object):
 
     @enable_auth
     def post_event(self, payload, publishers=None):
+        # type: (str, List[str]) -> Response
         """Performs a POST on the event URL
 
         Args:
@@ -444,6 +463,7 @@ class RestClient(object):
 
     @enable_auth
     def get_queues(self):
+        # type: () -> Response
         """Performs a GET on the Queues URL
 
         Returns:
@@ -453,6 +473,7 @@ class RestClient(object):
 
     @enable_auth
     def delete_queues(self):
+        # type: () -> Response
         """Performs a DELETE on the Queues URL
 
         Returns:
@@ -462,6 +483,7 @@ class RestClient(object):
 
     @enable_auth
     def delete_queue(self, queue_name):
+        # type: (str) -> Response
         """Performs a DELETE on a specific Queue URL
 
         Args:
@@ -474,6 +496,7 @@ class RestClient(object):
 
     @enable_auth
     def get_jobs(self, **kwargs):
+        # type: (**Any) -> Response
         """Performs a GET on the Jobs URL.
 
         Args:
@@ -486,6 +509,7 @@ class RestClient(object):
 
     @enable_auth
     def get_job(self, job_id):
+        # type: (str) -> Response
         """Performs a GET on the Job URL
 
         Args:
@@ -498,6 +522,7 @@ class RestClient(object):
 
     @enable_auth
     def post_jobs(self, payload):
+        # type: (str) -> Response
         """Performs a POST on the Job URL
 
         Args:
@@ -510,6 +535,7 @@ class RestClient(object):
 
     @enable_auth
     def patch_job(self, job_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on the Job URL
 
         Args:
@@ -525,6 +551,7 @@ class RestClient(object):
 
     @enable_auth
     def delete_job(self, job_id):
+        # type: (str) -> Response
         """Performs a DELETE on a Job URL
 
         Args:
@@ -537,6 +564,7 @@ class RestClient(object):
 
     @enable_auth
     def get_file(self, file_id, **kwargs):
+        # type: (str, **Any) -> Response
         """Performs a GET on the specific File URL
 
         Args:
@@ -550,6 +578,7 @@ class RestClient(object):
 
     @enable_auth
     def post_files(self, file_dict):
+        # type: (Dict[str, tuple]) -> Response
         """Performs a POST on the file URL.
 
         Files should be in the form:
@@ -573,6 +602,7 @@ class RestClient(object):
 
     @enable_auth
     def get_user(self, user_identifier):
+        # type: (str) -> Response
         """Performs a GET on the specific User URL
 
         Args:
@@ -584,6 +614,7 @@ class RestClient(object):
         return self.session.get(self.user_url + user_identifier)
 
     def get_tokens(self, username=None, password=None):
+        # type: (str, str) -> Response
         """Use a username and password to get access and refresh tokens
 
         Args:
@@ -614,6 +645,7 @@ class RestClient(object):
         return response
 
     def refresh(self, refresh_token=None):
+        # type: (str) -> Response
         """Use a refresh token to obtain a new access token
 
         Args:

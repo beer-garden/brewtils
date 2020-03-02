@@ -627,7 +627,9 @@ class EasyClient(object):
     def get_queues(self):
         """Retrieve all queue information
 
-        :return: The response
+        Returns:
+            List[Queue]: List of all Queues
+
         """
         return self.client.get_queues()
 

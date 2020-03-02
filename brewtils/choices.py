@@ -65,11 +65,16 @@ class FunctionTransformer(Transformer):
 def parse(input_string, parse_as=None):
     """Attempt to parse a string into a choices dictionary.
 
-    :param input_string: The string to parse
-    :param parse_as: String specifying how to parse `input_string`. Valid values are 'func' or
-        'url'. Will try all valid values if None.
-    :return: A dictionary containing the results of the parse
-    :raise lark.common.ParseError: The parser was not able to find a valid parsing of `input_string`
+    Args:
+        input_string: The string to parse
+        parse_as: String specifying how to parse `input_string`. Valid values are
+            'func' or 'url'. Will try all valid values if None.
+
+    Returns:
+        Dictionary containing the parse results
+
+    Rasies:
+        lark.common.ParseError: Unable to find a valid parsing of `input_string`
     """
 
     def _parse(_input_string, _parser):

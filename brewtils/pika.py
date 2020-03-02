@@ -163,7 +163,7 @@ class PikaClient(object):
 
 
 class TransientPikaClient(PikaClient):
-    """Pika client implementation that creates a new connection and channel for each action"""
+    """Client implementation that creates new connection and channel for each action"""
 
     def __init__(self, **kwargs):
         super(TransientPikaClient, self).__init__(**kwargs)
@@ -184,7 +184,7 @@ class TransientPikaClient(PikaClient):
             )
 
     def setup_queue(self, queue_name, queue_args, routing_keys):
-        """Will create a new queue with the given args and bind it to the given routing keys"""
+        """Create a new queue with queue_args and bind it to routing_keys"""
 
         with BlockingConnection(self._conn_params) as conn:
             conn.channel().queue_declare(queue_name, **queue_args)
@@ -197,10 +197,13 @@ class TransientPikaClient(PikaClient):
         return {"name": queue_name, "args": queue_args}
 
     def publish(self, message, **kwargs):
-        """Publish a message.
-        :param message: The message to publish
-        :param kwargs: Additional message properties
-        :Keyword Arguments:
+        """Publish a message
+
+        Args:
+            message: Message to publish
+            kwargs: Additional message properties
+
+        Keyword Arguments:
             * *routing_key* --
               Routing key to use when publishing
             * *headers* --

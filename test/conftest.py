@@ -21,8 +21,11 @@ def pytest_unconfigure():
 def environ():
     """Make sure tests don't clobber the environment"""
     safe_copy = os.environ.copy()
-    yield
-    os.environ = safe_copy
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(safe_copy)
 
 
 @pytest.fixture(autouse=True)

@@ -23,14 +23,18 @@ from brewtils.models import Command, Instance, System
 from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
-@pytest.fixture
-def ez_client(bg_system, bg_instance, bg_logging_config):
-    return Mock(
+@pytest.fixture(autouse=True)
+def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
+    _ez_client = Mock(
         name="ez_client",
         create_system=Mock(return_value=bg_system),
         initialize_instance=Mock(return_value=bg_instance),
         get_logging_config=Mock(return_value=bg_logging_config),
     )
+
+    monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=_ez_client))
+
+    return _ez_client
 
 
 @pytest.fixture
@@ -56,16 +60,8 @@ def request_processor():
 
 @pytest.fixture
 def plugin(
-    monkeypatch,
-    client,
-    ez_client,
-    bg_system,
-    bg_instance,
-    admin_processor,
-    request_processor,
+    client, ez_client, bg_system, bg_instance, admin_processor, request_processor
 ):
-    monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=ez_client))
-
     plugin = Plugin(client, bg_host="localhost", system=bg_system)
     plugin._instance = bg_instance
     plugin._admin_processor = admin_processor

@@ -105,16 +105,19 @@ def command(
         def echo_json(self, message):
             return message
 
-    :param _wrapped: The function to decorate. This is handled as a positional argument and
-        shouldn't be explicitly set.
-    :param command_type: The command type. Valid options are Command.COMMAND_TYPES.
-    :param output_type: The output type. Valid options are Command.OUTPUT_TYPES.
-    :param schema: A custom schema definition.
-    :param form: A custom form definition.
-    :param template: A custom template definition.
-    :param icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
-    :param description: The command description. Will override the function's docstring.
-    :return: The decorated function.
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+        command_type: The command type. Valid options are Command.COMMAND_TYPES.
+        output_type: The output type. Valid options are Command.OUTPUT_TYPES.
+        schema: A custom schema definition.
+        form: A custom form definition.
+        template: A custom template definition.
+        icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
+        description: The command description. Will override the function's docstring.
+
+    Returns:
+        The decorated function
     """
     if _wrapped is None:
         return functools.partial(
@@ -176,40 +179,48 @@ def parameter(
 ):
     """Decorator that enables Parameter specifications for a beer-garden Command
 
-    This decorator is intended to be used when more specification is desired for a Parameter.
+    This is intended to be used when more specification is desired for a Parameter.
 
     For example::
 
-        @parameter(key="message", description="Message to echo", optional=True, type="String",
-                   default="Hello, World!")
+        @parameter(
+            key="message",
+            description="Message to echo",
+            optional=True,
+            type="String",
+            default="Hello, World!",
+        )
         def echo(self, message):
             return message
 
-    :param _wrapped: The function to decorate. This is handled as a positional argument and
-        shouldn't be explicitly set.
-    :param key: String specifying the parameter identifier. Must match an argument name of the
-        decorated function.
-    :param type: String indicating the type to use for this parameter.
-    :param multi: Boolean indicating if this parameter is a multi. See documentation for
-        discussion of what this means.
-    :param display_name: String that will be displayed as a label in the user interface.
-    :param optional: Boolean indicating if this parameter must be specified.
-    :param default: The value this parameter will be assigned if not overridden when creating a
-        request.
-    :param description: An additional string that will be displayed in the user interface.
-    :param choices: List or dictionary specifying allowed values. See documentation for more
-        information.
-    :param nullable: Boolean indicating if this parameter is allowed to be null.
-    :param maximum: Integer indicating the maximum value of the parameter.
-    :param minimum: Integer indicating the minimum value of the parameter.
-    :param regex: String describing a regular expression constraint on the parameter.
-    :param is_kwarg: Boolean indicating if this parameter is meant to be part of the decorated
-        function's kwargs.
-    :param model: Class to be used as a model for this parameter. Must be a Python type object,
-        not an instance.
-    :param form_input_type: Only used for string fields. Changes the form input field
-        (e.g. textarea)
-    :return: The decorated function.
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+        key: String specifying the parameter identifier. Must match an argument name of
+            the decorated function.
+        type: String indicating the type to use for this parameter.
+        multi: Boolean indicating if this parameter is a multi. See documentation for
+            discussion of what this means.
+        display_name: String that will be displayed as a label in the user interface.
+        optional: Boolean indicating if this parameter must be specified.
+        default: The value this parameter will be assigned if not overridden when
+            creating a request.
+        description: An additional string that will be displayed in the user interface.
+        choices: List or dictionary specifying allowed values. See documentation for
+            more information.
+        nullable: Boolean indicating if this parameter is allowed to be null.
+        maximum: Integer indicating the maximum value of the parameter.
+        minimum: Integer indicating the minimum value of the parameter.
+        regex: String describing a regular expression constraint on the parameter.
+        is_kwarg: Boolean indicating if this parameter is meant to be part of the
+            decorated function's kwargs.
+        model: Class to be used as a model for this parameter. Must be a Python type
+            object, not an instance.
+        form_input_type: Only used for string fields. Changes the form input field
+            (e.g. textarea)
+
+    Returns:
+        The decorated function
     """
     if _wrapped is None:
         return functools.partial(
@@ -369,7 +380,7 @@ def parameters(*args):
 
 
 def _update_func_command(func_command, generated_command):
-    """Updates the current function's command with info, (will not override plugin_params)"""
+    """Update the current function's Command"""
     func_command.name = generated_command.name
     func_command.description = generated_command.description
     func_command.command_type = generated_command.command_type
@@ -381,7 +392,10 @@ def _update_func_command(func_command, generated_command):
 
 
 def _generate_command_from_function(func):
-    """Generates a Command from a function. Uses first line of pydoc as the description."""
+    """Generate a Command from a function
+
+    Will use the first line of the function's docstring as the description.
+    """
     # Required for Python 2/3 compatibility
     if hasattr(func, "func_name"):
         command_name = func.func_name
@@ -403,7 +417,9 @@ def _generate_command_from_function(func):
 
 def _generate_params_from_function(func):
     """Generate Parameters from function arguments.
-    Will set the Parameter key, default value, and optional value."""
+
+    Will set the Parameter key, default value, and optional value.
+    """
     parameters_to_return = []
 
     code = six.get_function_code(func)

@@ -135,10 +135,9 @@ class DiscardMessageException(RequestProcessException):
 class RepublishRequestException(RequestProcessException):
     """Republish to the end of the message queue
 
-    :param request: The Request to republish
-    :param headers: A dictionary of headers to be used by
-        `brewtils.request_consumer.PikaConsumer`
-    :type request: :py:class:`brewtils.models.Request`
+    Args:
+        request: The Request to republish
+        headers: A dictionary of headers to be used by `brewtils.pika.PikaConsumer`
     """
 
     def __init__(self, request, headers):

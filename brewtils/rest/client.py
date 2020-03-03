@@ -206,8 +206,11 @@ class RestClient(object):
     def get_version(self, **kwargs):
         """Perform a GET to the version URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: The request response
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.version_url, params=kwargs)
 
@@ -215,8 +218,11 @@ class RestClient(object):
     def get_config(self, **kwargs):
         """Perform a GET to the config URL
 
-        :param kwargs: Passed to underlying Requests method
-        :return: The request response
+        Args:
+            kwargs: Passed to underlying Requests method
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.config_url, **kwargs)
 
@@ -224,8 +230,11 @@ class RestClient(object):
     def get_logging_config(self, **kwargs):
         """Perform a GET to the logging config URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: The request response
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.logging_config_url, params=kwargs)
 
@@ -233,8 +242,11 @@ class RestClient(object):
     def get_systems(self, **kwargs):
         """Perform a GET on the System collection URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: The request response
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.system_url, params=kwargs)
 
@@ -242,9 +254,12 @@ class RestClient(object):
     def get_system(self, system_id, **kwargs):
         """Performs a GET on the System URL
 
-        :param system_id: ID of system
-        :param kwargs: Parameters to be used in the GET request
-        :return: Response to the request
+        Args:
+            system_id: System ID
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.system_url + system_id, params=kwargs)
 
@@ -252,8 +267,11 @@ class RestClient(object):
     def post_systems(self, payload):
         """Performs a POST on the System URL
 
-        :param payload: New request definition
-        :return: Response to the request
+        Args:
+            payload: New System definition
+
+        Returns:
+            Requests Response object
         """
         return self.session.post(
             self.system_url, data=payload, headers=self.JSON_HEADERS
@@ -263,9 +281,12 @@ class RestClient(object):
     def patch_system(self, system_id, payload):
         """Performs a PATCH on a System URL
 
-        :param system_id: ID of system
-        :param payload: The update specification
-        :return: Response
+        Args:
+            system_id: System ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.system_url + str(system_id), data=payload, headers=self.JSON_HEADERS
@@ -275,8 +296,11 @@ class RestClient(object):
     def delete_system(self, system_id):
         """Performs a DELETE on a System URL
 
-        :param system_id: The ID of the system to remove
-        :return: Response to the request
+        Args:
+            system_id: System ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.system_url + system_id)
 
@@ -284,8 +308,11 @@ class RestClient(object):
     def get_instance(self, instance_id):
         """Performs a GET on the Instance URL
 
-        :param instance_id: ID of instance
-        :return: Response to the request
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.instance_url + instance_id)
 
@@ -293,9 +320,12 @@ class RestClient(object):
     def patch_instance(self, instance_id, payload):
         """Performs a PATCH on the instance URL
 
-        :param instance_id: ID of instance
-        :param payload: The update specification
-        :return: Response
+        Args:
+            instance_id: Instance ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.instance_url + str(instance_id),
@@ -307,22 +337,32 @@ class RestClient(object):
     def delete_instance(self, instance_id):
         """Performs a DELETE on an Instance URL
 
-        :param instance_id: The ID of the instance to remove
-        :return: Response to the request
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.instance_url + instance_id)
 
     @enable_auth
     def get_commands(self):
-        """Performs a GET on the Commands URL"""
+        """Performs a GET on the Commands URL
+
+        Returns:
+            Requests Response object
+        """
         return self.session.get(self.command_url)
 
     @enable_auth
     def get_command(self, command_id):
         """Performs a GET on the Command URL
 
-        :param command_id: ID of command
-        :return: Response to the request
+        Args:
+            command_id: Command ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.command_url + command_id)
 
@@ -330,8 +370,11 @@ class RestClient(object):
     def get_requests(self, **kwargs):
         """Performs a GET on the Requests URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: Response to the request
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.request_url, params=kwargs)
 
@@ -339,8 +382,11 @@ class RestClient(object):
     def get_request(self, request_id):
         """Performs a GET on the Request URL
 
-        :param request_id: ID of request
-        :return: Response to the request
+        Args:
+            request_id: Request ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.request_url + request_id)
 
@@ -349,7 +395,7 @@ class RestClient(object):
         """Performs a POST on the Request URL
 
         Args:
-            payload: New request definition
+            payload: New Request definition
             kwargs: Extra request parameters
 
         Keyword Args:
@@ -357,7 +403,7 @@ class RestClient(object):
             timeout: Maximum seconds to wait
 
         Returns:
-            Response to the request
+            Requests Response object
         """
         return self.session.post(
             self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
@@ -367,9 +413,12 @@ class RestClient(object):
     def patch_request(self, request_id, payload):
         """Performs a PATCH on the Request URL
 
-        :param request_id: ID of request
-        :param payload: New request definition
-        :return: Response to the request
+        Args:
+            request_id: Request ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.request_url + str(request_id), data=payload, headers=self.JSON_HEADERS
@@ -379,9 +428,12 @@ class RestClient(object):
     def post_event(self, payload, publishers=None):
         """Performs a POST on the event URL
 
-        :param payload: New event definition
-        :param publishers: Array of publishers to use
-        :return: Response to the request
+        Args:
+            payload: Serialized new event definition
+            publishers: Array of publishers to use
+
+        Returns:
+            Requests Response object
         """
         return self.session.post(
             self.event_url,
@@ -394,7 +446,8 @@ class RestClient(object):
     def get_queues(self):
         """Performs a GET on the Queues URL
 
-        :return: Response to the request
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.queue_url)
 
@@ -402,7 +455,8 @@ class RestClient(object):
     def delete_queues(self):
         """Performs a DELETE on the Queues URL
 
-        :return: Response to the request
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.queue_url)
 
@@ -410,7 +464,11 @@ class RestClient(object):
     def delete_queue(self, queue_name):
         """Performs a DELETE on a specific Queue URL
 
-        :return: Response to the request
+        Args:
+            queue_name: Queue name
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.queue_url + queue_name)
 
@@ -418,7 +476,11 @@ class RestClient(object):
     def get_jobs(self, **kwargs):
         """Performs a GET on the Jobs URL.
 
-        Returns: Response to the request
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.job_url, params=kwargs)
 
@@ -426,8 +488,11 @@ class RestClient(object):
     def get_job(self, job_id):
         """Performs a GET on the Job URL
 
-        :param job_id: ID of job
-        :return: Response to the request
+        Args:
+            job_id: Job ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.job_url + job_id)
 
@@ -435,8 +500,11 @@ class RestClient(object):
     def post_jobs(self, payload):
         """Performs a POST on the Job URL
 
-        :param payload: New job definition
-        :return: Response to the request
+        Args:
+            payload: New Job definition
+
+        Returns:
+            Requests Response object
         """
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
@@ -444,9 +512,12 @@ class RestClient(object):
     def patch_job(self, job_id, payload):
         """Performs a PATCH on the Job URL
 
-        :param job_id: ID of request
-        :param payload: New job definition
-        :return: Response to the request
+        Args:
+            job_id: Job ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.job_url + str(job_id), data=payload, headers=self.JSON_HEADERS
@@ -456,8 +527,11 @@ class RestClient(object):
     def delete_job(self, job_id):
         """Performs a DELETE on a Job URL
 
-        :param job_id: The ID of the job to remove
-        :return: Response to the request
+        Args:
+            job_id: Job ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.job_url + job_id)
 
@@ -466,11 +540,11 @@ class RestClient(object):
         """Performs a GET on the specific File URL
 
         Args:
-            file_id: ID of the file to get.
+            file_id: File ID
+            kwargs: Query parameters to be used in the GET request
 
         Returns:
-            Response to the request.
-
+            Requests Response object
         """
         return self.session.get(self.file_url + file_id, **kwargs)
 
@@ -486,10 +560,8 @@ class RestClient(object):
             file_dict: Dictionary of filename to files
 
         Returns:
-            Response to the request.
-
+            Requests Response object
         """
-
         # This is here in case we have not authenticated yet. Without this
         # code, it is possible for us to perform the POST, which will call
         # read on each of the files, that method fails with a 4XX, we then
@@ -503,8 +575,11 @@ class RestClient(object):
     def get_user(self, user_identifier):
         """Performs a GET on the specific User URL
 
-        :return: Response to the request
-        :param user_identifier: ID or username of User
+        Args:
+            user_identifier: User ID or username
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.user_url + user_identifier)
 
@@ -516,7 +591,7 @@ class RestClient(object):
             password: Beergarden password
 
         Returns:
-            Response object
+            Requests Response object
         """
         response = self.session.post(
             self.token_url,
@@ -545,7 +620,7 @@ class RestClient(object):
             refresh_token: Refresh token to use
 
         Returns:
-            Response object
+            Requests Response object
         """
         refresh_token = refresh_token or self.refresh_token
         response = self.session.get(

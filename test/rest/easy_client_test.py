@@ -3,26 +3,25 @@
 import warnings
 
 import pytest
-import requests.exceptions
 from mock import ANY, Mock
 
 import brewtils.rest.easy_client
 from brewtils.errors import (
-    FetchError,
-    ValidationError,
-    DeleteError,
-    RestConnectionError,
-    NotFoundError,
     ConflictError,
+    DeleteError,
+    FetchError,
+    NotFoundError,
+    RestConnectionError,
     RestError,
-    WaitExceededError,
     SaveError,
     TooLargeError,
+    ValidationError,
+    WaitExceededError,
 )
 from brewtils.rest.easy_client import (
+    EasyClient,
     get_easy_client,
     handle_response_failure,
-    EasyClient,
 )
 from brewtils.schema_parser import SchemaParser
 
@@ -85,23 +84,9 @@ class TestHandleResponseFailure(object):
             handle_response_failure(server_error)
 
 
-class TestConnect(object):
-    """Test the can_connect method
-
-    Actually test failure cases here as this method isn't decorated with @wrap_response
-    """
-
-    def test_success(self, client):
-        assert client.can_connect()
-
-    def test_fail(self, client, rest_client):
-        rest_client.get_config.side_effect = requests.exceptions.ConnectionError
-        assert not client.can_connect()
-
-    def test_error(self, client, rest_client):
-        rest_client.get_config.side_effect = requests.exceptions.SSLError
-        with pytest.raises(requests.exceptions.SSLError):
-            client.can_connect()
+def test_can_connect(client, rest_client, success):
+    rest_client.can_connect.return_value = True
+    assert client.can_connect() is True
 
 
 def test_get_version(client, rest_client, success):

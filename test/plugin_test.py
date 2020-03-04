@@ -5,21 +5,21 @@ import os
 import warnings
 
 import pytest
-from mock import MagicMock, Mock, ANY
+from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
 from brewtils import get_connection_info
 from brewtils.errors import (
-    ValidationError,
-    PluginValidationError,
     ConflictError,
     DiscardMessageException,
+    PluginValidationError,
     RequestProcessingError,
     RestConnectionError,
+    ValidationError,
 )
 from brewtils.log import default_config
-from brewtils.models import Instance, System, Command
+from brewtils.models import Command, Instance, System
 from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
@@ -310,16 +310,23 @@ class TestProperties(object):
         assert plugin.instance == bg_instance
 
 
-def test_startup(plugin, admin_processor, request_processor):
-    plugin._ez_client.update_system = Mock(return_value=plugin._system)
-    plugin._initialize_processors = Mock(
-        return_value=(admin_processor, request_processor)
-    )
+class TestStartup(object):
+    def test_success(self, plugin, admin_processor, request_processor):
+        plugin._ez_client.update_system = Mock(return_value=plugin._system)
+        plugin._initialize_processors = Mock(
+            return_value=(admin_processor, request_processor)
+        )
 
-    plugin._startup()
-    assert admin_processor.startup.called is True
-    assert request_processor.startup.called is True
-    assert plugin._config.working_directory is not None
+        plugin._startup()
+        assert admin_processor.startup.called is True
+        assert request_processor.startup.called is True
+        assert plugin._config.working_directory is not None
+
+    def test_connect_fail(self, plugin, admin_processor, request_processor):
+        plugin._ez_client.can_connect.return_value = False
+
+        with pytest.raises(RestConnectionError):
+            plugin._startup()
 
 
 class TestShutdown(object):

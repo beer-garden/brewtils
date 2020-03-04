@@ -232,30 +232,24 @@ class RestClient(object):
         return True
 
     @enable_auth
-    def get_version(self, **kwargs):
+    def get_version(self, **_):
         # type: (**Any) -> Response
         """Perform a GET to the version URL
 
-        Args:
-            kwargs: Query parameters to be used in the GET request
-
         Returns:
             Requests Response object
         """
-        return self.session.get(self.version_url, params=kwargs)
+        return self.session.get(self.version_url)
 
     @enable_auth
-    def get_config(self, **kwargs):
+    def get_config(self, **_):
         # type: (**Any) -> Response
         """Perform a GET to the config URL
 
-        Args:
-            kwargs: Passed to underlying Requests method
-
         Returns:
             Requests Response object
         """
-        return self.session.get(self.config_url, **kwargs)
+        return self.session.get(self.config_url)
 
     @enable_auth
     def get_logging_config(self, **kwargs):

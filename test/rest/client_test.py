@@ -113,7 +113,8 @@ class TestRestClient(object):
     @pytest.mark.parametrize(
         "method,params,verb,url",
         [
-            ("get_version", {"key": "value"}, "get", "version_url"),
+            ("get_version", {}, "get", "version_url"),
+            ("get_config", {}, "get", "config_url"),
             (
                 "get_logging_config",
                 {"system_name": "system_name"},
@@ -128,9 +129,13 @@ class TestRestClient(object):
         getattr(client, method)(**params)
 
         # Make sure the call is correct
-        getattr(session_mock, verb).assert_called_once_with(
-            getattr(client, url), params=params
-        )
+        session_method = getattr(session_mock, verb)
+        expected_url = getattr(client, url)
+
+        if params:
+            session_method.assert_called_once_with(expected_url, params=params)
+        else:
+            session_method.assert_called_once_with(expected_url)
 
     class TestConnect(object):
         def test_success(self, client, session_mock):

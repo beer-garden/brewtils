@@ -47,6 +47,7 @@ setup(
     extras_require={
         ':python_version=="2.7"': ["futures", "funcsigs"],
         ':python_version<"3.4"': ["enum34"],
+        ':python_version<"3.5"': ["typing"],
     },
     classifiers=[
         "Intended Audience :: Developers",

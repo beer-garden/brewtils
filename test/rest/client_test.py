@@ -4,11 +4,12 @@ import json
 import warnings
 
 import pytest
-from mock import Mock, MagicMock, ANY
+import requests.exceptions
+from mock import ANY, MagicMock, Mock
+from yapconf.exceptions import YapconfItemError
 
 import brewtils.rest
 from brewtils.rest.client import RestClient
-from yapconf.exceptions import YapconfItemError
 
 
 class TestRestClient(object):
@@ -130,6 +131,22 @@ class TestRestClient(object):
         getattr(session_mock, verb).assert_called_once_with(
             getattr(client, url), params=params
         )
+
+    class TestConnect(object):
+        def test_success(self, client, session_mock):
+            assert client.can_connect() is True
+            session_mock.get.assert_called_with(client.config_url)
+
+        def test_fail(self, client, session_mock):
+            session_mock.get.side_effect = requests.exceptions.ConnectionError
+            assert client.can_connect() is False
+            session_mock.get.assert_called_with(client.config_url)
+
+        def test_error(self, client, session_mock):
+            session_mock.get.side_effect = requests.exceptions.SSLError
+            with pytest.raises(requests.exceptions.SSLError):
+                client.can_connect()
+            session_mock.get.assert_called_with(client.config_url)
 
     def test_get_config(self, client, session_mock):
         client.get_config()

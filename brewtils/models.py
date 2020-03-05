@@ -562,6 +562,7 @@ class System(BaseModel):
         display_name=None,
         metadata=None,
         namespace=None,
+        local=None,
     ):
         self.name = name
         self.description = description
@@ -574,6 +575,7 @@ class System(BaseModel):
         self.display_name = display_name
         self.metadata = metadata or {}
         self.namespace = namespace
+        self.local = local
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

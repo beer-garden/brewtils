@@ -202,6 +202,7 @@ class SystemSchema(BaseSchema):
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     namespace = fields.Str(allow_none=True)
+    local = fields.Bool(allow_none=True)
 
 
 class RequestFileSchema(BaseSchema):

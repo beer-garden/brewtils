@@ -231,6 +231,7 @@ def system_dict(instance_dict, command_dict, system_id):
         "display_name": "non-offensive",
         "metadata": {"some": "stuff"},
         "namespace": "ns",
+        "local": True,
     }
 
 

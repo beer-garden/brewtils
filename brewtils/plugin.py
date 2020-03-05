@@ -458,7 +458,7 @@ class Plugin(object):
             target=self._client,
             updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=request_consumer,
-            validation_funcs=[self._validate_system, self._validate_running],
+            validation_funcs=[self._correct_system, self._is_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
             working_directory=self._config.working_directory,
@@ -484,7 +484,7 @@ class Plugin(object):
         except (RequestsConnectionError, RestConnectionError):
             pass
 
-    def _validate_system(self, request):
+    def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""
         request_system = getattr(request, "system") or ""
         if request_system.upper() != self._system.name.upper():
@@ -492,7 +492,7 @@ class Plugin(object):
                 "Received message for system {0}".format(request.system)
             )
 
-    def _validate_running(self, _):
+    def _is_running(self, _):
         """Validate that this plugin is still running"""
         if self._shutdown_event.is_set():
             raise RequestProcessingError(

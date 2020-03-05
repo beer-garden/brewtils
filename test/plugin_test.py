@@ -546,22 +546,22 @@ class TestAdminMethods(object):
 class TestValidationFunctions(object):
     class TestVerifySystem(object):
         def test_success(self, plugin, bg_request):
-            assert plugin._validate_system(bg_request) is None
+            assert plugin._correct_system(bg_request) is None
 
         def test_wrong_system(self, plugin, bg_request):
             plugin._system.name = "wrong"
 
             with pytest.raises(DiscardMessageException):
-                plugin._validate_system(bg_request)
+                plugin._correct_system(bg_request)
 
     class TestVerifyRunning(object):
         def test_success(self, plugin, bg_request):
-            assert plugin._validate_running(bg_request) is None
+            assert plugin._is_running(bg_request) is None
 
         def test_shutting_down(self, plugin):
             plugin._shutdown_event.set()
             with pytest.raises(RequestProcessingError):
-                plugin._validate_running(Mock())
+                plugin._is_running(Mock())
 
 
 class TestSetupSystem(object):

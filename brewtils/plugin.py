@@ -182,7 +182,7 @@ class Plugin(object):
         self._shutdown_event = threading.Event()
 
         # Need to set up logging before loading config
-        self._custom_logger = None
+        self._custom_logger = False
         self._logger = self._setup_logging(logger=logger, **kwargs)
 
         # Now that logging is configured we can load the real config
@@ -514,19 +514,16 @@ class Plugin(object):
         Returns:
             A logger for the Plugin
         """
-        self._custom_logger = True
-
-        if logger:
-            return logger
-
-        if len(logging.root.handlers) == 0:
-            self._custom_logger = False
-
+        if logger or len(logging.root.handlers) != 0:
+            self._custom_logger = True
+        else:
             # log_level is the only bootstrap config item
             boot_config = load_config(bootstrap=True, **kwargs)
             logging.config.dictConfig(default_config(level=boot_config.log_level))
 
-        return logging.getLogger(__name__)
+            self._custom_logger = False
+
+        return logger or logging.getLogger(__name__)
 
     def _setup_system(self, system, plugin_kwargs):
         helper_keywords = {

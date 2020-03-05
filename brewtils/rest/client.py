@@ -232,23 +232,35 @@ class RestClient(object):
         return True
 
     @enable_auth
-    def get_version(self, **_):
+    def get_version(self, **kwargs):
         # type: (**Any) -> Response
         """Perform a GET to the version URL
 
         Returns:
             Requests Response object
         """
+        if kwargs:
+            _deprecate(
+                "Keyword arguments for get_version are no longer used and will be "
+                "removed in a future release."
+            )
+
         return self.session.get(self.version_url)
 
     @enable_auth
-    def get_config(self, **_):
+    def get_config(self, **kwargs):
         # type: (**Any) -> Response
         """Perform a GET to the config URL
 
         Returns:
             Requests Response object
         """
+        if kwargs:
+            _deprecate(
+                "Keyword arguments for get_config are no longer used and will be "
+                "removed in a future release."
+            )
+
         return self.session.get(self.config_url)
 
     @enable_auth

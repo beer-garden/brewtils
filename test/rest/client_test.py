@@ -153,9 +153,31 @@ class TestRestClient(object):
                 client.can_connect()
             session_mock.get.assert_called_with(client.config_url)
 
+    def test_get_version(self, client, session_mock):
+        client.get_version()
+        session_mock.get.assert_called_with(client.version_url)
+
+    def test_get_version_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.get_version(timeout=5)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
+
     def test_get_config(self, client, session_mock):
         client.get_config()
         session_mock.get.assert_called_with(client.config_url)
+
+    def test_get_config_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.get_config(timeout=5)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_get_system_1(self, client, session_mock):
         client.get_system("id")

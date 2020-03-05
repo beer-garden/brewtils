@@ -590,6 +590,37 @@ class TestSetupLogging(object):
         assert dict_config.called is False
 
 
+class TestSetupNamespace(object):
+    def test_from_config(self, client):
+        expected_namespace = "foo"
+
+        plugin = Plugin(client, bg_host="localhost", namespace=expected_namespace)
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    def test_from_system(self, client, bg_system):
+        expected_namespace = "foo"
+        bg_system.namespace = expected_namespace
+
+        plugin = Plugin(client, bg_host="localhost", system=bg_system)
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    def test_unspecified(self, client, ez_client):
+        expected_namespace = "foo"
+        ez_client.get_config.return_value = {"garden_name": expected_namespace}
+
+        plugin = Plugin(client, bg_host="localhost")
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    @staticmethod
+    def _validate_namespace(plugin, expected_namespace):
+        assert plugin._system.namespace == expected_namespace
+        assert plugin._config.namespace == expected_namespace
+        assert brewtils.plugin.CONFIG.namespace == expected_namespace
+
+
 class TestSetupSystem(object):
     @pytest.mark.parametrize(
         "extra_args",

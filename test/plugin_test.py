@@ -287,27 +287,50 @@ class TestRun(object):
         assert len(caplog.records) == 0
 
 
-class TestProperties(object):
+class TestPropertyGetters(object):
     def test_client(self, plugin, client):
         assert plugin.client == client
-
-    def test_client_setter(self, client, bg_system):
-        """Create a Plugin with no client, set it once, but never change"""
-        # Don't use the plugin fixture as it already has a client
-        plug = Plugin(bg_host="localhost", system=bg_system)
-        assert plug.client is None
-
-        plug.client = client
-        assert plug.client == client
-
-        with pytest.raises(AttributeError):
-            plug.client = None
 
     def test_system(self, plugin, bg_system):
         assert plugin.system == bg_system
 
     def test_instance(self, plugin, bg_instance):
         assert plugin.instance == bg_instance
+
+
+class TestClientSetter(object):
+    def test_client_setter(self, client, bg_system):
+        """Create a Plugin with no client, set it once, but never change"""
+        # Don't use the plugin fixture as it already has a client
+        p = Plugin(bg_host="localhost", system=bg_system)
+        assert p.client is None
+
+        # Can set to None if already None
+        p.client = None
+        assert p.client is None
+
+        p.client = client
+        assert p.client == client
+
+        with pytest.raises(AttributeError):
+            p.client = None
+
+        # Should still be the same client
+        assert p.client == client
+
+    def test_system_attributes_from_client(self, client):
+        """Test that @system decorator and client docstring are used"""
+        client._bg_name = "name"
+        client._bg_version = "1.0.0"
+        client.__doc__ = "Description\nSome more stuff"
+
+        # Don't use plugin fixture as the _system name, version, doc are already set
+        p = Plugin(bg_host="localhost")
+
+        p.client = client
+        assert p._system.name == "name"
+        assert p._system.version == "1.0.0"
+        assert p._system.description == "Description"
 
 
 class TestStartup(object):
@@ -610,40 +633,6 @@ class TestSetupSystem(object):
         new_system = plugin._setup_system(None, {})
         self._validate_system(new_system)
 
-    def test_construct_from_client(self, plugin, client):
-        """Test that @system decorator and client docstring are used"""
-        client._bg_name = "name"
-        client._bg_version = "1.0.0"
-        client.__doc__ = "Description\nSome more stuff"
-
-        new_system = plugin._setup_system(None, {})
-        assert new_system.name == "name"
-        assert new_system.version == "1.0.0"
-        assert new_system.description == "Description"
-
-    def test_construct_from_client_matching(self, plugin, client, bg_system):
-        """Passing a System along with @system args is OK as long as they match"""
-        client._bg_name = "system"
-        client._bg_version = "1.0.0"
-
-        new_system = plugin._setup_system(bg_system, {})
-        assert new_system.name == "system"
-        assert new_system.version == "1.0.0"
-
-    @pytest.mark.parametrize("kwargs", [{"name": "foo"}, {"version": "foo"}])
-    def test_missing_params(self, plugin, kwargs):
-        plugin._config.update(kwargs)
-        with pytest.raises(ValidationError):
-            plugin._setup_system(None, kwargs)
-
-    @pytest.mark.parametrize(
-        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
-    )
-    def test_decorator_mismatch(self, plugin, client, bg_system, attr, value):
-        setattr(client, attr, value)
-        with pytest.raises(ValidationError, match="doesn't match"):
-            plugin._setup_system(bg_system, {})
-
     @staticmethod
     def _validate_system(new_system):
         assert new_system.name == "name"
@@ -652,6 +641,30 @@ class TestSetupSystem(object):
         assert new_system.icon_name == "icon"
         assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
+
+
+class TestValidateSystem(object):
+    @pytest.mark.parametrize("param", ["name", "version"])
+    def test_missing_params(self, plugin, param):
+        setattr(plugin._system, param, "")
+
+        with pytest.raises(ValidationError):
+            plugin._validate_system()
+
+    def test_decorator_match(self, plugin, client, bg_system):
+        """Passing a System along with @system args is OK as long as they match"""
+        client._bg_name = bg_system.name
+        client._bg_version = bg_system.version
+
+        plugin._validate_system()
+
+    @pytest.mark.parametrize(
+        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
+    )
+    def test_decorator_mismatch(self, plugin, client, bg_system, attr, value):
+        setattr(client, attr, value)
+        with pytest.raises(ValidationError, match="doesn't match"):
+            plugin._validate_system()
 
 
 class TestDeprecations(object):

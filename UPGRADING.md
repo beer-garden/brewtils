@@ -220,6 +220,9 @@ def main():
 #### Internal `_start` and `_stop` method return values
 The `_start` and `_stop` methods both previously returned a string literal that was not used. These methods now return `None`.
 
+#### Startup connection error
+The `Plugin.run()` method now raises a `brewtils.errors.RestConnectionError` if the initial connection to Beer-garden was unsuccessful. Previously a `requests.exceptions.ConnectionError` would be raised.
+
 
 ### `SystemClient`
 
@@ -257,6 +260,12 @@ The `EasyClient` had some API changes:
 Also, a new method `update_instance()` was added; `update_instance_status()` is now deprecated.
 
 Finally, `get_system()` and `get_request()` methods that raise a `NotFoundError` if the system or request isn't found were added. The existing `find_*` and `find_unique_*` methods are unchanged.
+
+
+### `RestClient`
+- Keyword arguments for `get_version()` are now unused and passing them will result in a `DeprecationWarning`. Previously they would be passed as query parameters, which is not useful as query parameters are ignored for that endpoint.
+- Keyword arguments for `get_config()` are now also unused and passing them will result in a `DeprecationWarning`. Previously they would be passed to the underlying `requests.session` call, which allowed for things like an alternate timeout value. This was inconsistent with all other `RestClient` methods and has been removed. However, this behavior *is* supported on the new `can_connect()` method, so if you'd like to specify an alternate timeout for checking connectivity that's possible with `can_connect()`. Also, specifying a value for the `client_timeout` parameter when creating the `RestClient` will enable timeouts across all `RestClient` methods, which is recommended.
+- `can_connect()` is a new method that can be used to check connectivity to the Beer-garden server. Previously this method was only available on the `EasyClient`.
 
 
 ### General Organization

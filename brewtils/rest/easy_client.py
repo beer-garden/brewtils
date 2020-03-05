@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import requests.exceptions
 import six
 import wrapt
 
@@ -175,14 +174,7 @@ class EasyClient(object):
                 an error with certificate verification.
 
         """
-        try:
-            self.client.get_config(**kwargs)
-        except requests.exceptions.ConnectionError as ex:
-            if type(ex) == requests.exceptions.ConnectionError:
-                return False
-            raise
-
-        return True
+        return self.client.can_connect(**kwargs)
 
     @wrap_response(default_exc=FetchError)
     def get_version(self, **kwargs):

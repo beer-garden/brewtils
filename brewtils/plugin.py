@@ -267,7 +267,19 @@ class Plugin(object):
         )
 
     def _startup(self):
+        """Plugin startup procedure
+
+        This method actually starts the plugin. When it completes the plugin should be
+        considered in a "running" state - listening to the appropriate message queues,
+        connected to the Beer-garden server, and ready to process Requests.
+
+        This method should be the first time that a connection to the Beer-garden
+        server is *required*.
+        """
         self._logger.debug("About to start up plugin %s", self.unique_name)
+
+        if not self._ez_client.can_connect():
+            raise RestConnectionError("Cannot connect to the Beer-garden server")
 
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
@@ -284,6 +296,12 @@ class Plugin(object):
         self._request_processor.startup()
 
     def _shutdown(self):
+        """Plugin shutdown procedure
+
+        This method gracefully stops the plugin. When it completes the plugin should be
+        considered in a "stopped" state - the message processors shut down and all
+        connections closed.
+        """
         self._logger.debug("About to shut down plugin %s", self.unique_name)
         self._shutdown_event.set()
 

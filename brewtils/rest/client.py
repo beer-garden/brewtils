@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import jwt
+import requests.exceptions
 import urllib3
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
@@ -203,31 +204,64 @@ class RestClient(object):
 
         return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
 
+    def can_connect(self, **kwargs):
+        # type: (**Any) -> bool
+        """Determine if a connection to the Beer-garden server is possible
+
+        Args:
+            kwargs: Keyword arguments to pass to Requests session call
+
+        Returns:
+            A bool indicating if the connection attempt was successful. Will
+            return False only if a ConnectionError is raised during the attempt.
+            Any other exception will be re-raised.
+
+        Raises:
+            requests.exceptions.RequestException:
+                The connection attempt resulted in an exception that indicates
+                something other than a basic connection error. For example,
+                an error with certificate verification.
+        """
+        try:
+            self.session.get(self.config_url, **kwargs)
+        except requests.exceptions.ConnectionError as ex:
+            if type(ex) == requests.exceptions.ConnectionError:
+                return False
+            raise
+
+        return True
+
     @enable_auth
     def get_version(self, **kwargs):
         # type: (**Any) -> Response
         """Perform a GET to the version URL
 
-        Args:
-            kwargs: Query parameters to be used in the GET request
-
         Returns:
             Requests Response object
         """
-        return self.session.get(self.version_url, params=kwargs)
+        if kwargs:
+            _deprecate(
+                "Keyword arguments for get_version are no longer used and will be "
+                "removed in a future release."
+            )
+
+        return self.session.get(self.version_url)
 
     @enable_auth
     def get_config(self, **kwargs):
         # type: (**Any) -> Response
         """Perform a GET to the config URL
 
-        Args:
-            kwargs: Passed to underlying Requests method
-
         Returns:
             Requests Response object
         """
-        return self.session.get(self.config_url, **kwargs)
+        if kwargs:
+            _deprecate(
+                "Keyword arguments for get_config are no longer used and will be "
+                "removed in a future release."
+            )
+
+        return self.session.get(self.config_url)
 
     @enable_auth
     def get_logging_config(self, **kwargs):

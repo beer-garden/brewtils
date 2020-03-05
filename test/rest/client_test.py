@@ -4,11 +4,12 @@ import json
 import warnings
 
 import pytest
-from mock import Mock, MagicMock, ANY
+import requests.exceptions
+from mock import ANY, MagicMock, Mock
+from yapconf.exceptions import YapconfItemError
 
 import brewtils.rest
 from brewtils.rest.client import RestClient
-from yapconf.exceptions import YapconfItemError
 
 
 class TestRestClient(object):
@@ -112,7 +113,8 @@ class TestRestClient(object):
     @pytest.mark.parametrize(
         "method,params,verb,url",
         [
-            ("get_version", {"key": "value"}, "get", "version_url"),
+            ("get_version", {}, "get", "version_url"),
+            ("get_config", {}, "get", "config_url"),
             (
                 "get_logging_config",
                 {"system_name": "system_name"},
@@ -127,13 +129,55 @@ class TestRestClient(object):
         getattr(client, method)(**params)
 
         # Make sure the call is correct
-        getattr(session_mock, verb).assert_called_once_with(
-            getattr(client, url), params=params
-        )
+        session_method = getattr(session_mock, verb)
+        expected_url = getattr(client, url)
+
+        if params:
+            session_method.assert_called_once_with(expected_url, params=params)
+        else:
+            session_method.assert_called_once_with(expected_url)
+
+    class TestConnect(object):
+        def test_success(self, client, session_mock):
+            assert client.can_connect() is True
+            session_mock.get.assert_called_with(client.config_url)
+
+        def test_fail(self, client, session_mock):
+            session_mock.get.side_effect = requests.exceptions.ConnectionError
+            assert client.can_connect() is False
+            session_mock.get.assert_called_with(client.config_url)
+
+        def test_error(self, client, session_mock):
+            session_mock.get.side_effect = requests.exceptions.SSLError
+            with pytest.raises(requests.exceptions.SSLError):
+                client.can_connect()
+            session_mock.get.assert_called_with(client.config_url)
+
+    def test_get_version(self, client, session_mock):
+        client.get_version()
+        session_mock.get.assert_called_with(client.version_url)
+
+    def test_get_version_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.get_version(timeout=5)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_get_config(self, client, session_mock):
         client.get_config()
         session_mock.get.assert_called_with(client.config_url)
+
+    def test_get_config_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.get_config(timeout=5)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_get_system_1(self, client, session_mock):
         client.get_system("id")

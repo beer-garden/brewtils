@@ -11,15 +11,15 @@ from requests import ConnectionError as RequestsConnectionError
 
 from brewtils.config import load_config
 from brewtils.errors import (
-    _deprecate,
     ConflictError,
-    PluginValidationError,
-    ValidationError,
     DiscardMessageException,
+    PluginValidationError,
     RequestProcessingError,
     RestConnectionError,
+    ValidationError,
+    _deprecate,
 )
-from brewtils.log import default_config, convert_logging_config
+from brewtils.log import convert_logging_config, default_config
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
     HTTPRequestUpdater,
@@ -181,23 +181,11 @@ class Plugin(object):
         self._client = client
         self._shutdown_event = threading.Event()
 
-        # First thing to do is set a basic logging config, if necessary. If a logger is
-        # specified or the root logger already has handlers then we assume that
-        # configuration is already done and we don't modify it.
-        self._custom_logger = True
-        if logger:
-            self._logger = logger
-        else:
-            if len(logging.root.handlers) == 0:
-                self._custom_logger = False
+        # Need to set up logging before loading config
+        self._custom_logger = False
+        self._logger = self._setup_logging(logger=logger, **kwargs)
 
-                # log_level is the only bootstrap config item
-                boot_config = load_config(bootstrap=True, **kwargs)
-                logging.config.dictConfig(default_config(level=boot_config.log_level))
-
-            self._logger = logging.getLogger(__name__)
-
-        # Now that some logging configuration is set we can load the real config
+        # Now that logging is configured we can load the real config
         self._config = load_config(**kwargs)
 
         # If global config has already been set that's a warning
@@ -498,6 +486,44 @@ class Plugin(object):
             raise RequestProcessingError(
                 "Unable to process message - currently shutting down"
             )
+
+    def _setup_logging(self, logger=None, **kwargs):
+        """Set up logging configuration and get a logger for the Plugin
+
+        This method will configure Python-wide logging for the process if it has not
+        already been configured. Whether or not logging has been configured is
+        determined by the root handler count - if there aren't any then it's assumed
+        logging has not already been configured.
+
+        The configuration applied (again, if no configuration has already happened) is
+        a stream handler with elevated log levels for libraries that are verbose. The
+        overall level will be loaded as a configuration option, so it can be set as a
+        keyword argument, command line option, or environment variable.
+
+        A logger to be used by the Plugin will be returned. If the ``logger`` keyword
+        parameter is given then that logger will be used, otherwise a logger will be
+        generated from the standard ``logging`` module.
+
+        Finally, if a the ``logger`` keyword parameter is supplied it's assumed that
+        logging is already configured and no further configuration will be applied.
+
+        Args:
+            logger: A custom logger
+            **kwargs: Will be used to load the bootstrap config
+
+        Returns:
+            A logger for the Plugin
+        """
+        if logger or len(logging.root.handlers) != 0:
+            self._custom_logger = True
+        else:
+            # log_level is the only bootstrap config item
+            boot_config = load_config(bootstrap=True, **kwargs)
+            logging.config.dictConfig(default_config(level=boot_config.log_level))
+
+            self._custom_logger = False
+
+        return logger or logging.getLogger(__name__)
 
     def _setup_system(self, system, plugin_kwargs):
         helper_keywords = {

@@ -113,41 +113,6 @@ class TestInit(object):
         assert plugin._config.ssl_enabled is True
         assert plugin._config.ca_verify is True
 
-    def test_default_logger(self, monkeypatch, client, ez_client):
-        """Test that the default logging configuration is used.
-
-        This needs to be tested separately because pytest (understandably) does some
-        logging configuration before starting tests. Since we only configure logging
-        if there's no prior configuration we have to fake it a little.
-
-        """
-        dict_config = Mock()
-        convert_logging = Mock()
-
-        monkeypatch.setattr(logging, "root", Mock(handlers=[]))
-        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
-        monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=ez_client))
-        monkeypatch.setattr(
-            brewtils.plugin,
-            "convert_logging_config",
-            Mock(return_value=convert_logging),
-        )
-
-        plugin = Plugin(
-            client, bg_host="localhost", name="test", version="1", log_level="WARNING"
-        )
-        assert logging.getLogger("brewtils.plugin") == plugin._logger
-
-        # TODO - Enable this once plugin logging is in a better state
-        # Config will happen twice - once with the bootstrap level default config and
-        # once as part of the call to _initialize_logging
-        # assert dict_config.call_count == 2
-        # dict_config.assert_has_calls(
-        #     [call(default_config(level="WARNING")), call(convert_logging)]
-        # )
-        assert dict_config.call_count == 1
-        dict_config.assert_called_once_with(default_config(level="WARNING"))
-
     def test_kwargs(self, client, bg_system):
         logger = Mock()
 
@@ -562,6 +527,48 @@ class TestValidationFunctions(object):
             plugin._shutdown_event.set()
             with pytest.raises(RequestProcessingError):
                 plugin._validate_running(Mock())
+
+
+class TestSetupLogging(object):
+    def test_custom_logger(self, plugin):
+        logger_mock = Mock()
+
+        assert plugin._setup_logging(logger=logger_mock) == logger_mock
+        assert plugin._custom_logger is True
+
+    def test_no_prior_config(self, monkeypatch, plugin):
+        """Test that the default logging configuration is used.
+
+        Pytest (understandably) does some logging configuration before starting tests.
+        Since we only configure logging if there's no prior configuration we have to
+        fake it a little.
+        """
+        dict_config = Mock()
+
+        monkeypatch.setattr(logging, "root", Mock(handlers=[]))
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+
+        logger = plugin._setup_logging(log_level="WARNING")
+
+        assert plugin._custom_logger is False
+        assert logger == logging.getLogger("brewtils.plugin")
+        assert dict_config.call_count == 1
+        dict_config.assert_called_once_with(default_config(level="WARNING"))
+
+    def test_prior_config(self, monkeypatch, plugin):
+        """Test that the logging config is not altered
+
+        Pytest does some logging configuration before starting tests. Use that to test
+        the case where logging has already been configured.
+        """
+        dict_config = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+
+        logger = plugin._setup_logging(log_level="WARNING")
+
+        assert plugin._custom_logger is True
+        assert logger == logging.getLogger("brewtils.plugin")
+        assert dict_config.called is False
 
 
 class TestSetupSystem(object):

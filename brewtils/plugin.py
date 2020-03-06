@@ -582,17 +582,12 @@ class Plugin(object):
         in Plugin.run() which will raise on failure (but again, SystemClients created
         before the namespace is determined will have potentially incorrect namespaces).
         """
-        if self._system.namespace:
-            self._config.namespace = self._system.namespace
-            CONFIG.namespace = self._system.namespace
-            return
-
         try:
-            default_namespace = self._ez_client.get_config()["garden_name"]
+            ns = self._system.namespace or self._ez_client.get_config()["garden_name"]
 
-            self._system.namespace = default_namespace
-            self._config.namespace = default_namespace
-            CONFIG.namespace = default_namespace
+            self._system.namespace = ns
+            self._config.namespace = ns
+            CONFIG.namespace = ns
         except Exception as ex:
             self._logger.warning(
                 "Namespace value was not resolved from config sources and an exception "

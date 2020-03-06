@@ -215,15 +215,25 @@ class TestCreateRequest(object):
         assert easy_client.create_request.call_args[0][0].parent == bg_request
 
     @pytest.mark.parametrize(
-        "kwargs",
+        "remove_kwarg",
         [
-            ({"_system_name": "", "_system_version": "", "_instance_name": ""}),
-            ({"_command": "", "_system_version": "", "_instance_name": ""}),
-            ({"_command": "", "_system_name": "", "_instance_name": ""}),
-            ({"_command": "", "_system_name": "", "_system_version": ""}),
+            "_command",
+            "_system_namespace",
+            "_system_name",
+            "_system_version",
+            "_instance_name",
         ],
     )
-    def test_missing_fields(self, client, kwargs):
+    def test_missing_field(self, client, remove_kwarg):
+        kwargs = {
+            "_command": "",
+            "_system_namespace": "",
+            "_system_name": "",
+            "_system_version": "",
+            "_instance_name": "",
+        }
+        del kwargs[remove_kwarg]
+
         with pytest.raises(ValidationError):
             client._construct_bg_request(**kwargs)
 

@@ -173,12 +173,10 @@ class Plugin(object):
     """
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
-        # These will be created on startup
+        self._client = None
         self._instance = None
         self._admin_processor = None
         self._request_processor = None
-
-        self._client = client
         self._shutdown_event = threading.Event()
 
         # Need to set up logging before loading config
@@ -201,6 +199,10 @@ class Plugin(object):
         # Now that the config is loaded we can set _system and _ez_client
         self._system = self._setup_system(system, kwargs)
         self._ez_client = EasyClient(logger=self._logger, **self._config)
+
+        # Make sure this is set after _system
+        if client:
+            self.client = client
 
         # And with _system and _ez_client we can ask for the real logging config
         # (unless _custom_logger is True, in which case this does nothing)
@@ -235,6 +237,21 @@ class Plugin(object):
     def client(self, new_client):
         if self._client:
             raise AttributeError("Sorry, you can't change a plugin's client once set")
+
+        if new_client is None:
+            return
+
+        # Several _system properties can come from the client, so update if needed
+        if not self._system.name:
+            self._system.name = getattr(new_client, "_bg_name")
+        if not self._system.version:
+            self._system.version = getattr(new_client, "_bg_version")
+        if not self._system.description and new_client.__doc__:
+            self._system.description = new_client.__doc__.split("\n")[0]
+
+        # And commands always do
+        self._system.commands = getattr(new_client, "_bg_commands", [])
+
         self._client = new_client
 
     @property
@@ -343,6 +360,9 @@ class Plugin(object):
             PluginValidationError: Unable to find or create a System for this Plugin
 
         """
+        # Make sure that the system is actually valid before trying anything
+        self._validate_system()
+
         existing_system = self._ez_client.find_unique_system(
             name=self._system.name,
             version=self._system.version,
@@ -446,7 +466,7 @@ class Plugin(object):
             target=self._client,
             updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=request_consumer,
-            validation_funcs=[self._validate_system, self._validate_running],
+            validation_funcs=[self._correct_system, self._is_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
             working_directory=self._config.working_directory,
@@ -472,7 +492,7 @@ class Plugin(object):
         except (RequestsConnectionError, RestConnectionError):
             pass
 
-    def _validate_system(self, request):
+    def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""
         request_system = getattr(request, "system") or ""
         if request_system.upper() != self._system.name.upper():
@@ -480,7 +500,7 @@ class Plugin(object):
                 "Received message for system {0}".format(request.system)
             )
 
-    def _validate_running(self, _):
+    def _is_running(self, _):
         """Validate that this plugin is still running"""
         if self._shutdown_event.is_set():
             raise RequestProcessingError(
@@ -555,48 +575,42 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = self._config.name or getattr(self._client, "_bg_name")
-            version = self._config.version or getattr(self._client, "_bg_version")
-
-            description = self._config.description
-            if not description and self._client.__doc__:
-                description = self._client.__doc__.split("\n")[0]
-
+            # Commands are not defined here - they're set in the client property setter
             system = System(
-                name=name,
-                description=description,
-                version=version,
+                name=self._config.name,
+                version=self._config.version,
+                description=self._config.description,
                 namespace=self._config.namespace,
                 metadata=json.loads(self._config.metadata),
-                commands=getattr(self._client, "_bg_commands", []),
                 instances=[Instance(name=self._config.instance_name)],
                 max_instances=self._config.max_instances,
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
             )
 
-        # Make sure the System definition makes sense
-        if not system.name:
+        return system
+
+    def _validate_system(self):
+        """Make sure the System definition makes sense"""
+        if not self._system.name:
             raise ValidationError("Plugin system must have a name")
 
-        if not system.version:
+        if not self._system.version:
             raise ValidationError("Plugin system must have a version")
 
         client_name = getattr(self._client, "_bg_name", None)
-        if client_name and client_name != system.name:
+        if client_name and client_name != self._system.name:
             raise ValidationError(
                 "System name '%s' doesn't match name from client decorator: "
-                "@system(bg_name=%s)" % (system.name, client_name)
+                "@system(bg_name=%s)" % (self._system.name, client_name)
             )
 
         client_version = getattr(self._client, "_bg_version", None)
-        if client_version and client_version != system.version:
+        if client_version and client_version != self._system.version:
             raise ValidationError(
                 "System version '%s' doesn't match version from client decorator: "
-                "@system(bg_version=%s)" % (system.version, client_version)
+                "@system(bg_version=%s)" % (self._system.version, client_version)
             )
-
-        return system
 
     # These are provided for backward-compatibility
     @property

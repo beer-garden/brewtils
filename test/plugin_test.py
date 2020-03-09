@@ -23,14 +23,18 @@ from brewtils.models import Command, Instance, System
 from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
-@pytest.fixture
-def ez_client(bg_system, bg_instance, bg_logging_config):
-    return Mock(
+@pytest.fixture(autouse=True)
+def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
+    _ez_client = Mock(
         name="ez_client",
         create_system=Mock(return_value=bg_system),
         initialize_instance=Mock(return_value=bg_instance),
         get_logging_config=Mock(return_value=bg_logging_config),
     )
+
+    monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=_ez_client))
+
+    return _ez_client
 
 
 @pytest.fixture
@@ -56,16 +60,8 @@ def request_processor():
 
 @pytest.fixture
 def plugin(
-    monkeypatch,
-    client,
-    ez_client,
-    bg_system,
-    bg_instance,
-    admin_processor,
-    request_processor,
+    client, ez_client, bg_system, bg_instance, admin_processor, request_processor
 ):
-    monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=ez_client))
-
     plugin = Plugin(client, bg_host="localhost", system=bg_system)
     plugin._instance = bg_instance
     plugin._admin_processor = admin_processor
@@ -299,7 +295,9 @@ class TestClientSetter(object):
 
 
 class TestStartup(object):
-    def test_success(self, plugin, admin_processor, request_processor):
+    def test_success(
+        self, plugin, admin_processor, request_processor, bg_system, bg_instance
+    ):
         plugin._ez_client.update_system = Mock(return_value=plugin._system)
         plugin._initialize_processors = Mock(
             return_value=(admin_processor, request_processor)
@@ -308,7 +306,11 @@ class TestStartup(object):
         plugin._startup()
         assert admin_processor.startup.called is True
         assert request_processor.startup.called is True
-        assert plugin._config.working_directory is not None
+
+        work_dir_base = os.path.join(
+            bg_system.namespace, bg_system.name, bg_instance.name, bg_system.version
+        )
+        assert work_dir_base in plugin._config.working_directory
 
     def test_connect_fail(self, plugin, admin_processor, request_processor):
         plugin._ez_client.can_connect.return_value = False
@@ -592,6 +594,37 @@ class TestSetupLogging(object):
         assert plugin._custom_logger is True
         assert logger == logging.getLogger("brewtils.plugin")
         assert dict_config.called is False
+
+
+class TestSetupNamespace(object):
+    def test_from_config(self, client):
+        expected_namespace = "foo"
+
+        plugin = Plugin(client, bg_host="localhost", namespace=expected_namespace)
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    def test_from_system(self, client, bg_system):
+        expected_namespace = "foo"
+        bg_system.namespace = expected_namespace
+
+        plugin = Plugin(client, bg_host="localhost", system=bg_system)
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    def test_unspecified(self, client, ez_client):
+        expected_namespace = "foo"
+        ez_client.get_config.return_value = {"garden_name": expected_namespace}
+
+        plugin = Plugin(client, bg_host="localhost")
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    @staticmethod
+    def _validate_namespace(plugin, expected_namespace):
+        assert plugin._system.namespace == expected_namespace
+        assert plugin._config.namespace == expected_namespace
+        assert brewtils.plugin.CONFIG.namespace == expected_namespace
 
 
 class TestSetupSystem(object):

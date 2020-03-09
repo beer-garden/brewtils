@@ -63,13 +63,18 @@ def mock_error():
     return Mock(status="ERROR", output="error_output")
 
 
-@pytest.fixture
-def easy_client(system_1):
+@pytest.fixture(autouse=True)
+def easy_client(monkeypatch, system_1):
     mock = Mock(name="easy_client")
     mock.find_unique_system.return_value = system_1
     mock.find_systems.return_value = [system_1]
     mock.client.bg_host = "localhost"
     mock.client.bg_port = 3000
+
+    monkeypatch.setattr(
+        brewtils.rest.system_client, "EasyClient", Mock(return_value=mock)
+    )
+
     return mock
 
 
@@ -83,13 +88,6 @@ def sleep_patch(monkeypatch):
     mock = Mock(name="sleep mock")
     monkeypatch.setattr(brewtils.rest.system_client.time, "sleep", mock)
     return mock
-
-
-@pytest.fixture(autouse=True)
-def easy_client_patch(monkeypatch, easy_client):
-    monkeypatch.setattr(
-        brewtils.rest.system_client, "EasyClient", Mock(return_value=easy_client)
-    )
 
 
 class TestLoadBgSystem(object):
@@ -116,7 +114,6 @@ class TestLoadBgSystem(object):
             ("1.0.0", lazy_fixture("system_1")),
             ("latest", lazy_fixture("system_1")),
             (None, lazy_fixture("system_1")),
-            pytest.param("1.0.0", None, marks=pytest.mark.xfail(raises=FetchError)),
         ],
     )
     def test_normal(self, client, easy_client, system_1, constraint, systems):
@@ -127,7 +124,13 @@ class TestLoadBgSystem(object):
         assert client._loaded is True
         assert client._system == system_1
 
-    def test_no_constraint_failure(self, client, easy_client):
+    def test_failure_with_constraint(self, client, easy_client):
+        client._version_constraint = "1.0.0"
+        easy_client.find_unique_system.return_value = None
+        with pytest.raises(FetchError):
+            client.load_bg_system()
+
+    def test_failure_no_constraint(self, client, easy_client):
         easy_client.find_systems.return_value = []
         with pytest.raises(FetchError):
             client.load_bg_system()
@@ -215,15 +218,25 @@ class TestCreateRequest(object):
         assert easy_client.create_request.call_args[0][0].parent == bg_request
 
     @pytest.mark.parametrize(
-        "kwargs",
+        "remove_kwarg",
         [
-            ({"_system_name": "", "_system_version": "", "_instance_name": ""}),
-            ({"_command": "", "_system_version": "", "_instance_name": ""}),
-            ({"_command": "", "_system_name": "", "_instance_name": ""}),
-            ({"_command": "", "_system_name": "", "_system_version": ""}),
+            "_command",
+            "_system_namespace",
+            "_system_name",
+            "_system_version",
+            "_instance_name",
         ],
     )
-    def test_missing_fields(self, client, kwargs):
+    def test_missing_field(self, client, remove_kwarg):
+        kwargs = {
+            "_command": "",
+            "_system_namespace": "",
+            "_system_name": "",
+            "_system_version": "",
+            "_instance_name": "",
+        }
+        del kwargs[remove_kwarg]
+
         with pytest.raises(ValidationError):
             client._construct_bg_request(**kwargs)
 

@@ -196,9 +196,14 @@ class Plugin(object):
             )
         CONFIG = Box(self._config.to_dict(), default_box=True)
 
-        # Now that the config is loaded we can set _system and _ez_client
-        self._system = self._setup_system(system, kwargs)
+        # Now that the config is loaded we can create the EasyClient
         self._ez_client = EasyClient(logger=self._logger, **self._config)
+
+        # Now set up the system
+        self._system = self._setup_system(system, kwargs)
+
+        # Namespace setup depends on self._system and self._ez_client
+        self._setup_namespace()
 
         # Make sure this is set after _system
         if client:
@@ -286,13 +291,19 @@ class Plugin(object):
         if not self._ez_client.can_connect():
             raise RestConnectionError("Cannot connect to the Beer-garden server")
 
+        # If namespace couldn't be determined at init try one more time
+        if not self._config.namespace:
+            self._setup_namespace()
+
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
         self._admin_processor, self._request_processor = self._initialize_processors()
 
         if self._config.working_directory is None:
             self._config.working_directory = appdirs.user_data_dir(
-                os.path.join(self._system.name, self._instance.name),
+                appname=os.path.join(
+                    self._system.namespace, self._system.name, self._instance.name
+                ),
                 version=self._system.version,
             )
 
@@ -371,8 +382,7 @@ class Plugin(object):
 
         if not existing_system:
             try:
-                # If this succeeds the system will already have the correct metadata
-                # and such, so can just finish here
+                # If this succeeds can just finish here
                 return self._ez_client.create_system(self._system)
             except ConflictError:
                 # If multiple instances are starting up at once and this is a new system
@@ -544,6 +554,49 @@ class Plugin(object):
             self._custom_logger = False
 
         return logger or logging.getLogger(__name__)
+
+    def _setup_namespace(self):
+        """Determine the namespace the Plugin is operating in
+
+        This function attempts to determine the correct namespace and ensures that
+        the value is set in the places it needs to be set.
+
+        First, look in the resolved system (self._system) to see if that has a
+        namespace. If it does, either:
+
+        - A complete system definition with a namespace was provided
+        - The namespace was resolved from the config
+
+        In the latter case nothing further needs to be done. In the former case we
+        need to set the global config namespace value to the system's namespace value
+        so that any SystemClients created after the plugin will have the correct value.
+        Because we have no way to know which case is correct we assume the former and
+        always set the config value.
+
+        If the system does not have a namespace then we attempt to use the EasyClient to
+        determine the "default" namespace. If successful we set both the global config
+        and the system namespaces to the default value.
+
+        If the attempt to determine the default namespace is not successful we log a
+        warning. We don't really want to *require* the connection to Beer-garden until
+        Plugin.run() is called. Raising an exception here would do that, so instead we
+        just log the warning. Another attempt will be made to determine the namespace
+        in Plugin.run() which will raise on failure (but again, SystemClients created
+        before the namespace is determined will have potentially incorrect namespaces).
+        """
+        try:
+            ns = self._system.namespace or self._ez_client.get_config()["garden_name"]
+
+            self._system.namespace = ns
+            self._config.namespace = ns
+            CONFIG.namespace = ns
+        except Exception as ex:
+            self._logger.warning(
+                "Namespace value was not resolved from config sources and an exception "
+                "was raised while attempting to determine default namespace value. "
+                "Created SystemClients may have unexpected namespace values. "
+                "Underlying exception was:\n%s" % ex
+            )
 
     def _setup_system(self, system, plugin_kwargs):
         helper_keywords = {

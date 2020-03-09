@@ -10,12 +10,12 @@ from packaging.version import parse
 import brewtils.plugin
 from brewtils.errors import (
     FetchError,
-    TimeoutExceededError,
     RequestFailedError,
+    TimeoutExceededError,
     ValidationError,
 )
 from brewtils.models import Request
-from brewtils.resolvers import build_resolver_map, UploadResolver
+from brewtils.resolvers import UploadResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -28,6 +28,7 @@ class SystemClient(object):
 
             client = SystemClient(
                 system_name='example_system',
+                system_namespace='default',
                 bg_host="host",
                 bg_port=2337,
             )
@@ -83,6 +84,7 @@ class SystemClient(object):
             # Create a SystemClient with blocking=False
             client = SystemClient(
                 system_name='example_system',
+                system_namespace='default',
                 bg_host="localhost",
                 bg_port=2337,
                 blocking=False,
@@ -132,7 +134,12 @@ class SystemClient(object):
 
         Request that raises::
 
-            client = SystemClient(system_name="foo", bg_host="localhost", bg_port=2337)
+            client = SystemClient(
+                system_name="foo",
+                system_namespace='default',
+                bg_host="localhost",
+                bg_port=2337,
+            )
 
             try:
                 client.command_that_errors(_raise_on_error=True)
@@ -141,6 +148,7 @@ class SystemClient(object):
 
     Args:
         system_name (str): Name of the System to make Requests on
+        system_namespace (str): Namespace of the System to make Requests on
         version_constraint (str): System version to make Requests on. Can be specific
             ('1.0.0') or 'latest'.
         default_instance (str): Name of the Instance to make Requests on
@@ -178,6 +186,10 @@ class SystemClient(object):
     def __init__(self, **kwargs):
         self._logger = logging.getLogger(__name__)
 
+        self._loaded = False
+        self._system = None
+        self._commands = None
+
         self._system_name = kwargs.get("system_name")
         self._version_constraint = kwargs.get("version_constraint", "latest")
         self._default_instance = kwargs.get("default_instance", "default")
@@ -186,6 +198,9 @@ class SystemClient(object):
         self._max_delay = kwargs.get("max_delay", 30)
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
+        self._system_namespace = kwargs.get(
+            "system_namespace", brewtils.plugin.CONFIG.namespace
+        )
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
         # in that version. This logic is what was added in Python 3.5
@@ -194,10 +209,6 @@ class SystemClient(object):
 
         self._easy_client = EasyClient(**kwargs)
         self._resolvers = build_resolver_map(self._easy_client)
-
-        self._loaded = False
-        self._system = None
-        self._commands = None
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""
@@ -245,6 +256,7 @@ class SystemClient(object):
                 self.send_bg_request,
                 _command=command_name,
                 _system_name=self._system.name,
+                _system_namespace=self._system.namespace,
                 _system_version=self._system.version,
                 _system_display=self._system.display_name,
                 _output_type=self._commands[command_name].output_type,
@@ -253,8 +265,7 @@ class SystemClient(object):
             )
         else:
             raise AttributeError(
-                "System '%s' version '%s' has no command named '%s'"
-                % (self._system.name, self._system.version, command_name)
+                "System '%s' has no command named '%s'" % (self._system, command_name)
             )
 
     def send_bg_request(self, **kwargs):
@@ -329,17 +340,22 @@ class SystemClient(object):
 
         if self._version_constraint == "latest":
             self._system = self._determine_latest(
-                self._easy_client.find_systems(name=self._system_name)
+                self._easy_client.find_systems(
+                    name=self._system_name, namespace=self._system_namespace
+                )
             )
         else:
             self._system = self._easy_client.find_unique_system(
-                name=self._system_name, version=self._version_constraint
+                name=self._system_name,
+                version=self._version_constraint,
+                namespace=self._system_namespace,
             )
 
         if self._system is None:
             raise FetchError(
-                "Beer-garden has no system named '%s' with a version matching '%s'"
-                % (self._system_name, self._version_constraint)
+                "Beer-garden has no system named '%s' with a version matching '%s' in "
+                "namespace '%s'"
+                % (self._system_name, self._version_constraint, self._system_namespace)
             )
 
         self._commands = {command.name: command for command in self._system.commands}
@@ -395,6 +411,7 @@ class SystemClient(object):
         system_name = kwargs.pop("_system_name", None)
         system_version = kwargs.pop("_system_version", None)
         system_display = kwargs.pop("_system_display", None)
+        system_namespace = kwargs.pop("_system_namespace", None)
         instance_name = kwargs.pop("_instance_name", None)
         comment = kwargs.pop("_comment", None)
         output_type = kwargs.pop("_output_type", None)
@@ -406,6 +423,8 @@ class SystemClient(object):
 
         if command is None:
             raise ValidationError("Unable to send a request with no command")
+        if system_namespace is None:
+            raise ValidationError("Unable to send a request with no system namespace")
         if system_name is None:
             raise ValidationError("Unable to send a request with no system name")
         if system_version is None:
@@ -417,6 +436,7 @@ class SystemClient(object):
             command=command,
             system=system_name,
             system_version=system_version,
+            namespace=system_namespace,
             instance_name=instance_name,
             comment=comment,
             output_type=output_type,
@@ -424,9 +444,11 @@ class SystemClient(object):
             metadata=metadata,
             parameters=kwargs,
         )
+
         bytes_params = self._commands[command].parameter_keys_by_type("Bytes")
         resolver = UploadResolver(request, bytes_params, self._resolvers)
         request.parameters = resolver.resolve_parameters()
+
         return request
 
     @staticmethod

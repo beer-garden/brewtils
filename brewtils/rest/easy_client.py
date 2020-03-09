@@ -189,6 +189,16 @@ class EasyClient(object):
         """
         return self.client.get_version(**kwargs)
 
+    @wrap_response(default_exc=FetchError)
+    def get_config(self):
+        """Get configuration
+
+        Returns:
+            dict: Configuration dictionary
+
+        """
+        return self.client.get_config()
+
     @wrap_response(parse_method="parse_logging_config", default_exc=FetchError)
     def get_logging_config(self, system_name):
         """Get logging configuration for a System

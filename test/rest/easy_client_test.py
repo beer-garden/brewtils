@@ -94,6 +94,11 @@ def test_get_version(client, rest_client, success):
     assert client.get_version() == success.json()
 
 
+def test_get_config(client, rest_client, success):
+    rest_client.get_config.return_value = success
+    assert client.get_config() == success.json()
+
+
 def test_get_logging_config(client, rest_client, parser, success):
     rest_client.get_logging_config.return_value = success
 

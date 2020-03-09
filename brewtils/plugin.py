@@ -592,8 +592,8 @@ class Plugin(object):
             self._logger.warning(
                 "Namespace value was not resolved from config sources and an exception "
                 "was raised while attempting to determine default namespace value. "
-                "Created [System|Easy|Rest]Clients may have unexpected namespace "
-                "values. Underlying exception was:\n%s" % ex
+                "Created SystemClients may have unexpected namespace values. "
+                "Underlying exception was:\n%s" % ex
             )
 
     def _setup_system(self, system, plugin_kwargs):

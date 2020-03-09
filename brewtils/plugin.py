@@ -301,7 +301,9 @@ class Plugin(object):
 
         if self._config.working_directory is None:
             self._config.working_directory = appdirs.user_data_dir(
-                os.path.join(self._system.name, self._instance.name),
+                appname=os.path.join(
+                    self._system.namespace, self._system.name, self._instance.name
+                ),
                 version=self._system.version,
             )
 

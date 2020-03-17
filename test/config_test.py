@@ -41,7 +41,9 @@ class TestGetConnectionInfo(object):
         self.safe_copy = os.environ.copy()
 
     def teardown_method(self):
-        os.environ = self.safe_copy
+        os.environ.clear()
+        for prop in self.safe_copy:
+            os.environ[prop] = self.safe_copy[prop]
 
     def test_kwargs(self, params):
         assert params == get_connection_info(**params)

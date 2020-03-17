@@ -10,7 +10,7 @@ pytest_plugins = ["brewtils.test.fixtures"]
 
 
 def pytest_configure():
-    setattr(brewtils.test, "_running_tests", True)
+    brewtils.test._running_tests = True
 
 
 def pytest_unconfigure():

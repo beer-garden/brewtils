@@ -506,6 +506,7 @@ class TestCommand(object):
         assert cmd._command.name == "_cmd"
         assert cmd._command.command_type == "INFO"
         assert cmd._command.description == "desc2"
+        assert cmd._command.hidden == False
         assert cmd._command.output_type == "JSON"
 
     def test_generate_command_python2(self, func_mock):

@@ -163,6 +163,7 @@ def command_dict(parameter_dict, system_id):
         "parameters": [parameter_dict],
         "command_type": "ACTION",
         "output_type": "STRING",
+        "hidden": False,
         "schema": {},
         "form": {},
         "template": "<html></html>",

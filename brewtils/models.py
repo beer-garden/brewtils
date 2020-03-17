@@ -41,6 +41,7 @@ class Events(Enum):
     REQUEST_STARTED = 6
     REQUEST_UPDATED = 22
     REQUEST_COMPLETED = 7
+    REQUEST_CANCELED = 29
     INSTANCE_INITIALIZED = 8
     INSTANCE_STARTED = 9
     INSTANCE_UPDATED = 23
@@ -66,6 +67,7 @@ class Events(Enum):
     INSTANCE_STOP_REQUESTED = 101
     INSTANCE_START_REQUESTED = 102
     SYSTEM_RESCAN_REQUESTED = 103
+    SYSTEM_RELOAD_REQUESTED = 104
 
 
 class BaseModel(object):
@@ -562,6 +564,7 @@ class System(BaseModel):
         display_name=None,
         metadata=None,
         namespace=None,
+        local=None,
     ):
         self.name = name
         self.description = description
@@ -574,6 +577,7 @@ class System(BaseModel):
         self.display_name = display_name
         self.metadata = metadata or {}
         self.namespace = namespace
+        self.local = local
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

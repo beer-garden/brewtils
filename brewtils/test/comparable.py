@@ -185,7 +185,6 @@ assert_trigger_equal = partial(
     _assert_wrapper, expected_type=(CronTrigger, DateTrigger, IntervalTrigger)
 )
 assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
-assert_garden_equal = partial(_assert_wrapper, expected_type=Garden)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
@@ -347,5 +346,15 @@ def assert_operation_equal(obj1, obj2, do_raise=False):
         obj2,
         expected_type=Operation,
         deep_fields={"model": partial(model_compare, do_raise=True)},
+        do_raise=do_raise,
+    )
+
+
+def assert_garden_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Garden,
+        deep_fields={"systems": partial(assert_system_equal, do_raise=True)},
         do_raise=do_raise,
     )

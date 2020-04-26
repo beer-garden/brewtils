@@ -689,7 +689,7 @@ def bg_request_file(request_file_dict):
 
 
 @pytest.fixture
-def garden_dict(ts_epoch, bg_system):
+def garden_dict(ts_epoch, system_dict):
     """A garden as a dictionary."""
 
     return {
@@ -697,17 +697,18 @@ def garden_dict(ts_epoch, bg_system):
         "name": "garden",
         "status": "RUNNING",
         "status_info": {},
-        "namespaces": [bg_system.namespace],
-        "systems": [str(bg_system)],
+        "namespaces": [system_dict["namespace"]],
+        "systems": [system_dict],
         "connection_type": "http",
         "connection_params": {},
     }
 
 
 @pytest.fixture
-def bg_garden(garden_dict):
+def bg_garden(garden_dict, bg_system):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
+    dict_copy["systems"] = [bg_system]
     return Garden(**dict_copy)
 
 

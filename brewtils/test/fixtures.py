@@ -181,6 +181,23 @@ def bg_command(command_dict, bg_parameter, system_id):
 
 
 @pytest.fixture
+def command_dict_2(command_dict):
+    """A second command represented as a dictionary."""
+    dict_copy = copy.deepcopy(command_dict)
+    dict_copy["name"] = "speak2"
+    return dict_copy
+
+
+@pytest.fixture
+def bg_command_2(command_dict_2, bg_parameter, system_id):
+    """Use the bg_command fixture instead."""
+    dict_copy = copy.deepcopy(command_dict_2)
+    dict_copy["parameters"] = [bg_parameter]
+    dict_copy["system"] = System(id=system_id)
+    return Command(**dict_copy)
+
+
+@pytest.fixture
 def instance_dict(ts_epoch):
     """An instance represented as a dictionary."""
     return {
@@ -217,7 +234,7 @@ def bg_instance(instance_dict, ts_dt):
 
 
 @pytest.fixture
-def system_dict(instance_dict, command_dict, system_id):
+def system_dict(instance_dict, command_dict, command_dict_2, system_id):
     """A system represented as a dictionary."""
     return {
         "name": "system",
@@ -226,7 +243,7 @@ def system_dict(instance_dict, command_dict, system_id):
         "id": system_id,
         "max_instances": 1,
         "instances": [instance_dict],
-        "commands": [command_dict],
+        "commands": [command_dict, command_dict_2],
         "icon_name": "fa-beer",
         "display_name": "non-offensive",
         "metadata": {"some": "stuff"},
@@ -236,11 +253,11 @@ def system_dict(instance_dict, command_dict, system_id):
 
 
 @pytest.fixture
-def bg_system(system_dict, bg_instance, bg_command):
+def bg_system(system_dict, bg_instance, bg_command, bg_command_2):
     """A system as a model."""
     dict_copy = copy.deepcopy(system_dict)
     dict_copy["instances"] = [bg_instance]
-    dict_copy["commands"] = [bg_command]
+    dict_copy["commands"] = [bg_command, bg_command_2]
     return System(**dict_copy)
 
 

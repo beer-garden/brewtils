@@ -119,8 +119,9 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
             nested2 = getattr(obj2, key)
 
             if isinstance(nested1, list) and isinstance(nested2, list):
-                l1 = sorted(getattr(obj1, key))
-                l2 = sorted(getattr(obj2, key))
+                l1 = sorted(getattr(obj1, key), key=lambda x: str(x))
+                l2 = sorted(getattr(obj2, key), key=lambda x: str(x))
+
                 _assert(
                     len(l1) == len(l2), "Length of list field %s was different" % key
                 )

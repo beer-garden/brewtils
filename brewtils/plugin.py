@@ -433,6 +433,9 @@ class Plugin(object):
         # If the queue connection is TLS we need to update connection params with
         # values specified at plugin creation
         connection_info = self._instance.queue_info["connection"]
+        # Apply host config
+        connection_info["host"] = self._config.bg_host
+        # Apply ssl config
         if "ssl" in connection_info:
             connection_info["ssl"].update(
                 {

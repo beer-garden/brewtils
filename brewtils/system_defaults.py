@@ -2,6 +2,9 @@ from brewtils import command, parameter
 
 
 class Commands(object):
+    """Any annotated commands located in this class will be added to the default
+    commands for plugins being created."""
+
     @parameter(
         key="line_start",
         type="Integer",

@@ -36,7 +36,6 @@ __all__ = [
     "register",
 ]
 
-
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,
 # instead just using the original function. This is pretty much exactly what we want - we
 # aren't using decorators for their 'real' purpose of wrapping a function, we just want to add
@@ -45,7 +44,7 @@ __all__ = [
 _wrap_functions = False
 
 
-def system(cls=None, bg_name=None, bg_version=None):
+def system(cls=None, bg_name=None, bg_version=None, include_defaults=True):
     """Class decorator that marks a class as a beer-garden System
 
     Creates some properties on the class:
@@ -58,6 +57,7 @@ def system(cls=None, bg_name=None, bg_version=None):
         cls: The class to decorated
         bg_name: Optional plugin name
         bg_version: Optional plugin version
+        include_defaults: Optional to include default commands
 
     Returns:
         The decorated class
@@ -67,6 +67,17 @@ def system(cls=None, bg_name=None, bg_version=None):
         return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
 
     import brewtils.plugin
+
+    if include_defaults:
+        import brewtils.system_defaults as system_defaults
+
+        default_commands = system_defaults.Commands()
+
+        for method_name in dir(default_commands):
+            method = getattr(default_commands, method_name)
+            method_command = getattr(method, "_command", None)
+            if method_command:
+                setattr(cls, method_name, method)
 
     commands = []
     for method_name in dir(cls):

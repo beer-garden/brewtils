@@ -64,7 +64,12 @@ def system(cls=None, bg_name=None, bg_version=None, include_defaults=True):
 
     """
     if cls is None:
-        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
+        return functools.partial(
+            system,
+            bg_name=bg_name,
+            bg_version=bg_version,
+            include_defaults=include_defaults,
+        )
 
     import brewtils.plugin
 

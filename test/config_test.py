@@ -37,7 +37,6 @@ def params():
 
 
 class TestGetConnectionInfo(object):
-
     def test_kwargs(self, params):
         assert params == get_connection_info(**params)
 

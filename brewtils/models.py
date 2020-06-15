@@ -93,6 +93,7 @@ class Command(BaseModel):
         template=None,
         icon_name=None,
         system=None,
+        hidden=False,
     ):
         self.name = name
         self.description = description
@@ -105,6 +106,7 @@ class Command(BaseModel):
         self.template = template
         self.icon_name = icon_name
         self.system = system
+        self.hidden = hidden
 
     def __str__(self):
         return self.name

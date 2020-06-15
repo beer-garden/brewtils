@@ -89,6 +89,7 @@ def command(
     _wrapped=None,
     command_type="ACTION",
     output_type="STRING",
+    hidden=False,
     schema=None,
     form=None,
     template=None,
@@ -114,6 +115,7 @@ def command(
         form: A custom form definition.
         template: A custom template definition.
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
+        hidden: Status whether command is visible on the user interface.
         description: The command description. Will override the function's docstring.
 
     Returns:
@@ -126,6 +128,7 @@ def command(
             output_type=output_type,
             schema=schema,
             form=form,
+            hidden=hidden,
             template=template,
             icon_name=icon_name,
             description=description,
@@ -134,6 +137,7 @@ def command(
     generated_command = _generate_command_from_function(_wrapped)
     generated_command.command_type = command_type
     generated_command.output_type = output_type
+    generated_command.hidden = hidden
     generated_command.icon_name = icon_name
 
     if description:
@@ -385,6 +389,7 @@ def _update_func_command(func_command, generated_command):
     func_command.description = generated_command.description
     func_command.command_type = generated_command.command_type
     func_command.output_type = generated_command.output_type
+    func_command.hidden = generated_command.hidden
     func_command.schema = generated_command.schema
     func_command.form = generated_command.form
     func_command.template = generated_command.template

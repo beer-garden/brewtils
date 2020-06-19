@@ -94,6 +94,8 @@ class Command(BaseModel):
         icon_name=None,
         system=None,
         hidden=False,
+        output_types=None,
+        output_labels=None,
     ):
         self.name = name
         self.description = description
@@ -107,6 +109,8 @@ class Command(BaseModel):
         self.icon_name = icon_name
         self.system = system
         self.hidden = hidden
+        self.output_types = output_types
+        self.output_labels = output_labels
 
     def __str__(self):
         return self.name
@@ -405,6 +409,8 @@ class RequestTemplate(BaseModel):
         "comment",
         "metadata",
         "output_type",
+        "output_types",
+        "output_labels"
     ]
 
     def __init__(
@@ -419,6 +425,8 @@ class RequestTemplate(BaseModel):
         comment=None,
         metadata=None,
         output_type=None,
+        output_types=None,
+        output_labels=None,
     ):
         self.system = system
         self.system_version = system_version
@@ -430,6 +438,8 @@ class RequestTemplate(BaseModel):
         self.comment = comment
         self.metadata = metadata or {}
         self.output_type = output_type
+        self.output_types = output_types
+        self.output_labels = output_labels
 
     def __str__(self):
         return self.command
@@ -454,7 +464,7 @@ class Request(RequestTemplate):
     STATUS_LIST = ("CREATED", "RECEIVED", "IN_PROGRESS", "CANCELED", "SUCCESS", "ERROR")
     COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR")
     COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL")
-    OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML")
+    OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "TUPLE")
 
     def __init__(
         self,
@@ -470,6 +480,8 @@ class Request(RequestTemplate):
         comment=None,
         output=None,
         output_type=None,
+        output_types=None,
+        output_labels=None,
         status=None,
         command_type=None,
         created_at=None,
@@ -490,6 +502,8 @@ class Request(RequestTemplate):
             comment=comment,
             metadata=metadata,
             output_type=output_type,
+            output_types=output_types,
+            output_labels=output_labels,
         )
         self.id = id
         self.parent = parent

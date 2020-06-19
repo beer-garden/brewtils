@@ -178,7 +178,6 @@ class TestParameter(object):
 
     def test_is_kwarg_missing(self, param_definition):
         with pytest.raises(PluginParamError) as ex:
-
             @parameter(is_kwarg=True, **param_definition)
             def cmd(_):
                 return None
@@ -266,71 +265,71 @@ class TestParameter(object):
         "choices,expected",
         [
             (
-                ["1", "2", "3"],
-                {
-                    "type": "static",
-                    "value": ["1", "2", "3"],
-                    "display": "select",
-                    "strict": True,
-                },
+                    ["1", "2", "3"],
+                    {
+                        "type": "static",
+                        "value": ["1", "2", "3"],
+                        "display": "select",
+                        "strict": True,
+                    },
             ),
             (
-                list(range(100)),
-                {
-                    "type": "static",
-                    "value": list(range(100)),
-                    "display": "typeahead",
-                    "strict": True,
-                },
+                    list(range(100)),
+                    {
+                        "type": "static",
+                        "value": list(range(100)),
+                        "display": "typeahead",
+                        "strict": True,
+                    },
             ),
             (
-                {"value": [1, 2, 3]},
-                {
-                    "type": "static",
-                    "value": [1, 2, 3],
-                    "display": "select",
-                    "strict": True,
-                },
+                    {"value": [1, 2, 3]},
+                    {
+                        "type": "static",
+                        "value": [1, 2, 3],
+                        "display": "select",
+                        "strict": True,
+                    },
             ),
             (
-                {"value": {"a": [1, 2], "b": [3, 4]}, "key_reference": "${y}"},
-                {
-                    "type": "static",
-                    "value": {"a": [1, 2], "b": [3, 4]},
-                    "display": "select",
-                    "strict": True,
-                    "details": {"key_reference": "y"},
-                },
+                    {"value": {"a": [1, 2], "b": [3, 4]}, "key_reference": "${y}"},
+                    {
+                        "type": "static",
+                        "value": {"a": [1, 2], "b": [3, 4]},
+                        "display": "select",
+                        "strict": True,
+                        "details": {"key_reference": "y"},
+                    },
             ),
             (
-                "http://myhost:1234",
-                {
-                    "type": "url",
-                    "value": "http://myhost:1234",
-                    "display": "typeahead",
-                    "strict": True,
-                    "details": {"address": "http://myhost:1234", "args": []},
-                },
+                    "http://myhost:1234",
+                    {
+                        "type": "url",
+                        "value": "http://myhost:1234",
+                        "display": "typeahead",
+                        "strict": True,
+                        "details": {"address": "http://myhost:1234", "args": []},
+                    },
             ),
             (
-                "my_command",
-                {
-                    "type": "command",
-                    "value": "my_command",
-                    "display": "typeahead",
-                    "strict": True,
-                    "details": {"name": "my_command", "args": []},
-                },
+                    "my_command",
+                    {
+                        "type": "command",
+                        "value": "my_command",
+                        "display": "typeahead",
+                        "strict": True,
+                        "details": {"name": "my_command", "args": []},
+                    },
             ),
             (
-                {"type": "command", "value": {"command": "my_command"}},
-                {
-                    "type": "command",
-                    "value": {"command": "my_command"},
-                    "display": "select",
-                    "strict": True,
-                    "details": {"name": "my_command", "args": []},
-                },
+                    {"type": "command", "value": {"command": "my_command"}},
+                    {
+                        "type": "command",
+                        "value": {"command": "my_command"},
+                        "display": "select",
+                        "strict": True,
+                        "details": {"name": "my_command", "args": []},
+                    },
             ),
         ],
     )
@@ -508,6 +507,8 @@ class TestCommand(object):
         assert cmd._command.description == "desc2"
         assert cmd._command.hidden is False
         assert cmd._command.output_type == "JSON"
+        assert cmd._command.output_types is None
+        assert cmd._command.output_labels is None
 
     def test_generate_command_python2(self, func_mock):
         # Apparently Python 2 adds some extra stuff
@@ -545,6 +546,8 @@ class TestDecoratorCombinations(object):
         assert _cmd._command.name == "_cmd"
         assert _cmd._command.command_type == "INFO"
         assert _cmd._command.output_type == "JSON"
+        assert _cmd._command.output_types is None
+        assert _cmd._command.output_labels is None
         assert len(_cmd._command.parameters) == 1
 
         assert_parameter_equal(
@@ -561,6 +564,8 @@ class TestDecoratorCombinations(object):
         assert _cmd._command.name == "_cmd"
         assert _cmd._command.command_type == "INFO"
         assert _cmd._command.output_type == "JSON"
+        assert _cmd._command.output_types is None
+        assert _cmd._command.output_labels is None
         assert len(_cmd._command.parameters) == 1
 
         assert_parameter_equal(

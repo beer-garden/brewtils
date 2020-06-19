@@ -410,7 +410,7 @@ class RequestTemplate(BaseModel):
         "metadata",
         "output_type",
         "output_types",
-        "output_labels"
+        "output_labels",
     ]
 
     def __init__(

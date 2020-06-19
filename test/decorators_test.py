@@ -178,6 +178,7 @@ class TestParameter(object):
 
     def test_is_kwarg_missing(self, param_definition):
         with pytest.raises(PluginParamError) as ex:
+
             @parameter(is_kwarg=True, **param_definition)
             def cmd(_):
                 return None
@@ -265,71 +266,71 @@ class TestParameter(object):
         "choices,expected",
         [
             (
-                    ["1", "2", "3"],
-                    {
-                        "type": "static",
-                        "value": ["1", "2", "3"],
-                        "display": "select",
-                        "strict": True,
-                    },
+                ["1", "2", "3"],
+                {
+                    "type": "static",
+                    "value": ["1", "2", "3"],
+                    "display": "select",
+                    "strict": True,
+                },
             ),
             (
-                    list(range(100)),
-                    {
-                        "type": "static",
-                        "value": list(range(100)),
-                        "display": "typeahead",
-                        "strict": True,
-                    },
+                list(range(100)),
+                {
+                    "type": "static",
+                    "value": list(range(100)),
+                    "display": "typeahead",
+                    "strict": True,
+                },
             ),
             (
-                    {"value": [1, 2, 3]},
-                    {
-                        "type": "static",
-                        "value": [1, 2, 3],
-                        "display": "select",
-                        "strict": True,
-                    },
+                {"value": [1, 2, 3]},
+                {
+                    "type": "static",
+                    "value": [1, 2, 3],
+                    "display": "select",
+                    "strict": True,
+                },
             ),
             (
-                    {"value": {"a": [1, 2], "b": [3, 4]}, "key_reference": "${y}"},
-                    {
-                        "type": "static",
-                        "value": {"a": [1, 2], "b": [3, 4]},
-                        "display": "select",
-                        "strict": True,
-                        "details": {"key_reference": "y"},
-                    },
+                {"value": {"a": [1, 2], "b": [3, 4]}, "key_reference": "${y}"},
+                {
+                    "type": "static",
+                    "value": {"a": [1, 2], "b": [3, 4]},
+                    "display": "select",
+                    "strict": True,
+                    "details": {"key_reference": "y"},
+                },
             ),
             (
-                    "http://myhost:1234",
-                    {
-                        "type": "url",
-                        "value": "http://myhost:1234",
-                        "display": "typeahead",
-                        "strict": True,
-                        "details": {"address": "http://myhost:1234", "args": []},
-                    },
+                "http://myhost:1234",
+                {
+                    "type": "url",
+                    "value": "http://myhost:1234",
+                    "display": "typeahead",
+                    "strict": True,
+                    "details": {"address": "http://myhost:1234", "args": []},
+                },
             ),
             (
-                    "my_command",
-                    {
-                        "type": "command",
-                        "value": "my_command",
-                        "display": "typeahead",
-                        "strict": True,
-                        "details": {"name": "my_command", "args": []},
-                    },
+                "my_command",
+                {
+                    "type": "command",
+                    "value": "my_command",
+                    "display": "typeahead",
+                    "strict": True,
+                    "details": {"name": "my_command", "args": []},
+                },
             ),
             (
-                    {"type": "command", "value": {"command": "my_command"}},
-                    {
-                        "type": "command",
-                        "value": {"command": "my_command"},
-                        "display": "select",
-                        "strict": True,
-                        "details": {"name": "my_command", "args": []},
-                    },
+                {"type": "command", "value": {"command": "my_command"}},
+                {
+                    "type": "command",
+                    "value": {"command": "my_command"},
+                    "display": "select",
+                    "strict": True,
+                    "details": {"name": "my_command", "args": []},
+                },
             ),
         ],
     )

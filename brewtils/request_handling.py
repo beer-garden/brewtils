@@ -397,15 +397,10 @@ class HTTPRequestUpdater(RequestUpdater):
             try:
                 if not self._should_be_final_attempt(headers):
                     self._wait_if_not_first_attempt(headers)
-                    self._ez_client.update_request(
-                        request.id,
-                        status=request.status,
-                        output=request.output,
-                        error_class=request.error_class,
-                    )
+                    self._send_update_request(request=request)
                 else:
-                    self._ez_client.update_request(
-                        request.id,
+                    self._send_update_request(
+                        request=request,
                         status="ERROR",
                         output="We tried to update the request, but it failed too many "
                         "times. Please check the plugin logs to figure out why the "
@@ -418,6 +413,16 @@ class HTTPRequestUpdater(RequestUpdater):
                 self._handle_request_update_failure(request, headers, ex)
             finally:
                 sys.stdout.flush()
+
+    def _send_update_request(
+        self, request=None, status=None, output=None, error_class=None
+    ):
+        self._ez_client.update_request(
+            request.id,
+            status=status if status else request.status,
+            output=output if output else request.output,
+            error_class=error_class if error_class else request.error_class,
+        )
 
     def _wait_if_not_first_attempt(self, headers):
         if headers.get("retry_attempt", 0) > 0:
@@ -530,3 +535,20 @@ class HTTPRequestUpdater(RequestUpdater):
                             self.brew_view_error_condition.notify_all()
             except Exception as ex:
                 self.logger.exception("Exception in connection poll thread: %s", ex)
+
+
+class HTTPRequestAdminUpdater(HTTPRequestUpdater):
+    """HTTPRequestAdminUpdater implementation that replies only when asked with an ID."""
+
+    def _send_update_request(
+        self, request=None, status=None, output=None, error_class=None
+    ):
+        if request.status in Request.COMPLETED_STATUSES:
+
+            self._ez_client.update_request(
+                request.id,
+                status=request.status,
+                output=request.output,
+                error_class=request.error_class,
+                is_admin=True,
+            )

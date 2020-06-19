@@ -4,6 +4,7 @@ import logging
 import logging.config
 import os
 import threading
+import itertools
 
 import appdirs
 from box import Box
@@ -23,9 +24,9 @@ from brewtils.log import convert_logging_config, default_config
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
     HTTPRequestUpdater,
-    NoopUpdater,
     RequestConsumer,
     RequestProcessor,
+    HTTPRequestAdminUpdater,
 )
 from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
@@ -467,7 +468,7 @@ class Plugin(object):
         # Finally, create the actual RequestProcessors
         admin_processor = RequestProcessor(
             target=self,
-            updater=NoopUpdater(),
+            updater=HTTPRequestAdminUpdater(self._ez_client, self._shutdown_event),
             consumer=admin_consumer,
             plugin_name=self.unique_name,
             max_workers=1,
@@ -664,6 +665,44 @@ class Plugin(object):
                 "System version '%s' doesn't match version from client decorator: "
                 "@system(bg_version=%s)" % (self._system.version, client_version)
             )
+
+    def _find_logger_basefilename(self, logger):
+        """Finds the logger base filename(s) currently there is only one
+        """
+        log_file = None
+        parent = logger.parent
+        if parent.__class__.__name__ == "RootLogger":
+            # this is where the file name lives
+            for h in parent.handlers:
+                if hasattr(h, "baseFilename"):
+                    log_file = h.baseFilename
+                    break
+        else:
+            log_file = self._find_logger_basefilename(parent)
+
+        return log_file
+
+    def _read_log(self, start_line=0, end_line=50):
+
+        log_file = self._find_logger_basefilename(logging.getLogger(__name__))
+        if log_file:
+            raw_logs = []
+            try:
+                with open(log_file, "r") as text_file:
+                    for line in itertools.islice(text_file, start_line, end_line):
+                        raw_logs.append(line)
+                return raw_logs
+            except IOError as e:
+                return [
+                    "Unable to read Log file",
+                    "I/O error({0}): {1}".format(e.errno, e.strerror),
+                ]
+
+        return [
+            "Unable to determine Logger Handler base Filename. "
+            "Please check with the System Adminstrator to verify plugin is writing "
+            "to log file."
+        ]
 
     # These are provided for backward-compatibility
     @property

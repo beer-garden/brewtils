@@ -44,7 +44,7 @@ __all__ = [
 _wrap_functions = False
 
 
-def system(cls=None, bg_name=None, bg_version=None, include_defaults=True):
+def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
     Creates some properties on the class:
@@ -57,32 +57,15 @@ def system(cls=None, bg_name=None, bg_version=None, include_defaults=True):
         cls: The class to decorated
         bg_name: Optional plugin name
         bg_version: Optional plugin version
-        include_defaults: Optional to include default commands
 
     Returns:
         The decorated class
 
     """
     if cls is None:
-        return functools.partial(
-            system,
-            bg_name=bg_name,
-            bg_version=bg_version,
-            include_defaults=include_defaults,
-        )
+        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
 
     import brewtils.plugin
-
-    if include_defaults:
-        import brewtils.system_defaults as system_defaults
-
-        default_commands = system_defaults.Commands()
-
-        for method_name in dir(default_commands):
-            method = getattr(default_commands, method_name)
-            method_command = getattr(method, "_command", None)
-            if method_command:
-                setattr(cls, method_name, method)
 
     commands = []
     for method_name in dir(cls):

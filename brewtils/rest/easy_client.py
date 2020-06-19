@@ -571,7 +571,9 @@ class EasyClient(object):
     @wrap_response(
         parse_method="parse_request", parse_many=False, default_exc=SaveError
     )
-    def update_request(self, request_id, status=None, output=None, error_class=None):
+    def update_request(
+        self, request_id, status=None, output=None, error_class=None, is_admin=None
+    ):
         """Update a Request
 
         Args:
@@ -579,19 +581,21 @@ class EasyClient(object):
             status (Optional[str]): New Request status
             output (Optional[str]): New Request output
             error_class (Optional[str]): New Request error class
+            is_admin (Optional[boolean]): Update Request from Admin Action
 
         Returns:
             Response: The updated response
 
         """
         operations = []
+        patch = "is_admin" if is_admin else "replace"
 
         if status:
-            operations.append(PatchOperation("replace", "/status", status))
+            operations.append(PatchOperation(patch, "/status", status))
         if output:
-            operations.append(PatchOperation("replace", "/output", output))
+            operations.append(PatchOperation(patch, "/output", output))
         if error_class:
-            operations.append(PatchOperation("replace", "/error_class", error_class))
+            operations.append(PatchOperation(patch, "/error_class", error_class))
 
         return self.client.patch_request(
             request_id, SchemaParser.serialize_patch(operations, many=True)

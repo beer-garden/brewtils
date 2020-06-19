@@ -58,8 +58,8 @@ def wrap_functions(request):
 
 class TestSystem(object):
     def test_system_basic(self, sys):
-        assert len(sys._bg_commands) == 2
-        assert sys._bg_commands[0].name == "_read_log"
+        assert len(sys._bg_commands) == 1
+        assert sys._bg_commands[0].name == "foo"
 
     def test_system(self):
         @system(bg_name="sys", bg_version="1.0.0")

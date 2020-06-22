@@ -682,16 +682,19 @@ class Plugin(object):
 
         return log_file
 
-    def _read_log(self, start_line=0, end_line=50):
+    def _read_log(self, start_line=0, end_line=20, read_all=False, read_tail=False):
 
         log_file = self._find_logger_basefilename(logging.getLogger(__name__))
         if log_file:
-            raw_logs = []
             try:
                 with open(log_file, "r") as text_file:
-                    for line in itertools.islice(text_file, start_line, end_line):
-                        raw_logs.append(line)
-                return raw_logs
+                    raw_logs = text_file.readlines()
+                    if read_all:
+                        return raw_logs
+                    elif read_tail:
+                        return raw_logs[(len(raw_logs) - start_line) : :]
+                    else:
+                        return raw_logs[start_line:end_line]
             except IOError as e:
                 return [
                     "Unable to read Log file",

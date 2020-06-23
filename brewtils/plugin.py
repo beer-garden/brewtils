@@ -4,7 +4,6 @@ import logging
 import logging.config
 import os
 import threading
-import itertools
 
 import appdirs
 from box import Box

@@ -2,7 +2,7 @@
 -e .
 
 # Documentation Dependencies
-sphinx < 2
+sphinx==3.1.2
 sphinx_rtd_theme < 1
 
 # Test and Lint Dependencies

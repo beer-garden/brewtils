@@ -691,7 +691,7 @@ class Plugin(object):
                     if read_all:
                         return raw_logs
                     elif read_tail:
-                        return raw_logs[(len(raw_logs) - start_line)::]
+                        return raw_logs[(len(raw_logs) - start_line) : :]
                     else:
                         return raw_logs[start_line:end_line]
             except IOError as e:

@@ -225,7 +225,9 @@ class Plugin(object):
         self._logger.info("Plugin %s has started", self.unique_name)
 
         try:
-            self._shutdown_event.wait()
+            # Need the timeout param so this works correctly in Python 2
+            while not self._shutdown_event.wait(timeout=0.1):
+                pass
         except KeyboardInterrupt:
             self._logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:

@@ -7,8 +7,6 @@ import threading
 
 import appdirs
 from box import Box
-from requests import ConnectionError as RequestsConnectionError
-
 from brewtils.config import load_config
 from brewtils.errors import (
     ConflictError,
@@ -19,7 +17,7 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.log import convert_logging_config, default_config
+from brewtils.log import configure_logging, default_config
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
     HTTPRequestUpdater,
@@ -30,6 +28,7 @@ from brewtils.request_handling import (
 from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
+from requests import ConnectionError as RequestsConnectionError
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -210,9 +209,7 @@ class Plugin(object):
             self.client = client
 
         # And with _system and _ez_client we can ask for the real logging config
-        # (unless _custom_logger is True, in which case this does nothing)
-        # TODO - Enable this once plugin logging is in a better state
-        # self._initialize_logging()
+        self._initialize_logging()
 
     def run(self):
         if not self._client:
@@ -352,8 +349,33 @@ class Plugin(object):
             self._logger.debug("Skipping logging init: custom logger detected")
             return
 
-        bg_log_config = self._ez_client.get_logging_config(self._system.name)
-        logging.config.dictConfig(convert_logging_config(bg_log_config))
+        try:
+            log_config = self._ez_client.get_logging_config()
+        except Exception as ex:
+            self._logger.warning(
+                "Unable to retrieve logging configuration from Beergarden, the default "
+                "configuration will be used instead. Caused by: {0}".format(ex)
+            )
+            return
+
+        try:
+            configure_logging(
+                log_config,
+                namespace=self._system.namespace,
+                system_name=self._system.name,
+                system_version=self._system.version,
+                instance_name=self._config.instance_name,
+            )
+        except Exception as ex:
+            # Reset to default config as logging can be seriously wrong now
+            logging.config.dictConfig(default_config(level=self._config.log_level))
+
+            self._logger.exception(
+                "Error encountered during logging configuration. This most likely "
+                "indicates an issue with the Beergarden server plugin logging "
+                "configuration. The default configuration will be used instead. Caused "
+                "by: {0}".format(ex)
+            )
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info

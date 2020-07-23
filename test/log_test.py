@@ -28,6 +28,7 @@ class TestLog(object):
             "ssl_enabled": False,
         }
 
+    @pytest.mark.skip()
     def test_configure_logging(self, params, monkeypatch):
         easy_mock = Mock()
         monkeypatch.setattr("brewtils.get_easy_client", easy_mock)

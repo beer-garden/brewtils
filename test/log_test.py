@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
+import os
 import warnings
 
+import logging.config
 import pytest
 from mock import Mock
 
 from brewtils.log import (
-    configure_logging,
-    get_logging_config,
-    convert_logging_config,
-    setup_logger,
-    get_python_logging_config,
-    DEFAULT_HANDLERS,
     DEFAULT_FORMATTERS,
+    DEFAULT_HANDLERS,
+    configure_logging,
+    convert_logging_config,
+    get_logging_config,
+    get_python_logging_config,
+    setup_logger,
 )
 from brewtils.models import LoggingConfig
 
@@ -28,22 +30,32 @@ class TestLog(object):
             "ssl_enabled": False,
         }
 
-    @pytest.mark.skip()
-    def test_configure_logging(self, params, monkeypatch):
-        easy_mock = Mock()
-        monkeypatch.setattr("brewtils.get_easy_client", easy_mock)
+    def test_configure_logging(self, tmpdir, params, monkeypatch, bg_system):
+        raw_config = {
+            "handlers": {
+                "file": {
+                    "class": "logging.handlers.RotatingFileHandler",
+                    "filename": os.path.join(tmpdir, "log", "$system_name.log"),
+                }
+            }
+        }
 
-        convert_mock = Mock()
-        monkeypatch.setattr("brewtils.log.convert_logging_config", convert_mock)
+        config_mock = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", config_mock)
 
-        conf_mock = Mock()
-        monkeypatch.setattr("brewtils.log.logging.config.dictConfig", conf_mock)
-
-        configure_logging(**params)
-        conf_mock.assert_called_once_with(convert_mock.return_value)
-        easy_mock.return_value.get_logging_config.assert_called_once_with(
-            params["system_name"]
+        configure_logging(
+            raw_config,
+            namespace=bg_system.namespace,
+            system_name=bg_system.name,
+            system_version=bg_system.version,
+            instance_name=bg_system.instances[0].name,
         )
+
+        assert os.path.exists(os.path.join(tmpdir, "log"))
+        assert config_mock.called is True
+
+        mangled_config = config_mock.call_args[0][0]
+        assert bg_system.name in mangled_config["handlers"]["file"]["filename"]
 
     def test_get_logging_config(self, params, monkeypatch):
         monkeypatch.setattr("brewtils.get_easy_client", Mock())

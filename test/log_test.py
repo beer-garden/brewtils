@@ -11,6 +11,7 @@ from brewtils.log import (
     DEFAULT_HANDLERS,
     configure_logging,
     convert_logging_config,
+    default_config,
     get_logging_config,
     get_python_logging_config,
     setup_logger,
@@ -29,6 +30,10 @@ class TestLog(object):
             "client_cert": "client_cert",
             "ssl_enabled": False,
         }
+
+    def test_default(self):
+        log_config = default_config(level="DEBUG")
+        assert log_config["root"]["level"] == "DEBUG"
 
     def test_configure_logging(self, tmpdir, params, monkeypatch):
         raw_config = {

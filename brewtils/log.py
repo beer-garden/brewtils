@@ -36,27 +36,15 @@ import logging.config
 
 import brewtils
 
-# Loggers to always use. These are things that generally,
-# people do not want to see and/or are too verbose.
-
 DEFAULT_LOGGERS = {
     "pika": {"level": "ERROR"},
     "requests.packages.urllib3.connectionpool": {"level": "WARN"},
     "yapconf": {"level": "WARN"},
 }
 
-# A simple default format/formatter. Generally speaking, the API should return
-# formatters, but since users can configure their logging it's better if the
-# formatter has a logical backup.
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DEFAULT_FORMATTERS = {"default": {"format": DEFAULT_FORMAT}}
 
-
-SUPPORTED_HANDLERS = ("stdout", "file", "logstash")
-
-# A simple default handler. Generally speaking, the API should return
-# handlers, but since users can configure their logging it's better if the
-# handler has a logical backup.
 DEFAULT_HANDLERS = {
     "default": {
         "class": "logging.StreamHandler",
@@ -65,26 +53,25 @@ DEFAULT_HANDLERS = {
     }
 }
 
-# The template that plugins will use to log
+
+DEFAULT_ROOT = {"level": "INFO", "formatter": "default", "handlers": ["default"]}
+
 DEFAULT_PLUGIN_LOGGING_TEMPLATE = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {},
-    "handlers": {},
     "loggers": DEFAULT_LOGGERS,
+    "formatters": DEFAULT_FORMATTERS,
+    "handlers": DEFAULT_HANDLERS,
+    "root": DEFAULT_ROOT,
 }
 
 
 def default_config(level="INFO"):
-    """Will be used if no logging configuration was specified"""
-    return {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": DEFAULT_FORMATTERS,
-        "handlers": DEFAULT_HANDLERS,
-        "loggers": DEFAULT_LOGGERS,
-        "root": {"level": level, "handlers": ["default"]},
-    }
+    """Get a basic logging configuration with the given level"""
+    config = copy.deepcopy(DEFAULT_PLUGIN_LOGGING_TEMPLATE)
+    config["root"]["level"] = level
+
+    return config
 
 
 def configure_logging(
@@ -179,6 +166,10 @@ def configure_logging(
     logging.config.dictConfig(logging_config)
 
 
+# DEPRECATED
+SUPPORTED_HANDLERS = ("stdout", "file", "logstash")
+
+
 def get_logging_config(system_name=None, **kwargs):
     """Retrieve a logging configuration from Beergarden
 
@@ -189,6 +180,14 @@ def get_logging_config(system_name=None, **kwargs):
     Returns:
         dict: The logging configuration for the specified system
     """
+    warnings.warn(
+        "This function is deprecated and will be removed in version "
+        "4.0, please consider using 'EasyClient.get_logging_config' and "
+        "'configure_logging' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     config = brewtils.get_easy_client(**kwargs).get_logging_config(system_name)
 
     return convert_logging_config(config)
@@ -203,6 +202,13 @@ def convert_logging_config(logging_config):
     Returns:
         dict: The logging configuration
     """
+    warnings.warn(
+        "This function is deprecated and will be removed in version "
+        "4.0, please consider using 'configure_logging' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     config_to_return = copy.deepcopy(DEFAULT_PLUGIN_LOGGING_TEMPLATE)
 
     if logging_config.handlers:

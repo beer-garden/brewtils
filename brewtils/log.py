@@ -27,10 +27,12 @@ Example:
 
 import copy
 import json
-import logging.config
 import os
+import re
 import string
 import warnings
+
+import logging.config
 
 import brewtils
 
@@ -127,7 +129,38 @@ def configure_logging(
     Returns:
         None
     """
-    templated = string.Template(json.dumps(raw_config)).safe_substitute(
+
+    class ConfigParserTemplate(string.Template):
+        """string.Template variant for ConfigParser-style interpolation
+
+        So. This exists because we want to do template substitution on the logging
+        configuration file. We want this to be consistent with how the logging module
+        itself does substitution, and since we need this to work on Python 2 that means
+        the ConfigParser flavor: %(variable)s
+
+        The important parts here that differ from the normal string.Template are:
+         - The delimiter ("%" instead of "$")
+         - The "delimiter and a braced identifier" part of the pattern definition. This
+           is needed to match %(variable)s instead of %{variable} like a normal template
+
+        """
+
+        delimiter = "%"
+
+        pattern = r"""
+        %(delim)s(?:
+          (?P<escaped>%(delim)s)    |   # Escape sequence of two delimiters
+          (?P<named>%(id)s)         |   # delimiter and a Python identifier
+          \((?P<braced>%(bid)s)\)s  |   # delimiter and a braced identifier
+          (?P<invalid>)                 # Other ill-formed delimiter exprs
+        )
+        """ % {
+            "delim": re.escape("%"),
+            "id": r"(?a:[_a-z][_a-z0-9]*)",
+            "bid": r"(?a:[_a-z][_a-z0-9]*)",
+        }
+
+    templated = ConfigParserTemplate(json.dumps(raw_config)).safe_substitute(
         namespace=namespace,
         system_name=system_name,
         system_version=system_version,

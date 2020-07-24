@@ -30,12 +30,12 @@ class TestLog(object):
             "ssl_enabled": False,
         }
 
-    def test_configure_logging(self, tmpdir, params, monkeypatch, bg_system):
+    def test_configure_logging(self, tmpdir, params, monkeypatch):
         raw_config = {
             "handlers": {
                 "file": {
                     "class": "logging.handlers.RotatingFileHandler",
-                    "filename": os.path.join(tmpdir, "log", "$system_name.log"),
+                    "filename": os.path.join(tmpdir, "log", "%(system_name)s.log"),
                 }
             }
         }
@@ -45,17 +45,17 @@ class TestLog(object):
 
         configure_logging(
             raw_config,
-            namespace=bg_system.namespace,
-            system_name=bg_system.name,
-            system_version=bg_system.version,
-            instance_name=bg_system.instances[0].name,
+            namespace="ns",
+            system_name="foo",
+            system_version="1.0",
+            instance_name="inst",
         )
 
         assert os.path.exists(os.path.join(tmpdir, "log"))
         assert config_mock.called is True
 
         mangled_config = config_mock.call_args[0][0]
-        assert bg_system.name in mangled_config["handlers"]["file"]["filename"]
+        assert "foo" in mangled_config["handlers"]["file"]["filename"]
 
     def test_get_logging_config(self, params, monkeypatch):
         monkeypatch.setattr("brewtils.get_easy_client", Mock())

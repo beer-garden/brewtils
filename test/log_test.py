@@ -35,7 +35,7 @@ class TestLog(object):
             "handlers": {
                 "file": {
                     "class": "logging.handlers.RotatingFileHandler",
-                    "filename": os.path.join(tmpdir, "log", "%(system_name)s.log"),
+                    "filename": os.path.join(str(tmpdir), "log", "%(system_name)s.log"),
                 }
             }
         }
@@ -51,7 +51,7 @@ class TestLog(object):
             instance_name="inst",
         )
 
-        assert os.path.exists(os.path.join(tmpdir, "log"))
+        assert os.path.exists(os.path.join(str(tmpdir), "log"))
         assert config_mock.called is True
 
         mangled_config = config_mock.call_args[0][0]

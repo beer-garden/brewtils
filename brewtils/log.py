@@ -139,10 +139,12 @@ def configure_logging(
         the ConfigParser flavor: %(variable)s
 
         The important parts here that differ from the normal string.Template are:
-         - The delimiter ("%" instead of "$")
-         - The "delimiter and a braced identifier" part of the pattern definition. This
-           is needed to match %(variable)s instead of %{variable} like a normal template
-
+        - The delimiter ("%" instead of "$")
+        - The "delimiter and a braced identifier" part of the pattern definition. This
+          is needed to match %(variable)s instead of %{variable} like a normal template
+        - The "id" and additional field "bid" in Python 3.7 are slightly different:
+          r"(?a:[_a-z][_a-z0-9]*)" instead of r"[_a-z][_a-z0-9]*"
+          Hopefully that's not a problem.
         """
 
         delimiter = "%"
@@ -151,13 +153,12 @@ def configure_logging(
         %(delim)s(?:
           (?P<escaped>%(delim)s)    |   # Escape sequence of two delimiters
           (?P<named>%(id)s)         |   # delimiter and a Python identifier
-          \((?P<braced>%(bid)s)\)s  |   # delimiter and a braced identifier
+          \((?P<braced>%(id)s)\)s  |   # delimiter and a braced identifier
           (?P<invalid>)                 # Other ill-formed delimiter exprs
         )
         """ % {
             "delim": re.escape("%"),
-            "id": r"(?a:[_a-z][_a-z0-9]*)",
-            "bid": r"(?a:[_a-z][_a-z0-9]*)",
+            "id": r"[_a-z][_a-z0-9]*",
         }
 
     templated = ConfigParserTemplate(json.dumps(raw_config)).safe_substitute(

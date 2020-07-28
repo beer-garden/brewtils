@@ -535,20 +535,3 @@ class HTTPRequestUpdater(RequestUpdater):
                             self.brew_view_error_condition.notify_all()
             except Exception as ex:
                 self.logger.exception("Exception in connection poll thread: %s", ex)
-
-
-class HTTPRequestAdminUpdater(HTTPRequestUpdater):
-    """HTTPRequestAdminUpdater implementation that replies only when asked with an ID."""
-
-    def _send_update_request(
-        self, request=None, status=None, output=None, error_class=None
-    ):
-        if request.status in Request.COMPLETED_STATUSES:
-
-            self._ez_client.update_request(
-                request.id,
-                status=request.status,
-                output=request.output,
-                error_class=request.error_class,
-                is_admin=True,
-            )

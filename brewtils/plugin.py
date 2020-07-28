@@ -25,7 +25,6 @@ from brewtils.request_handling import (
     HTTPRequestUpdater,
     RequestConsumer,
     RequestProcessor,
-    HTTPRequestAdminUpdater,
 )
 from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
@@ -467,7 +466,7 @@ class Plugin(object):
         # Finally, create the actual RequestProcessors
         admin_processor = RequestProcessor(
             target=self,
-            updater=HTTPRequestAdminUpdater(self._ez_client, self._shutdown_event),
+            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=admin_consumer,
             plugin_name=self.unique_name,
             max_workers=1,

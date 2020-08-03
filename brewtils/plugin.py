@@ -17,7 +17,7 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.log import configure_logging, default_config, read_log_file
+from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
     HTTPRequestUpdater,
@@ -527,13 +527,28 @@ class Plugin(object):
 
     def _read_log(self, start_line=0, end_line=20, read_all=False, read_tail=False):
         """Handle read log Request"""
-        return read_log_file(
-            logger=self._logger,
-            start_line=start_line,
-            end_line=end_line,
-            read_all=read_all,
-            read_tail=read_tail,
-        )
+
+        log_file = find_log_file(self._logger)
+
+        if not log_file:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to determine log filename. "
+                "Please verify that the plugin is writing to a log file."
+            )
+
+        try:
+            return read_log_file(
+                log_file=log_file,
+                start_line=start_line,
+                end_line=end_line,
+                read_all=read_all,
+                read_tail=read_tail,
+            )
+        except IOError as e:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to read log file at {0}. "
+                "Root cause I/O error {1}: {2}".format(log_file, e.errno, e.strerror)
+            )
 
     def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""

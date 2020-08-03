@@ -183,11 +183,11 @@ def find_log_file(logger):
     return log_file
 
 
-def read_log_file(logger, start_line=0, end_line=20, read_all=False, read_tail=False):
+def read_log_file(log_file, start_line=0, end_line=20, read_all=False, read_tail=False):
     """Read lines from a log file
 
     Args:
-        logger: The logger to search for file handlers
+        log_file: The file to read from
         start_line: Starting line to read
         end_line: Ending line to read
         read_all: Flag indicating if the entire file should be returned
@@ -196,28 +196,15 @@ def read_log_file(logger, start_line=0, end_line=20, read_all=False, read_tail=F
     Returns:
         Lines read from the file
     """
-    log_file = find_log_file(logger)
+    with open(log_file, "r") as f:
+        raw_logs = f.readlines()
 
-    if log_file:
-        try:
-            with open(log_file, "r") as text_file:
-                raw_logs = text_file.readlines()
-                if read_all:
-                    return raw_logs
-                elif read_tail:
-                    return raw_logs[(len(raw_logs) - start_line) : :]
-                else:
-                    return raw_logs[start_line:end_line]
-        except IOError as e:
-            return [
-                "Unable to read log file at {0}. Root cause was ",
-                "I/O error({1}): {2}".format(log_file, e.errno, e.strerror),
-            ]
-
-    return [
-        "Unable to determine log filename. Please verify that the plugin is writing "
-        "to a log file."
-    ]
+    if read_all:
+        return raw_logs
+    elif read_tail:
+        return raw_logs[(len(raw_logs) - start_line) : :]
+    else:
+        return raw_logs[start_line:end_line]
 
 
 # DEPRECATED

@@ -582,7 +582,6 @@ class EasyClient(object):
             status (Optional[str]): New Request status
             output (Optional[str]): New Request output
             error_class (Optional[str]): New Request error class
-            is_admin (Optional[boolean]): Update Request from Admin Action
 
         Returns:
             Response: The updated response

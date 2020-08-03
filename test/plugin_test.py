@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import logging
-import logging.config
 import os
 import warnings
 
+import logging
+import logging.config
 import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
@@ -349,18 +349,38 @@ class TestInitializeLogging(object):
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
         return dict_config
 
-    def test_normal(self, plugin, ez_client, config_mock, bg_logging_config):
+    def test_normal(self, caplog, plugin, ez_client, config_mock):
         plugin._custom_logger = False
-        ez_client.get_logging_config.return_value = bg_logging_config
+        ez_client.get_logging_config.return_value = {"handlers": {"stdout": {}}}
 
-        plugin._initialize_logging()
+        with caplog.at_level(logging.ERROR):
+            plugin._initialize_logging()
+
         assert config_mock.called is True
+        assert len(caplog.records) == 0
 
     def test_custom_logger(self, plugin, ez_client, config_mock):
         plugin._custom_logger = True
 
         plugin._initialize_logging()
         assert config_mock.called is False
+
+    def test_retrieve_fail(self, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.side_effect = RestConnectionError
+
+        plugin._initialize_logging()
+        assert config_mock.called is False
+
+    def test_config_fail(self, caplog, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.return_value = "Bad config value"
+
+        with caplog.at_level(logging.ERROR):
+            plugin._initialize_logging()
+
+        assert config_mock.called is True
+        assert len(caplog.records) > 0
 
 
 class TestInitializeSystem(object):

@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
+import os
 import warnings
 
+import logging.config
 import pytest
 from mock import Mock
 
 from brewtils.log import (
-    configure_logging,
-    get_logging_config,
-    convert_logging_config,
-    setup_logger,
-    get_python_logging_config,
-    DEFAULT_HANDLERS,
     DEFAULT_FORMATTERS,
+    DEFAULT_HANDLERS,
+    configure_logging,
+    convert_logging_config,
+    default_config,
+    get_logging_config,
+    get_python_logging_config,
+    setup_logger,
 )
 from brewtils.models import LoggingConfig
 
@@ -28,21 +31,36 @@ class TestLog(object):
             "ssl_enabled": False,
         }
 
-    def test_configure_logging(self, params, monkeypatch):
-        easy_mock = Mock()
-        monkeypatch.setattr("brewtils.get_easy_client", easy_mock)
+    def test_default(self):
+        log_config = default_config(level="DEBUG")
+        assert log_config["root"]["level"] == "DEBUG"
 
-        convert_mock = Mock()
-        monkeypatch.setattr("brewtils.log.convert_logging_config", convert_mock)
+    def test_configure_logging(self, tmpdir, params, monkeypatch):
+        raw_config = {
+            "handlers": {
+                "file": {
+                    "class": "logging.handlers.RotatingFileHandler",
+                    "filename": os.path.join(str(tmpdir), "log", "%(system_name)s.log"),
+                }
+            }
+        }
 
-        conf_mock = Mock()
-        monkeypatch.setattr("brewtils.log.logging.config.dictConfig", conf_mock)
+        config_mock = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", config_mock)
 
-        configure_logging(**params)
-        conf_mock.assert_called_once_with(convert_mock.return_value)
-        easy_mock.return_value.get_logging_config.assert_called_once_with(
-            params["system_name"]
+        configure_logging(
+            raw_config,
+            namespace="ns",
+            system_name="foo",
+            system_version="1.0",
+            instance_name="inst",
         )
+
+        assert os.path.exists(os.path.join(str(tmpdir), "log"))
+        assert config_mock.called is True
+
+        mangled_config = config_mock.call_args[0][0]
+        assert "foo" in mangled_config["handlers"]["file"]["filename"]
 
     def test_get_logging_config(self, params, monkeypatch):
         monkeypatch.setattr("brewtils.get_easy_client", Mock())

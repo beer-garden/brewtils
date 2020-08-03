@@ -62,6 +62,10 @@ class Events(Enum):
     GARDEN_STOPPED = 26
     ENTRY_STARTED = 27
     ENTRY_STOPPED = 28
+    JOB_CREATED = 30
+    JOB_DELETED = 31
+    JOB_PAUSED = 32
+    JOB_RESUMED = 33
 
     # TODO - should these be external API events?
     INSTANCE_STOP_REQUESTED = 101
@@ -93,6 +97,7 @@ class Command(BaseModel):
         template=None,
         icon_name=None,
         system=None,
+        hidden=False,
     ):
         self.name = name
         self.description = description
@@ -105,6 +110,7 @@ class Command(BaseModel):
         self.template = template
         self.icon_name = icon_name
         self.system = system
+        self.hidden = hidden
 
     def __str__(self):
         return self.name

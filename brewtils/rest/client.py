@@ -153,10 +153,13 @@ class RestClient(object):
             self.command_url = self.base_url + "api/v1/commands/"
             self.request_url = self.base_url + "api/v1/requests/"
             self.queue_url = self.base_url + "api/v1/queues/"
-            self.logging_config_url = self.base_url + "api/v1/config/logging/"
+            self.logging_url = self.base_url + "api/v1/logging/"
             self.job_url = self.base_url + "api/v1/jobs/"
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
+
+            # Deprecated
+            self.logging_config_url = self.base_url + "api/v1/config/logging/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
             self.file_url = self.base_url + "api/vbeta/files/"
@@ -274,7 +277,7 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.get(self.logging_config_url, params=kwargs)
+        return self.session.get(self.logging_url, params=kwargs)
 
     @enable_auth
     def get_systems(self, **kwargs):

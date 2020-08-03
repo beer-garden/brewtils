@@ -101,12 +101,7 @@ def test_get_config(client, rest_client, success):
 
 def test_get_logging_config(client, rest_client, parser, success):
     rest_client.get_logging_config.return_value = success
-
-    output = client.get_logging_config("system")
-    parser.parse_logging_config.assert_called_with(
-        success.json.return_value, many=False
-    )
-    assert output == parser.parse_logging_config.return_value
+    assert client.get_logging_config() == success.json()
 
 
 class TestSystems(object):

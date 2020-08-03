@@ -263,6 +263,7 @@ Finally, `get_system()` and `get_request()` methods that raise a `NotFoundError`
 
 
 ### `RestClient`
+- The `/api/v1/config/logging` endpoint has been deprecated, so the `logging_config_url` attribute still exists but is no longer used. A new attribute `logging_url` has been added that will point to the new endpoint at `/api/v1/logging`. This new attribute is now used by `get_logging_config()`.
 - Keyword arguments for `get_version()` are now unused and passing them will result in a `DeprecationWarning`. Previously they would be passed as query parameters, which is not useful as query parameters are ignored for that endpoint.
 - Keyword arguments for `get_config()` are now also unused and passing them will result in a `DeprecationWarning`. Previously they would be passed to the underlying `requests.session` call, which allowed for things like an alternate timeout value. This was inconsistent with all other `RestClient` methods and has been removed. However, this behavior *is* supported on the new `can_connect()` method, so if you'd like to specify an alternate timeout for checking connectivity that's possible with `can_connect()`. Also, specifying a value for the `client_timeout` parameter when creating the `RestClient` will enable timeouts across all `RestClient` methods, which is recommended.
 - `can_connect()` is a new method that can be used to check connectivity to the Beer-garden server. Previously this method was only available on the `EasyClient`.
@@ -301,6 +302,9 @@ Previously `__version__` was imported into the top-level brewtils `__init__.py` 
 
 ### Other
 All the stuff that doesn't fit anywhere else!
+
+#### `log` module changes
+Most of the methods in the `log` module have been deprecated. This is because they were based around the `brewtils.models.LoggingConfig` and designed to work with data in this format. However, this capability never really reached the flexibility required to be truly useful. This feature has been reworked to use plain Python logging configurations, which renders most of this module unnecessary.
 
 #### Ridiculous class `__init__` signatures
 Previously several classes (most notably `Plugin` and all three HTTP clients) defined huge lists of `kwargs`. These have mostly been collapsed into `**kwargs`. The docstrings still list all the valid keyword parameters, so this change helps remove some redundancy. It also removes the possibility of passing those arguments positionally, which is almost always not a good idea.

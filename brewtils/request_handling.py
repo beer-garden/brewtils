@@ -240,6 +240,34 @@ class RequestProcessor(object):
             return str(output)
 
 
+class AdminProcessor(RequestProcessor):
+    """RequestProcessor with slightly modified process method"""
+
+    def process_message(self, target, request, headers):
+        """Process a message. Intended to be run on an Executor.
+
+        Will invoke the command and set the final status / output / error_class.
+
+        Will NOT set the status to IN_PROGRESS or set the request context.
+
+        Args:
+            target: The object to invoke received commands on
+            request: The parsed Request
+            headers: Dictionary of headers from the `PikaConsumer`
+
+        Returns:
+            None
+        """
+        try:
+            output = self._invoke_command(target, request, headers)
+        except Exception as exc:
+            self._handle_invoke_failure(request, exc)
+        else:
+            self._handle_invoke_success(request, output)
+
+        self._updater.update_request(request, headers)
+
+
 @six.add_metaclass(abc.ABCMeta)
 class RequestConsumer(threading.Thread):
     """Base class for consumers

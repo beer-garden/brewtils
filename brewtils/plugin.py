@@ -20,6 +20,7 @@ from brewtils.errors import (
 from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
+    AdminProcessor,
     HTTPRequestUpdater,
     RequestConsumer,
     RequestProcessor,
@@ -488,7 +489,7 @@ class Plugin(object):
         )
 
         # Finally, create the actual RequestProcessors
-        admin_processor = RequestProcessor(
+        admin_processor = AdminProcessor(
             target=self,
             updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=admin_consumer,

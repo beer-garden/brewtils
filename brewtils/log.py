@@ -166,6 +166,60 @@ def configure_logging(
     logging.config.dictConfig(logging_config)
 
 
+def find_log_file(logger):
+    """Find the log file name"""
+    log_file = None
+
+    parent = logger.parent
+    if parent.__class__.__name__ == "RootLogger":
+        # this is where the file name lives
+        for h in parent.handlers:
+            if hasattr(h, "baseFilename"):
+                log_file = h.baseFilename
+                break
+    else:
+        log_file = find_log_file(parent)
+
+    return log_file
+
+
+def read_log_file(logger, start_line=0, end_line=20, read_all=False, read_tail=False):
+    """Read lines from a log file
+
+    Args:
+        logger: The logger to search for file handlers
+        start_line: Starting line to read
+        end_line: Ending line to read
+        read_all: Flag indicating if the entire file should be returned
+        read_tail: Flag indicating if reading should start from the end of the file
+
+    Returns:
+        Lines read from the file
+    """
+    log_file = find_log_file(logger)
+
+    if log_file:
+        try:
+            with open(log_file, "r") as text_file:
+                raw_logs = text_file.readlines()
+                if read_all:
+                    return raw_logs
+                elif read_tail:
+                    return raw_logs[(len(raw_logs) - start_line) : :]
+                else:
+                    return raw_logs[start_line:end_line]
+        except IOError as e:
+            return [
+                "Unable to read log file at {0}. Root cause was ",
+                "I/O error({1}): {2}".format(log_file, e.errno, e.strerror),
+            ]
+
+    return [
+        "Unable to determine log filename. Please verify that the plugin is writing "
+        "to a log file."
+    ]
+
+
 # DEPRECATED
 SUPPORTED_HANDLERS = ("stdout", "file", "logstash")
 

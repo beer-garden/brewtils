@@ -17,9 +17,10 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.log import configure_logging, default_config
+from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
+    AdminProcessor,
     HTTPRequestUpdater,
     RequestConsumer,
     RequestProcessor,
@@ -488,7 +489,7 @@ class Plugin(object):
         )
 
         # Finally, create the actual RequestProcessors
-        admin_processor = RequestProcessor(
+        admin_processor = AdminProcessor(
             target=self,
             updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=admin_consumer,
@@ -519,11 +520,36 @@ class Plugin(object):
         self._shutdown_event.set()
 
     def _status(self):
-        """Handle status message by sending a heartbeat."""
+        """Handle status Request by sending a heartbeat."""
         try:
             self._ez_client.instance_heartbeat(self._instance.id)
         except (RequestsConnectionError, RestConnectionError):
             pass
+
+    def _read_log(self, start_line=0, end_line=20, read_all=False, read_tail=False):
+        """Handle read log Request"""
+
+        log_file = find_log_file(self._logger)
+
+        if not log_file:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to determine log filename. "
+                "Please verify that the plugin is writing to a log file."
+            )
+
+        try:
+            return read_log_file(
+                log_file=log_file,
+                start_line=start_line,
+                end_line=end_line,
+                read_all=read_all,
+                read_tail=read_tail,
+            )
+        except IOError as e:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to read log file at {0}. "
+                "Root cause I/O error {1}: {2}".format(log_file, e.errno, e.strerror)
+            )
 
     def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""
@@ -687,47 +713,6 @@ class Plugin(object):
                 "System version '%s' doesn't match version from client decorator: "
                 "@system(bg_version=%s)" % (self._system.version, client_version)
             )
-
-    def _find_logger_basefilename(self, logger):
-        """Finds the logger base filename(s) currently there is only one
-        """
-        log_file = None
-        parent = logger.parent
-        if parent.__class__.__name__ == "RootLogger":
-            # this is where the file name lives
-            for h in parent.handlers:
-                if hasattr(h, "baseFilename"):
-                    log_file = h.baseFilename
-                    break
-        else:
-            log_file = self._find_logger_basefilename(parent)
-
-        return log_file
-
-    def _read_log(self, start_line=0, end_line=20, read_all=False, read_tail=False):
-
-        log_file = self._find_logger_basefilename(logging.getLogger(__name__))
-        if log_file:
-            try:
-                with open(log_file, "r") as text_file:
-                    raw_logs = text_file.readlines()
-                    if read_all:
-                        return raw_logs
-                    elif read_tail:
-                        return raw_logs[(len(raw_logs) - start_line) : :]
-                    else:
-                        return raw_logs[start_line:end_line]
-            except IOError as e:
-                return [
-                    "Unable to read Log file",
-                    "I/O error({0}): {1}".format(e.errno, e.strerror),
-                ]
-
-        return [
-            "Unable to determine Logger Handler base Filename. "
-            "Please check with the System Adminstrator to verify plugin is writing "
-            "to log file."
-        ]
 
     # These are provided for backward-compatibility
     @property

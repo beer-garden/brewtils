@@ -240,6 +240,34 @@ class RequestProcessor(object):
             return str(output)
 
 
+class AdminProcessor(RequestProcessor):
+    """RequestProcessor with slightly modified process method"""
+
+    def process_message(self, target, request, headers):
+        """Process a message. Intended to be run on an Executor.
+
+        Will invoke the command and set the final status / output / error_class.
+
+        Will NOT set the status to IN_PROGRESS or set the request context.
+
+        Args:
+            target: The object to invoke received commands on
+            request: The parsed Request
+            headers: Dictionary of headers from the `PikaConsumer`
+
+        Returns:
+            None
+        """
+        try:
+            output = self._invoke_command(target, request, headers)
+        except Exception as exc:
+            self._handle_invoke_failure(request, exc)
+        else:
+            self._handle_invoke_success(request, output)
+
+        self._updater.update_request(request, headers)
+
+
 @six.add_metaclass(abc.ABCMeta)
 class RequestConsumer(threading.Thread):
     """Base class for consumers
@@ -397,10 +425,15 @@ class HTTPRequestUpdater(RequestUpdater):
             try:
                 if not self._should_be_final_attempt(headers):
                     self._wait_if_not_first_attempt(headers)
-                    self._send_update_request(request=request)
+                    self._ez_client.update_request(
+                        request.id,
+                        status=request.status,
+                        output=request.output,
+                        error_class=request.error_class,
+                    )
                 else:
-                    self._send_update_request(
-                        request=request,
+                    self._ez_client.update_request(
+                        request.id,
                         status="ERROR",
                         output="We tried to update the request, but it failed too many "
                         "times. Please check the plugin logs to figure out why the "
@@ -413,16 +446,6 @@ class HTTPRequestUpdater(RequestUpdater):
                 self._handle_request_update_failure(request, headers, ex)
             finally:
                 sys.stdout.flush()
-
-    def _send_update_request(
-        self, request=None, status=None, output=None, error_class=None
-    ):
-        self._ez_client.update_request(
-            request.id,
-            status=status if status else request.status,
-            output=output if output else request.output,
-            error_class=error_class if error_class else request.error_class,
-        )
 
     def _wait_if_not_first_attempt(self, headers):
         if headers.get("retry_attempt", 0) > 0:

@@ -53,7 +53,6 @@ DEFAULT_HANDLERS = {
     }
 }
 
-
 DEFAULT_ROOT = {"level": "INFO", "formatter": "default", "handlers": ["default"]}
 
 DEFAULT_PLUGIN_LOGGING_TEMPLATE = {
@@ -170,15 +169,12 @@ def find_log_file(logger):
     """Find the log file name"""
     log_file = None
 
-    parent = logger.parent
-    if parent.__class__.__name__ == "RootLogger":
-        # this is where the file name lives
-        for h in parent.handlers:
-            if hasattr(h, "baseFilename"):
-                log_file = h.baseFilename
-                break
-    else:
-        log_file = find_log_file(parent)
+    for h in logger.handlers:
+        if hasattr(h, "baseFilename"):
+            log_file = h.baseFilename
+            break
+    if log_file is None and logger.parent:
+        log_file = find_log_file(logger.parent)
 
     return log_file
 

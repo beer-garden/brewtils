@@ -1266,9 +1266,7 @@ class ModelCache:
 
         if key in self.cache:
             # Remove Old Cache
-            self.events[key].set()
-            self.cache.pop(key)
-            self.events.pop(key)
+            self.clear_cache_item(key)
 
         self.cache[key] = value
         self.events[key] = Event()

@@ -510,17 +510,23 @@ class Plugin(object):
         return admin_processor, request_processor
 
     def _start(self):
-        """Handle start Request by marking this plugin as running"""
+        """Handle start Request"""
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="RUNNING"
         )
 
     def _stop(self):
-        """Handle stop Request by setting the shutdown event"""
+        """Handle stop Request"""
+        # Because the run() method is on a 0.1s sleep there's a race regarding if the
+        # admin consumer will start processing the next message on the queue before the
+        # main thread can stop it. So stop it here to prevent that.
+        self._request_processor.consumer.stop_consuming()
+        self._admin_processor.consumer.stop_consuming()
+
         self._shutdown_event.set()
 
     def _status(self):
-        """Handle status Request by sending a heartbeat."""
+        """Handle status Request"""
         try:
             self._ez_client.instance_heartbeat(self._instance.id)
         except (RequestsConnectionError, RestConnectionError):

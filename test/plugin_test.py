@@ -524,8 +524,8 @@ class TestInitializeProcessors(object):
         admin_queue = bg_instance.queue_info["admin"]["name"]
 
         admin, request = plugin._initialize_processors()
-        assert admin._consumer._queue_name == admin_queue
-        assert request._consumer._queue_name == request_queue
+        assert admin.consumer._queue_name == admin_queue
+        assert request.consumer._queue_name == request_queue
 
 
 class TestAdminMethods(object):

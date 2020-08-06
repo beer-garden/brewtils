@@ -58,14 +58,15 @@ class RequestProcessor(object):
     ):
         self.logger = logger or logging.getLogger(__name__)
 
+        self.consumer = consumer
+        self.consumer.on_message_callback = self.on_message_received
+
         self._target = target
         self._updater = updater
         self._plugin_name = plugin_name
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-        self._consumer = consumer
-        self._consumer.on_message_callback = self.on_message_received
         self._resolvers = resolvers
         self._working_directory = working_directory
 
@@ -136,19 +137,18 @@ class RequestProcessor(object):
 
     def startup(self):
         """Start the RequestProcessor"""
-        self._consumer.start()
+        self.consumer.start()
 
     def shutdown(self):
         """Stop the RequestProcessor"""
-        self.logger.debug("Stopping consuming")
-        self._consumer.stop_consuming()
+        self.logger.debug("Shutting down consumer")
+        self.consumer.stop_consuming()
 
         # Finish all current actions
         self._pool.shutdown(wait=True)
 
-        self.logger.debug("Shutting down consumer")
-        self._consumer.stop()
-        self._consumer.join()
+        self.consumer.stop()
+        self.consumer.join()
 
         # Give the updater a chance to shutdown
         self._updater.shutdown()

@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from threading import Thread, Event
+from threading import Thread, Event as ThreadEvent
 import pytz
 import six
 import json
@@ -1269,6 +1269,6 @@ class ModelCache:
             self.clear_cache_item(key)
 
         self.cache[key] = value
-        self.events[key] = Event()
+        self.events[key] = ThreadEvent()
         t = Thread(target=ttl_set_remove, args=(self.cache, self.events, key, ttl))
         t.start()

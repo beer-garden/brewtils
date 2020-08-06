@@ -214,6 +214,8 @@ class TransientPikaClient(PikaClient):
               Flag indicating whether to operate in publisher-acknowledgements mode
             * *mandatory* --
               Raise if the message can not be routed to any queues
+            * *priority* --
+              Message priority
         """
         with BlockingConnection(self._conn_params) as conn:
             channel = conn.channel()
@@ -227,6 +229,7 @@ class TransientPikaClient(PikaClient):
                 headers=kwargs.get("headers"),
                 expiration=kwargs.get("expiration"),
                 delivery_mode=kwargs.get("delivery_mode"),
+                priority=kwargs.get("priority"),
             )
 
             channel.basic_publish(

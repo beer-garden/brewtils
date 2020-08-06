@@ -215,6 +215,7 @@ class TestTransientPikaClient(object):
             expiration=10,
             mandatory=True,
             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE,
+            priority=1,
         )
         props_mock.assert_called_with(
             app_id="beer-garden",
@@ -222,6 +223,7 @@ class TestTransientPikaClient(object):
             headers=None,
             expiration=10,
             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE,
+            priority=1,
         )
         channel_mock.basic_publish.assert_called_with(
             exchange="beer_garden",

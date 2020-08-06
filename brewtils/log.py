@@ -191,7 +191,7 @@ def read_log_file(log_file, start_line=0, end_line=20, read_all=False, read_tail
     if read_all:
         return raw_logs
     elif read_tail:
-        return raw_logs[(len(raw_logs) - start_line) : :]
+        return raw_logs[(len(raw_logs) - start_line) :]
     else:
         return raw_logs[start_line:end_line]
 

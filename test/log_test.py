@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging.config
 import os
 import warnings
 
-import logging.config
 import pytest
-from mock import Mock
+from mock import MagicMock, Mock
 
 from brewtils.log import (
     DEFAULT_FORMATTERS,
@@ -12,25 +12,28 @@ from brewtils.log import (
     configure_logging,
     convert_logging_config,
     default_config,
+    find_log_file,
     get_logging_config,
     get_python_logging_config,
+    read_log_file,
     setup_logger,
 )
 from brewtils.models import LoggingConfig
 
 
-class TestLog(object):
-    @pytest.fixture
-    def params(self):
-        return {
-            "bg_host": "bg_host",
-            "bg_port": 1234,
-            "system_name": "system_name",
-            "ca_cert": "ca_cert",
-            "client_cert": "client_cert",
-            "ssl_enabled": False,
-        }
+@pytest.fixture
+def params():
+    return {
+        "bg_host": "bg_host",
+        "bg_port": 1234,
+        "system_name": "system_name",
+        "ca_cert": "ca_cert",
+        "client_cert": "client_cert",
+        "ssl_enabled": False,
+    }
 
+
+class TestLog(object):
     def test_default(self):
         log_config = default_config(level="DEBUG")
         assert log_config["root"]["level"] == "DEBUG"
@@ -62,6 +65,59 @@ class TestLog(object):
         mangled_config = config_mock.call_args[0][0]
         assert "foo" in mangled_config["handlers"]["file"]["filename"]
 
+
+class TestFindLogFile(object):
+    def test_success(self, monkeypatch):
+        handler_mock = Mock(baseFilename="foo.log")
+        root_mock = Mock(handlers=[handler_mock])
+        monkeypatch.setattr(logging, "getLogger", Mock(return_value=root_mock))
+
+        assert find_log_file() == "foo.log"
+
+    def test_failure(self, monkeypatch):
+        # This ensures the handler doesn't have a baseFilename attribute
+        handler_mock = MagicMock(spec="")
+
+        root_mock = Mock(handlers=[handler_mock])
+        monkeypatch.setattr(logging, "getLogger", Mock(return_value=root_mock))
+
+        assert find_log_file() is None
+
+
+class TestReadLogFile(object):
+    @pytest.fixture
+    def lines(self):
+        return ["Line {0}\n".format(i) for i in range(10)]
+
+    @pytest.fixture
+    def log_file(self, tmpdir, lines):
+        log_file = os.path.join(str(tmpdir), "test.log")
+
+        with open(log_file, "w") as f:
+            f.writelines(lines)
+
+        return log_file
+
+    def test_read_all(self, log_file, lines):
+        log_lines = read_log_file(log_file, read_all=True)
+
+        assert len(log_lines) == 10
+        assert log_lines == lines
+
+    def test_read_tail(self, log_file, lines):
+        log_lines = read_log_file(log_file, start_line=7, read_tail=True)
+
+        assert len(log_lines) == 7
+        assert log_lines == lines[3:]
+
+    def test_read_range(self, log_file, lines):
+        log_lines = read_log_file(log_file, start_line=1, end_line=4)
+
+        assert len(log_lines) == 3
+        assert log_lines == lines[1:4]
+
+
+class TestDeprecated(object):
     def test_get_logging_config(self, params, monkeypatch):
         monkeypatch.setattr("brewtils.get_easy_client", Mock())
 

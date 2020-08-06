@@ -1229,9 +1229,9 @@ class Operation(BaseModel):
 
 
 def ttl_set_remove(cache, events, key, ttl):
-    events[key].wait(timeout=ttl)
-    cache.pop(key)
-    events.pop(key)
+    if not events[key].wait(timeout=ttl):
+        cache.pop(key)
+        events.pop(key)
 
 
 class ModelCache:
@@ -1257,10 +1257,13 @@ class ModelCache:
         if not key:
             key = hash(value)
 
-        # If the key already exists then we should not cache it a second time.
-        # A thread is already scheduled to delete it and we don't want a race condition
-        if key not in self.cache:
-            self.cache[key] = value
-            
-            t = Thread(target=ttl_set_remove, args=(self.cache, self.events, key, ttl))
-            t.start()
+        if key in self.cache:
+            # Remove Old Cache
+            self.events[key].set()
+            self.cache.pop(key)
+            self.events.pop(key)
+
+        self.cache[key] = value
+        self.events[key] = Event()
+        t = Thread(target=ttl_set_remove, args=(self.cache, self.events, key, ttl))
+        t.start()

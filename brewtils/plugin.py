@@ -532,7 +532,7 @@ class Plugin(object):
         except (RequestsConnectionError, RestConnectionError):
             pass
 
-    def _read_log(self, start_line=0, end_line=20, read_all=False, read_tail=False):
+    def _read_log(self, **kwargs):
         """Handle read log Request"""
 
         log_file = find_log_file()
@@ -544,13 +544,7 @@ class Plugin(object):
             )
 
         try:
-            return read_log_file(
-                log_file=log_file,
-                start_line=start_line,
-                end_line=end_line,
-                read_all=read_all,
-                read_tail=read_tail,
-            )
+            return read_log_file(log_file=log_file, **kwargs)
         except IOError as e:
             raise RequestProcessingError(
                 "Error attempting to retrieve logs - unable to read log file at {0}. "

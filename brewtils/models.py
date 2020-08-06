@@ -1248,7 +1248,8 @@ class ModelCache:
     def clear_cache(self):
         self.cache = {}
         for event in self.events:
-            event.set()
+            self.events[event].set()
+        self.events = {}
 
     def clear_cache_item(self, key):
         self.events[key].set()

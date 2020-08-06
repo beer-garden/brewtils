@@ -165,20 +165,11 @@ def configure_logging(
     logging.config.dictConfig(logging_config)
 
 
-def find_log_file(logger):
-    """Find the log file name"""
-    log_file = None
-    parent = logger.parent
-
-    if parent.__class__.__name__ == "RootLogger":
-        # this is where the file name lives
-        for h in parent.handlers:
-            if hasattr(h, "baseFilename"):
-                return h.baseFilename
-    else:
-        return find_log_file(parent)
-
-    return log_file
+def find_log_file():
+    """Find the file name for the first file handler attached to the root logger"""
+    for h in logging.getLogger().handlers:
+        if hasattr(h, "baseFilename"):
+            return h.baseFilename
 
 
 def read_log_file(log_file, start_line=0, end_line=20, read_all=False, read_tail=False):

@@ -529,7 +529,7 @@ class Plugin(object):
     def _read_log(self, start_line=0, end_line=20, read_all=False, read_tail=False):
         """Handle read log Request"""
 
-        log_file = find_log_file(self._logger)
+        log_file = find_log_file()
 
         if not log_file:
             raise RequestProcessingError(

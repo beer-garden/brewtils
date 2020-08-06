@@ -1246,8 +1246,14 @@ class ModelCache:
         return self.cache.get(key, None)
 
     def clear_cache(self):
+        self.cache = {}
         for event in self.events:
             event.set()
+
+    def clear_cache_item(self, key):
+        self.events[key].set()
+        self.cache.pop(key)
+        self.events.pop(key)
 
     def add(self, value=None, ttl=0, key=None):
         # Don't attempt to cache is time is zero

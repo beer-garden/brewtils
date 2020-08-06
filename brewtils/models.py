@@ -2,8 +2,7 @@
 
 from enum import Enum
 
-import time
-from threading import Thread
+from threading import Thread, Event
 import pytz
 import six
 import json
@@ -1229,20 +1228,26 @@ class Operation(BaseModel):
         )
 
 
-def ttl_set_remove(cache, key, ttl):
-    time.sleep(ttl)
+def ttl_set_remove(cache, events, key, ttl):
+    events[key].wait(timeout=ttl)
     cache.pop(key)
+    events.pop(key)
 
 
 class ModelCache:
     def __init__(self):
-        self.cache = dict()
+        self.cache = {}
+        self.events = {}
 
     def is_cached(self, key):
         return key in self.cache
 
     def get_cache(self, key):
         return self.cache.get(key, None)
+
+    def clear_cache(self):
+        for event in self.events:
+            event.set()
 
     def add(self, value=None, ttl=0, key=None):
         # Don't attempt to cache is time is zero
@@ -1256,5 +1261,6 @@ class ModelCache:
         # A thread is already scheduled to delete it and we don't want a race condition
         if key not in self.cache:
             self.cache[key] = value
-            t = Thread(target=ttl_set_remove, args=(self.cache, key, ttl))
+            
+            t = Thread(target=ttl_set_remove, args=(self.cache, self.events, key, ttl))
             t.start()

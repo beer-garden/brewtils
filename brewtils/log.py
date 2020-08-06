@@ -172,15 +172,13 @@ def find_log_file():
             return h.baseFilename
 
 
-def read_log_file(log_file, start_line=0, end_line=20, read_all=False, read_tail=False):
+def read_log_file(log_file, start_line=None, end_line=None):
     """Read lines from a log file
 
     Args:
         log_file: The file to read from
         start_line: Starting line to read
         end_line: Ending line to read
-        read_all: Flag indicating if the entire file should be returned
-        read_tail: Flag indicating if reading should start from the end of the file
 
     Returns:
         Lines read from the file
@@ -188,12 +186,7 @@ def read_log_file(log_file, start_line=0, end_line=20, read_all=False, read_tail
     with open(log_file, "r") as f:
         raw_logs = f.readlines()
 
-    if read_all:
-        return raw_logs
-    elif read_tail:
-        return raw_logs[(len(raw_logs) - start_line) :]
-    else:
-        return raw_logs[start_line:end_line]
+    return raw_logs[start_line:end_line]
 
 
 # DEPRECATED

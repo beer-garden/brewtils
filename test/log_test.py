@@ -99,13 +99,13 @@ class TestReadLogFile(object):
         return log_file
 
     def test_read_all(self, log_file, lines):
-        log_lines = read_log_file(log_file, read_all=True)
+        log_lines = read_log_file(log_file, start_line=0, end_line=None)
 
         assert len(log_lines) == 10
         assert log_lines == lines
 
     def test_read_tail(self, log_file, lines):
-        log_lines = read_log_file(log_file, start_line=7, read_tail=True)
+        log_lines = read_log_file(log_file, start_line=-7, end_line=None)
 
         assert len(log_lines) == 7
         assert log_lines == lines[3:]

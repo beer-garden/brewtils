@@ -186,7 +186,7 @@ def read_log_file(log_file, start_line=None, end_line=None):
     with open(log_file, "r") as f:
         raw_logs = f.readlines()
 
-    return raw_logs[start_line:end_line]
+    return "".join(raw_logs[start_line:end_line])
 
 
 # DEPRECATED

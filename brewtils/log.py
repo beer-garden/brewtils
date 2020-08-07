@@ -53,7 +53,6 @@ DEFAULT_HANDLERS = {
     }
 }
 
-
 DEFAULT_ROOT = {"level": "INFO", "formatter": "default", "handlers": ["default"]}
 
 DEFAULT_PLUGIN_LOGGING_TEMPLATE = {
@@ -164,6 +163,30 @@ def configure_logging(
                 os.makedirs(dir_name)
 
     logging.config.dictConfig(logging_config)
+
+
+def find_log_file():
+    """Find the file name for the first file handler attached to the root logger"""
+    for h in logging.getLogger().handlers:
+        if hasattr(h, "baseFilename"):
+            return h.baseFilename
+
+
+def read_log_file(log_file, start_line=None, end_line=None):
+    """Read lines from a log file
+
+    Args:
+        log_file: The file to read from
+        start_line: Starting line to read
+        end_line: Ending line to read
+
+    Returns:
+        Lines read from the file
+    """
+    with open(log_file, "r") as f:
+        raw_logs = f.readlines()
+
+    return "".join(raw_logs[start_line:end_line])
 
 
 # DEPRECATED

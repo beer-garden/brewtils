@@ -17,11 +17,11 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.log import configure_logging, default_config
+from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
+    AdminProcessor,
     HTTPRequestUpdater,
-    NoopUpdater,
     RequestConsumer,
     RequestProcessor,
 )
@@ -489,9 +489,9 @@ class Plugin(object):
         )
 
         # Finally, create the actual RequestProcessors
-        admin_processor = RequestProcessor(
+        admin_processor = AdminProcessor(
             target=self,
-            updater=NoopUpdater(),
+            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=admin_consumer,
             plugin_name=self.unique_name,
             max_workers=1,
@@ -510,21 +510,46 @@ class Plugin(object):
         return admin_processor, request_processor
 
     def _start(self):
-        """Handle start Request by marking this plugin as running"""
+        """Handle start Request"""
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="RUNNING"
         )
 
     def _stop(self):
-        """Handle stop Request by setting the shutdown event"""
+        """Handle stop Request"""
+        # Because the run() method is on a 0.1s sleep there's a race regarding if the
+        # admin consumer will start processing the next message on the queue before the
+        # main thread can stop it. So stop it here to prevent that.
+        self._request_processor.consumer.stop_consuming()
+        self._admin_processor.consumer.stop_consuming()
+
         self._shutdown_event.set()
 
     def _status(self):
-        """Handle status message by sending a heartbeat."""
+        """Handle status Request"""
         try:
             self._ez_client.instance_heartbeat(self._instance.id)
         except (RequestsConnectionError, RestConnectionError):
             pass
+
+    def _read_log(self, **kwargs):
+        """Handle read log Request"""
+
+        log_file = find_log_file()
+
+        if not log_file:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to determine log filename. "
+                "Please verify that the plugin is writing to a log file."
+            )
+
+        try:
+            return read_log_file(log_file=log_file, **kwargs)
+        except IOError as e:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to read log file at {0}. "
+                "Root cause I/O error {1}: {2}".format(log_file, e.errno, e.strerror)
+            )
 
     def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""

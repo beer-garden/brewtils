@@ -36,7 +36,6 @@ __all__ = [
     "register",
 ]
 
-
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,
 # instead just using the original function. This is pretty much exactly what we want - we
 # aren't using decorators for their 'real' purpose of wrapping a function, we just want to add

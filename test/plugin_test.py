@@ -524,8 +524,8 @@ class TestInitializeProcessors(object):
         admin_queue = bg_instance.queue_info["admin"]["name"]
 
         admin, request = plugin._initialize_processors()
-        assert admin._consumer._queue_name == admin_queue
-        assert request._consumer._queue_name == request_queue
+        assert admin.consumer._queue_name == admin_queue
+        assert request.consumer._queue_name == request_queue
 
 
 class TestAdminMethods(object):
@@ -551,6 +551,31 @@ class TestAdminMethods(object):
         ez_client.instance_heartbeat.side_effect = RestConnectionError()
         plugin._status()
         ez_client.instance_heartbeat.assert_called_once_with(plugin._instance.id)
+
+    class TestReadLog(object):
+        """Test the plugin._read_log() functionality
+
+        This only really tests the failure conditions because they're the only logic
+        that exists in the method. Actual functionality is in log.read_log_file()
+        """
+
+        def test_no_file_handler(self, monkeypatch, plugin):
+            monkeypatch.setattr(
+                brewtils.plugin, "find_log_file", Mock(return_value=None)
+            )
+
+            with pytest.raises(RequestProcessingError):
+                plugin._read_log()
+
+        def test_bad_file(self, monkeypatch, tmpdir, plugin):
+            monkeypatch.setattr(
+                brewtils.plugin,
+                "find_log_file",
+                Mock(return_value=os.path.join(str(tmpdir), "no_file.log")),
+            )
+
+            with pytest.raises(RequestProcessingError):
+                plugin._read_log()
 
 
 class TestValidationFunctions(object):

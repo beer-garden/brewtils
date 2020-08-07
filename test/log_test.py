@@ -101,20 +101,17 @@ class TestReadLogFile(object):
     def test_read_all(self, log_file, lines):
         log_lines = read_log_file(log_file, start_line=0, end_line=None)
 
-        assert len(log_lines) == 10
-        assert log_lines == lines
+        assert log_lines == "".join(lines)
 
     def test_read_tail(self, log_file, lines):
         log_lines = read_log_file(log_file, start_line=-7, end_line=None)
 
-        assert len(log_lines) == 7
-        assert log_lines == lines[3:]
+        assert log_lines == "".join(lines[3:])
 
     def test_read_range(self, log_file, lines):
         log_lines = read_log_file(log_file, start_line=1, end_line=4)
 
-        assert len(log_lines) == 3
-        assert log_lines == lines[1:4]
+        assert log_lines == "".join(lines[1:4])
 
 
 class TestDeprecated(object):

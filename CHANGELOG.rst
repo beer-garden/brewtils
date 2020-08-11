@@ -1,6 +1,17 @@
 Brewtils Changelog
 ==================
 
+3.0.0
+-----
+Date: TBD
+
+See the Upgrade Guide for upgrading from v2 to v3.
+
+Bug Fixes
+^^^^^^^^^
+
+- Parameter choices definition can be a non-list iterable (beer-garden/#512)
+
 2.4.14
 -----
 Date: 1/30/20

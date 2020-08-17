@@ -1208,6 +1208,15 @@ class Operation(BaseModel):
 
     def __repr__(self):
         return (
-            "<Operation: operation_type=%s, source_garden_name=%s, target_garden_name=%s>"
-            % (self.operation_type, self.source_garden_name, self.target_garden_name)
+            "<Operation: operation_type=%s, source_garden_name=%s, "
+            "target_garden_name=%s, model_type=%s, model=%s, args=%s, kwargs=%s>"
+            % (
+                self.operation_type,
+                self.source_garden_name,
+                self.target_garden_name,
+                self.model_type,
+                self.model,
+                self.args,
+                self.kwargs,
+            )
         )

@@ -66,6 +66,7 @@ class Events(Enum):
     JOB_DELETED = 31
     JOB_PAUSED = 32
     JOB_RESUMED = 33
+    PLUGIN_LOGGER_FILE_CHANGE = 34
 
     # TODO - should these be external API events?
     INSTANCE_STOP_REQUESTED = 101

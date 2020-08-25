@@ -36,7 +36,6 @@ __all__ = [
     "register",
 ]
 
-
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,
 # instead just using the original function. This is pretty much exactly what we want - we
 # aren't using decorators for their 'real' purpose of wrapping a function, we just want to add
@@ -584,22 +583,15 @@ def _format_choices(choices):
         return "select" if len(display_value) <= 50 else "typeahead"
 
     def determine_type(type_value):
-        if isinstance(type_value, (list, dict)):
-            return "static"
-        elif type_value.startswith("http"):
-            return "url"
-        else:
-            return "command"
+        if isinstance(type_value, six.string_types):
+            return "url" if type_value.startswith("http") else "command"
+
+        return "static"
 
     if not choices:
         return None
 
-    if not isinstance(choices, (list, six.string_types, dict)):
-        raise PluginParamError(
-            "Invalid 'choices' provided. Must be a list, dictionary or string."
-        )
-
-    elif isinstance(choices, dict):
+    if isinstance(choices, dict):
         if not choices.get("value"):
             raise PluginParamError(
                 "No 'value' provided for choices. You must at least "
@@ -643,8 +635,22 @@ def _format_choices(choices):
                 "Invalid choices display '%s' - Valid display options are %s"
                 % (display, Choices.DISPLAYS)
             )
-    else:
+
+    elif isinstance(choices, str):
         value = choices
+        display = determine_display(value)
+        choice_type = determine_type(value)
+        strict = True
+
+    else:
+        try:
+            # Assume some sort of iterable
+            value = list(choices)
+        except TypeError:
+            raise PluginParamError(
+                "Invalid 'choices': must be a string, dictionary, or iterable."
+            )
+
         display = determine_display(value)
         choice_type = determine_type(value)
         strict = True

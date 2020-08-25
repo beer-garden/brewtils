@@ -1,49 +1,120 @@
 # -*- coding: utf-8 -*-
+import logging.config
+import os
 import warnings
 
 import pytest
-from mock import Mock
+from mock import MagicMock, Mock
 
 from brewtils.log import (
-    configure_logging,
-    get_logging_config,
-    convert_logging_config,
-    setup_logger,
-    get_python_logging_config,
-    DEFAULT_HANDLERS,
     DEFAULT_FORMATTERS,
+    DEFAULT_HANDLERS,
+    configure_logging,
+    convert_logging_config,
+    default_config,
+    find_log_file,
+    get_logging_config,
+    get_python_logging_config,
+    read_log_file,
+    setup_logger,
 )
 from brewtils.models import LoggingConfig
 
 
+@pytest.fixture
+def params():
+    return {
+        "bg_host": "bg_host",
+        "bg_port": 1234,
+        "system_name": "system_name",
+        "ca_cert": "ca_cert",
+        "client_cert": "client_cert",
+        "ssl_enabled": False,
+    }
+
+
 class TestLog(object):
-    @pytest.fixture
-    def params(self):
-        return {
-            "bg_host": "bg_host",
-            "bg_port": 1234,
-            "system_name": "system_name",
-            "ca_cert": "ca_cert",
-            "client_cert": "client_cert",
-            "ssl_enabled": False,
+    def test_default(self):
+        log_config = default_config(level="DEBUG")
+        assert log_config["root"]["level"] == "DEBUG"
+
+    def test_configure_logging(self, tmpdir, params, monkeypatch):
+        raw_config = {
+            "handlers": {
+                "file": {
+                    "class": "logging.handlers.RotatingFileHandler",
+                    "filename": os.path.join(str(tmpdir), "log", "%(system_name)s.log"),
+                }
+            }
         }
 
-    def test_configure_logging(self, params, monkeypatch):
-        easy_mock = Mock()
-        monkeypatch.setattr("brewtils.get_easy_client", easy_mock)
+        config_mock = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", config_mock)
 
-        convert_mock = Mock()
-        monkeypatch.setattr("brewtils.log.convert_logging_config", convert_mock)
-
-        conf_mock = Mock()
-        monkeypatch.setattr("brewtils.log.logging.config.dictConfig", conf_mock)
-
-        configure_logging(**params)
-        conf_mock.assert_called_once_with(convert_mock.return_value)
-        easy_mock.return_value.get_logging_config.assert_called_once_with(
-            params["system_name"]
+        configure_logging(
+            raw_config,
+            namespace="ns",
+            system_name="foo",
+            system_version="1.0",
+            instance_name="inst",
         )
 
+        assert os.path.exists(os.path.join(str(tmpdir), "log"))
+        assert config_mock.called is True
+
+        mangled_config = config_mock.call_args[0][0]
+        assert "foo" in mangled_config["handlers"]["file"]["filename"]
+
+
+class TestFindLogFile(object):
+    def test_success(self, monkeypatch):
+        handler_mock = Mock(baseFilename="foo.log")
+        root_mock = Mock(handlers=[handler_mock])
+        monkeypatch.setattr(logging, "getLogger", Mock(return_value=root_mock))
+
+        assert find_log_file() == "foo.log"
+
+    def test_failure(self, monkeypatch):
+        # This ensures the handler doesn't have a baseFilename attribute
+        handler_mock = MagicMock(spec="")
+
+        root_mock = Mock(handlers=[handler_mock])
+        monkeypatch.setattr(logging, "getLogger", Mock(return_value=root_mock))
+
+        assert find_log_file() is None
+
+
+class TestReadLogFile(object):
+    @pytest.fixture
+    def lines(self):
+        return ["Line {0}\n".format(i) for i in range(10)]
+
+    @pytest.fixture
+    def log_file(self, tmpdir, lines):
+        log_file = os.path.join(str(tmpdir), "test.log")
+
+        with open(log_file, "w") as f:
+            f.writelines(lines)
+
+        return log_file
+
+    def test_read_all(self, log_file, lines):
+        log_lines = read_log_file(log_file, start_line=0, end_line=None)
+
+        assert log_lines == "".join(lines)
+
+    def test_read_tail(self, log_file, lines):
+        log_lines = read_log_file(log_file, start_line=-7, end_line=None)
+
+        assert log_lines == "".join(lines[3:])
+
+    def test_read_range(self, log_file, lines):
+        log_lines = read_log_file(log_file, start_line=1, end_line=4)
+
+        assert log_lines == "".join(lines[1:4])
+
+
+class TestDeprecated(object):
     def test_get_logging_config(self, params, monkeypatch):
         monkeypatch.setattr("brewtils.get_easy_client", Mock())
 

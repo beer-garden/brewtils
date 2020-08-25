@@ -199,18 +199,21 @@ class EasyClient(object):
         """
         return self.client.get_config()
 
-    @wrap_response(parse_method="parse_logging_config", default_exc=FetchError)
-    def get_logging_config(self, system_name):
-        """Get logging configuration for a System
+    @wrap_response(default_exc=FetchError)
+    def get_logging_config(self, system_name=None):
+        """Get a logging configuration
+
+        Note that the system_name is not relevant and is only provided for
+        backward-compatibility.
 
         Args:
-            system_name (str): The name of the System
+            system_name (str): UNUSED
 
         Returns:
             LoggingConfig: The configuration object
 
         """
-        return self.client.get_logging_config(system_name=system_name)
+        return self.client.get_logging_config()
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError

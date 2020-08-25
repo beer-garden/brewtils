@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import logging
-import logging.config
 import os
 import warnings
 
+import logging
+import logging.config
 import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
@@ -349,18 +349,38 @@ class TestInitializeLogging(object):
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
         return dict_config
 
-    def test_normal(self, plugin, ez_client, config_mock, bg_logging_config):
+    def test_normal(self, caplog, plugin, ez_client, config_mock):
         plugin._custom_logger = False
-        ez_client.get_logging_config.return_value = bg_logging_config
+        ez_client.get_logging_config.return_value = {"handlers": {"stdout": {}}}
 
-        plugin._initialize_logging()
+        with caplog.at_level(logging.ERROR):
+            plugin._initialize_logging()
+
         assert config_mock.called is True
+        assert len(caplog.records) == 0
 
     def test_custom_logger(self, plugin, ez_client, config_mock):
         plugin._custom_logger = True
 
         plugin._initialize_logging()
         assert config_mock.called is False
+
+    def test_retrieve_fail(self, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.side_effect = RestConnectionError
+
+        plugin._initialize_logging()
+        assert config_mock.called is False
+
+    def test_config_fail(self, caplog, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.return_value = "Bad config value"
+
+        with caplog.at_level(logging.ERROR):
+            plugin._initialize_logging()
+
+        assert config_mock.called is True
+        assert len(caplog.records) > 0
 
 
 class TestInitializeSystem(object):
@@ -504,8 +524,8 @@ class TestInitializeProcessors(object):
         admin_queue = bg_instance.queue_info["admin"]["name"]
 
         admin, request = plugin._initialize_processors()
-        assert admin._consumer._queue_name == admin_queue
-        assert request._consumer._queue_name == request_queue
+        assert admin.consumer._queue_name == admin_queue
+        assert request.consumer._queue_name == request_queue
 
 
 class TestAdminMethods(object):
@@ -531,6 +551,31 @@ class TestAdminMethods(object):
         ez_client.instance_heartbeat.side_effect = RestConnectionError()
         plugin._status()
         ez_client.instance_heartbeat.assert_called_once_with(plugin._instance.id)
+
+    class TestReadLog(object):
+        """Test the plugin._read_log() functionality
+
+        This only really tests the failure conditions because they're the only logic
+        that exists in the method. Actual functionality is in log.read_log_file()
+        """
+
+        def test_no_file_handler(self, monkeypatch, plugin):
+            monkeypatch.setattr(
+                brewtils.plugin, "find_log_file", Mock(return_value=None)
+            )
+
+            with pytest.raises(RequestProcessingError):
+                plugin._read_log()
+
+        def test_bad_file(self, monkeypatch, tmpdir, plugin):
+            monkeypatch.setattr(
+                brewtils.plugin,
+                "find_log_file",
+                Mock(return_value=os.path.join(str(tmpdir), "no_file.log")),
+            )
+
+            with pytest.raises(RequestProcessingError):
+                plugin._read_log()
 
 
 class TestValidationFunctions(object):

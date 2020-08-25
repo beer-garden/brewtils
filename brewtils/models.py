@@ -69,6 +69,7 @@ class Events(Enum):
     JOB_DELETED = 33
     JOB_PAUSED = 34
     JOB_RESUMED = 35
+    PLUGIN_LOGGER_FILE_CHANGE = 36
 
     # TODO - should these be external API events?
     INSTANCE_STOP_REQUESTED = 101
@@ -84,8 +85,8 @@ class BaseModel(object):
 class Command(BaseModel):
     schema = "CommandSchema"
 
-    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL")
-    OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML")
+    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN")
+    OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
         self,
@@ -460,8 +461,8 @@ class Request(RequestTemplate):
 
     STATUS_LIST = ("CREATED", "RECEIVED", "IN_PROGRESS", "CANCELED", "SUCCESS", "ERROR")
     COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR")
-    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL")
-    OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML")
+    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN")
+    OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
         self,
@@ -1213,6 +1214,15 @@ class Operation(BaseModel):
 
     def __repr__(self):
         return (
-            "<Operation: operation_type=%s, source_garden_name=%s, target_garden_name=%s>"
-            % (self.operation_type, self.source_garden_name, self.target_garden_name)
+            "<Operation: operation_type=%s, source_garden_name=%s, "
+            "target_garden_name=%s, model_type=%s, model=%s, args=%s, kwargs=%s>"
+            % (
+                self.operation_type,
+                self.source_garden_name,
+                self.target_garden_name,
+                self.model_type,
+                self.model,
+                self.args,
+                self.kwargs,
+            )
         )

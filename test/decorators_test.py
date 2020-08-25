@@ -284,6 +284,15 @@ class TestParameter(object):
                 },
             ),
             (
+                range(100),
+                {
+                    "type": "static",
+                    "value": list(range(100)),
+                    "display": "typeahead",
+                    "strict": True,
+                },
+            ),
+            (
                 {"value": [1, 2, 3]},
                 {
                     "type": "static",

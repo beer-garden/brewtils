@@ -7,8 +7,6 @@ import threading
 
 import appdirs
 from box import Box
-from requests import ConnectionError as RequestsConnectionError
-
 from brewtils.config import load_config
 from brewtils.errors import (
     ConflictError,
@@ -19,17 +17,18 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.log import convert_logging_config, default_config
+from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
 from brewtils.models import Instance, System
 from brewtils.request_handling import (
+    AdminProcessor,
     HTTPRequestUpdater,
-    NoopUpdater,
     RequestConsumer,
     RequestProcessor,
 )
 from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
+from requests import ConnectionError as RequestsConnectionError
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -210,9 +209,7 @@ class Plugin(object):
             self.client = client
 
         # And with _system and _ez_client we can ask for the real logging config
-        # (unless _custom_logger is True, in which case this does nothing)
-        # TODO - Enable this once plugin logging is in a better state
-        # self._initialize_logging()
+        self._initialize_logging()
 
     def run(self):
         if not self._client:
@@ -225,7 +222,9 @@ class Plugin(object):
         self._logger.info("Plugin %s has started", self.unique_name)
 
         try:
-            self._shutdown_event.wait()
+            # Need the timeout param so this works correctly in Python 2
+            while not self._shutdown_event.wait(timeout=0.1):
+                pass
         except KeyboardInterrupt:
             self._logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:
@@ -352,8 +351,33 @@ class Plugin(object):
             self._logger.debug("Skipping logging init: custom logger detected")
             return
 
-        bg_log_config = self._ez_client.get_logging_config(self._system.name)
-        logging.config.dictConfig(convert_logging_config(bg_log_config))
+        try:
+            log_config = self._ez_client.get_logging_config()
+        except Exception as ex:
+            self._logger.warning(
+                "Unable to retrieve logging configuration from Beergarden, the default "
+                "configuration will be used instead. Caused by: {0}".format(ex)
+            )
+            return
+
+        try:
+            configure_logging(
+                log_config,
+                namespace=self._system.namespace,
+                system_name=self._system.name,
+                system_version=self._system.version,
+                instance_name=self._config.instance_name,
+            )
+        except Exception as ex:
+            # Reset to default config as logging can be seriously wrong now
+            logging.config.dictConfig(default_config(level=self._config.log_level))
+
+            self._logger.exception(
+                "Error encountered during logging configuration. This most likely "
+                "indicates an issue with the Beergarden server plugin logging "
+                "configuration. The default configuration will be used instead. Caused "
+                "by: {0}".format(ex)
+            )
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info
@@ -465,9 +489,9 @@ class Plugin(object):
         )
 
         # Finally, create the actual RequestProcessors
-        admin_processor = RequestProcessor(
+        admin_processor = AdminProcessor(
             target=self,
-            updater=NoopUpdater(),
+            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
             consumer=admin_consumer,
             plugin_name=self.unique_name,
             max_workers=1,
@@ -486,21 +510,46 @@ class Plugin(object):
         return admin_processor, request_processor
 
     def _start(self):
-        """Handle start Request by marking this plugin as running"""
+        """Handle start Request"""
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="RUNNING"
         )
 
     def _stop(self):
-        """Handle stop Request by setting the shutdown event"""
+        """Handle stop Request"""
+        # Because the run() method is on a 0.1s sleep there's a race regarding if the
+        # admin consumer will start processing the next message on the queue before the
+        # main thread can stop it. So stop it here to prevent that.
+        self._request_processor.consumer.stop_consuming()
+        self._admin_processor.consumer.stop_consuming()
+
         self._shutdown_event.set()
 
     def _status(self):
-        """Handle status message by sending a heartbeat."""
+        """Handle status Request"""
         try:
             self._ez_client.instance_heartbeat(self._instance.id)
         except (RequestsConnectionError, RestConnectionError):
             pass
+
+    def _read_log(self, **kwargs):
+        """Handle read log Request"""
+
+        log_file = find_log_file()
+
+        if not log_file:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to determine log filename. "
+                "Please verify that the plugin is writing to a log file."
+            )
+
+        try:
+            return read_log_file(log_file=log_file, **kwargs)
+        except IOError as e:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to read log file at {0}. "
+                "Root cause I/O error {1}: {2}".format(log_file, e.errno, e.strerror)
+            )
 
     def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""

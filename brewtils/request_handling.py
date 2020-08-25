@@ -58,14 +58,15 @@ class RequestProcessor(object):
     ):
         self.logger = logger or logging.getLogger(__name__)
 
+        self.consumer = consumer
+        self.consumer.on_message_callback = self.on_message_received
+
         self._target = target
         self._updater = updater
         self._plugin_name = plugin_name
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-        self._consumer = consumer
-        self._consumer.on_message_callback = self.on_message_received
         self._resolvers = resolvers
         self._working_directory = working_directory
 
@@ -136,19 +137,18 @@ class RequestProcessor(object):
 
     def startup(self):
         """Start the RequestProcessor"""
-        self._consumer.start()
+        self.consumer.start()
 
     def shutdown(self):
         """Stop the RequestProcessor"""
-        self.logger.debug("Stopping consuming")
-        self._consumer.stop_consuming()
+        self.logger.debug("Shutting down consumer")
+        self.consumer.stop_consuming()
 
         # Finish all current actions
         self._pool.shutdown(wait=True)
 
-        self.logger.debug("Shutting down consumer")
-        self._consumer.stop()
-        self._consumer.join()
+        self.consumer.stop()
+        self.consumer.join()
 
         # Give the updater a chance to shutdown
         self._updater.shutdown()
@@ -238,6 +238,34 @@ class RequestProcessor(object):
             return json.dumps(output)
         except (TypeError, ValueError):
             return str(output)
+
+
+class AdminProcessor(RequestProcessor):
+    """RequestProcessor with slightly modified process method"""
+
+    def process_message(self, target, request, headers):
+        """Process a message. Intended to be run on an Executor.
+
+        Will invoke the command and set the final status / output / error_class.
+
+        Will NOT set the status to IN_PROGRESS or set the request context.
+
+        Args:
+            target: The object to invoke received commands on
+            request: The parsed Request
+            headers: Dictionary of headers from the `PikaConsumer`
+
+        Returns:
+            None
+        """
+        try:
+            output = self._invoke_command(target, request, headers)
+        except Exception as exc:
+            self._handle_invoke_failure(request, exc)
+        else:
+            self._handle_invoke_success(request, output)
+
+        self._updater.update_request(request, headers)
 
 
 @six.add_metaclass(abc.ABCMeta)

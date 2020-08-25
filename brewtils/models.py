@@ -1153,7 +1153,8 @@ class Garden(BaseModel):
         "RUNNING",
         "BLOCKED",
         "STOPPED",
-        "NOT_CONFIGURED" "UNREACHABLE",
+        "NOT_CONFIGURED",
+        "UNREACHABLE",
         "ERROR",
         "UNKNOWN",
     }

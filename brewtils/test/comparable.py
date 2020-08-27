@@ -189,18 +189,11 @@ assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 
 def assert_command_equal(obj1, obj2, do_raise=False):
 
-    # Command's system field only serializes the system's id
-    def compare_system(sys1, sys2):
-        _assert(sys1.id == sys2.id, "System IDs were not equal")
-
     return _assert_wrapper(
         obj1,
         obj2,
         expected_type=Command,
-        deep_fields={
-            "parameters": partial(assert_parameter_equal, do_raise=True),
-            "system": compare_system,
-        },
+        deep_fields={"parameters": partial(assert_parameter_equal, do_raise=True)},
         do_raise=do_raise,
     )
 

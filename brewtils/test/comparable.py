@@ -137,7 +137,7 @@ def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
 
     This is a safety measure in case these functions are used outside of a testing
     context. This isn't recommended, but naked asserts are still unacceptable in any
-    packaged code. This method will translate the various comparision functions to a
+    packaged code. This method will translate the various comparison functions to a
     simple boolean return.
 
     Note that in a testing context the AssertionError is re-raised. This is because it's

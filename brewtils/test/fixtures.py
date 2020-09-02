@@ -168,7 +168,6 @@ def command_dict(parameter_dict, system_id):
         "form": {},
         "template": "<html></html>",
         "icon_name": "icon!",
-        "system": {"id": system_id},
     }
 
 
@@ -177,7 +176,6 @@ def bg_command(command_dict, bg_parameter, system_id):
     """Use the bg_command fixture instead."""
     dict_copy = copy.deepcopy(command_dict)
     dict_copy["parameters"] = [bg_parameter]
-    dict_copy["system"] = System(id=system_id)
     return Command(**dict_copy)
 
 
@@ -194,7 +192,6 @@ def bg_command_2(command_dict_2, bg_parameter, system_id):
     """Use the bg_command fixture instead."""
     dict_copy = copy.deepcopy(command_dict_2)
     dict_copy["parameters"] = [bg_parameter]
-    dict_copy["system"] = System(id=system_id)
     return Command(**dict_copy)
 
 

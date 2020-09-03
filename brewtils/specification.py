@@ -104,7 +104,7 @@ _SYSTEM_SPEC = {
     "max_instances": {
         "type": "int",
         "description": "The system max instances",
-        "default": 1,
+        "default": -1,
     },
     "icon_name": {
         "type": "str",

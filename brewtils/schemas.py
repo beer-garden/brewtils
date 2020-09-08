@@ -165,7 +165,6 @@ class ParameterSchema(BaseSchema):
 
 
 class CommandSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     parameters = fields.Nested("ParameterSchema", many=True)

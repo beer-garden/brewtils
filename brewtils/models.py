@@ -89,7 +89,6 @@ class Command(BaseModel):
         self,
         name=None,
         description=None,
-        id=None,
         parameters=None,
         command_type=None,
         output_type=None,
@@ -101,7 +100,6 @@ class Command(BaseModel):
     ):
         self.name = name
         self.description = description
-        self.id = id
         self.parameters = parameters or []
         self.command_type = command_type
         self.output_type = output_type

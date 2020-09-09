@@ -159,7 +159,6 @@ def command_dict(parameter_dict, system_id):
     return {
         "name": "speak",
         "description": "desc",
-        "id": "123f11af55a38e64799f1234",
         "parameters": [parameter_dict],
         "command_type": "ACTION",
         "output_type": "STRING",

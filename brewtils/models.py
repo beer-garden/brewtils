@@ -606,7 +606,7 @@ class System(BaseModel):
         Returns:
             bool: True if an instance with the given name exists, False otherwise
         """
-        return True if self.get_instance(name) else False
+        return name in self.instance_names
 
     def get_instance_by_name(self, name, raise_missing=False):
         """Get an instance that currently exists in the system

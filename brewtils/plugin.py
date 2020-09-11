@@ -448,7 +448,7 @@ class Plugin(object):
             )
 
         return self._ez_client.initialize_instance(
-            self._system.get_instance(self._config.instance_name).id,
+            self._system.get_instance_by_name(self._config.instance_name).id,
             runner_id=self._config.runner_id,
         )
 

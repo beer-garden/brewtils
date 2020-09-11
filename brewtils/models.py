@@ -4,6 +4,7 @@ from enum import Enum
 
 import pytz
 import six
+from brewtils.errors import ModelError, _deprecate
 
 __all__ = [
     "BaseModel",
@@ -607,19 +608,58 @@ class System(BaseModel):
         """
         return True if self.get_instance(name) else False
 
-    def get_instance(self, name):
+    def get_instance_by_name(self, name, raise_missing=False):
         """Get an instance that currently exists in the system
 
         Args:
             name (str): The instance name
+            raise_missing (bool): If True, raise an exception if an Instance with the
+            given name is not found. If False, will return None in that case.
 
         Returns:
             Instance: The instance if it exists, None otherwise
+
+        Raises:
+            ModelError: Instance was not found and raise_missing=True
         """
         for instance in self.instances:
             if instance.name == name:
                 return instance
+
+        if raise_missing:
+            raise ModelError("Instance not found")
+
         return None
+
+    def get_instance_by_id(self, id, raise_missing=False):
+        """Get an instance that currently exists in the system
+
+        Args:
+            id (str): The instance id
+            raise_missing (bool): If True, raise an exception if an Instance with the
+            given id is not found. If False, will return None in that case.
+
+        Returns:
+            Instance: The instance if it exists, None otherwise
+
+        Raises:
+            ModelError: Instance was not found and raise_missing=True
+        """
+        for instance in self.instances:
+            if instance.id == id:
+                return instance
+
+        if raise_missing:
+            raise ModelError("Instance not found")
+
+        return None
+
+    def get_instance(self, name):
+        """DEPRECATED: Please use get_instance_by_name instead"""
+        _deprecate(
+            "Heads up! This method is deprecated, please use get_instance_by_name"
+        )
+        return self.get_instance_by_name(name)
 
     def get_command_by_name(self, command_name):
         """Retrieve a particular command from the system

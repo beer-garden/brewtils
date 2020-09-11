@@ -252,7 +252,8 @@ class PatchSchema(BaseSchema):
     def unwrap_envelope(self, data, many):
         """Helper function for parsing the different patch formats.
 
-        This exists because we previously wanted multiple patches to be serialized like:
+        This exists because previously multiple patches serialized like::
+
             {
                 "operations": [
                     {"operation": "replace", ...},
@@ -261,7 +262,8 @@ class PatchSchema(BaseSchema):
                 ]
             }
 
-        But we also wanted to be able to handle a simple list:
+        But we also wanted to be able to handle a simple list::
+
             [
                 {"operation": "replace", ...},
                 {"operation": "replace", ...}

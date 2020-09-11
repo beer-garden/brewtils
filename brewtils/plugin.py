@@ -96,7 +96,7 @@ class Plugin(object):
 
         python my_plugin.py --bg-host localhost
 
-    Values can also be specified as environment variables with a "BG_" prefix::
+    Values can also be specified as environment variables with a "\\BG_" prefix::
 
         BG_HOST=localhost python my_plugin.py
 

@@ -932,21 +932,19 @@ class Role(BaseModel):
     schema = "RoleSchema"
 
     def __init__(
-        self, id=None, name=None, description=None, roles=None, permissions=None
+        self, id=None, name=None, description=None, permissions=None
     ):
         self.id = id
         self.name = name
         self.description = description
-        self.roles = roles
         self.permissions = permissions
 
     def __str__(self):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Role: name=%s, roles=%s, permissions=%s>" % (
+        return "<Role: name=%s, permissions=%s>" % (
             self.name,
-            self.roles,
             self.permissions,
         )
 

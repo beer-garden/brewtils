@@ -931,9 +931,7 @@ class Principal(BaseModel):
 class Role(BaseModel):
     schema = "RoleSchema"
 
-    def __init__(
-        self, id=None, name=None, description=None, permissions=None
-    ):
+    def __init__(self, id=None, name=None, description=None, permissions=None):
         self.id = id
         self.name = name
         self.description = description
@@ -943,10 +941,7 @@ class Role(BaseModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Role: name=%s, permissions=%s>" % (
-            self.name,
-            self.permissions,
-        )
+        return "<Role: name=%s, permissions=%s>" % (self.name, self.permissions)
 
 
 class RefreshToken(BaseModel):

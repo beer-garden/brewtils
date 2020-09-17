@@ -501,6 +501,7 @@ def bg_principal(principal_dict):
     dict_copy = copy.deepcopy(principal_dict)
     return Principal(**dict_copy)
 
+
 @pytest.fixture
 def role_dict():
     return {

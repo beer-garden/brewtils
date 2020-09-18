@@ -532,13 +532,13 @@ class TestQueue(object):
 class TestPrincipal(object):
     @pytest.fixture
     def principal(self):
-        return Principal(username="admin", permissions=["bg-all"])
+        return Principal(username="admin", roles=None, permissions=["bg-all"])
 
     def test_str(self, principal):
         assert str(principal) == "admin"
 
     def test_repr(self, principal):
-        assert repr(principal) == "<Principal: username=admin, permissions=['bg-all']>"
+        assert repr(principal) == "<Principal: username=admin, roles=None, permissions=['bg-all']>"
 
 
 class TestRole(object):

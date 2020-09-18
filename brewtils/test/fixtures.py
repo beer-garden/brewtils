@@ -490,6 +490,7 @@ def principal_dict(role_dict):
     return {
         "id": "58542eb571afd47ead90d24f",
         "username": "admin",
+        "roles": [role_dict],
         "permissions": ["bg-all"],
         "preferences": {"theme": "dark"},
         "metadata": {"foo": "bar"},

@@ -538,7 +538,10 @@ class TestPrincipal(object):
         assert str(principal) == "admin"
 
     def test_repr(self, principal):
-        assert repr(principal) == "<Principal: username=admin, roles=None, permissions=['bg-all']>"
+        assert (
+            repr(principal)
+            == "<Principal: username=admin, roles=None, permissions=['bg-all']>"
+        )
 
 
 class TestRole(object):

@@ -498,8 +498,9 @@ def principal_dict(role_dict):
 
 
 @pytest.fixture
-def bg_principal(principal_dict):
+def bg_principal(principal_dict, bg_role):
     dict_copy = copy.deepcopy(principal_dict)
+    dict_copy["roles"] = [bg_role]
     return Principal(**dict_copy)
 
 

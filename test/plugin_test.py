@@ -537,7 +537,6 @@ class TestAdminMethods(object):
         ez_client.update_instance.assert_called_once_with(
             bg_instance.id, new_status="RUNNING"
         )
-        assert plugin._instance == new_instance
 
     def test_stop(self, plugin):
         plugin._stop()

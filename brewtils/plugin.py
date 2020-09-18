@@ -511,9 +511,7 @@ class Plugin(object):
 
     def _start(self):
         """Handle start Request"""
-        self._instance = self._ez_client.update_instance(
-            self._instance.id, new_status="RUNNING"
-        )
+        self._ez_client.update_instance(self._instance.id, new_status="RUNNING")
 
     def _stop(self):
         """Handle stop Request"""

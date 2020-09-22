@@ -88,6 +88,10 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def to_epoch(dt, localtime=False):
+        # If already in epoch form just return it
+        if isinstance(dt, int):
+            return dt
+
         if localtime and dt.tzinfo is not None:
             localized = dt
         else:
@@ -101,6 +105,10 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def from_epoch(epoch):
+        # If already in datetime form just return it
+        if isinstance(epoch, datetime.datetime):
+            return epoch
+
         # utcfromtimestamp will correctly parse milliseconds in Python 3,
         # but in Python 2 we need to help it
         seconds, millis = divmod(epoch, 1000)

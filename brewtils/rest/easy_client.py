@@ -210,7 +210,7 @@ class EasyClient(object):
             system_name (str): UNUSED
 
         Returns:
-            LoggingConfig: The configuration object
+            dict: The configuration object
 
         """
         return self.client.get_logging_config()

@@ -7,6 +7,10 @@ Date: TBD
 
 See the Upgrade Guide for upgrading from v2 to v3.
 
+New Features
+^^^^^^^^^^^^
+- SchemaParser can now directly serialize dicts and Boxes (#239)
+
 Bug Fixes
 ^^^^^^^^^
 

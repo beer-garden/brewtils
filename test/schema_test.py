@@ -39,13 +39,22 @@ class TestFields(object):
             (lazy_fixture("ts_dt"), True, lazy_fixture("ts_epoch")),
             (lazy_fixture("ts_dt_eastern"), False, lazy_fixture("ts_epoch_eastern")),
             (lazy_fixture("ts_dt_eastern"), True, lazy_fixture("ts_epoch")),
+            (lazy_fixture("ts_epoch"), False, lazy_fixture("ts_epoch")),
+            (lazy_fixture("ts_epoch"), True, lazy_fixture("ts_epoch")),
         ],
     )
     def test_to_epoch(self, dt, localtime, expected):
         assert DateTime.to_epoch(dt, localtime) == expected
 
-    def test_from_epoch(self, ts_epoch, ts_dt):
-        assert DateTime.from_epoch(ts_epoch) == ts_dt
+    @pytest.mark.parametrize(
+        "epoch,expected",
+        [
+            (lazy_fixture("ts_epoch"), lazy_fixture("ts_dt")),
+            (lazy_fixture("ts_dt"), lazy_fixture("ts_dt")),
+        ],
+    )
+    def test_from_epoch(self, epoch, expected):
+        assert DateTime.from_epoch(epoch) == expected
 
     def test_modelfield_serialize_invalid_type(self):
         with pytest.raises(TypeError):

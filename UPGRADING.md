@@ -250,6 +250,7 @@ Values of `0` and `None` continue to also mean "wait forever."
 The `EasyClient` had some API changes:
 
 - `get_instance_status()` now returns the actual Instance status string, not the Instance itself. It's also been deprecated as `get_instance().status` is identical.
+- `get_logging_config()` now returns the raw logging configuration dictionary, not a `brewtils.models.LoggingConfig` object.
 - `get_version()` now returns the actual version `dict`, not a `requests.Response` object.
 - `pause_job()` and `resume_job()` now return the Job instead of `None`.
 - The default exception for several methods has changed:

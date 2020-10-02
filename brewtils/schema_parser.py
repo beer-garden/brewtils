@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import typing
+from typing import Any, Optional, Union
 
 import six
+from box import Box
 
 import brewtils.models
 import brewtils.schemas
+from brewtils.models import BaseModel
+
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 
 
 class SchemaParser(object):
@@ -307,7 +316,12 @@ class SchemaParser(object):
             else:
                 kwargs["exclude"] = ("commands",)
 
-        return cls.serialize(system, to_string=to_string, **kwargs)
+        return cls.serialize(
+            system,
+            to_string=to_string,
+            schema_name=brewtils.models.System.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_instance(cls, instance, to_string=True, **kwargs):
@@ -318,7 +332,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of instance
         """
-        return cls.serialize(instance, to_string=to_string, **kwargs)
+        return cls.serialize(
+            instance,
+            to_string=to_string,
+            schema_name=brewtils.models.Instance.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_command(cls, command, to_string=True, **kwargs):
@@ -329,7 +348,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of command
         """
-        return cls.serialize(command, to_string=to_string, **kwargs)
+        return cls.serialize(
+            command,
+            to_string=to_string,
+            schema_name=brewtils.models.Command.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_parameter(cls, parameter, to_string=True, **kwargs):
@@ -340,7 +364,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of parameter
         """
-        return cls.serialize(parameter, to_string=to_string, **kwargs)
+        return cls.serialize(
+            parameter,
+            to_string=to_string,
+            schema_name=brewtils.models.Parameter.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_request_file(cls, request_file, to_string=True, **kwargs):
@@ -351,7 +380,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of request file
         """
-        return cls.serialize(request_file, to_string=to_string, **kwargs)
+        return cls.serialize(
+            request_file,
+            to_string=to_string,
+            schema_name=brewtils.models.RequestFile.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_request(cls, request, to_string=True, **kwargs):
@@ -362,7 +396,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of request
         """
-        return cls.serialize(request, to_string=to_string, **kwargs)
+        return cls.serialize(
+            request,
+            to_string=to_string,
+            schema_name=brewtils.models.Request.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_patch(cls, patch, to_string=True, **kwargs):
@@ -373,7 +412,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of patch
         """
-        return cls.serialize(patch, to_string=to_string, **kwargs)
+        return cls.serialize(
+            patch,
+            to_string=to_string,
+            schema_name=brewtils.models.PatchOperation.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_logging_config(cls, logging_config, to_string=True, **kwargs):
@@ -384,7 +428,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of logging config
         """
-        return cls.serialize(logging_config, to_string=to_string, **kwargs)
+        return cls.serialize(
+            logging_config,
+            to_string=to_string,
+            schema_name=brewtils.models.LoggingConfig.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_event(cls, event, to_string=True, **kwargs):
@@ -395,7 +444,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of event
         """
-        return cls.serialize(event, to_string=to_string, **kwargs)
+        return cls.serialize(
+            event,
+            to_string=to_string,
+            schema_name=brewtils.models.Event.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_queue(cls, queue, to_string=True, **kwargs):
@@ -406,7 +460,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of queue
         """
-        return cls.serialize(queue, to_string=to_string, **kwargs)
+        return cls.serialize(
+            queue,
+            to_string=to_string,
+            schema_name=brewtils.models.Queue.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_principal(cls, principal, to_string=True, **kwargs):
@@ -417,7 +476,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation
         """
-        return cls.serialize(principal, to_string=to_string, **kwargs)
+        return cls.serialize(
+            principal,
+            to_string=to_string,
+            schema_name=brewtils.models.Principal.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_role(cls, role, to_string=True, **kwargs):
@@ -428,7 +492,9 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation
         """
-        return cls.serialize(role, to_string=to_string, **kwargs)
+        return cls.serialize(
+            role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
+        )
 
     @classmethod
     def serialize_refresh_token(cls, refresh_token, to_string=True, **kwargs):
@@ -439,7 +505,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation
         """
-        return cls.serialize(refresh_token, to_string=to_string, **kwargs)
+        return cls.serialize(
+            refresh_token,
+            to_string=to_string,
+            schema_name=brewtils.models.RefreshToken.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_job(cls, job, to_string=True, **kwargs):
@@ -453,7 +524,9 @@ class SchemaParser(object):
         Returns:
             Serialize representation of job.
         """
-        return cls.serialize(job, to_string=to_string, **kwargs)
+        return cls.serialize(
+            job, to_string=to_string, schema_name=brewtils.models.Job.schema, **kwargs
+        )
 
     @classmethod
     def serialize_garden(cls, garden, to_string=True, **kwargs):
@@ -464,7 +537,12 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of instance
         """
-        return cls.serialize(garden, to_string=to_string, **kwargs)
+        return cls.serialize(
+            garden,
+            to_string=to_string,
+            schema_name=brewtils.models.Garden.schema,
+            **kwargs
+        )
 
     @classmethod
     def serialize_operation(cls, operation, to_string=True, **kwargs):
@@ -475,15 +553,39 @@ class SchemaParser(object):
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of instance
         """
-        return cls.serialize(operation, to_string=to_string, **kwargs)
+        return cls.serialize(
+            operation,
+            to_string=to_string,
+            schema_name=brewtils.models.Operation.schema,
+            **kwargs
+        )
 
     @classmethod
-    def serialize(cls, model, to_string=False, **kwargs):
+    def serialize(
+        cls,
+        model,  # type: Union[BaseModel, typing.Iterable[BaseModel], dict]
+        to_string=False,  # type: bool
+        schema_name=None,  # type: str
+        **kwargs  # type: Any
+    ):
+        # type: (...) -> Optional[str]
         """Convert a model object or list of models into a dictionary or JSON string.
+
+        This is potentially recursive - here's how this should work:
+
+        - Determine the correct schema to use for serializing. This can be explicitly
+        passed as an argument, or it can be determined by inspecting the model to
+        serialize.
+        - Determine if the model to serialize is a collection or a single object.
+            - If it's a single object, serialize it and return that.
+            - If it's a collection, construct a list by calling this method for each
+            individual item in the collection. Then serialize **that** and return it.
 
         Args:
             model: The model or model list
             to_string: True to generate a JSON string, False to generate a dictionary
+            schema_name: Name of schema to use for serializing. If None, will be
+            determined by inspecting ``model``
             **kwargs: Additional parameters to be passed to the Schema.
                 Note that the 'many' parameter will be set correctly automatically.
 
@@ -491,10 +593,9 @@ class SchemaParser(object):
             A serialized model representation
 
         """
-        schema_name = cls._get_schema_name(model)
+        schema_name = schema_name or cls._get_schema_name(model)
 
-        if schema_name:
-            # At this point we know model is not an iterable
+        if cls._single_item(model):
             kwargs["many"] = False
 
             schema = getattr(brewtils.schemas, schema_name)(**kwargs)
@@ -507,9 +608,35 @@ class SchemaParser(object):
         return json.dumps(multiple) if to_string else multiple
 
     @classmethod
-    def _get_schema_name(cls, model):
-        if isinstance(model, brewtils.models.BaseModel):
+    def _get_schema_name(cls, obj):
+        # type: (Any) -> Optional[str]
+        """Get the name of the schema to use for a particular object
+
+        The model classes have a ``schema`` attribute with this info. We want to be able
+        to pull this out for an instance of a model as well as the model class object.
+
+        Args:
+            obj: The object to inspect for a schema name
+
+        Returns:
+            The schema name, if found. None otherwise.
+        """
+        if isinstance(obj, brewtils.models.BaseModel):
             # Use type() here because Command has an instance attribute named "schema"
-            return type(model).schema
+            return type(obj).schema
 
         return None
+
+    @classmethod
+    def _single_item(cls, obj):
+        """Determine if the object given is a single item or a collection.
+
+        For serialization to work correctly **all** these must work (on Python 2 & 3):
+
+        - Brewtils models must return True
+        - "Standard" collections (list, tuple, set) must return False
+        - Dictionaries and Boxes must return True
+        """
+        if isinstance(obj, (dict, Box)):
+            return True
+        return not isinstance(obj, Iterable)

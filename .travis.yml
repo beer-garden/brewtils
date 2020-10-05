@@ -11,10 +11,6 @@ python:
   - 3.4
   - 2.7
 
-env:
-  - PIKA_VERSION=0.13.1
-  - PIKA_VERSION=1.1.0
-
 stages:
   - lint
   - test
@@ -23,22 +19,12 @@ stages:
 # This is for the "test" stage
 install:
   - make deps
-  - pip install pika==$PIKA_VERSION
 
 script: make coverage
 after_success: codecov
 after_failure: make test
 
 jobs:
-  exclude:
-    - python: 3.7
-      env: PIKA_VERSION=0.13.1
-    - python: 3.6
-      env: PIKA_VERSION=0.13.1
-    - python: 3.5
-      env: PIKA_VERSION=0.13.1
-    - python: 3.4
-      env: PIKA_VERSION=0.13.1
   include:
     - stage: lint
       install: pip install black flake8

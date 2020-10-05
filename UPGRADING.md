@@ -250,6 +250,7 @@ Values of `0` and `None` continue to also mean "wait forever."
 The `EasyClient` had some API changes:
 
 - `get_instance_status()` now returns the actual Instance status string, not the Instance itself. It's also been deprecated as `get_instance().status` is identical.
+- `get_logging_config()` now returns the raw logging configuration dictionary, not a `brewtils.models.LoggingConfig` object.
 - `get_version()` now returns the actual version `dict`, not a `requests.Response` object.
 - `pause_job()` and `resume_job()` now return the Job instead of `None`.
 - The default exception for several methods has changed:
@@ -302,6 +303,9 @@ Previously `__version__` was imported into the top-level brewtils `__init__.py` 
 
 ### Other
 All the stuff that doesn't fit anywhere else!
+
+#### Default value for `max_instances`
+The default value for `max_instances` has been changed to -1, which means there is no maximum. This value can be manually set to 1 to maintain the legacy behavior.
 
 #### `log` module changes
 Most of the methods in the `log` module have been deprecated. This is because they were based around the `brewtils.models.LoggingConfig` and designed to work with data in this format. However, this capability never really reached the flexibility required to be truly useful. This feature has been reworked to use plain Python logging configurations, which renders most of this module unnecessary.

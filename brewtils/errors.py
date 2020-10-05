@@ -263,13 +263,13 @@ def parse_exception_as_json(exc):
     If the exception has a single argument, no attributes, and the attribute
     can be converted to a valid JSON string, then that will be returned.
 
-    Otherwise, a string version of the following form will be returned:
+    Otherwise, a string version of the following form will be returned::
 
-    {
-        "message": "",
-        "arguments": [],
-        "attributes": {}
-    }
+        {
+            "message": "",
+            "arguments": [],
+            "attributes": {}
+        }
 
     Where "message" is just str(exc), "arguments" is a list of all the
     arguments passed to the exception attempted to be converted to a valid

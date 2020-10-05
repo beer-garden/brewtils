@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+import warnings
+
 import pytest
 import pytz
+from brewtils.errors import ModelError
 from brewtils.models import (
     Choices,
     Command,
@@ -16,9 +19,7 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Role,
-    System,
 )
-from mock import Mock, PropertyMock
 from pytest_lazyfixture import lazy_fixture
 
 
@@ -342,40 +343,43 @@ class TestRequest(object):
 
 
 class TestSystem(object):
-    @pytest.fixture
-    def default_system(self, command1):
-        return System(
-            name="foo",
-            version="1.0.0",
-            instances=[Instance(name="foo")],
-            commands=[command1],
-            namespace="ns",
-        )
+    def test_get_command_by_name(self, bg_system, bg_command):
+        assert bg_system.get_command_by_name(bg_command.name) == bg_command
+        assert bg_system.get_command_by_name("foo") is None
 
-    def test_get_command_by_name_found(self, default_system):
-        mock_name = PropertyMock(return_value="name")
-        command = Mock()
-        type(command).name = mock_name
-        default_system.commands.append(command)
-        assert default_system.get_command_by_name("name") == command
+    def test_has_instance(self, bg_system):
+        assert bg_system.has_instance("default")
+        assert not bg_system.has_instance("bar")
 
-    def test_get_command_by_name_none(self, default_system):
-        mock_name = PropertyMock(return_value="foo")
-        command = Mock()
-        type(command).name = mock_name
-        default_system.commands.append(command)
-        assert default_system.get_command_by_name("name") is None
+    def test_instance_names(self, bg_system):
+        assert bg_system.instance_names == ["default"]
 
-    def test_has_instance(self, default_system):
-        assert default_system.has_instance("foo")
-        assert not default_system.has_instance("bar")
+    def test_get_instance_by_name(self, bg_system, bg_instance):
+        assert bg_system.get_instance_by_name(bg_instance.name) == bg_instance
+        assert bg_system.get_instance_by_name("bar") is None
 
-    def test_instance_names(self, default_system):
-        assert default_system.instance_names == ["foo"]
+    def test_get_instance_by_name_raise(self, bg_system):
+        with pytest.raises(ModelError):
+            bg_system.get_instance_by_name("foo", raise_missing=True)
 
-    def test_get_instance(self, default_system):
-        assert default_system.get_instance("foo").name == "foo"
-        assert default_system.get_instance("bar") is None
+    def test_get_instance_by_id(self, bg_system, bg_instance):
+        assert bg_system.get_instance_by_id(bg_instance.id) == bg_instance
+        assert bg_system.get_instance_by_id("1234") is None
+
+    def test_get_instance_by_id_raise(self, bg_system):
+        with pytest.raises(ModelError):
+            bg_system.get_instance_by_id("1234", raise_missing=True)
+
+    def test_get_instance(self, bg_system, bg_instance):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert bg_system.get_instance(bg_instance.name) == bg_instance
+            assert bg_system.get_instance("bar") is None
+
+            assert len(w) == 2
+            assert w[0].category == DeprecationWarning
+            assert w[1].category == DeprecationWarning
 
     @pytest.mark.parametrize(
         "commands",
@@ -385,32 +389,20 @@ class TestSystem(object):
             ([Command(name="bar"), Command(name="baz")]),
         ],
     )
-    def test_has_different_commands(self, default_system, commands):
-        assert default_system.has_different_commands(commands)
+    def test_has_different_commands(self, bg_system, commands):
+        assert bg_system.has_different_commands(commands)
 
-    @pytest.mark.parametrize(
-        "command",
-        [
-            (Command(name="foo", parameters=[Parameter(key="key1", type="String")])),
-            (
-                Command(
-                    name="foo",
-                    description="Different description",
-                    parameters=[Parameter(key="key1", type="String")],
-                )
-            ),
-        ],
-    )
-    def test_has_same_commands(self, default_system, command):
-        assert not default_system.has_different_commands([command])
+    def test_has_same_commands(self, bg_system, bg_command, bg_command_2):
+        bg_command_2.description = "Should still work"
+        assert not bg_system.has_different_commands([bg_command, bg_command_2])
 
-    def test_str(self, default_system):
-        assert str(default_system) == "ns:foo-1.0.0"
+    def test_str(self, bg_system):
+        assert str(bg_system) == "ns:system-1.0.0"
 
-    def test_repr(self, default_system):
-        assert "ns" in repr(default_system)
-        assert "foo" in repr(default_system)
-        assert "1.0.0" in repr(default_system)
+    def test_repr(self, bg_system):
+        assert "ns" in repr(bg_system)
+        assert "system" in repr(bg_system)
+        assert "1.0.0" in repr(bg_system)
 
 
 class TestPatchOperation(object):

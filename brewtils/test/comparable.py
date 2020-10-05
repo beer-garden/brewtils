@@ -137,7 +137,7 @@ def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
 
     This is a safety measure in case these functions are used outside of a testing
     context. This isn't recommended, but naked asserts are still unacceptable in any
-    packaged code. This method will translate the various comparision functions to a
+    packaged code. This method will translate the various comparison functions to a
     simple boolean return.
 
     Note that in a testing context the AssertionError is re-raised. This is because it's
@@ -189,18 +189,11 @@ assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 
 def assert_command_equal(obj1, obj2, do_raise=False):
 
-    # Command's system field only serializes the system's id
-    def compare_system(sys1, sys2):
-        _assert(sys1.id == sys2.id, "System IDs were not equal")
-
     return _assert_wrapper(
         obj1,
         obj2,
         expected_type=Command,
-        deep_fields={
-            "parameters": partial(assert_parameter_equal, do_raise=True),
-            "system": compare_system,
-        },
+        deep_fields={"parameters": partial(assert_parameter_equal, do_raise=True)},
         do_raise=do_raise,
     )
 

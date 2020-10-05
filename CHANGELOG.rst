@@ -7,13 +7,17 @@ Date: TBD
 
 See the Upgrade Guide for upgrading from v2 to v3.
 
+New Features
+^^^^^^^^^^^^
+- SchemaParser can now directly serialize dicts and Boxes (#239)
+
 Bug Fixes
 ^^^^^^^^^
 
 - Parameter choices definition can be a non-list iterable (beer-garden/#512)
 
 2.4.14
------
+------
 Date: 1/30/20
 
 Bug Fixes
@@ -21,7 +25,7 @@ Bug Fixes
 - Better error handling if a request exceeds 16MB size limit (beer-garden/#308)
 
 2.4.13
------
+------
 Date: 1/13/20
 
 Bug Fixes
@@ -29,7 +33,7 @@ Bug Fixes
 - Requests republished to rabbit are now persistent (beer-garden/#397)
 
 2.4.12
------
+------
 Date: 1/10/20
 
 Other Changes
@@ -37,7 +41,7 @@ Other Changes
 - Reverting a log message level that was incorrectly set to INFO
 
 2.4.11
------
+------
 Date: 12/9/19
 
 Other Changes
@@ -45,7 +49,7 @@ Other Changes
 - Plugins always attempt to notify Beer-garden when terminating (beer-garden/#376)
 
 2.4.10
------
+------
 Date: 11/12/19
 
 Bug Fixes
@@ -101,7 +105,7 @@ Other Changes
 ^^^^^^^^^^^^^
 - Support for new header-style authentication token (#122)
 - Added EasyClient.get_instance, deprecated get_instance_status (beer-garden/#231)
-- Parameters with is_kwarg on command without **kwargs will raise (beer-garden/#216)
+- Parameters with is_kwarg on command without \**kwargs will raise (beer-garden/#216)
 
 2.4.5
 -----

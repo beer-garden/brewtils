@@ -6,7 +6,9 @@ Subpackages
 
 .. toctree::
 
+    brewtils.resolvers
     brewtils.rest
+    brewtils.test
 
 Submodules
 ----------
@@ -67,10 +69,10 @@ brewtils.queues module
     :undoc-members:
     :show-inheritance:
 
-brewtils.request\_consumer module
+brewtils.request\_handling module
 ---------------------------------
 
-.. automodule:: brewtils.request_consumer
+.. automodule:: brewtils.request_handling
     :members:
     :undoc-members:
     :show-inheritance:

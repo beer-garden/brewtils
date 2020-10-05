@@ -88,6 +88,10 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def to_epoch(dt, localtime=False):
+        # If already in epoch form just return it
+        if isinstance(dt, int):
+            return dt
+
         if localtime and dt.tzinfo is not None:
             localized = dt
         else:
@@ -101,6 +105,10 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def from_epoch(epoch):
+        # If already in datetime form just return it
+        if isinstance(epoch, datetime.datetime):
+            return epoch
+
         # utcfromtimestamp will correctly parse milliseconds in Python 3,
         # but in Python 2 we need to help it
         seconds, millis = divmod(epoch, 1000)
@@ -165,7 +173,6 @@ class ParameterSchema(BaseSchema):
 
 
 class CommandSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     parameters = fields.Nested("ParameterSchema", many=True)
@@ -176,7 +183,6 @@ class CommandSchema(BaseSchema):
     template = fields.Str(allow_none=True)
     icon_name = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
-    system = fields.Nested("SystemSchema", only=("id",), allow_none=True)
 
 
 class InstanceSchema(BaseSchema):
@@ -254,7 +260,8 @@ class PatchSchema(BaseSchema):
     def unwrap_envelope(self, data, many):
         """Helper function for parsing the different patch formats.
 
-        This exists because we previously wanted multiple patches to be serialized like:
+        This exists because previously multiple patches serialized like::
+
             {
                 "operations": [
                     {"operation": "replace", ...},
@@ -263,7 +270,8 @@ class PatchSchema(BaseSchema):
                 ]
             }
 
-        But we also wanted to be able to handle a simple list:
+        But we also wanted to be able to handle a simple list::
+
             [
                 {"operation": "replace", ...},
                 {"operation": "replace", ...}

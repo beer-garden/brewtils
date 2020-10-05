@@ -96,7 +96,7 @@ class Plugin(object):
 
         python my_plugin.py --bg-host localhost
 
-    Values can also be specified as environment variables with a "BG_" prefix::
+    Values can also be specified as environment variables with a "\\BG_" prefix::
 
         BG_HOST=localhost python my_plugin.py
 
@@ -448,7 +448,7 @@ class Plugin(object):
             )
 
         return self._ez_client.initialize_instance(
-            self._system.get_instance(self._config.instance_name).id,
+            self._system.get_instance_by_name(self._config.instance_name).id,
             runner_id=self._config.runner_id,
         )
 

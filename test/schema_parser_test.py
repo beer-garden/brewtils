@@ -636,6 +636,7 @@ class TestSerialize(object):
         model_list = [bg_system, [bg_system, bg_system]]
         expected = [system_dict, [system_dict, system_dict]]
         assert SchemaParser.serialize(model_list, to_string=False) == expected
+        assert SchemaParser.serialize_system(model_list, to_string=False) == expected
 
     @pytest.mark.parametrize(
         "keys,excludes",

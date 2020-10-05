@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import runpy
 import ssl
 import warnings
 from concurrent.futures import Future
@@ -7,15 +6,12 @@ from concurrent.futures import Future
 import pika.spec
 import pytest
 from mock import ANY, MagicMock, Mock, PropertyMock, call
-from pika.exceptions import AMQPError
+from pika.exceptions import AMQPError, ChannelClosedByBroker, ConnectionClosedByBroker
 from pytest_lazyfixture import lazy_fixture
 
 import brewtils.pika
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.pika import PIKA_ONE, PikaClient, PikaConsumer, TransientPikaClient
-
-if PIKA_ONE:
-    from pika.exceptions import ChannelClosedByBroker, ConnectionClosedByBroker
+from brewtils.pika import PikaClient, PikaConsumer, TransientPikaClient
 
 host = "localhost"
 port = 5672
@@ -34,18 +30,6 @@ class TestDeprecations(object):
 
             assert issubclass(w[0].category, DeprecationWarning)
             assert "brewtils.pika" in str(w[0].message)
-
-    @pytest.mark.skipif(PIKA_ONE, reason="Using pika 1.x")
-    def test_old_pika(self):
-        with warnings.catch_warnings(record=True) as w:
-            # run_module has a RuntimeWarning we don't really need
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            warnings.simplefilter("always", category=DeprecationWarning)
-
-            runpy.run_module("brewtils.pika")
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "pika < 1" in str(w[0].message)
 
 
 class TestPikaClient(object):
@@ -116,26 +100,14 @@ class TestPikaClient(object):
         conn_params = client.connection_parameters()
 
         assert conn_params.ssl_options is not None
-
-        if PIKA_ONE:
-            mode = conn_params.ssl_options.context.verify_mode
-        else:
-            mode = conn_params.ssl_options.verify_mode
-
-        assert mode == ssl.CERT_REQUIRED
+        assert conn_params.ssl_options.context.verify_mode == ssl.CERT_REQUIRED
 
     def test_connection_params_ssl_no_verify(self, params):
         client = PikaClient(ssl={"enabled": True, "ca_verify": False}, **params)
         conn_params = client.connection_parameters()
 
         assert conn_params.ssl_options is not None
-
-        if PIKA_ONE:
-            mode = conn_params.ssl_options.context.verify_mode
-        else:
-            mode = conn_params.ssl_options.verify_mode
-
-        assert mode == ssl.CERT_NONE
+        assert conn_params.ssl_options.context.verify_mode == ssl.CERT_NONE
 
 
 class TestTransientPikaClient(object):
@@ -426,12 +398,7 @@ class TestPikaConsumer:
     def test_on_connection_closed(self, consumer, connection, code, text):
         consumer._connection = connection
 
-        args = (code, text)
-        if PIKA_ONE:
-            args = (ConnectionClosedByBroker(code, text),)
-
-        consumer.on_connection_closed(connection, *args)
-
+        consumer.on_connection_closed(connection, ConnectionClosedByBroker(code, text))
         assert connection.ioloop.stop.called is True
 
     def test_open_channel(self, consumer, connection):
@@ -450,10 +417,8 @@ class TestPikaConsumer:
 
     def test_on_channel_closed(self, consumer, connection):
         consumer._connection = connection
-        if PIKA_ONE:
-            consumer.on_channel_closed(MagicMock(), ChannelClosedByBroker(200, "text"))
-        else:
-            consumer.on_channel_closed(MagicMock(), 200, "text")
+        consumer.on_channel_closed(MagicMock(), ChannelClosedByBroker(200, "text"))
+
         assert connection.close.called is True
 
     def test_start_consuming(self, consumer, channel):
@@ -462,14 +427,10 @@ class TestPikaConsumer:
             consumer.on_consumer_cancelled
         )
         channel.basic_qos.assert_called_with(prefetch_count=1)
-
-        basic_consume_kwargs = {"queue": consumer._queue_name}
-        if PIKA_ONE:
-            basic_consume_kwargs["on_message_callback"] = consumer.on_message
-        else:
-            basic_consume_kwargs["consumer_callback"] = consumer.on_message
-
-        channel.basic_consume.assert_called_with(**basic_consume_kwargs)
+        channel.basic_consume.assert_called_with(
+            queue=consumer._queue_name,
+            on_message_callback=consumer.on_message,
+        )
         assert consumer._consumer_tag == channel.basic_consume.return_value
 
     def test_stop_consuming(self, consumer, channel, connection):

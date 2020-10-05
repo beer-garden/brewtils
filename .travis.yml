@@ -27,6 +27,7 @@ install:
 
 script: make coverage
 after_success: codecov
+after_failure: make test
 
 jobs:
   exclude:

@@ -440,6 +440,7 @@ model_schema_map.update(
         "RequestTemplate": RequestTemplateSchema,
         "Role": RoleSchema,
         "System": SystemSchema,
+        "Operation": OperationSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

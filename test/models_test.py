@@ -539,24 +539,21 @@ class TestPrincipal(object):
 
     def test_repr(self, principal):
         assert (
-            repr(principal) == "<Principal: username=admin, "
-            "roles=['bg-admin'], permissions=['bg-all']>"
+            repr(principal)
+            == "<Principal: username=admin, roles=['bg-admin'], permissions=['bg-all']>"
         )
 
 
 class TestRole(object):
     @pytest.fixture
     def role(self):
-        return Role(name="bg-admin", roles=["bg-anonymous"], permissions=["bg-all"])
+        return Role(name="bg-admin", permissions=["bg-all"])
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
-        assert (
-            repr(role) == "<Role: name=bg-admin, roles=['bg-anonymous'], "
-            "permissions=['bg-all']>"
-        )
+        assert repr(role) == "<Role: name=bg-admin, permissions=['bg-all']>"
 
 
 class TestDateTrigger(object):

@@ -505,36 +505,18 @@ def bg_principal(principal_dict, bg_role):
 
 
 @pytest.fixture
-def nested_role_dict():
-    return {
-        "id": "58542eb571afd47ead90d26c",
-        "name": "bg-anonymous",
-        "description": "The anonymous role",
-        "roles": [],
-        "permissions": ["bg-request-read"],
-    }
-
-
-@pytest.fixture
-def bg_nested_role(nested_role_dict):
-    return Role(**nested_role_dict)
-
-
-@pytest.fixture
-def role_dict(nested_role_dict):
+def role_dict():
     return {
         "id": "58542eb571afd47ead90d26f",
         "name": "bg-admin",
         "description": "The admin role",
-        "roles": [nested_role_dict],
         "permissions": ["bg-all"],
     }
 
 
 @pytest.fixture
-def bg_role(role_dict, bg_nested_role):
+def bg_role(role_dict):
     dict_copy = copy.deepcopy(role_dict)
-    dict_copy["roles"] = [bg_nested_role]
     return Role(**dict_copy)
 
 

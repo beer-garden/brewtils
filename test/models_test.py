@@ -532,7 +532,7 @@ class TestQueue(object):
 class TestPrincipal(object):
     @pytest.fixture
     def principal(self):
-        return Principal(username="admin", roles=None, permissions=["bg-all"])
+        return Principal(username="admin", roles=["bg-admin"], permissions=["bg-all"])
 
     def test_str(self, principal):
         assert str(principal) == "admin"

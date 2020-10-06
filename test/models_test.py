@@ -540,7 +540,7 @@ class TestPrincipal(object):
     def test_repr(self, principal):
         assert (
             repr(principal)
-            == "<Principal: username=admin, roles=None, permissions=['bg-all']>"
+            == "<Principal: username=admin, roles=['bg-admin'], permissions=['bg-all']>"
         )
 
 

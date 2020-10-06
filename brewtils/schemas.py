@@ -433,6 +433,7 @@ model_schema_map.update(
         "LoggingConfig": LoggingConfigSchema,
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,
+        "PatchOperation": PatchSchema,
         "Principal": PrincipalSchema,
         "RefreshToken": RefreshTokenSchema,
         "Request": RequestSchema,
@@ -440,6 +441,7 @@ model_schema_map.update(
         "RequestTemplate": RequestTemplateSchema,
         "Role": RoleSchema,
         "System": SystemSchema,
+        "Operation": OperationSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

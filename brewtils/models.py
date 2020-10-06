@@ -61,14 +61,17 @@ class Events(Enum):
     FILE_CREATED = 24
     GARDEN_STARTED = 25
     GARDEN_STOPPED = 26
-    GARDEN_SYNC = 27
-    ENTRY_STARTED = 28
-    ENTRY_STOPPED = 29
-    JOB_CREATED = 30
-    JOB_DELETED = 31
-    JOB_PAUSED = 32
-    JOB_RESUMED = 33
-    PLUGIN_LOGGER_FILE_CHANGE = 34
+    GARDEN_UNREACHABLE = 27
+    GARDEN_ERROR = 28
+    GARDEN_NOT_CONFIGURED = 29
+    GARDEN_SYNC = 30
+    ENTRY_STARTED = 31
+    ENTRY_STOPPED = 32
+    JOB_CREATED = 33
+    JOB_DELETED = 34
+    JOB_PAUSED = 35
+    JOB_RESUMED = 36
+    PLUGIN_LOGGER_FILE_CHANGE = 37
 
     # TODO - should these be external API events?
     INSTANCE_STOP_REQUESTED = 101
@@ -1181,7 +1184,9 @@ class Garden(BaseModel):
         "RUNNING",
         "BLOCKED",
         "STOPPED",
-        "UNRESPONSIVE",
+        "NOT_CONFIGURED",
+        "UNREACHABLE",
+        "ERROR",
         "UNKNOWN",
     }
 

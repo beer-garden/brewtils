@@ -11,7 +11,10 @@ from brewtils.schemas import (
     SystemSchema,
     _deserialize_model,
     _serialize_model,
+    model_schema_map,
 )
+
+from brewtils.schema_parser import SchemaParser
 
 
 class TestSchemas(object):
@@ -85,3 +88,9 @@ class TestFields(object):
                 type_field="payload_type",
                 allowed_types=["bar"],
             )
+
+    def test_deserailize_mapping(self):
+        models = list(set(model_schema_map[dic] for dic in model_schema_map))
+        assert len(models) == len(
+            SchemaParser._models
+        ), "Missing mapped schema for deserialization"

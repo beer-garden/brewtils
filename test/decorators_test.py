@@ -5,11 +5,11 @@ from mock import Mock, patch
 
 import brewtils.decorators
 from brewtils.decorators import (
-    system,
+    _resolve_display_modifiers,
     command,
     parameter,
     parameters,
-    _resolve_display_modifiers,
+    system,
 )
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
@@ -177,14 +177,11 @@ class TestParameter(object):
         assert_parameter_equal(param, Parameter(**param_definition))
 
     def test_is_kwarg_missing(self, param_definition):
-        with pytest.raises(PluginParamError) as ex:
+        with pytest.raises(PluginParamError, match=param_definition["key"] + ".*cmd"):
 
             @parameter(is_kwarg=True, **param_definition)
             def cmd(_):
                 return None
-
-        assert param_definition["key"] in str(ex)
-        assert "cmd" in str(ex)
 
     @pytest.mark.parametrize(
         "default,expected",
@@ -416,9 +413,8 @@ class TestParameters(object):
     @pytest.mark.parametrize("args", [[], [1, 2, 3]])
     def test_bad_arity(self, args):
         # Must be called with either just one arg, or one arg + the function
-        with pytest.raises(PluginParamError) as ex:
+        with pytest.raises(PluginParamError, match=r"single argument"):
             parameters(*args)
-        assert "single argument" in str(ex)
 
     @pytest.mark.parametrize(
         "arg1,arg2",

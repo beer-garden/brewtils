@@ -433,6 +433,7 @@ model_schema_map.update(
         "LoggingConfig": LoggingConfigSchema,
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,
+        "PatchOperation": PatchSchema,
         "Principal": PrincipalSchema,
         "RefreshToken": RefreshTokenSchema,
         "Request": RequestSchema,

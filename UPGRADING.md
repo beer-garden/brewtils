@@ -132,6 +132,41 @@ A `max_concurrent` default value of 1 was a major source of potential problems a
 
 This change needed to wait for a major version because it represents a significant change in how a `Plugin` functions by default. Previously the default behavior was essentially single-threaded (a `ThreadPoolExecutor` with only one thread), so any client state could be safely accessed / modified by a command method. **That is no longer the case** - client methods now execute in the context of a `ThreadPoolExecutor` with more than one thread, so any shared state **must** be protected using appropriate locking mechanisms.
 
+#### Automatic Logging Configuration
+Plugins will now reach out to the Beergarden server during initialization to ask for a logging configuration. If this call completes successfully the configuration will be automatically applied.
+
+This means that the new recommended best practice is to create a Plugin as soon as possible:
+
+```python
+def main():
+    plugin = Plugin()
+    plugin.client = MyClient()
+    plugin.run()
+```
+
+This behavior can be prevented by configuring logging yourself before creating a plugin, or by passing a logger to initialization. Note that this will prevent Brewtils from doing any configuration for you:
+
+```python
+def main():
+    logger = logging.getLogger(__name__)
+    plugin = Plugin(logger=logger)
+```
+
+```python
+def main():
+    my_log_config = {}
+    logging.basicConfig(level=logging.INFO)
+```
+
+If the only customization you need is to adjust the log level that is a normal configuration parameter so it can be specified in the environment variable, command line, or kwargs just like any other configuration parameter:
+
+```python
+def main():
+    plugin = Plugin(log_level="DEBUG")
+    ...
+```
+
+
 #### Deferred Client Assignment
 Previously you needed to specify a Client when creating a Plugin:
 

@@ -121,7 +121,13 @@ class TestDeprecated(object):
         convert_mock = Mock(return_value="config")
         monkeypatch.setattr("brewtils.log.convert_logging_config", convert_mock)
 
-        assert "config" == get_logging_config(**params)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert "config" == get_logging_config(**params)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_convert_logging_config(self):
         handlers = {"hand1": {}, "handler2": {}}
@@ -131,22 +137,35 @@ class TestDeprecated(object):
             level="level", handlers=handlers, formatters=formatters
         )
 
-        python_config = convert_logging_config(log_config)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
 
-        assert python_config["handlers"] == handlers
-        assert python_config["formatters"] == formatters
-        assert "root" in python_config
+            python_config = convert_logging_config(log_config)
 
-        assert "level" in python_config["root"]
-        assert "handlers" in python_config["root"]
-        assert "level" == python_config["root"]["level"]
-        assert set(handlers) == set(python_config["root"]["handlers"])
+            assert python_config["handlers"] == handlers
+            assert python_config["formatters"] == formatters
+            assert "root" in python_config
+
+            assert "level" in python_config["root"]
+            assert "handlers" in python_config["root"]
+            assert "level" == python_config["root"]["level"]
+            assert set(handlers) == set(python_config["root"]["handlers"])
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_convert_logging_config_default(self):
         log_config = LoggingConfig(level="level", handlers={}, formatters={})
-        python_config = convert_logging_config(log_config)
-        assert python_config["handlers"] == DEFAULT_HANDLERS
-        assert python_config["formatters"] == DEFAULT_FORMATTERS
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            python_config = convert_logging_config(log_config)
+            assert python_config["handlers"] == DEFAULT_HANDLERS
+            assert python_config["formatters"] == DEFAULT_FORMATTERS
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_setup_logger(self, params, monkeypatch):
         log_conf = Mock()

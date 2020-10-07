@@ -5,6 +5,7 @@ cache: pip
 
 python:
   - 3.8
+  - 3.9
   - 3.7
   - 3.6
   - 3.5
@@ -38,6 +39,8 @@ after_failure: make test
 
 jobs:
   exclude:
+    - python: 3.9
+      env: PIKA_VERSION=0.13.1
     - python: 3.7
       env: PIKA_VERSION=0.13.1
     - python: 3.6

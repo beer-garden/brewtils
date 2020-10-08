@@ -26,6 +26,7 @@ class SchemaParser(object):
         "CronTriggerSchema": brewtils.models.CronTrigger,
         "DateTriggerSchema": brewtils.models.DateTrigger,
         "EventSchema": brewtils.models.Event,
+        "FileTriggerSchema": brewtils.models.FileTrigger,
         "GardenSchema": brewtils.models.Garden,
         "InstanceSchema": brewtils.models.Instance,
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
@@ -294,8 +295,11 @@ class SchemaParser(object):
                 )
             kwargs["many"] = True
 
+
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
         schema.context["models"] = cls._models
+
+        # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~Processing %s %s" % (schema, schema.context))
 
         return schema.loads(data).data if from_string else schema.load(data).data
 

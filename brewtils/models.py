@@ -91,17 +91,17 @@ class Command(BaseModel):
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
-        self,
-        name=None,
-        description=None,
-        parameters=None,
-        command_type=None,
-        output_type=None,
-        schema=None,
-        form=None,
-        template=None,
-        icon_name=None,
-        hidden=False,
+            self,
+            name=None,
+            description=None,
+            parameters=None,
+            command_type=None,
+            output_type=None,
+            schema=None,
+            form=None,
+            template=None,
+            icon_name=None,
+            hidden=False,
     ):
         self.name = name
         self.description = description
@@ -200,16 +200,16 @@ class Instance(BaseModel):
     }
 
     def __init__(
-        self,
-        name=None,
-        description=None,
-        id=None,
-        status=None,
-        status_info=None,
-        queue_type=None,
-        queue_info=None,
-        icon_name=None,
-        metadata=None,
+            self,
+            name=None,
+            description=None,
+            id=None,
+            status=None,
+            status_info=None,
+            queue_type=None,
+            queue_info=None,
+            icon_name=None,
+            metadata=None,
     ):
         self.name = name
         self.description = description
@@ -269,22 +269,22 @@ class Parameter(BaseModel):
     FORM_INPUT_TYPES = ("textarea",)
 
     def __init__(
-        self,
-        key,
-        type=None,
-        multi=None,
-        display_name=None,
-        optional=None,
-        default=None,
-        description=None,
-        choices=None,
-        parameters=None,
-        nullable=None,
-        maximum=None,
-        minimum=None,
-        regex=None,
-        form_input_type=None,
-        type_info=None,
+            self,
+            key,
+            type=None,
+            multi=None,
+            display_name=None,
+            optional=None,
+            default=None,
+            description=None,
+            choices=None,
+            parameters=None,
+            nullable=None,
+            maximum=None,
+            minimum=None,
+            regex=None,
+            form_input_type=None,
+            type_info=None,
     ):
         self.key = key
         self.type = type
@@ -414,17 +414,17 @@ class RequestTemplate(BaseModel):
     ]
 
     def __init__(
-        self,
-        system=None,
-        system_version=None,
-        instance_name=None,
-        namespace=None,
-        command=None,
-        command_type=None,
-        parameters=None,
-        comment=None,
-        metadata=None,
-        output_type=None,
+            self,
+            system=None,
+            system_version=None,
+            instance_name=None,
+            namespace=None,
+            command=None,
+            command_type=None,
+            parameters=None,
+            comment=None,
+            metadata=None,
+            output_type=None,
     ):
         self.system = system
         self.system_version = system_version
@@ -442,15 +442,15 @@ class RequestTemplate(BaseModel):
 
     def __repr__(self):
         return (
-            "<RequestTemplate: command=%s, system=%s, system_version=%s, "
-            "instance_name=%s, namespace=%s>"
-            % (
-                self.command,
-                self.system,
-                self.system_version,
-                self.instance_name,
-                self.namespace,
-            )
+                "<RequestTemplate: command=%s, system=%s, system_version=%s, "
+                "instance_name=%s, namespace=%s>"
+                % (
+                    self.command,
+                    self.system,
+                    self.system_version,
+                    self.instance_name,
+                    self.namespace,
+                )
         )
 
 
@@ -463,27 +463,27 @@ class Request(RequestTemplate):
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
-        self,
-        system=None,
-        system_version=None,
-        instance_name=None,
-        namespace=None,
-        command=None,
-        id=None,
-        parent=None,
-        children=None,
-        parameters=None,
-        comment=None,
-        output=None,
-        output_type=None,
-        status=None,
-        command_type=None,
-        created_at=None,
-        error_class=None,
-        metadata=None,
-        updated_at=None,
-        has_parent=None,
-        requester=None,
+            self,
+            system=None,
+            system_version=None,
+            instance_name=None,
+            namespace=None,
+            command=None,
+            id=None,
+            parent=None,
+            children=None,
+            parameters=None,
+            comment=None,
+            output=None,
+            output_type=None,
+            status=None,
+            command_type=None,
+            created_at=None,
+            error_class=None,
+            metadata=None,
+            updated_at=None,
+            has_parent=None,
+            requester=None,
     ):
         super(Request, self).__init__(
             system=system,
@@ -527,16 +527,16 @@ class Request(RequestTemplate):
 
     def __repr__(self):
         return (
-            "<Request: command=%s, status=%s, system=%s, system_version=%s, "
-            "instance_name=%s, namespace=%s>"
-            % (
-                self.command,
-                self.status,
-                self.system,
-                self.system_version,
-                self.instance_name,
-                self.namespace,
-            )
+                "<Request: command=%s, status=%s, system=%s, system_version=%s, "
+                "instance_name=%s, namespace=%s>"
+                % (
+                    self.command,
+                    self.status,
+                    self.system,
+                    self.system_version,
+                    self.instance_name,
+                    self.namespace,
+                )
         )
 
     @property
@@ -560,19 +560,19 @@ class System(BaseModel):
     schema = "SystemSchema"
 
     def __init__(
-        self,
-        name=None,
-        description=None,
-        version=None,
-        id=None,
-        max_instances=None,
-        instances=None,
-        commands=None,
-        icon_name=None,
-        display_name=None,
-        metadata=None,
-        namespace=None,
-        local=None,
+            self,
+            name=None,
+            description=None,
+            version=None,
+            id=None,
+            max_instances=None,
+            instances=None,
+            commands=None,
+            icon_name=None,
+            display_name=None,
+            metadata=None,
+            namespace=None,
+            local=None,
     ):
         self.name = name
         self.description = description
@@ -832,16 +832,16 @@ class Event(BaseModel):
     schema = "EventSchema"
 
     def __init__(
-        self,
-        name=None,
-        namespace=None,
-        garden=None,
-        metadata=None,
-        timestamp=None,
-        payload_type=None,
-        payload=None,
-        error=None,
-        error_message=None,
+            self,
+            name=None,
+            namespace=None,
+            garden=None,
+            metadata=None,
+            timestamp=None,
+            payload_type=None,
+            payload=None,
+            error=None,
+            error_message=None,
     ):
         self.name = name
         self.namespace = namespace
@@ -858,19 +858,19 @@ class Event(BaseModel):
 
     def __repr__(self):
         return (
-            "<Event: namespace=%s, garden=%s, name=%s, timestamp=%s, error=%s, "
-            "error_message=%s, metadata=%s, payload_type=%s, payload=%r>"
-            % (
-                self.namespace,
-                self.garden,
-                self.name,
-                self.timestamp,
-                self.error,
-                self.error_message,
-                self.metadata,
-                self.payload_type,
-                self.payload,
-            )
+                "<Event: namespace=%s, garden=%s, name=%s, timestamp=%s, error=%s, "
+                "error_message=%s, metadata=%s, payload_type=%s, payload=%r>"
+                % (
+                    self.namespace,
+                    self.garden,
+                    self.name,
+                    self.timestamp,
+                    self.error,
+                    self.error_message,
+                    self.metadata,
+                    self.payload_type,
+                    self.payload,
+                )
         )
 
 
@@ -878,14 +878,14 @@ class Queue(BaseModel):
     schema = "QueueSchema"
 
     def __init__(
-        self,
-        name=None,
-        system=None,
-        version=None,
-        instance=None,
-        system_id=None,
-        display=None,
-        size=None,
+            self,
+            name=None,
+            system=None,
+            version=None,
+            instance=None,
+            system_id=None,
+            display=None,
+            size=None,
     ):
         self.name = name
         self.system = system
@@ -906,13 +906,13 @@ class Principal(BaseModel):
     schema = "PrincipalSchema"
 
     def __init__(
-        self,
-        id=None,
-        username=None,
-        roles=None,
-        permissions=None,
-        preferences=None,
-        metadata=None,
+            self,
+            id=None,
+            username=None,
+            roles=None,
+            permissions=None,
+            preferences=None,
+            metadata=None,
     ):
         self.id = id
         self.username = username
@@ -945,7 +945,28 @@ class Role(BaseModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Role: name=%s, permissions=%s>" % (self.name, self.permissions)
+        return "<Role: name=%s, permissions=%s, namespaces=%s>" % (self.name, self.permissions)
+
+
+class Permission(BaseModel):
+    schema = "PermissionSchema"
+
+    ACCESSES = ["CREATE", "READ", "MAINTAIN", "ADMIN"]
+
+    def __init__(self, id=None, namespace=None, access=None, is_local=None):
+        self.id = id
+        self.namespace = namespace
+        self.access = access
+        self.is_local = is_local
+
+    def __str__(self):
+        if self.is_local:
+            return "LOCAL: %s" % self.access
+        else:
+            return "%s: %s" % (self.namespace, self.access)
+
+    def __repr__(self):
+        return "<Permission: name=%s, permissions=%s, namespaces=%s, is_local=%s>" % (self.namespace, self.access, self.is_local)
 
 
 class RefreshToken(BaseModel):
@@ -974,19 +995,19 @@ class Job(BaseModel):
     schema = "JobSchema"
 
     def __init__(
-        self,
-        id=None,
-        name=None,
-        trigger_type=None,
-        trigger=None,
-        request_template=None,
-        misfire_grace_time=None,
-        coalesce=None,
-        next_run_time=None,
-        success_count=None,
-        error_count=None,
-        status=None,
-        max_instances=None,
+            self,
+            id=None,
+            name=None,
+            trigger_type=None,
+            trigger=None,
+            request_template=None,
+            misfire_grace_time=None,
+            coalesce=None,
+            next_run_time=None,
+            success_count=None,
+            error_count=None,
+            status=None,
+            max_instances=None,
     ):
         self.id = id
         self.name = name
@@ -1036,17 +1057,17 @@ class IntervalTrigger(BaseModel):
     schema = "IntervalTriggerSchema"
 
     def __init__(
-        self,
-        weeks=None,
-        days=None,
-        hours=None,
-        minutes=None,
-        seconds=None,
-        start_date=None,
-        end_date=None,
-        timezone=None,
-        jitter=None,
-        reschedule_on_finish=None,
+            self,
+            weeks=None,
+            days=None,
+            hours=None,
+            minutes=None,
+            seconds=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+            jitter=None,
+            reschedule_on_finish=None,
     ):
         self.weeks = weeks
         self.days = days
@@ -1064,9 +1085,9 @@ class IntervalTrigger(BaseModel):
 
     def __repr__(self):
         return (
-            "<IntervalTrigger: weeks=%d, days=%d, hours=%d, "
-            "minutes=%d, seconds=%d>"
-            % (self.weeks, self.days, self.hours, self.minutes, self.seconds)
+                "<IntervalTrigger: weeks=%d, days=%d, hours=%d, "
+                "minutes=%d, seconds=%d>"
+                % (self.weeks, self.days, self.hours, self.minutes, self.seconds)
         )
 
     @property
@@ -1104,19 +1125,19 @@ class CronTrigger(BaseModel):
     schema = "CronTriggerSchema"
 
     def __init__(
-        self,
-        year=None,
-        month=None,
-        day=None,
-        week=None,
-        day_of_week=None,
-        hour=None,
-        minute=None,
-        second=None,
-        start_date=None,
-        end_date=None,
-        timezone=None,
-        jitter=None,
+            self,
+            year=None,
+            month=None,
+            day=None,
+            week=None,
+            day_of_week=None,
+            hour=None,
+            minute=None,
+            second=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+            jitter=None,
     ):
         self.year = year
         self.month = month
@@ -1191,15 +1212,15 @@ class Garden(BaseModel):
     }
 
     def __init__(
-        self,
-        id=None,
-        name=None,
-        status=None,
-        status_info=None,
-        namespaces=None,
-        systems=None,
-        connection_type=None,
-        connection_params=None,
+            self,
+            id=None,
+            name=None,
+            status=None,
+            status_info=None,
+            namespaces=None,
+            systems=None,
+            connection_type=None,
+            connection_params=None,
     ):
         self.id = id
         self.name = name
@@ -1222,14 +1243,14 @@ class Operation(BaseModel):
     schema = "OperationSchema"
 
     def __init__(
-        self,
-        model=None,
-        model_type=None,
-        args=None,
-        kwargs=None,
-        target_garden_name=None,
-        source_garden_name=None,
-        operation_type=None,
+            self,
+            model=None,
+            model_type=None,
+            args=None,
+            kwargs=None,
+            target_garden_name=None,
+            source_garden_name=None,
+            operation_type=None,
     ):
         self.model = model
         self.model_type = model_type
@@ -1244,15 +1265,15 @@ class Operation(BaseModel):
 
     def __repr__(self):
         return (
-            "<Operation: operation_type=%s, source_garden_name=%s, "
-            "target_garden_name=%s, model_type=%s, model=%s, args=%s, kwargs=%s>"
-            % (
-                self.operation_type,
-                self.source_garden_name,
-                self.target_garden_name,
-                self.model_type,
-                self.model,
-                self.args,
-                self.kwargs,
-            )
+                "<Operation: operation_type=%s, source_garden_name=%s, "
+                "target_garden_name=%s, model_type=%s, model=%s, args=%s, kwargs=%s>"
+                % (
+                    self.operation_type,
+                    self.source_garden_name,
+                    self.target_garden_name,
+                    self.model_type,
+                    self.model,
+                    self.args,
+                    self.kwargs,
+                )
         )

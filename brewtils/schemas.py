@@ -22,6 +22,7 @@ __all__ = [
     "EventSchema",
     "QueueSchema",
     "PrincipalSchema",
+    "PermissionSchema",
     "RoleSchema",
     "RefreshTokenSchema",
     "JobSchema",
@@ -40,7 +41,7 @@ def _serialize_model(_, obj, type_field=None, allowed_types=None):
     model_type = getattr(obj, type_field)
 
     if model_type not in model_schema_map or (
-        allowed_types and model_type not in allowed_types
+            allowed_types and model_type not in allowed_types
     ):
         raise TypeError("Invalid model type %s" % model_type)
 
@@ -49,7 +50,7 @@ def _serialize_model(_, obj, type_field=None, allowed_types=None):
 
 def _deserialize_model(_, data, type_field=None, allowed_types=None):
     if data[type_field] not in model_schema_map or (
-        allowed_types and data[type_field] not in allowed_types
+            allowed_types and data[type_field] not in allowed_types
     ):
         raise TypeError("Invalid payload type %s" % data[type_field])
 
@@ -296,7 +297,6 @@ class LoggingConfigSchema(BaseSchema):
 
 
 class EventSchema(BaseSchema):
-
     name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     garden = fields.Str(allow_none=True)
@@ -324,7 +324,6 @@ class PrincipalSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
     roles = fields.Nested("RoleSchema", many=True, allow_none=True)
-    permissions = fields.List(fields.Str(), allow_none=True)
     preferences = fields.Dict(allow_none=True)
     metadata = fields.Dict(allow_none=True)
 
@@ -333,8 +332,14 @@ class RoleSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
-    roles = fields.Nested("self", many=True, allow_none=True)
-    permissions = fields.List(fields.Str(), allow_none=True)
+    permissions = fields.Nested("PermissionSchema", allow_none=True)
+
+
+class PermissionSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    access = fields.Str(allow_none=True)
+    is_local = fields.Boolean(allow_none=True)
 
 
 class RefreshTokenSchema(BaseSchema):

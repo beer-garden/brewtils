@@ -34,6 +34,7 @@ class SchemaParser(object):
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
         "PatchSchema": brewtils.models.PatchOperation,
+        "PermissionSchema": brewtils.models.Permission,
         "PrincipalSchema": brewtils.models.Principal,
         "RefreshTokenSchema": brewtils.models.RefreshToken,
         "RequestSchema": brewtils.models.Request,
@@ -194,6 +195,19 @@ class SchemaParser(object):
         """
         return cls.parse(
             principal, brewtils.models.Principal, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_permission(cls, permission, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a permission model object
+
+        :param permission: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Principal object
+        """
+        return cls.parse(
+            permission, brewtils.models.Permission, from_string=from_string, **kwargs
         )
 
     @classmethod

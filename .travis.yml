@@ -12,13 +12,20 @@ python:
   - 2.7
 
 env:
-  - PIKA_VERSION=0.13.1
-  - PIKA_VERSION=1.1.0
+  global:
+    # DOCKER_USER
+    - secure: C/nW/1SYP5gafEkCvLIU9FdcWiurZL23AGtM3CxtWmL+E5s6MwxcMlD0ejMQsqW8X6r4+A4sD8VgRA93jslOzd1dxcJ43AOPpbWeTMZ796PIgDpFBOpKuyjg+6tgsY6seJBxiU1GjkRrzfexioSmp98cFBg/7TpYYG9MjjAZcss/6QdkW/eYPpX/7CXrgcepSiuweAis4SbyACjZwAD7j5zYBTI3eLLfwgRfK2tEf+IKojtxPNfqu3dy9MZw6lJgBCgzYOeQIdovTH0AGKHNYrqIV8/WS6esIQtJfE6ibJrFtFv4b9vBRWxAHJwsGntUIFrDciOln0n6M/577vc0PrzuCum3f8cT6LswgoKTvnoFvEZ4TY6LcRhO0sZBlUKyb8eKe3Os+QRjmmTMOWX9EjXyFdPsQ4s37GgTFOY7SYPh8KqvvwtTqhRAEJA8rwMz4fphYJqgNO06EAJKhuUBCHm7HP+rc0dlu8ZVVlcKHRcc0UxM/jVl5q1H0FOEnEETtp+eCiOxjLHUlrrL50J7ZOFKr7JbCKWjrBxkoo2EEtwdnRGvk8vIo84z/WI6Y11kPio/AT+cpXq/dhE3Smxj8bTdNL9Hnp3oPb3TyesmSOJJ83KR/HRcPunZBV3Ru6mpEA4kY+3imtT6Pb1SV7mJpQZCldUvARi8G2c+qdorjvc=
+    # DOCKER_PASSWORD
+    - secure: kzsX/dDikujemq+6Q6zI6Ziu3VdFFvMz94T024qjCnx70foOHJJnN3Ov87wdivZiUgi774b4KYN9DrPirxBL6Y15jBAT4uzEVaLPgX3bN+C40TWksqHZt5BZZO8VL4fFBsvO6m+vzjn42LE+YXkTV+hPi3uyccfsii8Y1IjPwMpTzCegfsWSxOKHMRF78khY0FJREMA12HmiYr+7ICz4pml6pKpIYtfh1o2bfB9qHW90rkriJPrbGxIbl3KHc8fDEJfyWYLHO/f5PPsL8tTO2Xxpja6lQ15XgPZheX8qCnFG2i7wCe8Ri0nMD19SMIHxEauH80WTQ7YvqZFdZQTClGjxKNYszSWJuBiWMBWp5lIfPGp1YmTW/UApiFVAU6eLQoKCPNTB8TuXufEFt9QAtQ78fVDs85AfOrX/TFdxTiecj82YflqRe0YZvkhFIoy5dXBnDTX4UK5CklfqzQCYAry4U8jcwpIlYYB+KlGWEmC6J4PBPAz5VHroGsinWyh/Ftht0GA1RT2G61MbTgikd+ZljITF2JyJ77EcTjOA5Ks8+lgRFeviZeFVpfQVRDKajCYBURFQO0J01dHGJ/5PMaWT6bXFIBIK6ucKn2XZTWVQlOnRK+EreAKLxsRD2/t9qcHuyGdBW4fNhsqiETItot+ZLWN77WHWTEkWNnpE0aM=
+    - PIKA_VERSION: 0.13.1
+    - PIKA_VERSION: 1.1.0
+
 
 stages:
   - lint
   - test
   - deploy
+  - docker deploy
 
 # This is for the "test" stage
 install:
@@ -58,3 +65,10 @@ jobs:
         username: beerbuildbot
         password:
           secure: jW6tOmxBs28o7fdWhQuHbAZbLuLVFu+WUtfaKkEhzONWpjJqYU/HWsugznilCWC1JB8OYHn0y/KdWzF/5JL0aICW2S9qf7Z/tgd3bcbJgEaAZrI92tKYEWv8qc91LkFfaC3jg/qkvAz1ePZ445p7kOh3WnOmgyYy5qNaw46M+EFSXnQJ7S5UQ+kc0Yu1FX6KkccOItIZns4klFO+6MA1o+Alt5fjN67ifrPtJih6m1k15vh7COsUyL+eYxRSYNfDDcCkiYv9qcXRR2JA9IdT/uJ8hUxKm2T5jeAH8LNDo1/XSQ+RZiR8ls93MQx/y0CcFht0K0Qa1h5MA7ZP5dh3XCpPbXDQmt0YpN6csjGLfdSwKItVaWNxLBbuxHf1/jZe+1kdzn8ovYXh+7GmxwWm6DnNf7J4pnwKRQnB5K650lJucx03rbuX+Q+rtWGDyLjYPZqTj1Dg7dDPplISAGmLTg1bMm9eGWx4zFtZsj6cLMfM/Sp5ZXFlPLpfj0eHQMPJ0fktg+WjvKH8K5ZOU81FtfsTA4qJ8Z6+TFNBXxxcR0z+pI0DOpI7PxhleGJRDuKB4uEO7Sg4WlLH/pXOolYwNTLjU56GBtBTIc3p+uLxzzAqPwsFK0/jjAAbiWg7lN8b0WGmDT93A1Dcv9QG9e6l039ZwHfUUzYS7DIJFCguy/k=
+
+    - stage: docker deploy
+        if: tag IS present
+        install: skip
+        before_script: make docker-login
+        script: make publish-docker VERSION=$TRAVIS_TAG
+        after_success: skip

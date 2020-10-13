@@ -3,6 +3,9 @@
 PYTHON        = python
 MODULE_NAME   = brewtils
 TEST_DIR      = test
+DOCKER_NAME    = bgio/plugins
+
+VERSION        ?= 0.0.0
 
 .PHONY: clean clean-build clean-docs clean-test clean-pyc docs help test
 
@@ -104,6 +107,13 @@ coverage: ## check code coverage quickly with the default Python
 coverage-view: coverage ## view coverage report in a browser
 	$(BROWSER) htmlcov/index.html
 
+# Docker
+docker-build: ## build the docker images
+	docker build -t $(DOCKER_NAME):$(VERSION)-python3 --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
+	docker build -t $(DOCKER_NAME):$(VERSION)-python3-onbuild  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
+	docker build -t $(DOCKER_NAME):$(VERSION)-python2 --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
+	docker build -t $(DOCKER_NAME):$(VERSION)-python2-onbuild --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
+	docker tag $(DOCKER_NAME):latest $(DOCKER_NAME):$(VERSION)-python3
 
 # Documentation
 docs: ## generate Sphinx HTML documentation, including API docs
@@ -134,3 +144,10 @@ publish-package-test: package ## upload a package to the testpypi
 
 publish-package: package ## upload a package
 	twine upload dist/*
+
+publish-docker: docker-build ## push the docker images
+	docker push $(DOCKER_NAME):$(VERSION)-python3
+	docker push $(DOCKER_NAME):$(VERSION)-python3-onbuild
+	docker push $(DOCKER_NAME):$(VERSION)-python2
+	docker push $(DOCKER_NAME):$(VERSION)-python2-onbuild
+	docker push $(DOCKER_NAME):latest

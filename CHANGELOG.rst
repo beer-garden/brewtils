@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+2.4.15
+-----
+Date: 10/13/20
+
+Bug Fixes
+^^^^^^^^^
+- Fixing command invocation error when request has no parameters (beer-garden/#351)
+
 2.4.14
 -----
 Date: 1/30/20

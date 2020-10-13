@@ -1,6 +1,6 @@
 ARG VERSION
 
-FROM bgio/plugins:$VERSION-python3
+FROM bgio/plugins:python3-$VERSION
 
 ONBUILD COPY install-prereqs*.sh requirements*.txt /tmp/
 ONBUILD RUN bash -c " \

@@ -30,7 +30,6 @@ from brewtils import command, system, Plugin
 
 __version__ = "1.0.0.dev0"
 
-
 @system
 class TestClient:
     def __init__(self):
@@ -42,14 +41,17 @@ class TestClient:
 
 
 def main():
+
     plugin = Plugin(
         name="test-client-docker",
         version=__version__,
         description="Tester Plugin for Docker",
         bg_host='localhost',
-        bg_port=2337, ssl_enabled=False
+        bg_port=2337, 
+        ssl_enabled=False,
+        client=TestClient()
     )
-    plugin.client = TestClient()
+
     plugin.run()
 
 
@@ -60,14 +62,14 @@ if __name__ == "__main__":
 Save that off as a file `__main__.py`. You should be able to run:
 
 ```
-docker run -v $(pwd):/src beer-garden/plugins:python2
+docker run -v $(pwd):/src beer-garden/plugins:python3
 ```
 
 Congratulations! Your plugin works! If you want to name your file something else
 you can do that, you just need to modify the run statement:
 
 ```
-docker run -v $(pwd):/src beer-garden/plugins:python2 python /src/my_cool_filename.py
+docker run -v $(pwd):/src beer-garden/plugins:python3 python /src/my_cool_filename.py
 ```
 
 
@@ -91,7 +93,7 @@ dependency on `libssl-devel`, you could add the following to your
 `install-prereqs.sh`:
 
 ```
-apt-get install libssl-devel
+apk add libssl-devel
 ```
 
 Then you simply build your image and all the python & additional dependencies

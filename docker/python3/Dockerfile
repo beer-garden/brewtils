@@ -9,5 +9,4 @@ VOLUME /src
 
 COPY docker-entrypoint.sh /
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["python", "-m", "src"]

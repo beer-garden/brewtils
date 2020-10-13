@@ -22,9 +22,9 @@ env:
 
 
 stages:
-  - lint
-  - test
-  - deploy
+#  - lint
+#  - test
+#  - deploy
   - docker deploy
 
 # This is for the "test" stage

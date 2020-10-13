@@ -1,10 +1,8 @@
-FROM alpine:3.9
+FROM python:2.7-alpine
 
 ARG VERSION
 
-RUN apk add --no-cache python2 py2-pip && \
-    pip --no-cache-dir install -U pip && \
-    pip --no-cache-dir install brewtils==$VERSION
+RUN pip --no-cache-dir install brewtils==$VERSION
 
 WORKDIR /
 VOLUME /src

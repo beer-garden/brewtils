@@ -1210,6 +1210,7 @@ class FileTrigger(BaseModel):
             "pattern",
             "path",
             "recursive",
+            "callbacks"
         ]
 
     @property
@@ -1220,6 +1221,7 @@ class FileTrigger(BaseModel):
                 "pattern": self.pattern,
                 "path": self.path,
                 "recursive": self.recursive,
+                "callbacks": self.callbacks
             }
         )
 

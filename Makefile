@@ -149,9 +149,9 @@ publish-package: package ## upload a package
 
 publish-docker: docker-build ## push the docker images
     docker push $(DOCKER_NAME):python3
-	docker push $(DOCKER_NAME):python3-$(VERSION)
-	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
-	docker push $(DOCKER_NAME):python2
-	docker push $(DOCKER_NAME):python2-$(VERSION)
-	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
-	docker push $(DOCKER_NAME):latest
+    docker push $(DOCKER_NAME):python3-$(VERSION)
+    docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
+    docker push $(DOCKER_NAME):python2
+    docker push $(DOCKER_NAME):python2-$(VERSION)
+    docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
+    docker push $(DOCKER_NAME):latest

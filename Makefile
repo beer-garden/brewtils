@@ -109,11 +109,13 @@ coverage-view: coverage ## view coverage report in a browser
 
 # Docker
 docker-build: ## build the docker images
-	docker build -t $(DOCKER_NAME):$(VERSION)-python3 --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
-	docker build -t $(DOCKER_NAME):$(VERSION)-python3-onbuild  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
-	docker build -t $(DOCKER_NAME):$(VERSION)-python2 --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
-	docker build -t $(DOCKER_NAME):$(VERSION)-python2-onbuild --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
-	docker tag $(DOCKER_NAME):latest $(DOCKER_NAME):$(VERSION)-python3
+	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
+	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
+	docker build -t $(DOCKER_NAME):python2-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
+	docker build -t $(DOCKER_NAME):python2-onbuild-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
+	docker tag $(DOCKER_NAME):latest $(DOCKER_NAME):python3-$(VERSION)
+	docker tag $(DOCKER_NAME):python3 $(DOCKER_NAME):python3-$(VERSION)
+	docker tag $(DOCKER_NAME):python2 $(DOCKER_NAME):python2-$(VERSION)
 
 # Documentation
 docs: ## generate Sphinx HTML documentation, including API docs
@@ -146,8 +148,10 @@ publish-package: package ## upload a package
 	twine upload dist/*
 
 publish-docker: docker-build ## push the docker images
-	docker push $(DOCKER_NAME):$(VERSION)-python3
-	docker push $(DOCKER_NAME):$(VERSION)-python3-onbuild
-	docker push $(DOCKER_NAME):$(VERSION)-python2
-	docker push $(DOCKER_NAME):$(VERSION)-python2-onbuild
+    docker push $(DOCKER_NAME):python3
+	docker push $(DOCKER_NAME):python3-$(VERSION)
+	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
+	docker push $(DOCKER_NAME):python2
+	docker push $(DOCKER_NAME):python2-$(VERSION)
+	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
 	docker push $(DOCKER_NAME):latest

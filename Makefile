@@ -108,6 +108,9 @@ coverage-view: coverage ## view coverage report in a browser
 	$(BROWSER) htmlcov/index.html
 
 # Docker
+docker-login: ## log in to the docker registry
+	echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USER}" --password-stdin
+
 docker-build: ## build the docker images
 	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
 	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .

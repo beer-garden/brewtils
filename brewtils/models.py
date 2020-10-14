@@ -1200,17 +1200,12 @@ class FileTrigger(BaseModel):
             self.pattern,
             self.path,
             self.recursive,
-            self.callbacks
+            self.callbacks,
         )
 
     @property
     def scheduler_attributes(self):
-        return [
-            "pattern",
-            "path",
-            "recursive",
-            "callbacks"
-        ]
+        return ["pattern", "path", "recursive", "callbacks"]
 
     @property
     def scheduler_kwargs(self):
@@ -1220,7 +1215,7 @@ class FileTrigger(BaseModel):
                 "pattern": self.pattern,
                 "path": self.path,
                 "recursive": self.recursive,
-                "callbacks": self.callbacks
+                "callbacks": self.callbacks,
             }
         )
 

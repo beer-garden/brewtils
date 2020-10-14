@@ -21,11 +21,10 @@ env:
     - PIKA_VERSION: 1.1.0
 
 stages:
-  - lint
+  - docker deploy
+#  - lint
 #  - test
 #  - deploy
-  - docker deploy
-
 # This is for the "test" stage
 install:
   - make deps

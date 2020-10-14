@@ -1191,7 +1191,6 @@ class FileTrigger(BaseModel):
         self.path = path
         self.recursive = recursive
         self.callbacks = callbacks
-        # print("~~~~~~~~~~~BUILT A FILE TRIGGER with pattern= %s" % self.pattern)
 
     def __str__(self):
         return repr(self)

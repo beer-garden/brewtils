@@ -380,7 +380,6 @@ class CronTriggerSchema(BaseSchema):
 
 class FileTriggerSchema(BaseSchema):
     pattern = fields.List(fields.Str(), allow_none=True)
-    # print("~~~~~~~~~~~~~~~~~~~Marshmallow got pattern= %s" % pattern)
     path = fields.Str(allow_none=True)
     recursive = fields.Bool(allow_none=True)
     callbacks = fields.Dict(fields.Bool(), allow_none=True)

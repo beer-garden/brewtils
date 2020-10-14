@@ -299,8 +299,6 @@ class SchemaParser(object):
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
         schema.context["models"] = cls._models
 
-        # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~Processing %s %s" % (schema, schema.context))
-
         return schema.loads(data).data if from_string else schema.load(data).data
 
     # Serialization methods

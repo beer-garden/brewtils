@@ -33,6 +33,7 @@ if not PIKA_ONE:
     )
 
 
+
 class PikaClient(object):
     """Base class for connecting to RabbitMQ using Pika
 

@@ -951,13 +951,16 @@ class Role(BaseModel):
 class Permission(BaseModel):
     schema = "PermissionSchema"
 
-    ACCESSES = ["CREATE", "READ", "MAINTAIN", "ADMIN"]
+    ACCESSES = ["CREATE", "READ", "MAINTAINER", "ADMIN"]
 
     def __init__(self, id=None, namespace=None, access=None, is_local=None):
         self.id = id
         self.namespace = namespace
         self.access = access
         self.is_local = is_local
+
+    def __hash__(self):
+        return self.__str__()
 
     def __str__(self):
         if self.is_local:
@@ -966,7 +969,7 @@ class Permission(BaseModel):
             return "%s: %s" % (self.namespace, self.access)
 
     def __repr__(self):
-        return "<Permission: name=%s, permissions=%s, namespaces=%s, is_local=%s>" % (self.namespace, self.access, self.is_local)
+        return "<Permission: namespace=%s, access=%s, is_local=%s>" % (self.namespace, self.access, self.is_local)
 
 
 class RefreshToken(BaseModel):

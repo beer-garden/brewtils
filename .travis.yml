@@ -20,9 +20,8 @@ env:
     - PIKA_VERSION: 0.13.1
     - PIKA_VERSION: 1.1.0
 
-
 stages:
-#  - lint
+  - lint
 #  - test
 #  - deploy
   - docker deploy

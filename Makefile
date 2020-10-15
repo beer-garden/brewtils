@@ -151,18 +151,12 @@ publish-package: package ## upload a package
 	twine upload dist/*
 
 publish-docker: docker-build ## push the docker images
-	echo "Pushing -- $(DOCKER_NAME):python3-$(VERSION)"
 	docker push $(DOCKER_NAME):python3-$(VERSION)
-
-	echo "Pushing -- $(DOCKER_NAME):python3-onbuild-$(VERSION)"
 	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
-
-	echo "Pushing -- $(DOCKER_NAME):python2-$(VERSION)"
 	docker push $(DOCKER_NAME):python2-$(VERSION)
-
-	echo "Pushing -- $(DOCKER_NAME):python2-onbuild-$(VERSION)"
 	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
 
-    #docker push $(DOCKER_NAME):python3
-    #docker push $(DOCKER_NAME):python2
-    #docker push $(DOCKER_NAME):latest
+	## Add this back in one 3.0 is released
+	#docker push $(DOCKER_NAME):python3
+	#docker push $(DOCKER_NAME):python2
+	#docker push $(DOCKER_NAME):latest

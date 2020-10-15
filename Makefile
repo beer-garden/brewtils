@@ -151,7 +151,6 @@ publish-package: package ## upload a package
 	twine upload dist/*
 
 publish-docker: docker-build ## push the docker images
-    echo "Pushing Docker Images"
     docker push $(DOCKER_NAME):python3
     docker push $(DOCKER_NAME):python3-$(VERSION)
     docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)

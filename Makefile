@@ -108,6 +108,9 @@ coverage-view: coverage ## view coverage report in a browser
 	$(BROWSER) htmlcov/index.html
 
 # Docker
+docker-login: ## log in to the docker registry
+	echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USER}" --password-stdin
+
 docker-build: ## build the docker images
 	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
 	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
@@ -148,10 +151,12 @@ publish-package: package ## upload a package
 	twine upload dist/*
 
 publish-docker: docker-build ## push the docker images
-    docker push $(DOCKER_NAME):python3
-    docker push $(DOCKER_NAME):python3-$(VERSION)
-    docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
-    docker push $(DOCKER_NAME):python2
-    docker push $(DOCKER_NAME):python2-$(VERSION)
-    docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
-    docker push $(DOCKER_NAME):latest
+	docker push $(DOCKER_NAME):python3-$(VERSION)
+	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
+	docker push $(DOCKER_NAME):python2-$(VERSION)
+	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
+
+	## Add this back in one 3.0 is released
+	#docker push $(DOCKER_NAME):python3
+	#docker push $(DOCKER_NAME):python2
+	#docker push $(DOCKER_NAME):latest

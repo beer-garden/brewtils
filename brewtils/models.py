@@ -265,6 +265,7 @@ class Parameter(BaseModel):
         "Date",
         "DateTime",
         "Bytes",
+        "Base64",
     )
     FORM_INPUT_TYPES = ("textarea",)
 

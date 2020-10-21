@@ -218,6 +218,9 @@ class RequestFailedError(RestError):
     def __init__(self, request):
         self.request = request
 
+    def __str__(self):
+        return str(self.request.output)
+
 
 class NotFoundError(RestClientError):
     """Error Indicating a 404 was raised on the server"""

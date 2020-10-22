@@ -5,12 +5,17 @@ import sys
 
 import pytest
 
-from brewtils.errors import parse_exception_as_json
+from brewtils.errors import RequestFailedError, parse_exception_as_json
 
 
 class CustomException(Exception):
     def __init__(self, foo):
         self.foo = foo
+
+
+class TestRequestFailedError(object):
+    def test_str(self, bg_request):
+        assert str(RequestFailedError(bg_request)) == bg_request.output
 
 
 class TestErrors(object):

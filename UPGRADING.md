@@ -339,6 +339,13 @@ Previously `__version__` was imported into the top-level brewtils `__init__.py` 
 ### Other
 All the stuff that doesn't fit anywhere else!
 
+#### Parent Request Error Output
+The string representation of `RequestFailedError` has been changed to the output of the Request that caused the error.
+
+In v2 using a SystemClient with `raise_on_error=True` would result in the top-level Request erroring if the child Request resulted in an error (the expected behavior), but the top-level Request's output was just the name of the command that failed. This change will cause the output of the top-level request to match the output of the child request that caused the error.
+
+It's still possible to catch the `RequestFailedError` and raise a different exception if different output is required.
+
 #### Default value for `max_instances`
 The default value for `max_instances` has been changed to -1, which means there is no maximum. This value can be manually set to 1 to maintain the legacy behavior.
 

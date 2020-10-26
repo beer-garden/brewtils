@@ -200,7 +200,7 @@ class EasyClient(object):
         return self.client.get_config()
 
     @wrap_response(default_exc=FetchError)
-    def get_logging_config(self, system_name=None):
+    def get_logging_config(self, system_name=None, local=False):
         """Get a logging configuration
 
         Note that the system_name is not relevant and is only provided for
@@ -213,7 +213,7 @@ class EasyClient(object):
             dict: The configuration object
 
         """
-        return self.client.get_logging_config()
+        return self.client.get_logging_config(local=local)
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError

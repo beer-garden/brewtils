@@ -24,6 +24,8 @@ __all__ = [
     "RefreshToken",
     "Job",
     "RequestFile",
+    "File",
+    "FileChunk",
     "RequestTemplate",
     "DateTrigger",
     "CronTrigger",
@@ -384,9 +386,10 @@ class Parameter(BaseModel):
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
 
-    def __init__(self, storage_type=None, filename=None):
+    def __init__(self, storage_type=None, filename=None, id=None, ):
         self.storage_type = storage_type
         self.filename = filename
+        self.id = id
 
     def __str__(self):
         return self.filename
@@ -395,6 +398,46 @@ class RequestFile(BaseModel):
         return "<RequestFile: filename=%s, storage_type=%s>" % (
             self.filename,
             self.storage_type,
+        )
+
+
+class File(BaseModel):
+    schema = "FileSchema"
+
+    def __init__(self, id=None, file_name=None, file_size=None, chunks=None, chunk_size=None):
+        self.id = id
+        self.file_name = file_name
+        self.file_size = file_size
+        self.chunks = chunks
+        self.chunk_size = chunk_size
+
+    def __str__(self):
+        return self.file_name
+
+    def __repr__(self):
+        return "<File: id=%s, file_name=%s, chunks=%s>" % (
+            self.id,
+            self.file_name,
+            self.chunks,
+        )
+
+
+class FileChunk(BaseModel):
+    schema = "FileChunkSchema"
+
+    def __init__(self, id=None, file_id=None, offset=None, data=None):
+        self.id = id
+        self.file_id = file_id
+        self.offset = offset
+        self.data = data
+
+    def __str__(self):
+        return self.data
+
+    def __repr__(self):
+        return "<FileChunk: file_id=%s, offset=%s>" % (
+            self.file_id,
+            self.offset,
         )
 
 

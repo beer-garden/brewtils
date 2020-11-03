@@ -38,6 +38,8 @@ class SchemaParser(object):
         "RefreshTokenSchema": brewtils.models.RefreshToken,
         "RequestSchema": brewtils.models.Request,
         "RequestFileSchema": brewtils.models.RequestFile,
+        "FileSchema": brewtils.models.File,
+        "FileChunkSchema": brewtils.models.FileChunk,
         "RequestTemplateSchema": brewtils.models.RequestTemplate,
         "RoleSchema": brewtils.models.Role,
         "SystemSchema": brewtils.models.System,

@@ -17,6 +17,8 @@ __all__ = [
     "ParameterSchema",
     "RequestSchema",
     "RequestFileSchema",
+    "FileSchema",
+    "FileChunkSchema",
     "PatchSchema",
     "LoggingConfigSchema",
     "EventSchema",
@@ -215,6 +217,22 @@ class SystemSchema(BaseSchema):
 class RequestFileSchema(BaseSchema):
     storage_type = fields.Str(allow_none=True)
     filename = fields.Str(allow_none=True)
+    id = fields.Str(allow_none=False)
+
+
+class FileSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    file_name = fields.Str(allow_none=True)
+    file_size = fields.Int(allow_none=False)
+    chunks = fields.Dict(allow_none=True)
+    chunk_size = fields.Int(allow_none=False)
+
+
+class FileChunkSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    file_id = fields.Str(allow_none=False)
+    offset = fields.Int(allow_none=False)
+    data = fields.Str(allow_none=False)
 
 
 class RequestTemplateSchema(BaseSchema):
@@ -438,6 +456,8 @@ model_schema_map.update(
         "RefreshToken": RefreshTokenSchema,
         "Request": RequestSchema,
         "RequestFile": RequestFileSchema,
+        "File": FileSchema,
+        "FileChunk": FileChunkSchema,
         "RequestTemplate": RequestTemplateSchema,
         "Role": RoleSchema,
         "System": SystemSchema,

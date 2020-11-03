@@ -73,7 +73,7 @@ def parse(input_string, parse_as=None):
     Returns:
         Dictionary containing the parse results
 
-    Rasies:
+    Raises:
         lark.common.ParseError: Unable to find a valid parsing of `input_string`
     """
 

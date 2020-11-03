@@ -73,12 +73,6 @@ class Events(Enum):
     JOB_RESUMED = 36
     PLUGIN_LOGGER_FILE_CHANGE = 37
 
-    # TODO - should these be external API events?
-    INSTANCE_STOP_REQUESTED = 101
-    INSTANCE_START_REQUESTED = 102
-    SYSTEM_RESCAN_REQUESTED = 103
-    SYSTEM_RELOAD_REQUESTED = 104
-
 
 class BaseModel(object):
     schema = None

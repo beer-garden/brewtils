@@ -111,14 +111,16 @@ coverage-view: coverage ## view coverage report in a browser
 docker-login: ## log in to the docker registry
 	echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USER}" --password-stdin
 
-docker-build: ## build the docker images
+docker-build: docs ## build the docker images
 	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
 	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
 	docker build -t $(DOCKER_NAME):python2-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
 	docker build -t $(DOCKER_NAME):python2-onbuild-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
+	docker build -t $(DOCKER_NAME):docs-$(VERSION) -f docs/Dockerfile docs/
 	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):latest
 	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):python3
 	docker tag $(DOCKER_NAME):python2-$(VERSION) $(DOCKER_NAME):python2
+	docker tag $(DOCKER_NAME):docs-$(VERSION) $(DOCKER_NAME):docs
 
 # Documentation
 docs: ## generate Sphinx HTML documentation, including API docs
@@ -155,6 +157,8 @@ publish-docker: docker-build ## push the docker images
 	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
 	docker push $(DOCKER_NAME):python2-$(VERSION)
 	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
+	docker push $(DOCKER_NAME):docs-$(VERSION)
+	docker push $(DOCKER_NAME):docs
 
 	## Add this back in one 3.0 is released
 	#docker push $(DOCKER_NAME):python3

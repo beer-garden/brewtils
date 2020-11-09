@@ -222,6 +222,9 @@ class RequestFileSchema(BaseSchema):
 
 class FileSchema(BaseSchema):
     id = fields.Str(allow_none=True)
+    owner_id = fields.Str(allow_none=True)
+    owner_type = fields.Str(allow_none=True)
+    created = fields.Str(allow_none=False)
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)

@@ -404,8 +404,12 @@ class RequestFile(BaseModel):
 class File(BaseModel):
     schema = "FileSchema"
 
-    def __init__(self, id=None, file_name=None, file_size=None, chunks=None, chunk_size=None):
+    def __init__(self, id=None, owner_id=None, owner_type=None, created=None,
+                 file_name=None, file_size=None, chunks=None, chunk_size=None):
         self.id = id
+        self.owner_id = owner_id
+        self.owner_type = owner_type
+        self.created = created
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks

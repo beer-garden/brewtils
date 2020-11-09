@@ -398,12 +398,13 @@ class RequestFile(BaseModel):
 class File(BaseModel):
     schema = "FileSchema"
 
-    def __init__(self, id=None, owner_id=None, owner_type=None, created=None,
-                 file_name=None, file_size=None, chunks=None, chunk_size=None):
+    def __init__(self, id=None, owner_id=None, owner_type=None, created_at=None,
+                 file_name=None, file_size=None, chunks=None, chunk_size=None, owner=None):
         self.id = id
         self.owner_id = owner_id
         self.owner_type = owner_type
-        self.created = created
+        self.owner = owner
+        self.created_at = created_at
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks
@@ -413,21 +414,22 @@ class File(BaseModel):
         return self.file_name
 
     def __repr__(self):
-        return "<File: id=%s, file_name=%s, chunks=%s>" % (
+        return "<File: id=%s, file_name=%s, owner_id=%s>" % (
             self.id,
             self.file_name,
-            self.chunks,
+            self.owner_id,
         )
 
 
 class FileChunk(BaseModel):
     schema = "FileChunkSchema"
 
-    def __init__(self, id=None, file_id=None, offset=None, data=None):
+    def __init__(self, id=None, file_id=None, offset=None, data=None, owner=None):
         self.id = id
         self.file_id = file_id
         self.offset = offset
         self.data = data
+        self.owner = owner
 
     def __str__(self):
         return self.data

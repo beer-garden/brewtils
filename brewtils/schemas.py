@@ -224,7 +224,8 @@ class FileSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
-    created = fields.Str(allow_none=False)
+    owner = fields.Raw(allow_none=True)
+    created_at = fields.Str(allow_none=False)
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
@@ -234,6 +235,7 @@ class FileSchema(BaseSchema):
 class FileChunkSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     file_id = fields.Str(allow_none=False)
+    owner = fields.Raw(allow_none=True)
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
 

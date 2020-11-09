@@ -33,6 +33,9 @@ class SystemClient(object):
                 bg_port=2337,
             )
 
+        Note: Passing an empty string as the system_namespace parameter will evalutate
+        to the local garden's default namespace.
+
         Pass additional keyword arguments for more granularity:
 
             version_constraint:
@@ -199,7 +202,7 @@ class SystemClient(object):
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
         self._system_namespace = kwargs.get(
-            "system_namespace", brewtils.plugin.CONFIG.namespace
+            "system_namespace", brewtils.plugin.CONFIG.namespace or ""
         )
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
@@ -355,7 +358,13 @@ class SystemClient(object):
             raise FetchError(
                 "Beer-garden has no system named '%s' with a version matching '%s' in "
                 "namespace '%s'"
-                % (self._system_name, self._version_constraint, self._system_namespace)
+                % (
+                    self._system_name,
+                    self._version_constraint,
+                    self._system_namespace
+                    if self._system_namespace
+                    else "<garden default>",
+                )
             )
 
         self._commands = {command.name: command for command in self._system.commands}

@@ -108,21 +108,36 @@ class TestLoadBgSystem(object):
         with pytest.raises(AttributeError):
             client.command_3()
 
+    def test_latest(self, client, easy_client, system_1, system_2):
+        easy_client.find_systems.return_value = [system_1, system_2]
+
+        client.load_bg_system()
+        assert client._system == system_2
+        easy_client.find_systems.assert_called_once_with(
+            name=system_1.name,
+            namespace="",
+        )
+
     @pytest.mark.parametrize(
         "constraint,systems",
         [
             ("1.0.0", lazy_fixture("system_1")),
-            ("latest", lazy_fixture("system_1")),
             (None, lazy_fixture("system_1")),
         ],
     )
-    def test_normal(self, client, easy_client, system_1, constraint, systems):
+    def test_non_latest(self, client, easy_client, system_1, constraint, systems):
         client._version_constraint = constraint
         easy_client.find_unique_system.return_value = systems
 
         client.load_bg_system()
         assert client._loaded is True
         assert client._system == system_1
+
+        easy_client.find_unique_system.assert_called_once_with(
+            name=system_1.name,
+            version=constraint,
+            namespace="",
+        )
 
     def test_failure_with_constraint(self, client, easy_client):
         client._version_constraint = "1.0.0"
@@ -135,12 +150,6 @@ class TestLoadBgSystem(object):
         with pytest.raises(FetchError):
             client.load_bg_system()
 
-    def test_latest(self, client, easy_client, system_1, system_2):
-        easy_client.find_systems.return_value = [system_1, system_2]
-
-        client.load_bg_system()
-        assert client._system == system_2
-
     def test_always_update(self, client, easy_client, mock_success):
         client._always_update = True
         client.load_bg_system()
@@ -151,6 +160,19 @@ class TestLoadBgSystem(object):
 
         client.command_1()
         assert load_mock.called is True
+
+    def test_latest_config_ns(self, easy_client, system_1):
+        easy_client.find_systems.return_value = [system_1]
+
+        brewtils.plugin.CONFIG.namespace = "foo"
+        client = SystemClient(bg_host="localhost", bg_port=3000, system_name="system")
+
+        client.load_bg_system()
+        assert client._system == system_1
+        easy_client.find_systems.assert_called_once_with(
+            name=system_1.name,
+            namespace="foo",
+        )
 
 
 class TestCreateRequest(object):

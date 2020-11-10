@@ -28,6 +28,7 @@ __all__ = [
     "DateTrigger",
     "CronTrigger",
     "IntervalTrigger",
+    "FileTrigger",
     "Garden",
     "Operation",
 ]
@@ -963,7 +964,7 @@ class RefreshToken(BaseModel):
 
 
 class Job(BaseModel):
-    TRIGGER_TYPES = {"interval", "date", "cron"}
+    TRIGGER_TYPES = {"interval", "date", "cron", "file"}
     STATUS_TYPES = {"RUNNING", "PAUSED"}
     schema = "JobSchema"
 
@@ -1164,6 +1165,51 @@ class CronTrigger(BaseModel):
                 "timezone": tz,
                 "start_date": tz.localize(self.start_date) if self.start_date else None,
                 "end_date": tz.localize(self.start_date) if self.start_date else None,
+            }
+        )
+
+        return kwargs
+
+
+class FileTrigger(BaseModel):
+    schema = "FileTriggerSchema"
+
+    def __init__(
+        self,
+        pattern=None,
+        path=None,
+        recursive=None,
+        callbacks=None,
+    ):
+        self.pattern = pattern
+        self.path = path
+        self.recursive = recursive
+        self.callbacks = callbacks
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return "<FileTrigger: %s %s %s %s>" % (
+            self.pattern,
+            self.path,
+            self.recursive,
+            self.callbacks,
+        )
+
+    @property
+    def scheduler_attributes(self):
+        return ["pattern", "path", "recursive", "callbacks"]
+
+    @property
+    def scheduler_kwargs(self):
+        kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
+        kwargs.update(
+            {
+                "pattern": self.pattern,
+                "path": self.path,
+                "recursive": self.recursive,
+                "callbacks": self.callbacks,
             }
         )
 

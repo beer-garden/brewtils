@@ -352,7 +352,9 @@ class Plugin(object):
             return
 
         try:
-            log_config = self._ez_client.get_logging_config()
+            log_config = self._ez_client.get_logging_config(
+                local=bool(self._config.runner_id)
+            )
         except Exception as ex:
             self._logger.warning(
                 "Unable to retrieve logging configuration from Beergarden, the default "

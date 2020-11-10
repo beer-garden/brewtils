@@ -26,29 +26,25 @@ Example:
 """
 
 import copy
-import logging.config
+import json
 import os
+import re
+import string
 import warnings
+
+import logging.config
 
 import brewtils
 
-# Loggers to always use. These are things that generally,
-# people do not want to see and/or are too verbose.
 DEFAULT_LOGGERS = {
     "pika": {"level": "ERROR"},
     "requests.packages.urllib3.connectionpool": {"level": "WARN"},
     "yapconf": {"level": "WARN"},
 }
 
-# A simple default format/formatter. Generally speaking, the API should return
-# formatters, but since users can configure their logging it's better if the
-# formatter has a logical backup.
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DEFAULT_FORMATTERS = {"default": {"format": DEFAULT_FORMAT}}
 
-# A simple default handler. Generally speaking, the API should return
-# handlers, but since users can configure their logging it's better if the
-# handler has a logical backup.
 DEFAULT_HANDLERS = {
     "default": {
         "class": "logging.StreamHandler",
@@ -57,40 +53,144 @@ DEFAULT_HANDLERS = {
     }
 }
 
-# The template that plugins will use to log
+DEFAULT_ROOT = {"level": "INFO", "formatter": "default", "handlers": ["default"]}
+
 DEFAULT_PLUGIN_LOGGING_TEMPLATE = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {},
-    "handlers": {},
     "loggers": DEFAULT_LOGGERS,
-}
-
-# If no logging was configured, this will be used as the logging configuration
-DEFAULT_LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
     "formatters": DEFAULT_FORMATTERS,
     "handlers": DEFAULT_HANDLERS,
-    "loggers": DEFAULT_LOGGERS,
-    "root": {"level": os.environ.get("BG_LOG_LEVEL", "INFO"), "handlers": ["default"]},
+    "root": DEFAULT_ROOT,
 }
 
 
-def configure_logging(system_name=None, **kwargs):
+def default_config(level="INFO"):
+    """Get a basic logging configuration with the given level"""
+    config = copy.deepcopy(DEFAULT_PLUGIN_LOGGING_TEMPLATE)
+    config["root"]["level"] = level
+
+    return config
+
+
+def configure_logging(
+    raw_config,
+    namespace=None,
+    system_name=None,
+    system_version=None,
+    instance_name=None,
+):
     """Load and enable a logging configuration from Beergarden
 
-    NOTE: This method will overwrite the current logging configuration.
+    WARNING: This method will modify the current logging configuration.
+
+    The configuration will be template substituted using the keyword arguments passed
+    to this function. For example, a handler like this:
+
+    .. code-block:: yaml
+
+        handlers:
+            file:
+                backupCount: 5
+                class: "logging.handlers.RotatingFileHandler"
+                encoding: utf8
+                formatter: default
+                level: INFO
+                maxBytes: 10485760
+                filename: "$system_name.log"
+
+    Will result in logging to a file with the same name as the given system_name.
+
+    This will also ensure that directories exist for any file-based handlers. Default
+    behavior for the Python logging module is to not create directories that do not
+    already exist, which would dramatically lower the utility of templating.
 
     Args:
-        system_name: Name of the system to load
-        **kwargs: Beergarden connection parameters
+        raw_config: Configuration to apply
+        namespace: Used for configuration templating
+        system_name: Used for configuration templating
+        system_version: Used for configuration templating
+        instance_name: Used for configuration templating
 
     Returns:
         None
     """
-    config = get_logging_config(system_name=system_name, **kwargs)
-    logging.config.dictConfig(config)
+
+    class ConfigParserTemplate(string.Template):
+        """string.Template variant for ConfigParser-style interpolation
+
+        So. This exists because we want to do template substitution on the logging
+        configuration file. We want this to be consistent with how the logging module
+        itself does substitution, and since we need this to work on Python 2 that means
+        the ConfigParser flavor: %(variable)s
+
+        The important parts here that differ from the normal string.Template are:
+        - The delimiter ("%" instead of "$")
+        - The "delimiter and a braced identifier" part of the pattern definition. This
+          is needed to match %(variable)s instead of %{variable} like a normal template
+        - The "id" and additional field "bid" in Python 3.7 are slightly different:
+          r"(?a:[_a-z][_a-z0-9]*)" instead of r"[_a-z][_a-z0-9]*"
+          Hopefully that's not a problem.
+        """
+
+        delimiter = "%"
+
+        pattern = r"""
+        %(delim)s(?:
+          (?P<escaped>%(delim)s)    |   # Escape sequence of two delimiters
+          (?P<named>%(id)s)         |   # delimiter and a Python identifier
+          \((?P<braced>%(id)s)\)s  |   # delimiter and a braced identifier
+          (?P<invalid>)                 # Other ill-formed delimiter exprs
+        )
+        """ % {
+            "delim": re.escape("%"),
+            "id": r"[_a-z][_a-z0-9]*",
+        }
+
+    templated = ConfigParserTemplate(json.dumps(raw_config)).safe_substitute(
+        namespace=namespace,
+        system_name=system_name,
+        system_version=system_version,
+        instance_name=instance_name,
+    )
+    logging_config = json.loads(templated)
+
+    # Now make sure that directories for all file handlers exist
+    for handler in logging_config["handlers"].values():
+        if "filename" in handler:
+            dir_name = os.path.dirname(os.path.abspath(handler["filename"]))
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name)
+
+    logging.config.dictConfig(logging_config)
+
+
+def find_log_file():
+    """Find the file name for the first file handler attached to the root logger"""
+    for h in logging.getLogger().handlers:
+        if hasattr(h, "baseFilename"):
+            return h.baseFilename
+
+
+def read_log_file(log_file, start_line=None, end_line=None):
+    """Read lines from a log file
+
+    Args:
+        log_file: The file to read from
+        start_line: Starting line to read
+        end_line: Ending line to read
+
+    Returns:
+        Lines read from the file
+    """
+    with open(log_file, "r") as f:
+        raw_logs = f.readlines()
+
+    return "".join(raw_logs[start_line:end_line])
+
+
+# DEPRECATED
+SUPPORTED_HANDLERS = ("stdout", "file", "logstash")
 
 
 def get_logging_config(system_name=None, **kwargs):
@@ -103,6 +203,14 @@ def get_logging_config(system_name=None, **kwargs):
     Returns:
         dict: The logging configuration for the specified system
     """
+    warnings.warn(
+        "This function is deprecated and will be removed in version "
+        "4.0, please consider using 'EasyClient.get_logging_config' and "
+        "'configure_logging' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     config = brewtils.get_easy_client(**kwargs).get_logging_config(system_name)
 
     return convert_logging_config(config)
@@ -117,6 +225,13 @@ def convert_logging_config(logging_config):
     Returns:
         dict: The logging configuration
     """
+    warnings.warn(
+        "This function is deprecated and will be removed in version "
+        "4.0, please consider using 'configure_logging' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     config_to_return = copy.deepcopy(DEFAULT_PLUGIN_LOGGING_TEMPLATE)
 
     if logging_config.handlers:

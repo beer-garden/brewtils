@@ -2,14 +2,14 @@
 -e .
 
 # Documentation Dependencies
-sphinx < 2
+sphinx < 4
 sphinx_rtd_theme < 1
 
 # Test and Lint Dependencies
 black ; python_version > "3.5"
-coverage < 5
+coverage < 6
 flake8 < 4
-mock < 3
-pytest < 4
+mock < 5
+pytest < 7
 pytest-lazy-fixture < 1
 requests-mock < 2

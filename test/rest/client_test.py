@@ -4,10 +4,12 @@ import json
 import warnings
 
 import pytest
-from mock import Mock, MagicMock, ANY
+import requests.exceptions
+from mock import ANY, MagicMock, Mock
+from yapconf.exceptions import YapconfItemError
 
 import brewtils.rest
-from brewtils.rest.client import RestClient, BrewmasterRestClient
+from brewtils.rest.client import RestClient
 
 
 class TestRestClient(object):
@@ -22,7 +24,11 @@ class TestRestClient(object):
     @pytest.fixture
     def client(self, session_mock, url_prefix):
         client = RestClient(
-            bg_host="host", bg_port=80, api_version=1, url_prefix=url_prefix
+            bg_host="host",
+            bg_port=80,
+            api_version=1,
+            url_prefix=url_prefix,
+            ssl_enabled=False,
         )
         client.session = session_mock
 
@@ -42,28 +48,33 @@ class TestRestClient(object):
         return client
 
     def test_old_positional_args(self, client, url_prefix):
-        test_client = RestClient("host", 80, api_version=1, url_prefix=url_prefix)
-        assert test_client.version_url == client.version_url
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            test_client = RestClient(
+                "host", 80, api_version=1, url_prefix=url_prefix, ssl_enabled=False
+            )
+            assert test_client.version_url == client.version_url
+            assert len(w) == 2
 
     @pytest.mark.parametrize(
-        "kwargs",
-        [
-            ({"bg_host": "host"}),
-            ({"bg_port": 80}),
-            ({"bg_host": "host", "bg_port": 80, "api_version": -1}),
-        ],
+        "kwargs", [({"bg_port": 80}), ({"bg_host": "host", "api_version": -1})]
     )
     def test_bad_args(self, kwargs):
-        with pytest.raises(ValueError):
+        with pytest.raises(YapconfItemError):
             RestClient(**kwargs)
+
+    def test_args_from_config(self, monkeypatch):
+        brewtils.plugin.CONFIG.bg_host = "localhost"
+        brewtils.plugin.CONFIG.bg_port = 3000
+
+        client = RestClient()
+        assert client.bg_host == "localhost"
+        assert client.bg_port == 3000
 
     def test_non_versioned_uris(self, client, url_prefix):
         assert client.version_url == "http://host:80" + url_prefix + "version"
         assert client.config_url == "http://host:80" + url_prefix + "config"
-
-    @pytest.fixture(params=["system_url"])
-    def urls(self, client):
-        return client.param
 
     @pytest.mark.parametrize(
         "url,expected",
@@ -73,6 +84,7 @@ class TestRestClient(object):
             ("command_url", "http://host:80%sapi/v1/commands/"),
             ("request_url", "http://host:80%sapi/v1/requests/"),
             ("queue_url", "http://host:80%sapi/v1/queues/"),
+            ("logging_url", "http://host:80%sapi/v1/logging/"),
             ("logging_config_url", "http://host:80%sapi/v1/config/logging/"),
             ("job_url", "http://host:80%sapi/v1/jobs/"),
             ("token_url", "http://host:80%sapi/v1/tokens/"),
@@ -90,6 +102,7 @@ class TestRestClient(object):
             ("command_url", "https://host:80%sapi/v1/commands/"),
             ("request_url", "https://host:80%sapi/v1/requests/"),
             ("queue_url", "https://host:80%sapi/v1/queues/"),
+            ("logging_url", "https://host:80%sapi/v1/logging/"),
             ("logging_config_url", "https://host:80%sapi/v1/config/logging/"),
             ("job_url", "https://host:80%sapi/v1/jobs/"),
             ("token_url", "https://host:80%sapi/v1/tokens/"),
@@ -102,12 +115,13 @@ class TestRestClient(object):
     @pytest.mark.parametrize(
         "method,params,verb,url",
         [
-            ("get_version", {"key": "value"}, "get", "version_url"),
+            ("get_version", {}, "get", "version_url"),
+            ("get_config", {}, "get", "config_url"),
             (
                 "get_logging_config",
                 {"system_name": "system_name"},
                 "get",
-                "logging_config_url",
+                "logging_url",
             ),
             ("get_systems", {"key": "value"}, "get", "system_url"),
         ],
@@ -117,13 +131,55 @@ class TestRestClient(object):
         getattr(client, method)(**params)
 
         # Make sure the call is correct
-        getattr(session_mock, verb).assert_called_once_with(
-            getattr(client, url), params=params
-        )
+        session_method = getattr(session_mock, verb)
+        expected_url = getattr(client, url)
+
+        if params:
+            session_method.assert_called_once_with(expected_url, params=params)
+        else:
+            session_method.assert_called_once_with(expected_url)
+
+    class TestConnect(object):
+        def test_success(self, client, session_mock):
+            assert client.can_connect() is True
+            session_mock.get.assert_called_with(client.config_url)
+
+        def test_fail(self, client, session_mock):
+            session_mock.get.side_effect = requests.exceptions.ConnectionError
+            assert client.can_connect() is False
+            session_mock.get.assert_called_with(client.config_url)
+
+        def test_error(self, client, session_mock):
+            session_mock.get.side_effect = requests.exceptions.SSLError
+            with pytest.raises(requests.exceptions.SSLError):
+                client.can_connect()
+            session_mock.get.assert_called_with(client.config_url)
+
+    def test_get_version(self, client, session_mock):
+        client.get_version()
+        session_mock.get.assert_called_with(client.version_url)
+
+    def test_get_version_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.get_version(timeout=5)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_get_config(self, client, session_mock):
         client.get_config()
         session_mock.get.assert_called_with(client.config_url)
+
+    def test_get_config_deprecation(self, client):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            client.get_config(timeout=5)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
 
     def test_get_system_1(self, client, session_mock):
         client.get_system("id")
@@ -261,6 +317,17 @@ class TestRestClient(object):
         assert client.access_token == "token"
         assert client.refresh_token == "refresh"
 
+    def test_get_file(self, client, session_mock):
+        client.get_file("id")
+        session_mock.get.assert_called_with(client.file_url + "id")
+
+    def test_post_files(self, client, session_mock):
+        open_file = Mock()
+        files = {"id": ("filename", open_file)}
+        client.post_files(files)
+        session_mock.post.assert_called_with(client.file_url, files=files)
+        open_file.seek.assert_called_with(0)
+
     def test_refresh(self, client, session_mock):
         response = Mock(ok=True)
         response.json.return_value = {"token": "new_token"}
@@ -308,18 +375,3 @@ class TestRestClient(object):
         client = RestClient(bg_host="host", bg_port=80, api_version=1, ca_verify=False)
         assert client.session.verify is False
         assert urllib_mock.disable_warnings.called is True
-
-
-class TestBrewmasterRestClient(object):
-    def test_deprecation(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            BrewmasterRestClient("host", "port")
-            assert len(w) == 1
-
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'BrewmasterRestClient'" in str(warning)
-            assert "'RestClient'" in str(warning)
-            assert "3.0" in str(warning)

@@ -1,25 +1,26 @@
 # -*- coding: utf-8 -*-
+import warnings
 
 import pytest
-from mock import Mock, PropertyMock
-from pytest_lazyfixture import lazy_fixture
-
-from brewtils.errors import RequestStatusTransitionError
+import pytz
+from brewtils.errors import ModelError
 from brewtils.models import (
+    Choices,
     Command,
+    CronTrigger,
     Instance,
+    IntervalTrigger,
+    LoggingConfig,
     Parameter,
     PatchOperation,
-    Request,
-    System,
-    Choices,
-    LoggingConfig,
-    Event,
-    Queue,
     Principal,
-    Role,
+    Queue,
+    Request,
+    RequestFile,
     RequestTemplate,
+    Role,
 )
+from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -101,6 +102,11 @@ class TestCommand(object):
     )
     def test_has_same_parameters(self, p1, p2):
         assert not Command(parameters=p1).has_different_parameters(p2)
+
+    def test_parameter_keys_by_type(self):
+        command = Command(parameters=[Parameter(key="key1", type="String")])
+        assert command.parameter_keys_by_type("String") == [["key1"]]
+        assert command.parameter_keys_by_type("Integer") == []
 
     def test_str(self):
         assert "foo" == str(Command(name="foo"))
@@ -213,18 +219,85 @@ class TestParameter(object):
     def test_is_not_different(self, p1, p2):
         assert not p1.is_different(p2)
 
+    @pytest.mark.parametrize(
+        "parameter,desired_type,expected",
+        [
+            (Parameter(key="key1", type="String"), "String", ["key1"]),
+            (Parameter(key="key1", type="String"), "Integer", []),
+            (
+                Parameter(
+                    key="key1",
+                    type="Dictionary",
+                    parameters=[Parameter(key="nested_key", type="String")],
+                ),
+                "String",
+                ["key1", ["nested_key"]],
+            ),
+            (
+                Parameter(
+                    key="key1",
+                    type="Dictionary",
+                    parameters=[Parameter(key="nested_key", type="Integer")],
+                ),
+                "String",
+                [],
+            ),
+            (
+                Parameter(
+                    key="key1",
+                    type="Dictionary",
+                    parameters=[
+                        Parameter(key="nested_key1", type="String"),
+                        Parameter(
+                            key="dict_key1",
+                            type="Dictionary",
+                            parameters=[
+                                Parameter(key="deep_key1", type="String"),
+                                Parameter(key="deep_key2", type="String"),
+                                Parameter(key="deep_key3", type="Integer"),
+                            ],
+                        ),
+                    ],
+                ),
+                "String",
+                ["key1", ["nested_key1"], ["dict_key1", ["deep_key1"], ["deep_key2"]]],
+            ),
+        ],
+    )
+    def test_keys_by_type(self, parameter, desired_type, expected):
+        actual = parameter.keys_by_type(desired_type)
+        assert actual == expected
+
+
+class TestRequestFile(object):
+    @pytest.fixture
+    def request_file(self):
+        return RequestFile(storage_type="gridfs", filename="request_filename")
+
+    def test_str(self, request_file):
+        assert str(request_file) == "request_filename"
+
+    def test_repr(self, request_file):
+        assert "request_filename" in repr(request_file)
+        assert "gridfs" in repr(request_file)
+
 
 class TestRequestTemplate(object):
     @pytest.fixture
-    def request_template(self):
+    def test_template(self):
         return RequestTemplate(command="command", system="system")
 
-    def test_str(self, request_template):
-        assert str(request_template) == "command"
+    def test_str(self, test_template):
+        assert str(test_template) == "command"
 
-    def test_repr(self, request_template):
-        assert "name" in repr(request_template)
-        assert "system" in repr(request_template)
+    def test_repr(self, test_template):
+        assert "name" in repr(test_template)
+        assert "system" in repr(test_template)
+
+    def test_template_fields(self, bg_request_template):
+        """This will hopefully prevent forgetting to add things to TEMPLATE_FIELDS"""
+        template_keys = set(bg_request_template.__dict__.keys())
+        assert template_keys == set(RequestTemplate.TEMPLATE_FIELDS)
 
 
 class TestRequest(object):
@@ -242,20 +315,9 @@ class TestRequest(object):
         assert "name" in repr(request1)
         assert "CREATED" in repr(request1)
 
-    def test_set_valid_status(self):
-        request = Request(status="CREATED")
-        request.status = "RECEIVED"
-        request.status = "IN_PROGRESS"
-        request.status = "SUCCESS"
-
-    @pytest.mark.parametrize(
-        "start,end",
-        [("SUCCESS", "IN_PROGRESS"), ("SUCCESS", "ERROR"), ("IN_PROGRESS", "CREATED")],
-    )
-    def test_invalid_status_transitions(self, start, end):
-        request = Request(status=start)
-        with pytest.raises(RequestStatusTransitionError):
-            request.status = end
+    def test_set_status(self, request1):
+        request1.status = "RECEIVED"
+        assert request1._status == "RECEIVED"
 
     def test_is_ephemeral(self, request1):
         assert not request1.is_ephemeral
@@ -267,41 +329,57 @@ class TestRequest(object):
         request1.output_type = "JSON"
         assert request1.is_json
 
+    def test_from_template(self, bg_request_template):
+        request = Request.from_template(bg_request_template)
+        for key in bg_request_template.__dict__:
+            assert getattr(request, key) == getattr(bg_request_template, key)
+
+    def test_from_template_overrides(self, bg_request_template):
+        request = Request.from_template(bg_request_template, command_type="INFO")
+        assert request.command_type == "INFO"
+        for key in bg_request_template.__dict__:
+            if key != "command_type":
+                assert getattr(request, key) == getattr(bg_request_template, key)
+
 
 class TestSystem(object):
-    @pytest.fixture
-    def default_system(self, command1):
-        return System(
-            name="foo",
-            version="1.0.0",
-            instances=[Instance(name="foo")],
-            commands=[command1],
-        )
+    def test_get_command_by_name(self, bg_system, bg_command):
+        assert bg_system.get_command_by_name(bg_command.name) == bg_command
+        assert bg_system.get_command_by_name("foo") is None
 
-    def test_get_command_by_name_found(self, default_system):
-        mock_name = PropertyMock(return_value="name")
-        command = Mock()
-        type(command).name = mock_name
-        default_system.commands.append(command)
-        assert default_system.get_command_by_name("name") == command
+    def test_has_instance(self, bg_system):
+        assert bg_system.has_instance("default")
+        assert not bg_system.has_instance("bar")
 
-    def test_get_command_by_name_none(self, default_system):
-        mock_name = PropertyMock(return_value="foo")
-        command = Mock()
-        type(command).name = mock_name
-        default_system.commands.append(command)
-        assert default_system.get_command_by_name("name") is None
+    def test_instance_names(self, bg_system):
+        assert bg_system.instance_names == ["default"]
 
-    def test_has_instance(self, default_system):
-        assert default_system.has_instance("foo")
-        assert not default_system.has_instance("bar")
+    def test_get_instance_by_name(self, bg_system, bg_instance):
+        assert bg_system.get_instance_by_name(bg_instance.name) == bg_instance
+        assert bg_system.get_instance_by_name("bar") is None
 
-    def test_instance_names(self, default_system):
-        assert default_system.instance_names == ["foo"]
+    def test_get_instance_by_name_raise(self, bg_system):
+        with pytest.raises(ModelError):
+            bg_system.get_instance_by_name("foo", raise_missing=True)
 
-    def test_get_instance(self, default_system):
-        assert default_system.get_instance("foo").name == "foo"
-        assert default_system.get_instance("bar") is None
+    def test_get_instance_by_id(self, bg_system, bg_instance):
+        assert bg_system.get_instance_by_id(bg_instance.id) == bg_instance
+        assert bg_system.get_instance_by_id("1234") is None
+
+    def test_get_instance_by_id_raise(self, bg_system):
+        with pytest.raises(ModelError):
+            bg_system.get_instance_by_id("1234", raise_missing=True)
+
+    def test_get_instance(self, bg_system, bg_instance):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            assert bg_system.get_instance(bg_instance.name) == bg_instance
+            assert bg_system.get_instance("bar") is None
+
+            assert len(w) == 2
+            assert w[0].category == DeprecationWarning
+            assert w[1].category == DeprecationWarning
 
     @pytest.mark.parametrize(
         "commands",
@@ -311,31 +389,20 @@ class TestSystem(object):
             ([Command(name="bar"), Command(name="baz")]),
         ],
     )
-    def test_has_different_commands(self, default_system, commands):
-        assert default_system.has_different_commands(commands)
+    def test_has_different_commands(self, bg_system, commands):
+        assert bg_system.has_different_commands(commands)
 
-    @pytest.mark.parametrize(
-        "command",
-        [
-            (Command(name="foo", parameters=[Parameter(key="key1", type="String")])),
-            (
-                Command(
-                    name="foo",
-                    description="Different description",
-                    parameters=[Parameter(key="key1", type="String")],
-                )
-            ),
-        ],
-    )
-    def test_has_same_commands(self, default_system, command):
-        assert not default_system.has_different_commands([command])
+    def test_has_same_commands(self, bg_system, bg_command, bg_command_2):
+        bg_command_2.description = "Should still work"
+        assert not bg_system.has_different_commands([bg_command, bg_command_2])
 
-    def test_str(self, default_system):
-        assert str(default_system) == "foo-1.0.0"
+    def test_str(self, bg_system):
+        assert str(bg_system) == "ns:system-1.0.0"
 
-    def test_repr(self, default_system):
-        assert "foo" in repr(default_system)
-        assert "1.0.0" in repr(default_system)
+    def test_repr(self, bg_system):
+        assert "ns" in repr(bg_system)
+        assert "system" in repr(bg_system)
+        assert "1.0.0" in repr(bg_system)
 
 
 class TestPatchOperation(object):
@@ -430,22 +497,15 @@ class TestLoggingConfig(object):
 
 
 class TestEvent(object):
-    @pytest.fixture
-    def event(self):
-        return Event(
-            name="REQUEST_CREATED",
-            error=False,
-            payload={"request": "request"},
-            metadata={},
-        )
+    def test_str(self, bg_event):
+        assert str(bg_event) == "ns: REQUEST_CREATED"
 
-    def test_str(self, event):
-        assert str(event) == "REQUEST_CREATED: {'request': 'request'}, {}"
-
-    def test_repr(self, event):
+    def test_repr(self, bg_event, bg_request):
         assert (
-            repr(event) == "<Event: name=REQUEST_CREATED, error=False, "
-            "payload={'request': 'request'}, metadata={}>"
+            repr(bg_event) == "<Event: namespace=ns, garden=beer, "
+            "name=REQUEST_CREATED, timestamp=2016-01-01 00:00:00, error=False, "
+            "error_message=None, metadata={'extra': 'info'}, payload_type=Request, "
+            "payload=%r>" % bg_request
         )
 
 
@@ -479,24 +539,79 @@ class TestPrincipal(object):
 
     def test_repr(self, principal):
         assert (
-            repr(principal) == "<Principal: username=admin, "
-            "roles=['bg-admin'], permissions=['bg-all']>"
+            repr(principal)
+            == "<Principal: username=admin, roles=['bg-admin'], permissions=['bg-all']>"
         )
 
 
 class TestRole(object):
     @pytest.fixture
     def role(self):
-        return Role(name="bg-admin", roles=["bg-anonymous"], permissions=["bg-all"])
+        return Role(name="bg-admin", permissions=["bg-all"])
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
-        assert (
-            repr(role) == "<Role: name=bg-admin, roles=['bg-anonymous'], "
-            "permissions=['bg-all']>"
+        assert repr(role) == "<Role: name=bg-admin, permissions=['bg-all']>"
+
+
+class TestDateTrigger(object):
+    def test_scheduler_kwargs(self, bg_date_trigger, ts_dt_utc):
+        assert bg_date_trigger.scheduler_kwargs == {
+            "timezone": pytz.utc,
+            "run_date": ts_dt_utc,
+        }
+
+
+class TestIntervalTrigger(object):
+    def test_scheduler_kwargs_default(self):
+        assert IntervalTrigger(timezone="utc").scheduler_kwargs == {
+            "weeks": None,
+            "days": None,
+            "hours": None,
+            "minutes": None,
+            "seconds": None,
+            "start_date": None,
+            "end_date": None,
+            "timezone": pytz.utc,
+            "jitter": None,
+            "reschedule_on_finish": None,
+        }
+
+    def test_scheduler_kwargs(
+        self, bg_interval_trigger, interval_trigger_dict, ts_dt_utc, ts_2_dt_utc
+    ):
+        expected = interval_trigger_dict
+        expected.update(
+            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
         )
+        assert bg_interval_trigger.scheduler_kwargs == expected
+
+
+class TestCronTrigger(object):
+    def test_scheduler_kwargs_default(self):
+        assert CronTrigger(timezone="utc").scheduler_kwargs == {
+            "year": None,
+            "month": None,
+            "day": None,
+            "week": None,
+            "day_of_week": None,
+            "hour": None,
+            "minute": None,
+            "second": None,
+            "start_date": None,
+            "end_date": None,
+            "timezone": pytz.utc,
+            "jitter": None,
+        }
+
+    def test_scheduler_kwargs(self, bg_cron_trigger, cron_trigger_dict, ts_dt_utc):
+        expected = cron_trigger_dict
+        expected.update(
+            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_dt_utc}
+        )
+        assert bg_cron_trigger.scheduler_kwargs == expected
 
 
 @pytest.mark.parametrize(

@@ -1,18 +1,248 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 import logging
-import threading
+import ssl as pyssl
+import warnings
 from functools import partial
 
-from pika import BasicProperties, BlockingConnection, SelectConnection, URLParameters
+from pika import (
+    __version__ as pika_version,
+    BasicProperties,
+    BlockingConnection,
+    ConnectionParameters,
+    PlainCredentials,
+    SelectConnection,
+    SSLOptions,
+    URLParameters,
+)
+from pika.exceptions import AMQPError
 from pika.spec import PERSISTENT_DELIVERY_MODE
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
-from brewtils.queues import PIKA_ONE, PikaClient
+from brewtils.request_handling import RequestConsumer
 from brewtils.schema_parser import SchemaParser
 
+PIKA_ONE = pika_version.startswith("1.")
 
-class RequestConsumer(threading.Thread):
-    """RabbitMQ message consumer
+if not PIKA_ONE:
+    warnings.warn(
+        "Support for pika < 1 is deprecated and will be removed in a future release.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+
+class PikaClient(object):
+    """Base class for connecting to RabbitMQ using Pika
+
+    Args:
+        host: RabbitMQ host
+        port: RabbitMQ port
+        user: RabbitMQ user
+        password: RabbitMQ password
+        connection_attempts: Maximum number of retry attempts
+        heartbeat: Time between RabbitMQ heartbeats
+        heartbeat_interval: DEPRECATED, use heartbeat
+        virtual_host: RabbitMQ virtual host
+        exchange: Default exchange that will be used
+        ssl: SSL Options
+        blocked_connection_timeout: If not None, the value is a non-negative timeout,
+            in seconds, for the connection to remain blocked (triggered by
+            Connection.Blocked from broker); if the timeout expires before connection
+            becomes unblocked, the connection will be torn down, triggering the
+            adapter-specific mechanism for informing client app about the closed
+            connection (e.g., on_close_callback or ConnectionClosed exception) with
+            `reason_code` of `InternalCloseReasons.BLOCKED_CONNECTION_TIMEOUT`.
+    """
+
+    def __init__(
+        self,
+        host="localhost",
+        port=5672,
+        user="guest",
+        password="guest",
+        connection_attempts=3,
+        heartbeat_interval=3600,
+        virtual_host="/",
+        exchange="beer_garden",
+        ssl=None,
+        blocked_connection_timeout=None,
+        **kwargs
+    ):
+        self._host = host
+        self._port = port
+        self._user = user
+        self._password = password
+        self._connection_attempts = connection_attempts
+        self._heartbeat = kwargs.get("heartbeat", heartbeat_interval)
+        self._blocked_connection_timeout = blocked_connection_timeout
+        self._virtual_host = virtual_host
+        self._exchange = exchange
+
+        ssl = ssl or {}
+        self._ssl_enabled = ssl.get("enabled", False)
+
+        if not self._ssl_enabled:
+            self._ssl_options = None
+        elif PIKA_ONE:
+            ssl_context = pyssl.create_default_context(cafile=ssl.get("ca_cert", None))
+            if ssl.get("ca_verify"):
+                ssl_context.verify_mode = pyssl.CERT_REQUIRED
+            else:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = pyssl.CERT_NONE
+            self._ssl_options = SSLOptions(ssl_context, server_hostname=self._host)
+        else:
+            mode = pyssl.CERT_REQUIRED if ssl.get("ca_verify") else pyssl.CERT_NONE
+            self._ssl_options = SSLOptions(
+                cafile=ssl.get("ca_cert", None),
+                verify_mode=mode,
+                server_hostname=self._host,
+            )
+
+        # Save the 'normal' params so they don't need to be reconstructed
+        self._conn_params = self.connection_parameters()
+
+    @property
+    def connection_url(self):
+        """str: Connection URL for this client's connection information"""
+
+        virtual_host = self._conn_params.virtual_host
+        if virtual_host == "/":
+            virtual_host = ""
+
+        return "amqp%s://%s:%s@%s:%s/%s" % (
+            "s" if self._ssl_enabled else "",
+            self._conn_params.credentials.username,
+            self._conn_params.credentials.password,
+            self._conn_params.host,
+            self._conn_params.port,
+            virtual_host,
+        )
+
+    def connection_parameters(self, **kwargs):
+        """Get ``ConnectionParameters`` associated with this client
+
+        Will construct a ``ConnectionParameters`` object using parameters
+        passed at initialization as defaults. Any parameters passed in
+        kwargs will override initialization parameters.
+
+        Args:
+            **kwargs: Overrides for specific parameters
+
+        Returns:
+            :obj:`pika.ConnectionParameters`: ConnectionParameters object
+        """
+        credentials = PlainCredentials(
+            username=kwargs.get("user", self._user),
+            password=kwargs.get("password", self._password),
+        )
+
+        conn_params = {
+            "host": kwargs.get("host", self._host),
+            "port": kwargs.get("port", self._port),
+            "ssl_options": kwargs.get("ssl_options", self._ssl_options),
+            "virtual_host": kwargs.get("virtual_host", self._virtual_host),
+            "connection_attempts": kwargs.get(
+                "connection_attempts", self._connection_attempts
+            ),
+            "heartbeat": kwargs.get(
+                "heartbeat", kwargs.get("heartbeat_interval", self._heartbeat)
+            ),
+            "blocked_connection_timeout": kwargs.get(
+                "blocked_connection_timeout", self._blocked_connection_timeout
+            ),
+            "credentials": credentials,
+        }
+
+        if not PIKA_ONE:
+            conn_params["ssl"] = kwargs.get("ssl_enabled", self._ssl_enabled)
+
+        return ConnectionParameters(**conn_params)
+
+
+class TransientPikaClient(PikaClient):
+    """Client implementation that creates new connection and channel for each action"""
+
+    def __init__(self, **kwargs):
+        super(TransientPikaClient, self).__init__(**kwargs)
+
+    def is_alive(self):
+        try:
+            with BlockingConnection(
+                self.connection_parameters(connection_attempts=1)
+            ) as conn:
+                return conn.is_open
+        except AMQPError:
+            return False
+
+    def declare_exchange(self):
+        with BlockingConnection(self._conn_params) as conn:
+            conn.channel().exchange_declare(
+                exchange=self._exchange, exchange_type="topic", durable=True
+            )
+
+    def setup_queue(self, queue_name, queue_args, routing_keys):
+        """Create a new queue with queue_args and bind it to routing_keys"""
+
+        with BlockingConnection(self._conn_params) as conn:
+            conn.channel().queue_declare(queue_name, **queue_args)
+
+            for routing_key in routing_keys:
+                conn.channel().queue_bind(
+                    queue_name, self._exchange, routing_key=routing_key
+                )
+
+        return {"name": queue_name, "args": queue_args}
+
+    def publish(self, message, **kwargs):
+        """Publish a message
+
+        Args:
+            message: Message to publish
+            kwargs: Additional message properties
+
+        Keyword Arguments:
+            * *routing_key* --
+              Routing key to use when publishing
+            * *headers* --
+              Headers to be included as part of the message properties
+            * *expiration* --
+              Expiration to be included as part of the message properties
+            * *confirm* --
+              Flag indicating whether to operate in publisher-acknowledgements mode
+            * *mandatory* --
+              Raise if the message can not be routed to any queues
+            * *priority* --
+              Message priority
+        """
+        with BlockingConnection(self._conn_params) as conn:
+            channel = conn.channel()
+
+            if kwargs.get("confirm"):
+                channel.confirm_delivery()
+
+            properties = BasicProperties(
+                app_id="beer-garden",
+                content_type="text/plain",
+                headers=kwargs.get("headers"),
+                expiration=kwargs.get("expiration"),
+                delivery_mode=kwargs.get("delivery_mode"),
+                priority=kwargs.get("priority"),
+            )
+
+            channel.basic_publish(
+                exchange=self._exchange,
+                routing_key=kwargs["routing_key"],
+                body=message,
+                properties=properties,
+                mandatory=kwargs.get("mandatory"),
+            )
+
+
+class PikaConsumer(RequestConsumer):
+    """Pika message consumer
 
     This consumer is designed to be fault-tolerant - if RabbitMQ closes the
     connection the consumer will attempt to reopen it. There are limited
@@ -31,13 +261,16 @@ class RequestConsumer(threading.Thread):
         logger (logging.Logger): A configured Logger
         thread_name (str): Name to use for this thread
         max_concurrent: (int) Maximum requests to process concurrently
+        max_reconnect_attempts (int): Number of times to attempt reconnection to message
+            queue before giving up (default -1 aka never)
+        max_reconnect_timeout (int): Maximum time to wait before reconnect attempt
+        starting_reconnect_timeout (int): Time to wait before first reconnect attempt
     """
 
     def __init__(
         self,
         amqp_url=None,
         queue_name=None,
-        on_message_callback=None,
         panic_event=None,
         logger=None,
         thread_name=None,
@@ -48,10 +281,14 @@ class RequestConsumer(threading.Thread):
         self._consumer_tag = None
 
         self._queue_name = queue_name
-        self._on_message_callback = on_message_callback
         self._panic_event = panic_event
         self._max_concurrent = kwargs.get("max_concurrent", 1)
         self.logger = logger or logging.getLogger(__name__)
+
+        self._max_reconnect_attempts = kwargs.get("max_reconnect_attempts", -1)
+        self._max_reconnect_timeout = kwargs.get("max_reconnect_timeout", 30)
+        self._reconnect_timeout = kwargs.get("starting_reconnect_timeout", 5)
+        self._reconnect_attempt = 0
 
         if "connection_info" in kwargs:
             params = kwargs["connection_info"]
@@ -63,21 +300,45 @@ class RequestConsumer(threading.Thread):
         else:
             self._connection_parameters = URLParameters(amqp_url)
 
-        super(RequestConsumer, self).__init__(name=thread_name)
+        super(PikaConsumer, self).__init__(name=thread_name)
 
     def run(self):
         """Run the consumer
 
-        Creates a connection to RabbitMQ and starts the IOLoop.
+        This method creates a connection to RabbitMQ and starts the IOLoop. The IOLoop
+        will block and allow the SelectConnection to operate. This means that to stop
+        the PikaConsumer we just need to stop the IOLoop.
 
-        The IOLoop will block and allow the SelectConnection to operate. This means that
-        to stop the RequestConsumer we just need to stop the IOLoop.
+        If the connection closed unexpectedly (the shutdown event is not set) then this
+        will wait a certain amount of time and before attempting to restart it.
+
+        Finally, if the maximum number of reconnect attempts have been reached the
+        panic event will be set, which will end the PikaConsumer as well as the Plugin.
 
         Returns:
             None
         """
-        self._connection = self.open_connection()
-        self._connection.ioloop.start()
+        while not self._panic_event.is_set():
+            self._connection = self.open_connection()
+            self._connection.ioloop.start()
+
+            if not self._panic_event.is_set():
+                if 0 <= self._max_reconnect_attempts <= self._reconnect_attempt:
+                    self.logger.warning("Max connection failures, shutting down")
+                    self._panic_event.set()
+                    return
+
+                self.logger.warning(
+                    "%s consumer has died, waiting %i seconds before reconnecting",
+                    self._queue_name,
+                    self._reconnect_timeout,
+                )
+                self._panic_event.wait(self._reconnect_timeout)
+
+                self._reconnect_attempt += 1
+                self._reconnect_timeout = min(
+                    self._reconnect_timeout * 2, self._max_reconnect_timeout
+                )
 
     def stop(self):
         """Cleanly shutdown
@@ -88,13 +349,17 @@ class RequestConsumer(threading.Thread):
         This sets the shutdown_event to let callbacks know that this is an orderly
         (requested) shutdown. It then schedules a channel close on the IOLoop - the
         channel's on_close callback will close the connection, and the connection's
-        on_close callback will terminate the IOLoop which will end the RequestConsumer.
+        on_close callback will terminate the IOLoop which will end the PikaConsumer.
 
         Returns:
             None
         """
         self.logger.debug("Stopping request consumer")
-        self._connection.ioloop.add_callback_threadsafe(partial(self._connection.close))
+
+        if self._connection:
+            self._connection.ioloop.add_callback_threadsafe(
+                partial(self._connection.close)
+            )
 
     def is_connected(self):
         """Determine if the underlying connection is open
@@ -136,22 +401,16 @@ class RequestConsumer(threading.Thread):
 
         try:
             future = self._on_message_callback(body, properties.headers)
-            callback = partial(self.on_message_callback_complete, basic_deliver)
-            future.add_done_callback(callback)
-        except DiscardMessageException:
-            self.logger.debug(
-                "Nacking message %s, not attempting to requeue",
-                basic_deliver.delivery_tag,
+            future.add_done_callback(
+                partial(self.on_message_callback_complete, basic_deliver)
             )
-            self._channel.basic_nack(basic_deliver.delivery_tag, requeue=False)
         except Exception as ex:
+            requeue = not isinstance(ex, DiscardMessageException)
             self.logger.exception(
-                "Exception while trying to schedule message %s, about to nack "
-                "and requeue: %s",
-                basic_deliver.delivery_tag,
-                ex,
+                "Exception while trying to schedule message %s, about to nack%s: %s"
+                % (basic_deliver.delivery_tag, " and requeue" if requeue else "", ex)
             )
-            self._channel.basic_nack(basic_deliver.delivery_tag, requeue=True)
+            self._channel.basic_nack(basic_deliver.delivery_tag, requeue=requeue)
 
     def on_message_callback_complete(self, basic_deliver, future):
         """Invoked when the future returned by _on_message_callback completes.
@@ -288,6 +547,11 @@ class RequestConsumer(threading.Thread):
             None
         """
         self.logger.debug("Connection opened: %s", connection)
+
+        if self._reconnect_attempt:
+            self.logger.info("%s consumer successfully reconnected", self._queue_name)
+            self._reconnect_attempt = 0
+
         self.open_channel()
 
     def on_connection_closed(self, connection, *args):
@@ -295,7 +559,7 @@ class RequestConsumer(threading.Thread):
 
         This method is invoked by pika when the connection to RabbitMQ is closed.
 
-        If the connection is closed we terminate its IOLoop to stop the RequestConsumer.
+        If the connection is closed we terminate its IOLoop to stop the PikaConsumer.
         In the case of an unexpected connection closure we'll wait 5 seconds before
         terminating with the expectation that the plugin will attempt to restart the
         consumer once it's dead.
@@ -402,7 +666,7 @@ class RequestConsumer(threading.Thread):
         Returns:
             None
         """
-        if self._channel:
+        if self._channel and self._channel.is_open:
             self.logger.debug("Stopping message consuming on channel %i", self._channel)
 
             self._connection.ioloop.add_callback_threadsafe(
@@ -418,7 +682,7 @@ class RequestConsumer(threading.Thread):
 
         This is only invoked if the consumer is cancelled by the broker. Since that
         effectively ends the request consuming we close the channel to start the
-        process of terminating the RequestConsumer.
+        process of terminating the PikaConsumer.
 
         Args:
             method_frame (pika.frame.Method): The Basic.Cancel frame

@@ -1,110 +1,91 @@
 # -*- coding: utf-8 -*-
-
-import json
-import logging
-import logging.config
 import os
-import sys
 import warnings
 
+import logging
+import logging.config
 import pytest
-import threading
-from mock import MagicMock, Mock
+from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
 
+import brewtils.plugin
 from brewtils import get_connection_info
 from brewtils.errors import (
-    ValidationError,
-    RequestProcessingError,
+    ConflictError,
     DiscardMessageException,
-    RepublishRequestException,
     PluginValidationError,
-    RestClientError,
-    ErrorLogLevelCritical,
-    ErrorLogLevelError,
-    ErrorLogLevelWarning,
-    ErrorLogLevelInfo,
-    ErrorLogLevelDebug,
-    SuppressStacktrace,
-    TooLargeError,
+    RequestProcessingError,
+    RestConnectionError,
+    ValidationError,
 )
-from brewtils.log import DEFAULT_LOGGING_CONFIG
-from brewtils.models import Instance, Request, System, Command
-from brewtils.plugin import Plugin
-from brewtils.schema_parser import SchemaParser
-from brewtils.test.comparable import assert_request_equal
+from brewtils.log import default_config
+from brewtils.models import Command, Instance, System
+from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
 @pytest.fixture(autouse=True)
-def environ():
-    safe_copy = os.environ.copy()
-    yield
-    os.environ = safe_copy
-
-
-@pytest.fixture
-def bm_client(bg_system, bg_instance):
-    return Mock(
+def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
+    _ez_client = Mock(
+        name="ez_client",
         create_system=Mock(return_value=bg_system),
         initialize_instance=Mock(return_value=bg_instance),
+        get_logging_config=Mock(return_value=bg_logging_config),
     )
+
+    monkeypatch.setattr(brewtils.plugin, "EasyClient", Mock(return_value=_ez_client))
+
+    return _ez_client
 
 
 @pytest.fixture
 def client():
     return MagicMock(
         name="client",
-        spec=["command", "_commands", "_bg_name", "_bg_version"],
-        _commands=["command"],
+        spec=["command", "_bg_commands", "_bg_name", "_bg_version"],
+        _bg_commands=["command"],
         _bg_name=None,
         _bg_version=None,
     )
 
 
 @pytest.fixture
-def parser():
+def admin_processor():
     return Mock()
 
 
 @pytest.fixture
-def admin_consumer():
-    return Mock()
-
-
-@pytest.fixture
-def request_consumer():
+def request_processor():
     return Mock()
 
 
 @pytest.fixture
 def plugin(
-    client, bm_client, parser, bg_system, bg_instance, admin_consumer, request_consumer
+    client, ez_client, bg_system, bg_instance, admin_processor, request_processor
 ):
-    plugin = Plugin(
-        client,
-        bg_host="localhost",
-        system=bg_system,
-        metadata={"foo": "bar"},
-        max_concurrent=1,
-    )
-    plugin.instance = bg_instance
-    plugin.bm_client = bm_client
-    plugin.parser = parser
-    plugin.admin_consumer = admin_consumer
-    plugin.request_consumer = request_consumer
-    plugin.queue_connection_params = {}
+    plugin = Plugin(client, bg_host="localhost", system=bg_system)
+    plugin._instance = bg_instance
+    plugin._admin_processor = admin_processor
+    plugin._request_processor = request_processor
 
     return plugin
 
 
-class TestPluginInit(object):
+class TestInit(object):
     def test_no_bg_host(self, client):
         with pytest.raises(ValidationError):
             Plugin(client)
 
+    def test_existing_config(self, caplog, bg_system):
+        brewtils.plugin.CONFIG.foo = "bar"
+
+        with caplog.at_level(logging.WARNING):
+            Plugin(bg_host="localhost", system=bg_system)
+
+        assert "Global CONFIG" in caplog.messages[0]
+
     @pytest.mark.parametrize(
         "instance_name,expected_unique",
-        [(None, "system[default]-1.0.0"), ("unique", "system[unique]-1.0.0")],
+        [(None, "ns:system[default]-1.0.0"), ("unique", "ns:system[unique]-1.0.0")],
     )
     def test_init_with_instance_name_unique_name_check(
         self, client, bg_system, instance_name, expected_unique
@@ -120,31 +101,13 @@ class TestPluginInit(object):
         assert expected_unique == plugin.unique_name
 
     def test_defaults(self, plugin):
-        assert plugin.logger == logging.getLogger("brewtils.plugin")
-        assert plugin.instance_name == "default"
-        assert plugin.bg_host == "localhost"
-        assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == "/"
-        assert plugin.ssl_enabled is True
-        assert plugin.ca_verify is True
-
-    def test_default_logger(self, monkeypatch, client):
-        """Test that the default logging configuration is used.
-
-        This needs to be tested separately because pytest (understandably) does some
-        logging configuration before starting tests. Since we only configure logging
-        if there's no prior configuration we have to fake it a little.
-
-        """
-        plugin_logger = logging.getLogger("brewtils.plugin")
-        dict_config = Mock()
-
-        monkeypatch.setattr(plugin_logger, "root", Mock(handlers=[]))
-        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
-
-        plugin = Plugin(client, bg_host="localhost", max_concurrent=1)
-        dict_config.assert_called_once_with(DEFAULT_LOGGING_CONFIG)
-        assert logging.getLogger("brewtils.plugin") == plugin.logger
+        assert plugin._logger == logging.getLogger("brewtils.plugin")
+        assert plugin._config.instance_name == "default"
+        assert plugin._config.bg_host == "localhost"
+        assert plugin._config.bg_port == 2337
+        assert plugin._config.bg_url_prefix == "/"
+        assert plugin._config.ssl_enabled is True
+        assert plugin._config.ca_verify is True
 
     def test_kwargs(self, client, bg_system):
         logger = Mock()
@@ -161,12 +124,12 @@ class TestPluginInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.bg_host == "host1"
-        assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
-        assert plugin.logger == logger
+        assert plugin._logger == logger
+        assert plugin._config.bg_host == "host1"
+        assert plugin._config.bg_port == 2338
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is False
+        assert plugin._config.ca_verify is False
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -177,11 +140,11 @@ class TestPluginInit(object):
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
-        assert plugin.bg_host == "remotehost"
-        assert plugin.bg_port == 7332
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
+        assert plugin._config.bg_host == "remotehost"
+        assert plugin._config.bg_port == 7332
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is False
+        assert plugin._config.ca_verify is False
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -201,11 +164,11 @@ class TestPluginInit(object):
             max_concurrent=1,
         )
 
-        assert plugin.bg_host == "localhost"
-        assert plugin.bg_port == 2337
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is True
-        assert plugin.ca_verify is True
+        assert plugin._config.bg_host == "localhost"
+        assert plugin._config.bg_port == 2337
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is True
+        assert plugin._config.ca_verify is True
 
     def test_cli(self, client, bg_system):
         args = [
@@ -226,341 +189,235 @@ class TestPluginInit(object):
             **get_connection_info(cli_args=args)
         )
 
-        assert plugin.bg_host == "remotehost"
-        assert plugin.bg_port == 2338
-        assert plugin.bg_url_prefix == "/beer/"
-        assert plugin.ssl_enabled is False
-        assert plugin.ca_verify is False
+        assert plugin._config.bg_host == "remotehost"
+        assert plugin._config.bg_port == 2338
+        assert plugin._config.bg_url_prefix == "/beer/"
+        assert plugin._config.ssl_enabled is False
+        assert plugin._config.ca_verify is False
 
 
-class TestPluginRun(object):
-    @pytest.fixture
-    def create_connection_poll(self):
-        return Mock()
+class TestRun(object):
+    def test_normal(self, plugin):
+        plugin._shutdown_event = Mock()
 
-    @pytest.fixture
-    def plugin(self, plugin, create_connection_poll):
-        plugin._initialize = Mock()
-        plugin._create_connection_poll_thread = create_connection_poll
-        return plugin
-
-    def test_run(self, plugin, create_connection_poll):
-        admin_mock = Mock()
-        standard_mock = Mock()
-
-        plugin._create_admin_consumer = admin_mock
-        plugin._create_standard_consumer = standard_mock
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
+        startup_mock = Mock()
+        shutdown_mock = Mock()
+        plugin._startup = startup_mock
+        plugin._shutdown = shutdown_mock
 
         plugin.run()
-        for moc in (admin_mock, standard_mock, create_connection_poll):
-            assert moc.called is True
-            assert moc.return_value.start.called is True
+        assert startup_mock.called is True
+        assert shutdown_mock.called is True
 
-        assert admin_mock.return_value.stop.called is True
-        assert standard_mock.return_value.stop.called is True
+    def test_missing_client(self, bg_system):
+        """Create a Plugin with no client, set it once, but never change"""
+        # Don't use the plugin fixture as it already has a client
+        plug = Plugin(bg_host="localhost", system=bg_system)
 
-    @pytest.mark.parametrize("ex", [KeyboardInterrupt, Exception])
-    def test_run_consumers_exception(self, plugin, ex):
-        admin_mock = Mock()
-        standard_mock = Mock()
+        with pytest.raises(AttributeError):
+            plug.run()
 
-        plugin._create_admin_consumer = admin_mock
-        plugin._create_standard_consumer = standard_mock
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=ex))
+    def test_error(self, caplog, plugin):
+        plugin._shutdown_event = Mock(wait=Mock(side_effect=ValueError))
 
-        plugin.run()
-        for moc in (admin_mock, standard_mock):
-            assert moc.called is True
-            assert moc.return_value.start.called is True
-            assert moc.return_value.stop.called is True
+        startup_mock = Mock()
+        shutdown_mock = Mock()
+        plugin._startup = startup_mock
+        plugin._shutdown = shutdown_mock
 
+        with caplog.at_level(logging.ERROR):
+            plugin.run()
 
-class TestProcessMessage(object):
-    @pytest.fixture
-    def update_mock(self):
-        return Mock()
-
-    @pytest.fixture
-    def invoke_mock(self):
-        return Mock()
-
-    @pytest.fixture
-    def plugin(self, plugin, update_mock, invoke_mock):
-        plugin._update_request = update_mock
-        plugin._invoke_command = invoke_mock
-        return plugin
-
-    def test_process(self, plugin, update_mock, invoke_mock):
-        target_mock = Mock()
-        request_mock = Mock(is_ephemeral=False)
-        format_mock = Mock()
-        plugin._format_output = format_mock
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        format_mock.assert_called_once_with(invoke_mock.return_value)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "SUCCESS"
-        assert request_mock.output == format_mock.return_value
-
-    def test_invoke_exception(self, caplog, plugin, update_mock, invoke_mock):
-        target_mock = Mock()
-        request_mock = Mock(is_json=False)
-        invoke_mock.side_effect = ValueError("I am an error")
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "ValueError"
-        assert request_mock.output == "I am an error"
-
+        assert startup_mock.called is True
+        assert shutdown_mock.called is True
         assert len(caplog.records) == 1
-        assert caplog.records[0].exc_info is not False
-        assert caplog.records[0].levelno == logging.ERROR
 
-    def test_invoke_exception_no_trace(self, caplog, plugin, update_mock, invoke_mock):
-        class CustomException(SuppressStacktrace):
-            pass
+    def test_keyboard_interrupt(self, caplog, plugin):
+        plugin._shutdown_event = Mock(wait=Mock(side_effect=KeyboardInterrupt))
 
-        target_mock = Mock()
-        request_mock = Mock(is_json=False)
-        invoke_mock.side_effect = CustomException("I am exception")
+        startup_mock = Mock()
+        shutdown_mock = Mock()
+        plugin._startup = startup_mock
+        plugin._shutdown = shutdown_mock
 
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "CustomException"
-        assert request_mock.output == "I am exception"
+        with caplog.at_level(logging.ERROR):
+            plugin.run()
 
-        assert len(caplog.records) == 1
-        assert caplog.records[0].exc_info is False
-        assert caplog.records[0].levelno == logging.ERROR
+        assert startup_mock.called is True
+        assert shutdown_mock.called is True
+        assert len(caplog.records) == 0
 
-    @pytest.mark.parametrize(
-        "base,expected_level",
-        [
-            (ErrorLogLevelCritical, logging.CRITICAL),
-            (ErrorLogLevelError, logging.ERROR),
-            (ErrorLogLevelWarning, logging.WARNING),
-            (ErrorLogLevelInfo, logging.INFO),
-            (ErrorLogLevelDebug, logging.DEBUG),
-            (Exception, logging.ERROR),
-        ],
-    )
-    def test_invoke_exception_log_level(
-        self, caplog, plugin, update_mock, invoke_mock, base, expected_level
+
+class TestPropertyGetters(object):
+    def test_client(self, plugin, client):
+        assert plugin.client == client
+
+    def test_system(self, plugin, bg_system):
+        assert plugin.system == bg_system
+
+    def test_instance(self, plugin, bg_instance):
+        assert plugin.instance == bg_instance
+
+
+class TestClientSetter(object):
+    def test_client_setter(self, client, bg_system):
+        """Create a Plugin with no client, set it once, but never change"""
+        # Don't use the plugin fixture as it already has a client
+        p = Plugin(bg_host="localhost", system=bg_system)
+        assert p.client is None
+
+        # Can set to None if already None
+        p.client = None
+        assert p.client is None
+
+        p.client = client
+        assert p.client == client
+
+        with pytest.raises(AttributeError):
+            p.client = None
+
+        # Should still be the same client
+        assert p.client == client
+
+    def test_system_attributes_from_client(self, client):
+        """Test that @system decorator and client docstring are used"""
+        client._bg_name = "name"
+        client._bg_version = "1.0.0"
+        client.__doc__ = "Description\nSome more stuff"
+
+        # Don't use plugin fixture as the _system name, version, doc are already set
+        p = Plugin(bg_host="localhost")
+
+        p.client = client
+        assert p._system.name == "name"
+        assert p._system.version == "1.0.0"
+        assert p._system.description == "Description"
+
+
+class TestStartup(object):
+    def test_success(
+        self, plugin, admin_processor, request_processor, bg_system, bg_instance
     ):
-        target_mock = Mock()
-        request_mock = Mock(is_json=False)
+        plugin._ez_client.update_system = Mock(return_value=plugin._system)
+        plugin._initialize_processors = Mock(
+            return_value=(admin_processor, request_processor)
+        )
 
-        exception = type("CustomException", (base,), {})
-        invoke_mock.side_effect = exception("I am exception")
+        plugin._startup()
+        assert admin_processor.startup.called is True
+        assert request_processor.startup.called is True
 
-        with caplog.at_level(logging.DEBUG):
-            plugin.process_message(target_mock, request_mock, {})
+        work_dir_base = os.path.join(
+            bg_system.namespace, bg_system.name, bg_instance.name, bg_system.version
+        )
+        assert work_dir_base in plugin._config.working_directory
 
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "CustomException"
-        assert request_mock.output == "I am exception"
+    def test_connect_fail(self, plugin, admin_processor, request_processor):
+        plugin._ez_client.can_connect.return_value = False
+
+        with pytest.raises(RestConnectionError):
+            plugin._startup()
+
+
+class TestShutdown(object):
+    def test_success(self, plugin, ez_client, bg_instance):
+        plugin._request_processor = Mock()
+        plugin._admin_processor = Mock()
+
+        plugin._shutdown()
+        assert plugin._request_processor.shutdown.called is True
+        assert plugin._admin_processor.shutdown.called is True
+        ez_client.update_instance.assert_called_once_with(
+            bg_instance.id, new_status="STOPPED"
+        )
+
+    def test_update_error(self, caplog, plugin, ez_client, bg_instance):
+        plugin.request_consumer = Mock()
+        plugin.admin_consumer = Mock()
+        ez_client.update_instance.side_effect = RequestsConnectionError()
+
+        with caplog.at_level(level=logging.WARNING):
+            plugin._shutdown()
 
         assert len(caplog.records) == 1
-        assert caplog.records[0].levelno == expected_level
-
-    def test_invoke_exception_json_output(self, plugin, update_mock, invoke_mock):
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        invoke_mock.side_effect = ValueError("Not JSON")
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "ValueError"
-        assert json.loads(request_mock.output) == {
-            "message": "Not JSON",
-            "arguments": ["Not JSON"],
-            "attributes": {},
-        }
-
-    @pytest.mark.parametrize("ex_arg", [{"foo": "bar"}, json.dumps({"foo": "bar"})])
-    def test_format_json_args(self, plugin, invoke_mock, ex_arg):
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        invoke_mock.side_effect = Exception(ex_arg)
-
-        plugin.process_message(target_mock, request_mock, {})
-        assert json.loads(request_mock.output) == {"foo": "bar"}
-
-    def test_invoke_exception_attributes(self, plugin, update_mock, invoke_mock):
-        class MyError(Exception):
-            def __init__(self, foo):
-                self.foo = foo
-
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        exc = MyError("bar")
-        invoke_mock.side_effect = exc
-
-        # On python version 2, errors with custom attributes do not list those
-        # attributes as arguments.
-        if sys.version_info.major < 3:
-            arguments = []
-        else:
-            arguments = ["bar"]
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "MyError"
-        assert json.loads(request_mock.output) == {
-            "message": str(exc),
-            "arguments": arguments,
-            "attributes": {"foo": "bar"},
-        }
-
-    def test_invoke_exception_bad_attributes(self, plugin, update_mock, invoke_mock):
-        class MyError(Exception):
-            def __init__(self, foo):
-                self.foo = foo
-
-        target_mock = Mock()
-        request_mock = Mock(is_json=True)
-        message = MyError("another object")
-        thing = MyError(message)
-        invoke_mock.side_effect = thing
-
-        # On python version 2, errors with custom attributes do not list those
-        # attributes as arguments.
-        if sys.version_info.major < 3:
-            arguments = []
-        else:
-            arguments = [str(message)]
-
-        plugin.process_message(target_mock, request_mock, {})
-        invoke_mock.assert_called_once_with(target_mock, request_mock)
-        assert update_mock.call_count == 2
-        assert request_mock.status == "ERROR"
-        assert request_mock.error_class == "MyError"
-        assert json.loads(request_mock.output) == {
-            "message": str(thing),
-            "arguments": arguments,
-            "attributes": str(thing.__dict__),
-        }
-
-    def test_request_message(self, plugin, client):
-        message_mock = Mock()
-        pool_mock = Mock()
-        pre_process_mock = Mock()
-
-        plugin.pool = pool_mock
-        plugin._pre_process = pre_process_mock
-
-        plugin.process_request_message(message_mock, {})
-        pre_process_mock.assert_called_once_with(message_mock)
-        pool_mock.submit.assert_called_once_with(
-            plugin.process_message, client, pre_process_mock.return_value, {}
-        )
-
-    def test_completed_request_message(self, plugin):
-        message_mock = Mock()
-        pool_mock = Mock()
-        pre_process_mock = Mock(return_value=Mock(status="SUCCESS"))
-
-        plugin.pool = pool_mock
-        plugin._pre_process = pre_process_mock
-
-        plugin.process_request_message(message_mock, {})
-        pre_process_mock.assert_called_once_with(message_mock)
-        pool_mock.submit.assert_called_once_with(
-            plugin._update_request, pre_process_mock.return_value, {}
-        )
-
-    def test_admin_message(self, plugin):
-        message_mock = Mock()
-        pool_mock = Mock()
-        pre_process_mock = Mock()
-
-        plugin.admin_pool = pool_mock
-        plugin._pre_process = pre_process_mock
-
-        plugin.process_admin_message(message_mock, {})
-        pre_process_mock.assert_called_once_with(message_mock, verify_system=False)
-        pool_mock.submit.assert_called_once_with(
-            plugin.process_message, plugin, pre_process_mock.return_value, {}
-        )
 
 
-class TestPreProcess(object):
-    @pytest.mark.parametrize(
-        "request_args",
-        [
-            # Normal case
-            {"system": "system", "system_version": "1.0.0", "command_type": "ACTION"},
-            # Missing or ephemeral command types should succeed even with wrong names
-            {"system": "wrong", "system_version": "1.0.0"},
-            {"system": "wrong", "system_version": "1.0.0", "command_type": "EPHEMERAL"},
-        ],
-    )
-    def test_success(self, plugin, request_args):
-        # Need to reset the real parser
-        plugin.parser = SchemaParser()
+class TestInitializeLogging(object):
+    @pytest.fixture(autouse=True)
+    def config_mock(self, monkeypatch):
+        dict_config = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+        return dict_config
 
-        assert_request_equal(
-            plugin._pre_process(json.dumps(request_args)),
-            SchemaParser.parse_request(request_args),
-        )
+    def test_normal(self, caplog, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.return_value = {"handlers": {"stdout": {}}}
 
-    @pytest.mark.parametrize(
-        "request_args",
-        [
-            # Normal case
-            {"system": "wrong", "system_version": "1.0.0", "command_type": "ACTION"}
-        ],
-    )
-    def test_wrong_system(self, plugin, request_args):
-        # Need to reset the real parser
-        plugin.parser = SchemaParser()
+        with caplog.at_level(logging.ERROR):
+            plugin._initialize_logging()
 
-        with pytest.raises(DiscardMessageException):
-            plugin._pre_process(json.dumps(request_args))
+        assert config_mock.called is True
+        assert len(caplog.records) == 0
 
-    def test_shutting_down(self, plugin):
-        plugin.shutdown_event.set()
-        with pytest.raises(RequestProcessingError):
-            plugin._pre_process(Mock())
+    def test_custom_logger(self, plugin, ez_client, config_mock):
+        plugin._custom_logger = True
 
-    def test_parse_error(self, plugin, parser):
-        parser.parse_request.side_effect = ValueError
-        with pytest.raises(DiscardMessageException):
-            plugin._pre_process(Mock())
+        plugin._initialize_logging()
+        assert config_mock.called is False
+
+    def test_retrieve_fail(self, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.side_effect = RestConnectionError
+
+        plugin._initialize_logging()
+        assert config_mock.called is False
+
+    def test_config_fail(self, caplog, plugin, ez_client, config_mock):
+        plugin._custom_logger = False
+        ez_client.get_logging_config.return_value = "Bad config value"
+
+        with caplog.at_level(logging.ERROR):
+            plugin._initialize_logging()
+
+        assert config_mock.called is True
+        assert len(caplog.records) > 0
 
 
-class TestInitialize(object):
-    def test_new_system(self, plugin, bm_client, bg_system, bg_instance):
-        bm_client.find_unique_system.return_value = None
+class TestInitializeSystem(object):
+    def test_new_system(self, plugin, ez_client, bg_system, bg_instance):
+        ez_client.find_unique_system.return_value = None
 
-        plugin._initialize()
-        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
-        bm_client.create_system.assert_called_once_with(bg_system)
-        assert bm_client.update_system.called is False
-        assert bm_client.create_system.return_value == plugin.system
-        assert bm_client.initialize_instance.return_value == plugin.instance
+        plugin._initialize_system()
+        ez_client.create_system.assert_called_once_with(bg_system)
+        assert ez_client.find_unique_system.call_count == 1
+        assert ez_client.update_system.called is False
+
+    def test_new_system_conflict_succeed(self, plugin, ez_client, bg_system):
+        ez_client.find_unique_system.side_effect = [None, bg_system]
+        ez_client.create_system.side_effect = ConflictError()
+
+        plugin._initialize_system()
+        ez_client.create_system.assert_called_once_with(bg_system)
+        assert ez_client.find_unique_system.call_count == 2
+        assert ez_client.update_system.called is True
+
+    def test_new_system_conflict_fail(self, plugin, ez_client, bg_system):
+        ez_client.find_unique_system.return_value = None
+        ez_client.create_system.side_effect = ConflictError()
+
+        with pytest.raises(PluginValidationError):
+            plugin._initialize_system()
+
+        ez_client.create_system.assert_called_once_with(bg_system)
+        assert ez_client.find_unique_system.call_count == 2
+        assert ez_client.update_system.called is False
 
     @pytest.mark.parametrize(
         "current_commands", [[], [Command("test")], [Command("other_test")]]
     )
     def test_system_exists(
-        self, plugin, bm_client, bg_system, bg_instance, current_commands
+        self, plugin, ez_client, bg_system, bg_instance, current_commands
     ):
-        bg_system.commands = [Command("test")]
-        bm_client.update_system.return_value = bg_system
-
         existing_system = System(
             id="id",
             name="test_system",
@@ -569,11 +426,14 @@ class TestInitialize(object):
             commands=current_commands,
             metadata={"foo": "bar"},
         )
-        bm_client.find_unique_system.return_value = existing_system
+        ez_client.find_unique_system.return_value = existing_system
 
-        plugin._initialize()
-        bm_client.initialize_instance.assert_called_once_with(bg_instance.id)
-        bm_client.update_system.assert_called_once_with(
+        bg_system.commands = [Command("test")]
+        ez_client.update_system.return_value = bg_system
+
+        plugin._initialize_system()
+        assert ez_client.create_system.called is False
+        ez_client.update_system.assert_called_once_with(
             existing_system.id,
             new_commands=bg_system.commands,
             metadata=bg_system.metadata,
@@ -581,13 +441,9 @@ class TestInitialize(object):
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
         )
-        assert bm_client.create_system.called is False
-        assert bm_client.create_system.return_value == plugin.system
-        assert bm_client.initialize_instance.return_value == plugin.instance
+        # assert ez_client.create_system.return_value == plugin.system
 
-    def test_new_instance(self, plugin, bm_client, bg_system, bg_instance):
-        plugin.instance_name = "new_instance"
-
+    def test_new_instance(self, plugin, ez_client, bg_system, bg_instance):
         existing_system = System(
             id="id",
             name="test_system",
@@ -596,411 +452,270 @@ class TestInitialize(object):
             max_instances=2,
             metadata={"foo": "bar"},
         )
-        bm_client.find_unique_system.return_value = existing_system
+        ez_client.find_unique_system.return_value = existing_system
 
-        plugin._initialize()
-        assert 2 == len(existing_system.instances)
-        assert bm_client.create_system.called is True
-        assert bm_client.update_system.called is True
+        new_name = "foo_instance"
+        plugin._config.instance_name = new_name
 
-    def test_new_instance_maximum(self, plugin, bm_client, bg_system):
-        plugin.instance_name = "new_instance"
-        bm_client.find_unique_system.return_value = bg_system
+        plugin._initialize_system()
+        assert ez_client.create_system.called is False
+        ez_client.update_system.assert_called_once_with(
+            existing_system.id,
+            new_commands=bg_system.commands,
+            metadata=bg_system.metadata,
+            description=bg_system.description,
+            icon_name=bg_system.icon_name,
+            display_name=bg_system.display_name,
+            add_instance=ANY,
+        )
+        assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
 
-        with pytest.raises(PluginValidationError):
-            plugin._initialize()
 
-    def test_unregistered_instance(self, plugin, bm_client, bg_system):
+class TestInitializeInstance(object):
+    def test_remote(self, plugin, ez_client, bg_instance):
+        plugin._initialize_instance()
+        ez_client.initialize_instance.assert_called_once_with(
+            bg_instance.id, runner_id=None
+        )
+
+    def test_local(self, plugin, ez_client, bg_instance):
+        plugin._config.runner_id = "ABC"
+        plugin._initialize_instance()
+        ez_client.initialize_instance.assert_called_once_with(
+            bg_instance.id, runner_id="ABC"
+        )
+
+    def test_unregistered_instance(self, plugin, ez_client, bg_system):
         bg_system.has_instance = Mock(return_value=False)
-        bm_client.find_unique_system.return_value = None
 
         with pytest.raises(PluginValidationError):
-            plugin._initialize()
+            plugin._initialize_instance()
 
 
-def test_shutdown(plugin, bm_client, bg_instance):
-    plugin.request_consumer = Mock()
-    plugin.admin_consumer = Mock()
+class TestInitializeProcessors(object):
+    class TestSSLParams(object):
+        def test_no_ssl(self, monkeypatch, plugin, bg_instance):
+            create_mock = Mock()
+            monkeypatch.setattr(brewtils.plugin.RequestConsumer, "create", create_mock)
 
-    plugin._shutdown()
-    assert plugin.request_consumer.stop.called is True
-    assert plugin.request_consumer.join.called is True
-    assert plugin.admin_consumer.stop.called is True
-    assert plugin.admin_consumer.join.called is True
-    bm_client.update_instance_status.assert_called_once_with(bg_instance.id, "STOPPED")
+            if bg_instance.queue_info["connection"].get("ssl"):
+                del bg_instance.queue_info["connection"]["ssl"]
 
+            plugin._initialize_processors()
+            connection_info = create_mock.call_args_list[0][1]["connection_info"]
+            assert connection_info == bg_instance.queue_info["connection"]
 
-def test_shutdown_update_error(caplog, plugin, bm_client, bg_instance):
-    plugin.request_consumer = Mock()
-    plugin.admin_consumer = Mock()
-    bm_client.update_instance_status.side_effect = RequestsConnectionError()
+        def test_ssl(self, monkeypatch, plugin, bg_instance):
+            create_mock = Mock()
+            monkeypatch.setattr(brewtils.plugin.RequestConsumer, "create", create_mock)
 
-    with caplog.at_level(level=logging.WARNING):
-        plugin._shutdown()
+            plugin._config.ca_cert = Mock()
+            plugin._config.ca_verify = Mock()
+            plugin._config.client_cert = Mock()
 
-    assert len(caplog.records) == 1
+            plugin._initialize_processors()
+            connection_info = create_mock.call_args_list[0][1]["connection_info"]
+            assert connection_info["ssl"]["ca_cert"] == plugin._config.ca_cert
+            assert connection_info["ssl"]["ca_verify"] == plugin._config.ca_verify
+            assert connection_info["ssl"]["client_cert"] == plugin._config.client_cert
 
+    def test_queue_names(self, plugin, bg_instance):
+        request_queue = bg_instance.queue_info["request"]["name"]
+        admin_queue = bg_instance.queue_info["admin"]["name"]
 
-def test_create_request_consumer(plugin, bg_instance):
-    consumer = plugin._create_standard_consumer()
-    assert consumer._queue_name == bg_instance.queue_info["request"]["name"]
-
-
-def test_create_admin_consumer(plugin, bg_instance):
-    consumer = plugin._create_admin_consumer()
-    assert consumer._queue_name == bg_instance.queue_info["admin"]["name"]
-
-
-def test_create_connection_poll_thread(plugin):
-    connection_poll_thread = plugin._create_connection_poll_thread()
-    assert isinstance(connection_poll_thread, threading.Thread)
-    assert connection_poll_thread.daemon is True
-
-
-class TestInvokeCommand(object):
-    def test_invoke_admin(self, plugin):
-        start_mock = Mock()
-        plugin._start = start_mock
-
-        request = Request(
-            system="test_system",
-            system_version="1.0.0",
-            command="_start",
-            parameters={"p1": "param"},
-        )
-
-        plugin._invoke_command(plugin, request)
-        start_mock.assert_called_once_with(plugin, **request.parameters)
-
-    def test_invoke_request(self, plugin, client):
-        request = Request(
-            system="test_system",
-            system_version="1.0.0",
-            command="command",
-            parameters={"p1": "param"},
-        )
-
-        plugin._invoke_command(client, request)
-        client.command.assert_called_once_with(**request.parameters)
-
-    def test_invoke_request_none_parameters(self, plugin, client):
-        request = Request(
-            system="test_system", system_version="1.0.0", command="command"
-        )
-
-        plugin._invoke_command(client, request)
-        client.command.assert_called_once_with()
-
-    @pytest.mark.parametrize(
-        "command", ["foo", "_commands"]  # Missing attribute  # Non-callable attribute
-    )
-    def test_failure(self, plugin, client, command):
-        with pytest.raises(RequestProcessingError):
-            plugin._invoke_command(
-                client,
-                Request(
-                    system="name",
-                    system_version="1.0.0",
-                    command=command,
-                    parameters={"p1": "param"},
-                ),
-            )
-
-
-class TestUpdateRequest(object):
-    @pytest.mark.parametrize("ephemeral", [False, True])
-    def test_success(self, plugin, bm_client, ephemeral):
-        plugin._update_request(Mock(is_ephemeral=ephemeral), {})
-        assert bm_client.update_request.called is not ephemeral
-
-    @pytest.mark.parametrize(
-        "ex,raised,bv_down",
-        [
-            (RestClientError, DiscardMessageException, False),
-            (RequestsConnectionError, RepublishRequestException, True),
-            (ValueError, RepublishRequestException, False),
-            (TooLargeError, RepublishRequestException, False),
-        ],
-    )
-    def test_errors(self, plugin, bm_client, bg_request, ex, raised, bv_down):
-        bm_client.update_request.side_effect = ex
-
-        with pytest.raises(raised):
-            plugin._update_request(bg_request, {})
-        assert bm_client.update_request.called is True
-        assert plugin.brew_view_down is bv_down
-
-    def test_wait_during_error(self, plugin, bm_client, bg_request):
-        error_condition_mock = MagicMock()
-        plugin.brew_view_error_condition = error_condition_mock
-        plugin.brew_view_down = True
-
-        plugin._update_request(bg_request, {})
-        assert error_condition_mock.wait.called is True
-        assert bm_client.update_request.called is True
-
-    def test_final_attempt_succeeds(self, plugin, bm_client, bg_request):
-        plugin.max_attempts = 1
-
-        plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 5})
-        bm_client.update_request.assert_called_with(
-            bg_request.id,
-            status="ERROR",
-            output="We tried to update the request, but "
-            "it failed too many times. Please check "
-            "the plugin logs to figure out why the request "
-            "update failed. It is possible for this request to have "
-            "succeeded, but we cannot update beer-garden with that "
-            "information.",
-            error_class="BGGivesUpError",
-        )
-
-    def test_wait_if_in_headers(self, plugin, bg_request):
-        plugin.shutdown_event = Mock(wait=Mock(return_value=True))
-
-        plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 1})
-        assert plugin.shutdown_event.wait.called is True
-
-    def test_update_request_headers(self, plugin, bm_client, bg_request):
-        plugin.shutdown_event = Mock(wait=Mock(return_value=True))
-        bm_client.update_request.side_effect = ValueError
-
-        with pytest.raises(RepublishRequestException) as ex:
-            plugin._update_request(bg_request, {"retry_attempt": 1, "time_to_wait": 5})
-        assert ex.value.headers["retry_attempt"] == 2
-        assert ex.value.headers["time_to_wait"] == 10
-
-    def test_update_request_final_attempt_fails(self, plugin, bm_client, bg_request):
-        plugin.max_attempts = 1
-        bm_client.update_request.side_effect = ValueError
-        with pytest.raises(DiscardMessageException):
-            plugin._update_request(bg_request, {"retry_attempt": 1})
-
-
-def test_check_connection_poll_thread(plugin):
-    old_thread = Mock(isAlive=Mock(return_value=False))
-    plugin.connection_poll_thread = old_thread
-
-    new_thread = Mock()
-    plugin._create_connection_poll_thread = Mock(return_value=new_thread)
-
-    plugin._check_connection_poll_thread()
-    assert plugin.connection_poll_thread == new_thread
-    assert new_thread.start.called is True
-
-
-class TestCheckConsumers(object):
-    def test_reset_on_success(self, plugin):
-        plugin._mq_retry_attempt = 3
-
-        plugin._check_consumers()
-        assert plugin._mq_retry_attempt == 0
-
-    def test_max_failures_shutdown(self, plugin):
-        plugin.admin_consumer.is_connected.return_value = False
-
-        plugin._mq_max_attempts = 1
-        plugin._mq_retry_attempt = 2
-
-        plugin._check_consumers()
-        assert plugin.shutdown_event.is_set()
-
-    def test_restart(self, plugin, admin_consumer, request_consumer):
-        plugin.admin_consumer.is_connected.return_value = False
-        plugin.request_consumer.is_connected.return_value = False
-
-        shutdown_event = Mock()
-        plugin.shutdown_event = shutdown_event
-
-        new_admin = Mock()
-        new_request = Mock()
-        plugin._create_admin_consumer = Mock(return_value=new_admin)
-        plugin._create_standard_consumer = Mock(return_value=new_request)
-
-        plugin._check_consumers()
-        assert plugin.admin_consumer == new_admin
-        assert plugin.request_consumer == new_request
-        assert new_admin.start.called is True
-        assert new_request.start.called is True
-
-        shutdown_event.wait.assert_called_once_with(5)
-        assert plugin._mq_timeout == 10
-        assert plugin._mq_retry_attempt == 1
+        admin, request = plugin._initialize_processors()
+        assert admin.consumer._queue_name == admin_queue
+        assert request.consumer._queue_name == request_queue
 
 
 class TestAdminMethods(object):
-    def test_start(self, plugin, bm_client, bg_instance):
+    def test_start(self, plugin, ez_client, bg_instance):
         new_instance = Mock()
-        bm_client.update_instance_status.return_value = new_instance
+        ez_client.update_instance.return_value = new_instance
 
-        assert plugin._start(Mock())
-        bm_client.update_instance_status.assert_called_once_with(
-            bg_instance.id, "RUNNING"
+        plugin._start()
+        ez_client.update_instance.assert_called_once_with(
+            bg_instance.id, new_status="RUNNING"
         )
-        assert plugin.instance == new_instance
+        assert plugin._instance == new_instance
 
     def test_stop(self, plugin):
-        assert plugin._stop(Mock())
-        assert plugin.shutdown_event.is_set() is True
+        plugin._stop()
+        assert plugin._shutdown_event.is_set() is True
 
-    def test_status(self, plugin, bm_client):
-        plugin._status(Mock())
-        bm_client.instance_heartbeat.assert_called_once_with(plugin.instance.id)
+    def test_status(self, plugin, ez_client):
+        plugin._status()
+        ez_client.instance_heartbeat.assert_called_once_with(plugin._instance.id)
 
-    @pytest.mark.parametrize(
-        "error,bv_down", [(RequestsConnectionError, True), (ValueError, False)]
-    )
-    def test_status_error(self, plugin, bm_client, error, bv_down):
-        bm_client.instance_heartbeat.side_effect = error
-        with pytest.raises(error):
-            plugin._status(Mock())
-        assert plugin.brew_view_down is bv_down
+    def test_status_failure(self, plugin, ez_client):
+        ez_client.instance_heartbeat.side_effect = RestConnectionError()
+        plugin._status()
+        ez_client.instance_heartbeat.assert_called_once_with(plugin._instance.id)
 
-    def test_status_brew_view_down(self, plugin, bm_client):
-        plugin.brew_view_down = True
-        plugin._status(Mock())
-        assert bm_client.instance_heartbeat.called is False
+    class TestReadLog(object):
+        """Test the plugin._read_log() functionality
 
+        This only really tests the failure conditions because they're the only logic
+        that exists in the method. Actual functionality is in log.read_log_file()
+        """
 
-class TestMaxConcurrent(object):
-    @pytest.mark.parametrize(
-        "multithreaded,max_concurrent,expected",
-        [
-            (None, None, 1),
-            (True, None, 5),
-            (False, None, 1),
-            (None, 4, 4),
-            (True, 1, 1),
-            (False, 1, 1),
-            (True, 4, 4),
-            (False, 4, 4),
-        ],
-    )
-    def test_setup(self, plugin, multithreaded, max_concurrent, expected):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            assert (
-                plugin._setup_max_concurrent(
-                    multithreaded=multithreaded, max_concurrent=max_concurrent
-                )
-                == expected
+        def test_no_file_handler(self, monkeypatch, plugin):
+            monkeypatch.setattr(
+                brewtils.plugin, "find_log_file", Mock(return_value=None)
             )
 
-            if multithreaded:
-                assert issubclass(w[0].category, DeprecationWarning)
-                assert "multithreaded" in str(w[0].message)
+            with pytest.raises(RequestProcessingError):
+                plugin._read_log()
 
-    def test_deprecation(self, client):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("ignore")
-            warnings.filterwarnings("always", module="brewtils.plugin")
+        def test_bad_file(self, monkeypatch, tmpdir, plugin):
+            monkeypatch.setattr(
+                brewtils.plugin,
+                "find_log_file",
+                Mock(return_value=os.path.join(str(tmpdir), "no_file.log")),
+            )
 
-            Plugin(client, bg_host="localhost")
+            with pytest.raises(RequestProcessingError):
+                plugin._read_log()
 
-            assert issubclass(w[0].category, PendingDeprecationWarning)
-            assert "max_concurrent" in str(w[0].message)
+
+class TestValidationFunctions(object):
+    class TestVerifySystem(object):
+        def test_success(self, plugin, bg_request):
+            assert plugin._correct_system(bg_request) is None
+
+        def test_wrong_system(self, plugin, bg_request):
+            plugin._system.name = "wrong"
+
+            with pytest.raises(DiscardMessageException):
+                plugin._correct_system(bg_request)
+
+    class TestVerifyRunning(object):
+        def test_success(self, plugin, bg_request):
+            assert plugin._is_running(bg_request) is None
+
+        def test_shutting_down(self, plugin):
+            plugin._shutdown_event.set()
+            with pytest.raises(RequestProcessingError):
+                plugin._is_running(Mock())
+
+
+class TestSetupLogging(object):
+    def test_custom_logger(self, plugin):
+        logger_mock = Mock()
+
+        assert plugin._setup_logging(logger=logger_mock) == logger_mock
+        assert plugin._custom_logger is True
+
+    def test_no_prior_config(self, monkeypatch, plugin):
+        """Test that the default logging configuration is used.
+
+        Pytest (understandably) does some logging configuration before starting tests.
+        Since we only configure logging if there's no prior configuration we have to
+        fake it a little.
+        """
+        dict_config = Mock()
+
+        monkeypatch.setattr(logging, "root", Mock(handlers=[]))
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+
+        logger = plugin._setup_logging(log_level="WARNING")
+
+        assert plugin._custom_logger is False
+        assert logger == logging.getLogger("brewtils.plugin")
+        assert dict_config.call_count == 1
+        dict_config.assert_called_once_with(default_config(level="WARNING"))
+
+    def test_prior_config(self, monkeypatch, plugin):
+        """Test that the logging config is not altered
+
+        Pytest does some logging configuration before starting tests. Use that to test
+        the case where logging has already been configured.
+        """
+        dict_config = Mock()
+        monkeypatch.setattr(logging.config, "dictConfig", dict_config)
+
+        logger = plugin._setup_logging(log_level="WARNING")
+
+        assert plugin._custom_logger is True
+        assert logger == logging.getLogger("brewtils.plugin")
+        assert dict_config.called is False
+
+
+class TestSetupNamespace(object):
+    def test_from_config(self, client):
+        expected_namespace = "foo"
+
+        plugin = Plugin(client, bg_host="localhost", namespace=expected_namespace)
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    def test_from_system(self, client, bg_system):
+        expected_namespace = "foo"
+        bg_system.namespace = expected_namespace
+
+        plugin = Plugin(client, bg_host="localhost", system=bg_system)
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    def test_unspecified(self, client, ez_client):
+        expected_namespace = "foo"
+        ez_client.get_config.return_value = {"garden_name": expected_namespace}
+
+        plugin = Plugin(client, bg_host="localhost")
+
+        self._validate_namespace(plugin, expected_namespace)
+
+    @staticmethod
+    def _validate_namespace(plugin, expected_namespace):
+        assert plugin._system.namespace == expected_namespace
+        assert plugin._config.namespace == expected_namespace
+        assert brewtils.plugin.CONFIG.namespace == expected_namespace
 
 
 class TestSetupSystem(object):
     @pytest.mark.parametrize(
         "extra_args",
         [
-            ("name", "", "", "", {}, None, None),
-            ("", "description", "", "", {}, None, None),
-            ("", "", "version", "", {}, None, None),
-            ("", "", "", "icon name", {}, None, None),
-            ("", "", "", "", {}, "display_name", None),
+            {"name": "foo"},
+            {"version": "foo"},
+            {"description": "foo"},
+            {"icon_name": "foo"},
+            {"display_name": "foo"},
+            {"max_instances": 1},
+            {"metadata": '{"foo": "bar"}'},
         ],
     )
-    def test_extra_params(self, plugin, client, bg_system, extra_args):
-        with pytest.raises(ValidationError, match="system creation helper keywords"):
-            plugin._setup_system(client, "default", bg_system, *extra_args)
+    def test_extra_params(self, plugin, bg_system, extra_args):
+        with pytest.raises(ValidationError, match="system creation helper"):
+            plugin._setup_system(bg_system, extra_args)
 
-    @pytest.mark.parametrize(
-        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
-    )
-    def test_extra_decorator_params(self, plugin, client, bg_system, attr, value):
-        setattr(client, attr, value)
-        with pytest.raises(ValidationError, match="@system decorator"):
-            plugin._setup_system(client, "default", bg_system, *([None] * 7))
-
-    def test_no_instances(self, plugin, client):
+    def test_no_instances(self, plugin):
         system = System(name="name", version="1.0.0")
         with pytest.raises(ValidationError, match="explicit instance definition"):
-            plugin._setup_system(
-                client, "default", system, "", "", "", "", {}, None, None
-            )
+            plugin._setup_system(system, {})
 
-    def test_max_instances(self, plugin, client):
+    def test_max_instances(self, plugin):
         system = System(
             name="name",
             version="1.0.0",
             instances=[Instance(name="1"), Instance(name="2")],
         )
-        new_system = plugin._setup_system(
-            client, "default", system, "", "", "", "", {}, None, None
-        )
+        new_system = plugin._setup_system(system, {})
         assert new_system.max_instances == 2
 
-    def test_construct_system(self, plugin, client):
-        new_system = plugin._setup_system(
-            client,
-            "default",
-            None,
-            "name",
-            "desc",
-            "1.0.0",
-            "icon",
-            {"foo": "bar"},
-            "display_name",
-            None,
-        )
-        self._validate_system(new_system)
-
-    def test_construct_client_docstring(self, plugin, client):
-        client.__doc__ = "Description\nSome more stuff"
-
-        new_system = plugin._setup_system(
-            client, "default", None, "name", "", "1.0.0", "icon", {}, None, None
+    def test_construct_system(self, plugin):
+        plugin._config.update(
+            {
+                "name": "name",
+                "version": "1.0.0",
+                "description": "desc",
+                "icon_name": "icon",
+                "display_name": "display_name",
+                "metadata": '{"foo": "bar"}',
+            }
         )
 
-        assert new_system.description == "Description"
-
-    def test_construct_from_env(self, plugin, client):
-        os.environ["BG_NAME"] = "name"
-        os.environ["BG_VERSION"] = "1.0.0"
-
-        new_system = plugin._setup_system(
-            client,
-            "default",
-            None,
-            None,
-            "desc",
-            None,
-            "icon",
-            {"foo": "bar"},
-            "display_name",
-            None,
-        )
-        self._validate_system(new_system)
-
-    def test_construct_from_decorator(self, plugin, client):
-        client._bg_name = "name"
-        client._bg_version = "1.0.0"
-
-        new_system = plugin._setup_system(
-            client,
-            "default",
-            None,
-            None,
-            "desc",
-            None,
-            "icon",
-            {"foo": "bar"},
-            "display_name",
-            None,
-        )
+        new_system = plugin._setup_system(None, {})
         self._validate_system(new_system)
 
     @staticmethod
@@ -1013,45 +728,84 @@ class TestSetupSystem(object):
         assert new_system.display_name == "display_name"
 
 
-class TestConnectionPoll(object):
-    def test_shut_down(self, plugin, bm_client):
-        plugin.shutdown_event.set()
-        plugin._connection_poll()
-        assert bm_client.get_version.called is False
+class TestValidateSystem(object):
+    @pytest.mark.parametrize("param", ["name", "version"])
+    def test_missing_params(self, plugin, param):
+        setattr(plugin._system, param, "")
 
-    def test_brew_view_normal(self, plugin, bm_client):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        plugin._connection_poll()
-        assert bm_client.get_version.called is False
+        with pytest.raises(ValidationError):
+            plugin._validate_system()
 
-    def test_brew_view_down(self, plugin, bm_client):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        plugin.brew_view_down = True
-        bm_client.get_version.side_effect = ValueError
+    def test_decorator_match(self, plugin, client, bg_system):
+        """Passing a System along with @system args is OK as long as they match"""
+        client._bg_name = bg_system.name
+        client._bg_version = bg_system.version
 
-        plugin._connection_poll()
-        assert bm_client.get_version.called is True
-        assert plugin.brew_view_down is True
+        plugin._validate_system()
 
-    def test_brew_view_back(self, plugin, bm_client):
-        plugin.shutdown_event = Mock(wait=Mock(side_effect=[False, True]))
-        plugin.brew_view_down = True
-
-        plugin._connection_poll()
-        assert bm_client.get_version.called is True
-        assert plugin.brew_view_down is False
+    @pytest.mark.parametrize(
+        "attr,value", [("_bg_name", "name"), ("_bg_version", "1.1.1")]
+    )
+    def test_decorator_mismatch(self, plugin, client, bg_system, attr, value):
+        setattr(client, attr, value)
+        with pytest.raises(ValidationError, match="doesn't match"):
+            plugin._validate_system()
 
 
-@pytest.mark.parametrize(
-    "output,expected",
-    [
-        ("foo", "foo"),
-        (u"foo", "foo"),
-        ({"foo": "bar"}, json.dumps({"foo": "bar"})),
-        (["foo", "bar"], json.dumps(["foo", "bar"])),
-        # TypeError
-        (Request(command="foo"), str(Request(command="foo"))),
-    ],
-)
-def test_format(plugin, output, expected):
-    assert plugin._format_output(output) == expected
+class TestDeprecations(object):
+    @pytest.mark.parametrize(
+        "attribute",
+        [
+            "bg_host",
+            "bg_port",
+            "ssl_enabled",
+            "ca_cert",
+            "client_cert",
+            "bg_url_prefix",
+            "ca_verify",
+            "max_attempts",
+            "max_timeout",
+            "starting_timeout",
+            "max_concurrent",
+            "instance_name",
+            "connection_parameters",
+            "metadata",
+            "bm_client",
+            "shutdown_event",
+            "logger",
+        ],
+    )
+    def test_properties(self, plugin, attribute):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            getattr(plugin, attribute)
+
+            assert len(w) == 1
+            assert w[0].category == DeprecationWarning
+
+    def test_plugin_base(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            PluginBase(Mock(), bg_host="localhost")
+            assert len(w) == 1
+
+            warning = w[0]
+            assert warning.category == DeprecationWarning
+            assert "'PluginBase'" in str(warning)
+            assert "'Plugin'" in str(warning)
+            assert "4.0" in str(warning)
+
+    def test_remote_plugin(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            RemotePlugin(Mock(), bg_host="localhost")
+            assert len(w) == 1
+
+            warning = w[0]
+            assert warning.category == DeprecationWarning
+            assert "'RemotePlugin'" in str(warning)
+            assert "'Plugin'" in str(warning)
+            assert "4.0" in str(warning)

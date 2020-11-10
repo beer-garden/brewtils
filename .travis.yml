@@ -5,6 +5,7 @@ cache: pip
 
 python:
   - 3.8
+  - 3.9
   - 3.7
   - 3.6
   - 3.5
@@ -12,13 +13,20 @@ python:
   - 2.7
 
 env:
-  - PIKA_VERSION=0.13.1
-  - PIKA_VERSION=1.1.0
+  global:
+  # DOCKER_USERNAME
+  - secure: sHTdtcjB0o3WtBklzQViGrnFq6AAV8mDqdo3pwteLtQi2wVVkSYj7gZqyMKx+4DmdgtDBwcBaqmgfpWXsBd/xTMYt895VivYqQnsFcbyLh3m/AuWvuh4lTymi1YwyfHSc3bMVpb5hA+bm9QQt6RRntSHY1dAu5J9uaYRYUrIe94IEJANVGLc85S3ns/Iwxlsi69eVLDqjjvYyXX6ZeaUCekB96sjXJYNxzV8S8l0IqvVKKv2dcTLJTiYsONwQlM775sW+gWn+MA7yHgvh92ehPfK7GRpo5fgbZaOKnN9J/pISLwJIUGDY3uNhBayY6d6gSv9MbV+jBazNBZl8u53LSc9pSxC5yP3eBAr+RxX+WSm4xp/1TrD78n4tRgOlzIt41LPCFVje8Te22/iaAAXI+78Mglm282tkA/JAIqdPz9WB+9ZqJZ5QT0JUZsLp32nnI69Zg4cejciVHjKaD4U4NP1Ob7lRnoLYIbLSQIVL/OsUnHZkE1FymRq8c7j8vv8qg29bCIfvIl+6cFPMkY7mf1M7Tjbh7nUaBzhG7CdCbp45VQwTha9n0XUI5KkkY119NsPDQ/DocJVCH9toY1/C/eaaZIvgeRmFgvyuK45v+iFeHQ8eoEYmCODkmdOnc29peuPpTdYDDdn/thIoD8BCS1JbgL67Xqc8Vf//jFyZGM=
+  # DOCKER_PASSWORD
+  - secure: ewaRjgD8RxFbB6PLTN8yDit86dip3L3PEw8aP5eKA5eba0+hy5YyGAI+Yntuq3+yHh5tvC/G6/cS21orWRVf2/y4BzYO6MHCNcaWyE9ZhGU4FUOmOaAxLXfQoPCLCsDkEPnHWaeznp4iZfbJlJjYSCe2BtfMjH9Y2ZWcFfmWhGpQScgJOIGN5vE1w1voBBhsAInnf3HgA0cefQfmAxZVO+DmTejHoc9NHl+mLEmV9UnTmeoZFjXywZuU6fTrhrCQfMH6Cdf3iTWMv0uuPoQIP5Ym69eAWHfQ3Jwc2glmYgXKhqjaiC1t+MSrm7IDvBhO19v/Kezrn4TJxqd29hxOy7huvIYiJQDSVGgJzIrn/TPw5Oq8W4WpINex+/jQCc2/kj/UUfdJHPoddj0Ldk7kVKf/5GmToHLMg+urcmQdllq8B+AxRJWYV8855aDndYvbtWuPL89ktX7bQ+wehvjUsD93XgJwVn6LJPkWb2OLbc4GuAtXMkrBsrTJ31lNgmDUq+zf5EOVznffx8CmKXb0lDpWkBsDa5pKHkPMNEH05uLNhNDI3lIBc49wLd5vmeKveFaNfOJHGhvlBMpLkNcYLO1U1RqkiesalNB5XTTlenVkSd3/ZszsPGl/X6Udub3/vLZo06T5q5mp97yFJIlX7VWo5/ZtGiCPs9PsKX03VPY=
+  jobs:
+    - PIKA_VERSION: 0.13.1
+    - PIKA_VERSION: 1.1.0
 
 stages:
   - lint
   - test
   - deploy
+  - docker deploy
 
 # This is for the "test" stage
 install:
@@ -27,9 +35,12 @@ install:
 
 script: make coverage
 after_success: codecov
+after_failure: make test
 
 jobs:
   exclude:
+    - python: 3.9
+      env: PIKA_VERSION=0.13.1
     - python: 3.7
       env: PIKA_VERSION=0.13.1
     - python: 3.6
@@ -57,3 +68,10 @@ jobs:
         username: beerbuildbot
         password:
           secure: jW6tOmxBs28o7fdWhQuHbAZbLuLVFu+WUtfaKkEhzONWpjJqYU/HWsugznilCWC1JB8OYHn0y/KdWzF/5JL0aICW2S9qf7Z/tgd3bcbJgEaAZrI92tKYEWv8qc91LkFfaC3jg/qkvAz1ePZ445p7kOh3WnOmgyYy5qNaw46M+EFSXnQJ7S5UQ+kc0Yu1FX6KkccOItIZns4klFO+6MA1o+Alt5fjN67ifrPtJih6m1k15vh7COsUyL+eYxRSYNfDDcCkiYv9qcXRR2JA9IdT/uJ8hUxKm2T5jeAH8LNDo1/XSQ+RZiR8ls93MQx/y0CcFht0K0Qa1h5MA7ZP5dh3XCpPbXDQmt0YpN6csjGLfdSwKItVaWNxLBbuxHf1/jZe+1kdzn8ovYXh+7GmxwWm6DnNf7J4pnwKRQnB5K650lJucx03rbuX+Q+rtWGDyLjYPZqTj1Dg7dDPplISAGmLTg1bMm9eGWx4zFtZsj6cLMfM/Sp5ZXFlPLpfj0eHQMPJ0fktg+WjvKH8K5ZOU81FtfsTA4qJ8Z6+TFNBXxxcR0z+pI0DOpI7PxhleGJRDuKB4uEO7Sg4WlLH/pXOolYwNTLjU56GBtBTIc3p+uLxzzAqPwsFK0/jjAAbiWg7lN8b0WGmDT93A1Dcv9QG9e6l039ZwHfUUzYS7DIJFCguy/k=
+
+    - stage: docker deploy
+      if: tag IS present
+      install: skip
+      before_script: make docker-login
+      script: make publish-docker VERSION=$TRAVIS_TAG
+      after_success: skip

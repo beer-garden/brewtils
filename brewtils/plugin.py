@@ -1,835 +1,671 @@
 # -*- coding: utf-8 -*-
-
 import json
 import logging
 import logging.config
 import os
-import sys
 import threading
-import warnings
-from concurrent.futures import ThreadPoolExecutor
 
-import six
+import appdirs
+from box import Box
+from brewtils.config import load_config
+from brewtils.errors import (
+    ConflictError,
+    DiscardMessageException,
+    PluginValidationError,
+    RequestProcessingError,
+    RestConnectionError,
+    ValidationError,
+    _deprecate,
+)
+from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
+from brewtils.models import Instance, System
+from brewtils.request_handling import (
+    AdminProcessor,
+    HTTPRequestUpdater,
+    RequestConsumer,
+    RequestProcessor,
+)
+from brewtils.resolvers import build_resolver_map
+from brewtils.rest.easy_client import EasyClient
+from brewtils.specification import _CONNECTION_SPEC
 from requests import ConnectionError as RequestsConnectionError
 
-import brewtils
-from brewtils.errors import (
-    ValidationError,
-    RequestProcessingError,
-    DiscardMessageException,
-    RepublishRequestException,
-    RestConnectionError,
-    PluginValidationError,
-    RestClientError,
-    TooLargeError,
-    BGGivesUpError,
-    parse_exception_as_json,
-)
-from brewtils.log import DEFAULT_LOGGING_CONFIG
-from brewtils.models import Instance, Request, System
-from brewtils.request_consumer import RequestConsumer
-from brewtils.rest.easy_client import EasyClient
-from brewtils.schema_parser import SchemaParser
-
+# This is what enables request nesting to work easily
 request_context = threading.local()
+
+# Global config, used to simplify BG client creation and sanity checks.
+CONFIG = Box(default_box=True)
 
 
 class Plugin(object):
-    """A beer-garden Plugin.
+    """A Beer-garden Plugin
 
-    This class represents a beer-garden Plugin - a continuously-running process
+    This class represents a Beer-garden Plugin - a continuously-running process
     that can receive and process Requests.
 
     To work, a Plugin needs a Client instance - an instance of a class defining
     which Requests this plugin can accept and process. The easiest way to define
-     a ``Client`` is by annotating a class with the ``@system`` decorator.
+    a ``Client`` is by annotating a class with the ``@system`` decorator.
 
-    When creating a Plugin you can pass certain keyword arguments to let the
-    Plugin know how to communicate with the beer-garden instance. These are:
+    A Plugin needs certain pieces of information in order to function correctly. These
+    can be grouped into two high-level categories: identifying information and
+    connection information.
+
+    Identifying information is how Beer-garden differentiates this Plugin from all
+    other Plugins. If you already have fully-defined System model you can pass that
+    directly to the Plugin (``system=my_system``). However, normally it's simpler to
+    pass the pieces directly:
+
+        - ``name`` (required)
+        - ``version`` (required)
+        - ``instance_name`` (required, but defaults to "default")
+        - ``namespace``
+        - ``description``
+        - ``icon_name``
+        - ``metadata``
+        - ``display_name``
+
+    Connection information tells the Plugin how to communicate with Beer-garden. The
+    most important of these is the ``bg_host`` (to tell the plugin where to find the
+    Beer-garden you want to connect to):
 
         - ``bg_host``
         - ``bg_port``
+        - ``bg_url_prefix``
         - ``ssl_enabled``
         - ``ca_cert``
+        - ``ca_verify``
         - ``client_cert``
-        - ``bg_url_prefix``
 
-    A Plugin also needs some identifying data. You can either pass parameters to
-    the Plugin or pass a fully defined System object (but not both). Note that
-    some fields are optional::
+    An example plugin might look like this:
+
+    .. code-block:: python
 
         Plugin(
             name="Test",
             version="1.0.0",
             instance_name="default",
+            namespace="test plugins",
             description="A Test",
+            bg_host="localhost",
         )
 
-    or::
+    Plugins use `Yapconf <https://github.com/loganasherjones/yapconf>`_ for
+    configuration loading, which means that values can be discovered from sources other
+    than direct argument passing. Config can be passed as command line arguments::
 
-        the_system = System(
-            name="Test",
-            version="1.0.0",
-            instance_name="default,
-            description="A Test",
-        )
-        Plugin(system=the_system)
+        python my_plugin.py --bg-host localhost
 
-    If passing parameters directly note that these fields are required:
+    Values can also be specified as environment variables with a "\\BG_" prefix::
 
-    name
-        Environment variable ``BG_NAME`` will be used if not specified
-
-    version
-        Environment variable ``BG_VERSION`` will be used if not specified
-
-    instance_name
-        Environment variable ``BG_INSTANCE_NAME`` will be used if not specified.
-        'default' will be used if not specified and loading from environment
-        variable was unsuccessful
-
-    And these fields are optional:
-
-    - description  (Will use docstring summary line from Client if unspecified)
-    - icon_name
-    - metadata
-    - display_name
+        BG_HOST=localhost python my_plugin.py
 
     Plugins service requests using a
     :py:class:`concurrent.futures.ThreadPoolExecutor`. The maximum number of
-    threads available is controlled by the max_concurrent argument (the
-    'multithreaded' argument has been deprecated).
+    threads available is controlled by the ``max_concurrent`` argument.
 
     .. warning::
-        The default value for ``max_concurrent`` is 1. This means that a Plugin
-        that invokes a Command on itself in the course of processing a Request
-        will deadlock! If you intend to do this, please set ``max_concurrent``
-        to a value that makes sense and be aware that Requests are processed in
-        separate thread contexts!
+        Normally the processing of each Request occurs in a distinct thread context. If
+        you need to access shared state please be careful to use appropriate
+        concurrency mechanisms.
 
-    :param client: Instance of a class annotated with @system.
-    :param str bg_host: Hostname of a beer-garden.
-    :param int bg_port: Port beer-garden is listening on.
-    :param bool ssl_enabled: Whether to use SSL for beer-garden communication.
-    :param ca_cert: Certificate that issued the server certificate used by the
-        beer-garden server.
-    :param client_cert: Certificate used by the server making the connection to
-        beer-garden.
-    :param system: The system definition.
-    :param name: The system name.
-    :param description: The system description.
-    :param version: The system version.
-    :param icon_name: The system icon name.
-    :param str instance_name: The name of the instance.
-    :param logger: A logger that will be used by the Plugin.
-    :type logger: :py:class:`logging.Logger`.
-    :param parser: The parser to use when communicating with beer-garden.
-    :type parser: :py:class:`brewtils.schema_parser.SchemaParser`.
-    :param bool multithreaded: DEPRECATED Process requests in a separate thread.
-    :param int worker_shutdown_timeout: Time to wait during shutdown to finish
-        processing.
-    :param dict metadata: Metadata specific to this plugin.
-    :param int max_concurrent: Maximum number of requests to process
-        concurrently.
-    :param str bg_url_prefix: URL Prefix beer-garden is on.
-    :param str display_name: The display name to use for the system.
-    :param int max_attempts: Number of times to attempt updating the request
-        before giving up (default -1 aka never).
-    :param int max_timeout: Maximum amount of time to wait before retrying to
-        update a request.
-    :param int starting_timeout: Initial time to wait before the first retry.
-    :param int mq_max_attempts: Number of times to attempt reconnection to message queue
-        before giving up (default -1 aka never).
-    :param int mq_max_timeout: Maximum amount of time to wait before retrying to
-        connect to message queue.
-    :param int mq_starting_timeout: Initial time to wait before the first message queue
-        connection retry.
-    :param int max_instances: Max number of instances allowed for the system.
-    :param bool ca_verify: Verify server certificate when making a request.
-    :param str username: The username for Beergarden authentication
-    :param str password: The password for Beergarden authentication
-    :param access_token: Access token for Beergarden authentication
-    :param refresh_token: Refresh token for Beergarden authentication
+    .. warning::
+        The default value for ``max_concurrent`` is 5, but setting it to 1 is allowed.
+        This means that a Plugin will essentially be single-threaded, but realize this
+        means that if the Plugin invokes a Command on itself in the course of processing
+        a Request then the Plugin **will** deadlock!
+
+    Args:
+        client: Instance of a class annotated with ``@system``.
+
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+            authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+            Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout (int): Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
+
+        system (:py:class:`brewtils.models.System`): A Beer-garden System definition.
+            Incompatible with name, version, description, display_name, icon_name,
+            max_instances, and metadata parameters.
+        name (str): System name
+        version (str): System version
+        description (str): System description
+        display_name (str): System display name
+        icon_name (str): System icon name
+        max_instances (int): System maximum instances
+        metadata (dict): System metadata
+        instance_name (str): Instance name
+        namespace (str): Namespace name
+
+        logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
+            Passing a logger will prevent the Plugin from preforming any additional
+            logging configuration.
+
+        worker_shutdown_timeout (int): Time to wait during shutdown to finish processing
+        max_concurrent (int): Maximum number of requests to process concurrently
+        max_attempts (int): Number of times to attempt updating of a Request
+            before giving up. Negative numbers are interpreted as no maximum.
+        max_timeout (int): Maximum amount of time to wait between Request update
+            attempts. Negative numbers are interpreted as no maximum.
+        starting_timeout (int): Initial time to wait between Request update attempts.
+            Will double on subsequent attempts until reaching max_timeout.
+
+        mq_max_attempts (int): Number of times to attempt reconnection to message queue
+            before giving up. Negative numbers are interpreted as no maximum.
+        mq_max_timeout (int): Maximum amount of time to wait between message queue
+            reconnect attempts. Negative numbers are interpreted as no maximum.
+        mq_starting_timeout (int): Initial time to wait between message queue reconnect
+            attempts. Will double on subsequent attempts until reaching mq_max_timeout.
+        working_directory (str): Path to a preferred working directory. Only used
+            when working with bytes parameters.
     """
 
-    def __init__(
-        self,
-        client,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=None,
-        ca_cert=None,
-        client_cert=None,
-        system=None,
-        name=None,
-        description=None,
-        version=None,
-        icon_name=None,
-        instance_name=None,
-        logger=None,
-        parser=None,
-        multithreaded=None,
-        metadata=None,
-        max_concurrent=None,
-        bg_url_prefix=None,
-        **kwargs
-    ):
-        # If a logger is specified or the logging module already has additional
-        # handlers then we assume that logging has already been configured
-        if logger or len(logging.getLogger(__name__).root.handlers) > 0:
-            self.logger = logger or logging.getLogger(__name__)
-            self._custom_logger = True
-        else:
-            logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
-            self.logger = logging.getLogger(__name__)
-            self._custom_logger = False
+    def __init__(self, client=None, system=None, logger=None, **kwargs):
+        self._client = None
+        self._instance = None
+        self._admin_processor = None
+        self._request_processor = None
+        self._shutdown_event = threading.Event()
 
-        connection_parameters = brewtils.get_connection_info(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=bg_url_prefix or kwargs.get("url_prefix", None),
-            ca_verify=kwargs.get("ca_verify", None),
-            username=kwargs.get("username", None),
-            password=kwargs.get("password", None),
-            client_timeout=kwargs.get("client_timeout", None),
-        )
-        self.bg_host = connection_parameters["bg_host"]
-        self.bg_port = connection_parameters["bg_port"]
-        self.ssl_enabled = connection_parameters["ssl_enabled"]
-        self.ca_cert = connection_parameters["ca_cert"]
-        self.client_cert = connection_parameters["client_cert"]
-        self.bg_url_prefix = connection_parameters["url_prefix"]
-        self.ca_verify = connection_parameters["ca_verify"]
+        # Need to set up logging before loading config
+        self._custom_logger = False
+        self._logger = self._setup_logging(logger=logger, **kwargs)
 
-        self.max_attempts = kwargs.get("max_attempts", -1)
-        self.max_timeout = kwargs.get("max_timeout", 30)
-        self.starting_timeout = kwargs.get("starting_timeout", 5)
+        # Now that logging is configured we can load the real config
+        self._config = load_config(**kwargs)
 
-        self._mq_max_attempts = kwargs.get("mq_max_attempts", -1)
-        self._mq_max_timeout = kwargs.get("mq_max_timeout", 30)
-        self._mq_starting_timeout = kwargs.get("mq_starting_timeout", 5)
-        self._mq_retry_attempt = 0
-        self._mq_timeout = self._mq_starting_timeout
+        # If global config has already been set that's a warning
+        global CONFIG
+        if len(CONFIG):
+            self._logger.warning(
+                "Global CONFIG object is not empty! If multiple plugins are running in "
+                "this process please ensure any [System|Easy|Rest]Clients are passed "
+                "connection information as kwargs as auto-discovery may be incorrect."
+            )
+        CONFIG = Box(self._config.to_dict(), default_box=True)
 
-        self.max_concurrent = self._setup_max_concurrent(multithreaded, max_concurrent)
-        self.instance_name = instance_name or os.environ.get(
-            "BG_INSTANCE_NAME", "default"
-        )
-        self.metadata = metadata or {}
+        # Now that the config is loaded we can create the EasyClient
+        self._ez_client = EasyClient(logger=self._logger, **self._config)
 
-        self.instance = None
-        self.queue_connection_params = None
-        self.admin_consumer = None
-        self.request_consumer = None
-        self.connection_poll_thread = None
-        self.client = client
-        self.shutdown_event = threading.Event()
-        self.parser = parser or SchemaParser()
+        # Now set up the system
+        self._system = self._setup_system(system, kwargs)
 
-        self.system = self._setup_system(
-            client,
-            self.instance_name,
-            system,
-            name,
-            description,
-            version,
-            icon_name,
-            self.metadata,
-            kwargs.get("display_name", None),
-            kwargs.get("max_instances", None),
-        )
+        # Namespace setup depends on self._system and self._ez_client
+        self._setup_namespace()
 
-        self.unique_name = "%s[%s]-%s" % (
-            self.system.name,
-            self.instance_name,
-            self.system.version,
-        )
+        # Make sure this is set after _system
+        if client:
+            self.client = client
 
-        # Tightly manage when we're in an 'error' state, aka Brew-view is down
-        self.brew_view_error_condition = threading.Condition()
-        self.brew_view_down = False
-
-        self.pool = ThreadPoolExecutor(max_workers=self.max_concurrent)
-        self.admin_pool = ThreadPoolExecutor(max_workers=1)
-
-        self.bm_client = EasyClient(
-            logger=self.logger, parser=self.parser, **connection_parameters
-        )
+        # And with _system and _ez_client we can ask for the real logging config
+        self._initialize_logging()
 
     def run(self):
-        # Let Beergarden know about our system and instance
-        self._initialize()
+        if not self._client:
+            raise AttributeError(
+                "Unable to start a Plugin without a Client. Please set the 'client' "
+                "attribute to an instance of a class decorated with @brewtils.system"
+            )
 
-        self.logger.debug("Creating and starting admin queue consumer")
-        self.admin_consumer = self._create_admin_consumer()
-        self.admin_consumer.start()
-
-        self.logger.debug("Creating and starting request queue consumer")
-        self.request_consumer = self._create_standard_consumer()
-        self.request_consumer.start()
-
-        self.logger.debug("Creating and starting connection poll thread")
-        self.connection_poll_thread = self._create_connection_poll_thread()
-        self.connection_poll_thread.start()
-
-        self.logger.info("Plugin %s has started", self.unique_name)
+        self._startup()
+        self._logger.info("Plugin %s has started", self.unique_name)
 
         try:
-            while not self.shutdown_event.wait(0.1):
-                self._check_connection_poll_thread()
-                self._check_consumers()
+            # Need the timeout param so this works correctly in Python 2
+            while not self._shutdown_event.wait(timeout=0.1):
+                pass
         except KeyboardInterrupt:
-            self.logger.debug("Received KeyboardInterrupt - shutting down")
+            self._logger.debug("Received KeyboardInterrupt - shutting down")
         except Exception as ex:
-            self.logger.error("Event loop terminated unexpectedly - shutting down")
-            self.logger.exception(ex)
+            self._logger.exception("Exception during wait, shutting down: %s", ex)
 
-        self.logger.debug("About to shut down plugin %s", self.unique_name)
         self._shutdown()
+        self._logger.info("Plugin %s has terminated", self.unique_name)
 
-        self.logger.info("Plugin %s has terminated", self.unique_name)
+    @property
+    def client(self):
+        return self._client
 
-    def process_message(self, target, request, headers):
-        """Process a message. Intended to be run on an Executor.
+    @client.setter
+    def client(self, new_client):
+        if self._client:
+            raise AttributeError("Sorry, you can't change a plugin's client once set")
 
-        :param target: The object to invoke received commands on.
-            (self or self.client)
-        :param request: The parsed Request object
-        :param headers: Dictionary of headers from the
-            `brewtils.request_consumer.RequestConsumer`
-        :return: None
-        """
-        request.status = "IN_PROGRESS"
-        self._update_request(request, headers)
+        if new_client is None:
+            return
 
-        try:
-            # Set request context so this request will be the parent of any
-            # generated requests and update status We also need the host/port of
-            #  the current plugin. We currently don't support parent/child
-            # requests across different servers.
-            request_context.current_request = request
-            request_context.bg_host = self.bg_host
-            request_context.bg_port = self.bg_port
+        # Several _system properties can come from the client, so update if needed
+        if not self._system.name:
+            self._system.name = getattr(new_client, "_bg_name")
+        if not self._system.version:
+            self._system.version = getattr(new_client, "_bg_version")
+        if not self._system.description and new_client.__doc__:
+            self._system.description = new_client.__doc__.split("\n")[0]
 
-            output = self._invoke_command(target, request)
-        except Exception as ex:
-            self.logger.log(
-                getattr(ex, "_bg_error_log_level", logging.ERROR),
-                "Plugin %s raised an exception while processing request %s: %s",
-                self.unique_name,
-                str(request),
-                ex,
-                exc_info=not getattr(ex, "_bg_suppress_stacktrace", False),
-            )
-            request.status = "ERROR"
-            request.output = self._format_error_output(request, ex)
-            request.error_class = type(ex).__name__
-        else:
-            request.status = "SUCCESS"
-            request.output = self._format_output(output)
+        # And commands always do
+        self._system.commands = getattr(new_client, "_bg_commands", [])
 
-        self._update_request(request, headers)
+        self._client = new_client
 
-    def process_request_message(self, message, headers):
-        """Processes a message from a RequestConsumer
+    @property
+    def system(self):
+        return self._system
 
-        :param message: A valid string representation of a
-            `brewtils.models.Request`
-        :param headers: A dictionary of headers from the
-            `brewtils.request_consumer.RequestConsumer`
-        :return: A `concurrent.futures.Future`
-        """
+    @property
+    def instance(self):
+        return self._instance
 
-        request = self._pre_process(message)
-
-        # This message has already been processed, all it needs to do is update
-        if request.status in Request.COMPLETED_STATUSES:
-            return self.pool.submit(self._update_request, request, headers)
-        else:
-            return self.pool.submit(self.process_message, self.client, request, headers)
-
-    def process_admin_message(self, message, headers):
-
-        # Admin requests won't have a system, so don't verify it
-        request = self._pre_process(message, verify_system=False)
-
-        return self.admin_pool.submit(self.process_message, self, request, headers)
-
-    def _pre_process(self, message, verify_system=True):
-
-        if self.shutdown_event.is_set():
-            raise RequestProcessingError(
-                "Unable to process message - currently shutting down"
-            )
-
-        try:
-            request = self.parser.parse_request(message, from_string=True)
-        except Exception as ex:
-            self.logger.exception(
-                "Unable to parse message body: {0}. Exception: {1}".format(message, ex)
-            )
-            raise DiscardMessageException("Error parsing message body")
-
-        if (
-            verify_system
-            and request.command_type
-            and request.command_type.upper() != "EPHEMERAL"
-            and request.system.upper() != self.system.name.upper()
-        ):
-            raise DiscardMessageException(
-                "Received message for a different system {0}".format(
-                    request.system.upper()
-                )
-            )
-
-        return request
-
-    def _initialize(self):
-        self.logger.debug("Initializing plugin %s", self.unique_name)
-
-        # TODO: We should use self.bm_client.upsert_system once it is supported
-        existing_system = self.bm_client.find_unique_system(
-            name=self.system.name, version=self.system.version
+    @property
+    def unique_name(self):
+        return "%s:%s[%s]-%s" % (
+            self._system.namespace,
+            self._system.name,
+            self._config.instance_name,
+            self._system.version,
         )
 
-        if existing_system:
-            if not existing_system.has_instance(self.instance_name):
-                if len(existing_system.instances) < existing_system.max_instances:
-                    existing_system.instances.append(Instance(name=self.instance_name))
-                    self.bm_client.create_system(existing_system)
-                else:
-                    raise PluginValidationError(
-                        'Unable to create plugin with instance name "%s": '
-                        'System "%s[%s]" has an instance limit of %d and '
-                        "existing instances %s"
-                        % (
-                            self.instance_name,
-                            existing_system.name,
-                            existing_system.version,
-                            existing_system.max_instances,
-                            ", ".join(existing_system.instance_names),
-                        )
-                    )
+    def _startup(self):
+        """Plugin startup procedure
 
-            # We always update in case the metadata has changed.
-            self.system = self.bm_client.update_system(
-                existing_system.id,
-                new_commands=self.system.commands,
-                metadata=self.system.metadata,
-                description=self.system.description,
-                display_name=self.system.display_name,
-                icon_name=self.system.icon_name,
-            )
-        else:
-            self.system = self.bm_client.create_system(self.system)
+        This method actually starts the plugin. When it completes the plugin should be
+        considered in a "running" state - listening to the appropriate message queues,
+        connected to the Beer-garden server, and ready to process Requests.
 
-        # Sanity check to make sure an instance with this name was registered
-        if self.system.has_instance(self.instance_name):
-            instance_id = self.system.get_instance(self.instance_name).id
-        else:
-            raise PluginValidationError(
-                'Unable to find registered instance with name "%s"' % self.instance_name
+        This method should be the first time that a connection to the Beer-garden
+        server is *required*.
+        """
+        self._logger.debug("About to start up plugin %s", self.unique_name)
+
+        if not self._ez_client.can_connect():
+            raise RestConnectionError("Cannot connect to the Beer-garden server")
+
+        # If namespace couldn't be determined at init try one more time
+        if not self._config.namespace:
+            self._setup_namespace()
+
+        self._system = self._initialize_system()
+        self._instance = self._initialize_instance()
+        self._admin_processor, self._request_processor = self._initialize_processors()
+
+        if self._config.working_directory is None:
+            self._config.working_directory = appdirs.user_data_dir(
+                appname=os.path.join(
+                    self._system.namespace, self._system.name, self._instance.name
+                ),
+                version=self._system.version,
             )
 
-        self.instance = self.bm_client.initialize_instance(instance_id)
-
-        self.queue_connection_params = self.instance.queue_info.get("connection", None)
-        if self.queue_connection_params and self.queue_connection_params.get(
-            "ssl", None
-        ):
-            self.queue_connection_params["ssl"].update(
-                {
-                    "ca_cert": self.ca_cert,
-                    "ca_verify": self.ca_verify,
-                    "client_cert": self.client_cert,
-                }
-            )
-
-        self.logger.debug("Plugin %s is initialized", self.unique_name)
+        self._logger.debug("Starting up processors")
+        self._admin_processor.startup()
+        self._request_processor.startup()
 
     def _shutdown(self):
-        self.shutdown_event.set()
+        """Plugin shutdown procedure
 
-        self.logger.debug("About to stop message consuming")
-        self.request_consumer.stop_consuming()
-        self.admin_consumer.stop_consuming()
+        This method gracefully stops the plugin. When it completes the plugin should be
+        considered in a "stopped" state - the message processors shut down and all
+        connections closed.
+        """
+        self._logger.debug("About to shut down plugin %s", self.unique_name)
+        self._shutdown_event.set()
 
-        self.logger.debug("About to wake sleeping request processing threads")
-        with self.brew_view_error_condition:
-            self.brew_view_error_condition.notify_all()
-
-        self.logger.debug("Shutting down request processing pool")
-        self.pool.shutdown(wait=True)
-        self.logger.debug("Shutting down admin processing pool")
-        self.admin_pool.shutdown(wait=True)
-
-        self.logger.debug("Attempting to stop request queue consumer")
-        self.request_consumer.stop()
-        self.request_consumer.join()
-
-        self.logger.debug("Attempting to stop admin queue consumer")
-        self.admin_consumer.stop()
-        self.admin_consumer.join()
+        self._logger.debug("Shutting down processors")
+        self._request_processor.shutdown()
+        self._admin_processor.shutdown()
 
         try:
-            self.bm_client.update_instance_status(self.instance.id, "STOPPED")
+            self._ez_client.update_instance(self._instance.id, new_status="STOPPED")
         except Exception:
-            self.logger.warning(
+            self._logger.warning(
                 "Unable to notify Beer-garden that this plugin is STOPPED, so this "
                 "plugin's status may be incorrect in Beer-garden"
             )
 
-        self.logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
+        self._logger.debug("Successfully shutdown plugin {0}".format(self.unique_name))
 
-    def _create_standard_consumer(self):
-        return RequestConsumer(
-            thread_name="Request Consumer",
-            connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get("url", None),
-            queue_name=self.instance.queue_info["request"]["name"],
-            on_message_callback=self.process_request_message,
-            panic_event=self.shutdown_event,
-            max_concurrent=self.max_concurrent,
-        )
+    def _initialize_logging(self):
+        """Configure logging with Beer-garden's configuration for this plugin.
 
-    def _create_admin_consumer(self):
-        return RequestConsumer(
-            thread_name="Admin Consumer",
-            connection_info=self.queue_connection_params,
-            amqp_url=self.instance.queue_info.get("url", None),
-            queue_name=self.instance.queue_info["admin"]["name"],
-            on_message_callback=self.process_admin_message,
-            panic_event=self.shutdown_event,
-            max_concurrent=1,
-            logger=logging.getLogger("brewtils.admin_consumer"),
-        )
+        This method will ask Beer-garden for a logging configuration specific to this
+        plugin and will apply that configuration to the logging module.
 
-    def _create_connection_poll_thread(self):
-        connection_poll_thread = threading.Thread(target=self._connection_poll)
-        connection_poll_thread.daemon = True
-        return connection_poll_thread
+        Note that this method will do nothing if the logging module's configuration was
+        already set or a logger kwarg was given during Plugin construction.
 
-    def _invoke_command(self, target, request):
-        """Invoke the function named in request.command.
+        Returns:
+            None
 
-        :param target: The object to search for the function implementation.
-            Will be self or self.client.
-        :param request: The request to process
-        :raise RequestProcessingError: The specified target does not define a
-            callable implementation of request.command
-        :return: The output of the function invocation
         """
-        if not callable(getattr(target, request.command, None)):
-            raise RequestProcessingError(
-                "Could not find an implementation of command '%s'" % request.command
-            )
-
-        # It's kinda weird that we need to add the object arg only if we're
-        # trying to call a function on self. In both cases the function object
-        # is bound... think it has something to do with our decorators
-        args = [self] if target is self else []
-        kwargs = request.parameters or {}
-        return getattr(target, request.command)(*args, **kwargs)
-
-    def _update_request(self, request, headers):
-        """Sends a Request update to beer-garden
-
-        Ephemeral requests do not get updated, so we simply skip them.
-
-        If brew-view appears to be down, it will wait for brew-view to come back
-         up before updating.
-
-        If this is the final attempt to update, we will attempt a known, good
-        request to give some information to the user. If this attempt fails
-        then we simply discard the message
-
-        :param request: The request to update
-        :param headers: A dictionary of headers from
-            `brewtils.request_consumer.RequestConsumer`
-        :raise RepublishMessageException: The Request update failed (any reason)
-        :return: None
-        """
-
-        if request.is_ephemeral:
-            sys.stdout.flush()
+        if self._custom_logger:
+            self._logger.debug("Skipping logging init: custom logger detected")
             return
 
-        with self.brew_view_error_condition:
+        try:
+            log_config = self._ez_client.get_logging_config(
+                local=bool(self._config.runner_id)
+            )
+        except Exception as ex:
+            self._logger.warning(
+                "Unable to retrieve logging configuration from Beergarden, the default "
+                "configuration will be used instead. Caused by: {0}".format(ex)
+            )
+            return
 
-            self._wait_for_brew_view_if_down(request)
+        try:
+            configure_logging(
+                log_config,
+                namespace=self._system.namespace,
+                system_name=self._system.name,
+                system_version=self._system.version,
+                instance_name=self._config.instance_name,
+            )
+        except Exception as ex:
+            # Reset to default config as logging can be seriously wrong now
+            logging.config.dictConfig(default_config(level=self._config.log_level))
 
+            self._logger.exception(
+                "Error encountered during logging configuration. This most likely "
+                "indicates an issue with the Beergarden server plugin logging "
+                "configuration. The default configuration will be used instead. Caused "
+                "by: {0}".format(ex)
+            )
+
+    def _initialize_system(self):
+        """Let Beergarden know about System-level info
+
+        This will attempt to find a system with a name and version matching this plugin.
+        If one is found this will attempt to update it (with commands, metadata, etc.
+        from this plugin).
+
+        If a System is not found this will attempt to create one.
+
+        Returns:
+            Definition of a Beergarden System this plugin belongs to.
+
+        Raises:
+            PluginValidationError: Unable to find or create a System for this Plugin
+
+        """
+        # Make sure that the system is actually valid before trying anything
+        self._validate_system()
+
+        existing_system = self._ez_client.find_unique_system(
+            name=self._system.name,
+            version=self._system.version,
+            namespace=self._system.namespace,
+        )
+
+        if not existing_system:
             try:
-                if not self._should_be_final_attempt(headers):
-                    self._wait_if_not_first_attempt(headers)
-                    self.bm_client.update_request(
-                        request.id,
-                        status=request.status,
-                        output=request.output,
-                        error_class=request.error_class,
-                    )
-                else:
-                    self.bm_client.update_request(
-                        request.id,
-                        status="ERROR",
-                        output="We tried to update the request, but it failed "
-                        "too many times. Please check the plugin logs "
-                        "to figure out why the request update failed. "
-                        "It is possible for this request to have "
-                        "succeeded, but we cannot update beer-garden "
-                        "with that information.",
-                        error_class=BGGivesUpError.__name__,
-                    )
-            except Exception as ex:
-                self._handle_request_update_failure(request, headers, ex)
-            finally:
-                sys.stdout.flush()
-
-    def _wait_if_not_first_attempt(self, headers):
-        if headers.get("retry_attempt", 0) > 0:
-            time_to_sleep = min(
-                headers.get("time_to_wait", self.starting_timeout), self.max_timeout
-            )
-            self.shutdown_event.wait(time_to_sleep)
-
-    def _handle_request_update_failure(self, request, headers, exc):
-
-        # If brew-view is down, we always want to try again
-        # Yes, even if it is the 'final_attempt'
-        if isinstance(exc, (RequestsConnectionError, RestConnectionError)):
-            self.brew_view_down = True
-            self.logger.error(
-                "Error updating request status: {0} exception: {1}".format(
-                    request.id, exc
+                # If this succeeds can just finish here
+                return self._ez_client.create_system(self._system)
+            except ConflictError:
+                # If multiple instances are starting up at once and this is a new system
+                # the create can return a conflict. In that case just try the get again
+                existing_system = self._ez_client.find_unique_system(
+                    name=self._system.name,
+                    version=self._system.version,
+                    namespace=self._system.namespace,
                 )
-            )
-            raise RepublishRequestException(request, headers)
 
-        elif isinstance(exc, TooLargeError):
-            self.logger.error(
-                "Error updating request {0} - the request exceeds the 16MB size "
-                "limitation. The status of this request will be marked as ERROR, but "
-                "it's possible the request actually completed successfully. If this "
-                "happens often please contact the plugin developer.".format(request.id)
+        # If we STILL can't find a system something is really wrong
+        if not existing_system:
+            raise PluginValidationError(
+                "Unable to find or create system {0}".format(self._system)
             )
 
-            raise RepublishRequestException(
-                Request(
-                    id=request.id,
-                    status="ERROR",
-                    output="Request size greater than 16MB",
-                    error_class=BGGivesUpError.__name__,
-                ),
-                headers,
+        # We always update with these fields
+        update_kwargs = {
+            "new_commands": self._system.commands,
+            "metadata": self._system.metadata,
+            "description": self._system.description,
+            "display_name": self._system.display_name,
+            "icon_name": self._system.icon_name,
+        }
+
+        # And if this particular instance doesn't exist we want to add it
+        if not existing_system.has_instance(self._config.instance_name):
+            update_kwargs["add_instance"] = Instance(name=self._config.instance_name)
+
+        return self._ez_client.update_system(existing_system.id, **update_kwargs)
+
+    def _initialize_instance(self):
+        """Let Beer-garden know this instance is ready to process Requests"""
+        # Sanity check to make sure an instance with this name was registered
+        if not self._system.has_instance(self._config.instance_name):
+            raise PluginValidationError(
+                "Unable to find registered instance with name '%s'"
+                % self._config.instance_name
             )
 
-        elif isinstance(exc, RestClientError):
-            message = (
-                "Error updating request {0} and it is a client error. Probable "
-                "cause is that this request is already updated. In which case, "
-                "ignore this message. If request {0} did not complete, please "
-                "file an issue. Discarding request to avoid an infinte loop. "
-                "exception: {1}".format(request.id, exc)
-            )
-            self.logger.error(message)
-            raise DiscardMessageException(message)
-
-        # Time to discard the message because we've given up
-        elif self._should_be_final_attempt(headers):
-            message = (
-                "Could not update request {0} even with a known good status, "
-                "output and error_class. We have reached the final attempt and "
-                "will now discard the message. Attempted to process this "
-                "message {1} times".format(request.id, headers["retry_attempt"])
-            )
-            self.logger.error(message)
-            raise DiscardMessageException(message)
-
-        else:
-            self._update_retry_attempt_information(headers)
-            self.logger.exception(
-                "Error updating request (Attempt #{0}: request: {1} exception: "
-                "{2}".format(headers.get("retry_attempt", 0), request.id, exc)
-            )
-            raise RepublishRequestException(request, headers)
-
-    def _update_retry_attempt_information(self, headers):
-        headers["retry_attempt"] = headers.get("retry_attempt", 0) + 1
-        headers["time_to_wait"] = min(
-            headers.get("time_to_wait", self.starting_timeout // 2) * 2,
-            self.max_timeout,
+        return self._ez_client.initialize_instance(
+            self._system.get_instance_by_name(self._config.instance_name).id,
+            runner_id=self._config.runner_id,
         )
 
-    def _should_be_final_attempt(self, headers):
-        if self.max_attempts <= 0:
-            return False
-
-        return self.max_attempts <= headers.get("retry_attempt", 0)
-
-    def _wait_for_brew_view_if_down(self, request):
-        if self.brew_view_down and not self.shutdown_event.is_set():
-            self.logger.warning(
-                "Currently unable to communicate with Brew-view, about to wait "
-                "until connection is reestablished to update request %s",
-                request.id,
+    def _initialize_processors(self):
+        """Create RequestProcessors for the admin and request queues"""
+        # If the queue connection is TLS we need to update connection params with
+        # values specified at plugin creation
+        connection_info = self._instance.queue_info["connection"]
+        if "ssl" in connection_info:
+            connection_info["ssl"].update(
+                {
+                    "ca_cert": self._config.ca_cert,
+                    "ca_verify": self._config.ca_verify,
+                    "client_cert": self._config.client_cert,
+                }
             )
-            self.brew_view_error_condition.wait()
 
-    def _check_connection_poll_thread(self):
-        """Ensure the connection poll thread is alive"""
-        if not self.connection_poll_thread.isAlive():
-            self.logger.warning(
-                "Looks like connection poll thread has died - attempting to restart"
-            )
-            self.connection_poll_thread = self._create_connection_poll_thread()
-            self.connection_poll_thread.start()
-
-    def _check_consumers(self):
-        """Ensure the RequestConsumers are both alive"""
-        if self.admin_consumer.is_connected() and self.request_consumer.is_connected():
-            if self._mq_retry_attempt != 0:
-                self.logger.info("Admin and request consumer connections OK")
-
-            self._mq_retry_attempt = 0
-            self._mq_timeout = self._mq_starting_timeout
-        else:
-            if 0 < self._mq_max_attempts < self._mq_retry_attempt:
-                self.logger.warning("Max consumer connection failures, shutting down")
-                self.shutdown_event.set()
-                return
-
-            if not self.admin_consumer.is_connected():
-                self.logger.warning("Looks like admin consumer has died")
-            if not self.request_consumer.is_connected():
-                self.logger.warning("Looks like request consumer has died")
-
-            self.logger.warning("Waiting %i seconds before restart", self._mq_timeout)
-            self.shutdown_event.wait(self._mq_timeout)
-
-            if not self.admin_consumer.is_connected():
-                self.admin_consumer = self._create_admin_consumer()
-                self.admin_consumer.start()
-
-            if not self.request_consumer.is_connected():
-                self.request_consumer = self._create_standard_consumer()
-                self.request_consumer.start()
-
-            self._mq_timeout = min(self._mq_timeout * 2, self._mq_max_timeout)
-            self._mq_retry_attempt += 1
-
-    def _start(self, request):
-        """Handle start message by marking this instance as running.
-
-        :param request: The start message
-        :return: Success output message
-        """
-        self.instance = self.bm_client.update_instance_status(
-            self.instance.id, "RUNNING"
+        # Each RequestProcessor needs a RequestConsumer, so start with those
+        common_args = {
+            "connection_type": self._instance.queue_type,
+            "connection_info": connection_info,
+            "panic_event": self._shutdown_event,
+            "max_reconnect_attempts": self._config.mq.max_attempts,
+            "max_reconnect_timeout": self._config.mq.max_timeout,
+            "starting_reconnect_timeout": self._config.mq.starting_timeout,
+        }
+        admin_consumer = RequestConsumer.create(
+            thread_name="Admin Consumer",
+            queue_name=self._instance.queue_info["admin"]["name"],
+            max_concurrent=1,
+            **common_args
+        )
+        request_consumer = RequestConsumer.create(
+            thread_name="Request Consumer",
+            queue_name=self._instance.queue_info["request"]["name"],
+            max_concurrent=self._config.max_concurrent,
+            **common_args
         )
 
-        return "Successfully started plugin"
+        # Finally, create the actual RequestProcessors
+        admin_processor = AdminProcessor(
+            target=self,
+            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
+            consumer=admin_consumer,
+            plugin_name=self.unique_name,
+            max_workers=1,
+        )
+        request_processor = RequestProcessor(
+            target=self._client,
+            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
+            consumer=request_consumer,
+            validation_funcs=[self._correct_system, self._is_running],
+            plugin_name=self.unique_name,
+            max_workers=self._config.max_concurrent,
+            working_directory=self._config.working_directory,
+            resolvers=build_resolver_map(self._ez_client),
+        )
 
-    def _stop(self, request):
-        """Handle stop message by marking this instance as stopped.
+        return admin_processor, request_processor
 
-        :param request: The stop message
-        :return: Success output message
-        """
-        self.shutdown_event.set()
+    def _start(self):
+        """Handle start Request"""
+        self._instance = self._ez_client.update_instance(
+            self._instance.id, new_status="RUNNING"
+        )
 
-        return "Successfully stopped plugin"
+    def _stop(self):
+        """Handle stop Request"""
+        # Because the run() method is on a 0.1s sleep there's a race regarding if the
+        # admin consumer will start processing the next message on the queue before the
+        # main thread can stop it. So stop it here to prevent that.
+        self._request_processor.consumer.stop_consuming()
+        self._admin_processor.consumer.stop_consuming()
 
-    def _status(self, request):
-        """Handle status message by sending a heartbeat.
+        self._shutdown_event.set()
 
-        :param request: The status message
-        :return: None
-        """
-        with self.brew_view_error_condition:
-            if not self.brew_view_down:
-                try:
-                    self.bm_client.instance_heartbeat(self.instance.id)
-                except (RequestsConnectionError, RestConnectionError):
-                    self.brew_view_down = True
-                    raise
+    def _status(self):
+        """Handle status Request"""
+        try:
+            self._ez_client.instance_heartbeat(self._instance.id)
+        except (RequestsConnectionError, RestConnectionError):
+            pass
 
-    def _setup_max_concurrent(self, multithreaded, max_concurrent):
-        """Determine correct max_concurrent value.
-        Will be unnecessary when multithreaded flag is removed."""
-        if multithreaded is not None:
-            warnings.warn(
-                "Keyword argument 'multithreaded' is deprecated and will be "
-                "removed in version 3.0, please use 'max_concurrent' instead.",
-                DeprecationWarning,
-                stacklevel=2,
+    def _read_log(self, **kwargs):
+        """Handle read log Request"""
+
+        log_file = find_log_file()
+
+        if not log_file:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to determine log filename. "
+                "Please verify that the plugin is writing to a log file."
             )
 
-            # Both multithreaded and max_concurrent kwargs explicitly set
-            # check for mutually exclusive settings
-            if max_concurrent is not None:
-                if multithreaded is True and max_concurrent == 1:
-                    self.logger.warning(
-                        "Plugin created with multithreaded=True and "
-                        "max_concurrent=1, ignoring 'multithreaded' argument"
-                    )
-                elif multithreaded is False and max_concurrent > 1:
-                    self.logger.warning(
-                        "Plugin created with multithreaded=False and "
-                        "max_concurrent>1, ignoring 'multithreaded' argument"
-                    )
+        try:
+            return read_log_file(log_file=log_file, **kwargs)
+        except IOError as e:
+            raise RequestProcessingError(
+                "Error attempting to retrieve logs - unable to read log file at {0}. "
+                "Root cause I/O error {1}: {2}".format(log_file, e.errno, e.strerror)
+            )
 
-                return max_concurrent
-            else:
-                return 5 if multithreaded else 1
+    def _correct_system(self, request):
+        """Validate that a request is intended for this Plugin"""
+        request_system = getattr(request, "system") or ""
+        if request_system.upper() != self._system.name.upper():
+            raise DiscardMessageException(
+                "Received message for system {0}".format(request.system)
+            )
+
+    def _is_running(self, _):
+        """Validate that this plugin is still running"""
+        if self._shutdown_event.is_set():
+            raise RequestProcessingError(
+                "Unable to process message - currently shutting down"
+            )
+
+    def _setup_logging(self, logger=None, **kwargs):
+        """Set up logging configuration and get a logger for the Plugin
+
+        This method will configure Python-wide logging for the process if it has not
+        already been configured. Whether or not logging has been configured is
+        determined by the root handler count - if there aren't any then it's assumed
+        logging has not already been configured.
+
+        The configuration applied (again, if no configuration has already happened) is
+        a stream handler with elevated log levels for libraries that are verbose. The
+        overall level will be loaded as a configuration option, so it can be set as a
+        keyword argument, command line option, or environment variable.
+
+        A logger to be used by the Plugin will be returned. If the ``logger`` keyword
+        parameter is given then that logger will be used, otherwise a logger will be
+        generated from the standard ``logging`` module.
+
+        Finally, if a the ``logger`` keyword parameter is supplied it's assumed that
+        logging is already configured and no further configuration will be applied.
+
+        Args:
+            logger: A custom logger
+            **kwargs: Will be used to load the bootstrap config
+
+        Returns:
+            A logger for the Plugin
+        """
+        if logger or len(logging.root.handlers) != 0:
+            self._custom_logger = True
         else:
-            if max_concurrent is None:
-                warnings.warn(
-                    "Heads up - in 3.0 the default plugin behavior is changing "
-                    "from handling requests one at a time to handling multiple "
-                    "at once. If this plugin needs to maintain the old "
-                    "behavior just set max_concurrent=1 when creating the "
-                    "plugin.",
-                    PendingDeprecationWarning,
-                    stacklevel=2,
-                )
-                return 1
+            # log_level is the only bootstrap config item
+            boot_config = load_config(bootstrap=True, **kwargs)
+            logging.config.dictConfig(default_config(level=boot_config.log_level))
 
-            return max_concurrent
+            self._custom_logger = False
 
-    def _setup_system(
-        self,
-        client,
-        inst_name,
-        system,
-        name,
-        description,
-        version,
-        icon_name,
-        metadata,
-        display_name,
-        max_instances,
-    ):
+        return logger or logging.getLogger(__name__)
+
+    def _setup_namespace(self):
+        """Determine the namespace the Plugin is operating in
+
+        This function attempts to determine the correct namespace and ensures that
+        the value is set in the places it needs to be set.
+
+        First, look in the resolved system (self._system) to see if that has a
+        namespace. If it does, either:
+
+        - A complete system definition with a namespace was provided
+        - The namespace was resolved from the config
+
+        In the latter case nothing further needs to be done. In the former case we
+        need to set the global config namespace value to the system's namespace value
+        so that any SystemClients created after the plugin will have the correct value.
+        Because we have no way to know which case is correct we assume the former and
+        always set the config value.
+
+        If the system does not have a namespace then we attempt to use the EasyClient to
+        determine the "default" namespace. If successful we set both the global config
+        and the system namespaces to the default value.
+
+        If the attempt to determine the default namespace is not successful we log a
+        warning. We don't really want to *require* the connection to Beer-garden until
+        Plugin.run() is called. Raising an exception here would do that, so instead we
+        just log the warning. Another attempt will be made to determine the namespace
+        in Plugin.run() which will raise on failure (but again, SystemClients created
+        before the namespace is determined will have potentially incorrect namespaces).
+        """
+        try:
+            ns = self._system.namespace or self._ez_client.get_config()["garden_name"]
+
+            self._system.namespace = ns
+            self._config.namespace = ns
+            CONFIG.namespace = ns
+        except Exception as ex:
+            self._logger.warning(
+                "Namespace value was not resolved from config sources and an exception "
+                "was raised while attempting to determine default namespace value. "
+                "Created SystemClients may have unexpected namespace values. "
+                "Underlying exception was:\n%s" % ex
+            )
+
+    def _setup_system(self, system, plugin_kwargs):
+        helper_keywords = {
+            "name",
+            "version",
+            "description",
+            "icon_name",
+            "display_name",
+            "max_instances",
+            "metadata",
+            "namespace",
+        }
+
         if system:
-            if (
-                name
-                or description
-                or version
-                or icon_name
-                or display_name
-                or max_instances
-            ):
+            if helper_keywords.intersection(plugin_kwargs.keys()):
                 raise ValidationError(
-                    "Sorry, you can't specify a system as well as system "
-                    "creation helper keywords (name, description, version, "
-                    "max_instances, display_name, and icon_name)"
-                )
-
-            if client._bg_name or client._bg_version:
-                raise ValidationError(
-                    "Sorry, you can't specify a system as well as system "
-                    "info in the @system decorator (bg_name, bg_version)"
+                    "Sorry, you can't provide a complete system definition as well as "
+                    "system creation helper kwargs %s" % helper_keywords
                 )
 
             if not system.instances:
@@ -843,69 +679,146 @@ class Plugin(object):
                 system.max_instances = len(system.instances)
 
         else:
-            name = name or os.environ.get("BG_NAME", None) or client._bg_name
-            version = (
-                version or os.environ.get("BG_VERSION", None) or client._bg_version
-            )
-
-            if client.__doc__ and not description:
-                description = self.client.__doc__.split("\n")[0]
-
+            # Commands are not defined here - they're set in the client property setter
             system = System(
-                name=name,
-                description=description,
-                version=version,
-                icon_name=icon_name,
-                commands=client._commands,
-                max_instances=max_instances or 1,
-                instances=[Instance(name=inst_name)],
-                metadata=metadata,
-                display_name=display_name,
+                name=self._config.name,
+                version=self._config.version,
+                description=self._config.description,
+                namespace=self._config.namespace,
+                metadata=json.loads(self._config.metadata),
+                instances=[Instance(name=self._config.instance_name)],
+                max_instances=self._config.max_instances,
+                icon_name=self._config.icon_name,
+                display_name=self._config.display_name,
             )
 
         return system
 
-    def _connection_poll(self):
-        """Periodically attempt to re-connect to beer-garden"""
+    def _validate_system(self):
+        """Make sure the System definition makes sense"""
+        if not self._system.name:
+            raise ValidationError("Plugin system must have a name")
 
-        while not self.shutdown_event.wait(5):
-            with self.brew_view_error_condition:
-                if self.brew_view_down:
-                    try:
-                        self.bm_client.get_version()
-                    except Exception:
-                        self.logger.debug("Attempt to reconnect to Brew-view failed")
-                    else:
-                        self.logger.info(
-                            "Brew-view connection reestablished, about to "
-                            "notify any waiting requests"
-                        )
-                        self.brew_view_down = False
-                        self.brew_view_error_condition.notify_all()
+        if not self._system.version:
+            raise ValidationError("Plugin system must have a version")
 
-    @staticmethod
-    def _format_error_output(request, exc):
-        if request.is_json:
-            return parse_exception_as_json(exc)
-        else:
-            return str(exc)
+        client_name = getattr(self._client, "_bg_name", None)
+        if client_name and client_name != self._system.name:
+            raise ValidationError(
+                "System name '%s' doesn't match name from client decorator: "
+                "@system(bg_name=%s)" % (self._system.name, client_name)
+            )
 
-    @staticmethod
-    def _format_output(output):
-        """Formats output from Plugins to prevent validation errors"""
+        client_version = getattr(self._client, "_bg_version", None)
+        if client_version and client_version != self._system.version:
+            raise ValidationError(
+                "System version '%s' doesn't match version from client decorator: "
+                "@system(bg_version=%s)" % (self._system.version, client_version)
+            )
 
-        if isinstance(output, six.string_types):
-            return output
+    # These are provided for backward-compatibility
+    @property
+    def bg_host(self):
+        _deprecate("bg_host is now in _config (plugin._config.bg_host)")
+        return self._config.bg_host
 
-        try:
-            return json.dumps(output)
-        except (TypeError, ValueError):
-            return str(output)
+    @property
+    def bg_port(self):
+        _deprecate("bg_port is now in _config (plugin._config.bg_port)")
+        return self._config.bg_port
+
+    @property
+    def ssl_enabled(self):
+        _deprecate("ssl_enabled is now in _config (plugin._config.ssl_enabled)")
+        return self._config.ssl_enabled
+
+    @property
+    def ca_cert(self):
+        _deprecate("ca_cert is now in _config (plugin._config.ca_cert)")
+        return self._config.ca_cert
+
+    @property
+    def client_cert(self):
+        _deprecate("client_cert is now in _config (plugin._config.client_cert)")
+        return self._config.client_cert
+
+    @property
+    def bg_url_prefix(self):
+        _deprecate("bg_url_prefix is now in _config (plugin._config.bg_url_prefix)")
+        return self._config.bg_url_prefix
+
+    @property
+    def ca_verify(self):
+        _deprecate("ca_verify is now in _config (plugin._config.ca_verify)")
+        return self._config.ca_verify
+
+    @property
+    def max_attempts(self):
+        _deprecate("max_attempts is now in _config (plugin._config.max_attempts)")
+        return self._config.max_attempts
+
+    @property
+    def max_timeout(self):
+        _deprecate("max_timeout has moved into _config (plugin._config.max_timeout)")
+        return self._config.max_timeout
+
+    @property
+    def starting_timeout(self):
+        _deprecate(
+            "starting_timeout is now in _config (plugin._config.starting_timeout)"
+        )
+        return self._config.starting_timeout
+
+    @property
+    def max_concurrent(self):
+        _deprecate("max_concurrent is now in _config (plugin._config.max_concurrent)")
+        return self._config.max_concurrent
+
+    @property
+    def instance_name(self):
+        _deprecate("instance_name is now in _config (plugin._config.instance_name)")
+        return self._config.instance_name
+
+    @property
+    def connection_parameters(self):
+        _deprecate("connection_parameters attribute was removed, please use '_config'")
+        return {key: self._config[key] for key in _CONNECTION_SPEC}
+
+    @property
+    def metadata(self):
+        _deprecate("metadata is a part of the system attribute (plugin.system.metadata")
+        return self._system.metadata
+
+    @property
+    def bm_client(self):
+        _deprecate("bm_client attribute has been renamed to _ez_client")
+        return self._ez_client
+
+    @property
+    def shutdown_event(self):
+        _deprecate("shutdown_event attribute has been renamed to _shutdown_event")
+        return self._shutdown_event
+
+    @property
+    def logger(self):
+        _deprecate("logger attribute has been renamed to _logger")
+        return self._logger
 
 
-# Alias old name
-PluginBase = Plugin
+# Alias old names
+class PluginBase(Plugin):
+    def __init__(self, *args, **kwargs):
+        _deprecate(
+            "Looks like you're creating a 'PluginBase'. Heads up - this name will be "
+            "removed in version 4.0, please use 'Plugin' instead. Thanks!"
+        )
+        super(PluginBase, self).__init__(*args, **kwargs)
 
 
 class RemotePlugin(Plugin):
-    pass
+    def __init__(self, *args, **kwargs):
+        _deprecate(
+            "Looks like you're creating a 'RemotePlugin'. Heads up - this name will be "
+            "removed in version 4.0, please use 'Plugin' instead. Thanks!"
+        )
+        super(RemotePlugin, self).__init__(*args, **kwargs)

@@ -7,23 +7,26 @@ import pytest
 import pytz
 
 from brewtils.models import (
-    Parameter,
-    Command,
-    Instance,
-    System,
-    Request,
     Choices,
-    PatchOperation,
-    LoggingConfig,
-    Event,
-    Queue,
-    Principal,
-    Role,
-    Job,
+    Command,
     CronTrigger,
-    RequestTemplate,
-    IntervalTrigger,
     DateTrigger,
+    Event,
+    Garden,
+    Instance,
+    IntervalTrigger,
+    Job,
+    LoggingConfig,
+    Operation,
+    Parameter,
+    PatchOperation,
+    Principal,
+    Queue,
+    Request,
+    RequestFile,
+    RequestTemplate,
+    Role,
+    System,
 )
 
 
@@ -33,27 +36,51 @@ def system_id():
 
 
 @pytest.fixture
-def ts_epoch():
-    """Timestamp as epoch timestamp."""
-    return 1451606400000
-
-
-@pytest.fixture
 def ts_dt():
-    """Timestamp as a datetime."""
+    """Jan 1, 2016 as a naive datetime."""
     return datetime(2016, 1, 1)
 
 
 @pytest.fixture
-def ts_dt_with_tz():
-    """Timezone-aware datetime (US/Eastern)."""
+def ts_epoch():
+    """Jan 1, 2016 UTC as epoch milliseconds."""
+    return 1451606400000
+
+
+@pytest.fixture
+def ts_dt_utc(ts_epoch):
+    """Jan 1, 2016 UTC as timezone-aware datetime."""
+    return datetime.fromtimestamp(ts_epoch / 1000, tz=pytz.utc)
+
+
+@pytest.fixture
+def ts_epoch_eastern():
+    """Jan 1, 2016 US/Eastern as epoch milliseconds."""
+    return 1451624160000
+
+
+@pytest.fixture
+def ts_dt_eastern():
+    """Jan 1, 2016 US/Eastern as timezone-aware datetime."""
     return datetime(2016, 1, 1, tzinfo=pytz.timezone("US/Eastern"))
 
 
 @pytest.fixture
-def ts_epoch_with_tz(ts_epoch):
-    """Corresponding time in (US/Eastern)"""
-    return 1451624160000
+def ts_2_dt(ts_2_epoch):
+    """Feb 2, 2017 as a naive datetime."""
+    return datetime(2017, 2, 2)
+
+
+@pytest.fixture
+def ts_2_epoch():
+    """Feb 2, 2017 UTC as epoch milliseconds."""
+    return 1485993600000
+
+
+@pytest.fixture
+def ts_2_dt_utc(ts_2_epoch):
+    """Feb 2, 2017 UTC as timezone-aware datetime."""
+    return datetime.fromtimestamp(ts_2_epoch / 1000, tz=pytz.utc)
 
 
 @pytest.fixture
@@ -91,6 +118,7 @@ def nested_parameter_dict():
         "minimum": None,
         "regex": None,
         "form_input_type": None,
+        "type_info": {},
     }
 
 
@@ -112,6 +140,7 @@ def parameter_dict(nested_parameter_dict, choices_dict):
         "minimum": 1,
         "regex": ".*",
         "form_input_type": None,
+        "type_info": {},
     }
 
 
@@ -130,15 +159,14 @@ def command_dict(parameter_dict, system_id):
     return {
         "name": "speak",
         "description": "desc",
-        "id": "123f11af55a38e64799f1234",
         "parameters": [parameter_dict],
         "command_type": "ACTION",
         "output_type": "STRING",
+        "hidden": False,
         "schema": {},
         "form": {},
         "template": "<html></html>",
         "icon_name": "icon!",
-        "system": {"id": system_id},
     }
 
 
@@ -147,7 +175,22 @@ def bg_command(command_dict, bg_parameter, system_id):
     """Use the bg_command fixture instead."""
     dict_copy = copy.deepcopy(command_dict)
     dict_copy["parameters"] = [bg_parameter]
-    dict_copy["system"] = System(id=system_id)
+    return Command(**dict_copy)
+
+
+@pytest.fixture
+def command_dict_2(command_dict):
+    """A second command represented as a dictionary."""
+    dict_copy = copy.deepcopy(command_dict)
+    dict_copy["name"] = "speak2"
+    return dict_copy
+
+
+@pytest.fixture
+def bg_command_2(command_dict_2, bg_parameter, system_id):
+    """Use the bg_command fixture instead."""
+    dict_copy = copy.deepcopy(command_dict_2)
+    dict_copy["parameters"] = [bg_parameter]
     return Command(**dict_copy)
 
 
@@ -188,7 +231,7 @@ def bg_instance(instance_dict, ts_dt):
 
 
 @pytest.fixture
-def system_dict(instance_dict, command_dict, system_id):
+def system_dict(instance_dict, command_dict, command_dict_2, system_id):
     """A system represented as a dictionary."""
     return {
         "name": "system",
@@ -197,19 +240,21 @@ def system_dict(instance_dict, command_dict, system_id):
         "id": system_id,
         "max_instances": 1,
         "instances": [instance_dict],
-        "commands": [command_dict],
+        "commands": [command_dict, command_dict_2],
         "icon_name": "fa-beer",
         "display_name": "non-offensive",
         "metadata": {"some": "stuff"},
+        "namespace": "ns",
+        "local": True,
     }
 
 
 @pytest.fixture
-def bg_system(system_dict, bg_instance, bg_command):
+def bg_system(system_dict, bg_instance, bg_command, bg_command_2):
     """A system as a model."""
     dict_copy = copy.deepcopy(system_dict)
     dict_copy["instances"] = [bg_instance]
-    dict_copy["commands"] = [bg_command]
+    dict_copy["commands"] = [bg_command, bg_command_2]
     return System(**dict_copy)
 
 
@@ -220,6 +265,7 @@ def child_request_dict(ts_epoch):
         "system": "child_system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "ns",
         "command": "say",
         "id": "58542eb571afd47ead90d25f",
         "parameters": {},
@@ -253,6 +299,7 @@ def parent_request_dict(ts_epoch):
         "system": "parent_system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "ns",
         "command": "say",
         "id": "58542eb571afd47ead90d25d",
         "parent": None,
@@ -287,10 +334,13 @@ def request_template_dict():
         "system": "system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "ns",
         "command": "speak",
+        "command_type": "ACTION",
         "parameters": {"message": "hey!"},
         "comment": "hi!",
         "metadata": {"request": "stuff"},
+        "output_type": "STRING",
     }
 
 
@@ -307,6 +357,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "system": "system",
         "system_version": "1.0.0",
         "instance_name": "default",
+        "namespace": "ns",
         "command": "speak",
         "id": "58542eb571afd47ead90d25e",
         "parent": parent_request_dict,
@@ -338,40 +389,39 @@ def bg_request(request_dict, parent_request, child_request, ts_dt):
 
 
 @pytest.fixture
-def patch_dict():
-    """A patch represented as a dictionary."""
-    return {
-        "operations": [{"operation": "replace", "path": "/status", "value": "RUNNING"}]
-    }
-
-
-@pytest.fixture
-def patch_many_dict():
-    """Multiple patches represented as a dictionary."""
-    return {
-        "operations": [
-            {"operation": "replace", "path": "/status", "value": "RUNNING"},
-            {"operation": "replace2", "path": "/status2", "value": "RUNNING2"},
-        ]
-    }
-
-
-@pytest.fixture
-def patch_no_envelop_dict():
+def patch_dict_no_envelop():
     """A patch without an envelope represented as a dictionary."""
     return {"operation": "replace", "path": "/status", "value": "RUNNING"}
 
 
 @pytest.fixture
-def bg_patch1(patch_many_dict):
-    """A patch as a model."""
-    return PatchOperation(**patch_many_dict["operations"][0])
+def patch_dict_no_envelop2():
+    """A patch without an envelope represented as a dictionary."""
+    return {"operation": "replace2", "path": "/status2", "value": "RUNNING2"}
 
 
 @pytest.fixture
-def bg_patch2(patch_many_dict):
+def patch_dict(patch_dict_no_envelop):
+    """A patch represented as a dictionary."""
+    return {"operations": [patch_dict_no_envelop]}
+
+
+@pytest.fixture
+def patch_many_dict(patch_dict_no_envelop, patch_dict_no_envelop2):
+    """Multiple patches represented as a dictionary."""
+    return {"operations": [patch_dict_no_envelop, patch_dict_no_envelop2]}
+
+
+@pytest.fixture
+def bg_patch(patch_dict_no_envelop):
     """A patch as a model."""
-    return PatchOperation(**patch_many_dict["operations"][1])
+    return PatchOperation(**patch_dict_no_envelop)
+
+
+@pytest.fixture
+def bg_patch2(patch_dict_no_envelop2):
+    """A patch as a model."""
+    return PatchOperation(**patch_dict_no_envelop2)
 
 
 @pytest.fixture
@@ -395,18 +445,23 @@ def event_dict(ts_epoch, request_dict):
     """An event represented as a dictionary."""
     return {
         "name": "REQUEST_CREATED",
-        "error": False,
-        "payload": {"id": request_dict["id"]},
+        "namespace": "ns",
+        "garden": "beer",
         "metadata": {"extra": "info"},
         "timestamp": ts_epoch,
+        "payload_type": "Request",
+        "payload": request_dict,
+        "error": False,
+        "error_message": None,
     }
 
 
 @pytest.fixture
-def bg_event(event_dict, ts_dt):
+def bg_event(event_dict, ts_dt, bg_request):
     """An event as a model."""
     dict_copy = copy.deepcopy(event_dict)
     dict_copy["timestamp"] = ts_dt
+    dict_copy["payload"] = bg_request
     return Event(**dict_copy)
 
 
@@ -450,36 +505,18 @@ def bg_principal(principal_dict, bg_role):
 
 
 @pytest.fixture
-def nested_role_dict():
-    return {
-        "id": "58542eb571afd47ead90d26c",
-        "name": "bg-anonymous",
-        "description": "The anonymous role",
-        "roles": [],
-        "permissions": ["bg-request-read"],
-    }
-
-
-@pytest.fixture
-def bg_nested_role(nested_role_dict):
-    return Role(**nested_role_dict)
-
-
-@pytest.fixture
-def role_dict(nested_role_dict):
+def role_dict():
     return {
         "id": "58542eb571afd47ead90d26f",
         "name": "bg-admin",
         "description": "The admin role",
-        "roles": [nested_role_dict],
         "permissions": ["bg-all"],
     }
 
 
 @pytest.fixture
-def bg_role(role_dict, bg_nested_role):
+def bg_role(role_dict):
     dict_copy = copy.deepcopy(role_dict)
-    dict_copy["roles"] = [bg_nested_role]
     return Role(**dict_copy)
 
 
@@ -551,7 +588,7 @@ def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger,
 
 
 @pytest.fixture
-def interval_trigger_dict(ts_epoch):
+def interval_trigger_dict(ts_epoch, ts_2_epoch):
     """An interval trigger as a dictionary."""
     return {
         "weeks": 1,
@@ -560,7 +597,7 @@ def interval_trigger_dict(ts_epoch):
         "minutes": 1,
         "seconds": 1,
         "start_date": ts_epoch,
-        "end_date": ts_epoch,
+        "end_date": ts_2_epoch,
         "timezone": "utc",
         "jitter": 1,
         "reschedule_on_finish": False,
@@ -568,16 +605,22 @@ def interval_trigger_dict(ts_epoch):
 
 
 @pytest.fixture
-def bg_interval_trigger(interval_trigger_dict, ts_dt):
+def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt):
     """An interval trigger as a model."""
     dict_copy = copy.deepcopy(interval_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_dt
+    dict_copy["end_date"] = ts_2_dt
     return IntervalTrigger(**dict_copy)
 
 
 @pytest.fixture
-def cron_trigger_dict(ts_epoch):
+def request_file_dict():
+    """A request file represented as a dictionary."""
+    return {"storage_type": "gridfs", "filename": "request_filename"}
+
+
+@pytest.fixture
+def cron_trigger_dict(ts_epoch, ts_2_epoch):
     """A cron trigger as a dictionary."""
     return {
         "year": "2020",
@@ -589,18 +632,18 @@ def cron_trigger_dict(ts_epoch):
         "minute": "*/1",
         "second": "*/1",
         "start_date": ts_epoch,
-        "end_date": ts_epoch,
+        "end_date": ts_2_epoch,
         "timezone": "utc",
         "jitter": 1,
     }
 
 
 @pytest.fixture
-def bg_cron_trigger(cron_trigger_dict, ts_dt):
+def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt):
     """A cron trigger as a model."""
     dict_copy = copy.deepcopy(cron_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_dt
+    dict_copy["end_date"] = ts_2_dt
     return CronTrigger(**dict_copy)
 
 
@@ -616,3 +659,56 @@ def bg_date_trigger(date_trigger_dict, ts_dt):
     dict_copy = copy.deepcopy(date_trigger_dict)
     dict_copy["run_date"] = ts_dt
     return DateTrigger(**dict_copy)
+
+
+@pytest.fixture
+def bg_request_file(request_file_dict):
+    """A request file as a model"""
+    return RequestFile(**request_file_dict)
+
+
+@pytest.fixture
+def garden_dict(ts_epoch, system_dict):
+    """A garden as a dictionary."""
+
+    return {
+        "id": "123f11af55a38e64799fa1c1",
+        "name": "garden",
+        "status": "RUNNING",
+        "status_info": {},
+        "namespaces": [system_dict["namespace"]],
+        "systems": [system_dict],
+        "connection_type": "http",
+        "connection_params": {},
+    }
+
+
+@pytest.fixture
+def bg_garden(garden_dict, bg_system):
+    """An operation as a model."""
+    dict_copy = copy.deepcopy(garden_dict)
+    dict_copy["systems"] = [bg_system]
+    return Garden(**dict_copy)
+
+
+@pytest.fixture
+def operation_dict(ts_epoch, request_dict):
+    """An operation as a dictionary."""
+
+    return {
+        "model": request_dict,
+        "model_type": "Request",
+        "args": [request_dict["id"]],
+        "kwargs": {"extra": "kwargs"},
+        "target_garden_name": "child",
+        "source_garden_name": "parent",
+        "operation_type": "REQUEST_CREATE",
+    }
+
+
+@pytest.fixture
+def bg_operation(operation_dict, bg_request):
+    """An operation as a model."""
+    dict_copy = copy.deepcopy(operation_dict)
+    dict_copy["model"] = bg_request
+    return Operation(**dict_copy)

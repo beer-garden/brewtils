@@ -3,6 +3,9 @@
 PYTHON        = python
 MODULE_NAME   = brewtils
 TEST_DIR      = test
+DOCKER_NAME    = bgio/plugins
+
+VERSION        ?= 0.0.0
 
 .PHONY: clean clean-build clean-docs clean-test clean-pyc docs help test
 
@@ -76,10 +79,15 @@ clean-all: clean-build clean-docs clean-python clean-sphinx clean-test ## remove
 clean: clean-build clean-docs clean-python clean-test ## remove everything but sphinx
 
 
+# Formatting
+format: ## Run black formatter in-line
+	black -t py27 $(MODULE_NAME) $(TEST_DIR)
+
+
 # Linting
 lint: ## check style with flake8
 	flake8 $(MODULE_NAME) $(TEST_DIR)
-	black --check $(MODULE_NAME) $(PYTHON_TEST_DIR)
+	black --check $(MODULE_NAME) $(TEST_DIR)
 
 
 # Testing / Coverage
@@ -92,13 +100,27 @@ test-tox: ## run tests on every Python version with tox
 test: test-python ## alias of test-python
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source $(MODULE_NAME) -m pytest
+	coverage run --source $(MODULE_NAME) -m pytest --tb=no
 	coverage report -m
 	coverage html
 
 coverage-view: coverage ## view coverage report in a browser
 	$(BROWSER) htmlcov/index.html
 
+# Docker
+docker-login: ## log in to the docker registry
+	echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USER}" --password-stdin
+
+docker-build: docs ## build the docker images
+	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
+	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
+	docker build -t $(DOCKER_NAME):python2-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
+	docker build -t $(DOCKER_NAME):python2-onbuild-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
+	docker build -t $(DOCKER_NAME):docs-$(VERSION) -f docs/Dockerfile docs/
+	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):latest
+	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):python3
+	docker tag $(DOCKER_NAME):python2-$(VERSION) $(DOCKER_NAME):python2
+	docker tag $(DOCKER_NAME):docs-$(VERSION) $(DOCKER_NAME):docs
 
 # Documentation
 docs: ## generate Sphinx HTML documentation, including API docs
@@ -129,3 +151,16 @@ publish-package-test: package ## upload a package to the testpypi
 
 publish-package: package ## upload a package
 	twine upload dist/*
+
+publish-docker: docker-build ## push the docker images
+	docker push $(DOCKER_NAME):python3-$(VERSION)
+	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
+	docker push $(DOCKER_NAME):python2-$(VERSION)
+	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
+	docker push $(DOCKER_NAME):docs-$(VERSION)
+	docker push $(DOCKER_NAME):docs
+
+	## Add this back in one 3.0 is released
+	#docker push $(DOCKER_NAME):python3
+	#docker push $(DOCKER_NAME):python2
+	#docker push $(DOCKER_NAME):latest

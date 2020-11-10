@@ -2,16 +2,20 @@
 
 import functools
 import json
-import logging
-import warnings
 from datetime import datetime
+from typing import Any, Dict, List
 
 import jwt
+import requests.exceptions
 import urllib3
-from requests import Session
+from requests import Response, Session
 from requests.adapters import HTTPAdapter
+from yapconf import YapconfSpec
 
+import brewtils.plugin
+from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
+from brewtils.specification import _CONNECTION_SPEC
 
 
 def enable_auth(method):
@@ -73,159 +77,245 @@ class TimeoutAdapter(HTTPAdapter):
 
 
 class RestClient(object):
-    """Simple Rest Client for communicating to with beer-garden.
+    """HTTP client for communicating with Beer-garden.
 
-    The is the low-level client responsible for making the actual REST calls. Other clients
-    (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by providing useful
-    abstractions.
+    The is the low-level client responsible for making the actual REST calls. Other
+    clients (e.g. :py:class:`brewtils.rest.easy_client.EasyClient`) build on this by
+    providing useful abstractions.
 
-    :param bg_host: beer-garden REST API hostname.
-    :param bg_port: beer-garden REST API port.
-    :param ssl_enabled: Flag indicating whether to use HTTPS when communicating with beer-garden.
-    :param api_version: The beer-garden REST API version. Will default to the latest version.
-    :param logger: The logger to use. If None one will be created.
-    :param ca_cert: beer-garden REST API server CA certificate.
-    :param client_cert: The client certificate to use when making requests.
-    :param url_prefix: beer-garden REST API Url Prefix.
-    :param ca_verify: Flag indicating whether to verify server certificate when making a request.
-    :param username: Username for Beergarden authentication
-    :param password: Password for Beergarden authentication
-    :param access_token: Access token for Beergarden authentication
-    :param refresh_token: Refresh token for Beergarden authentication
-    :param client_timeout: Max time to will wait for server response
+    Args:
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+            authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+            Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout (int): Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    # The Latest Version Currently released
+    # Latest API version currently released
     LATEST_VERSION = 1
 
     JSON_HEADERS = {"Content-type": "application/json", "Accept": "text/plain"}
 
-    def __init__(
-        self,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=False,
-        api_version=None,
-        logger=None,
-        ca_cert=None,
-        client_cert=None,
-        url_prefix=None,
-        ca_verify=True,
-        **kwargs
-    ):
-        bg_host = bg_host or kwargs.get("host")
-        if not bg_host:
-            raise ValueError('Missing keyword argument "bg_host"')
+    def __init__(self, *args, **kwargs):
+        self._config = self._load_config(args, kwargs)
 
-        bg_port = bg_port or kwargs.get("port")
-        if not bg_port:
-            raise ValueError('Missing keyword argument "bg_port"')
-
-        self.logger = logger or logging.getLogger(__name__)
+        self.bg_host = self._config.bg_host
+        self.bg_port = self._config.bg_port
+        self.bg_prefix = self._config.bg_url_prefix
+        self.api_version = self._config.api_version
+        self.username = self._config.username
+        self.password = self._config.password
+        self.access_token = self._config.access_token
+        self.refresh_token = self._config.refresh_token
 
         # Configure the session to use when making requests
         self.session = Session()
-        timeout = kwargs.get("client_timeout", None)
-        if timeout == -1:
-            timeout = None
+        self.session.cert = self._config.client_cert
 
-        # Having two is kind of strange to me, but this is what Requests does
-        self.session.mount("https://", TimeoutAdapter(timeout=timeout))
-        self.session.mount("http://", TimeoutAdapter(timeout=timeout))
-
-        if not ca_verify:
+        if not self._config.ca_verify:
             urllib3.disable_warnings()
             self.session.verify = False
-        elif ca_cert:
-            self.session.verify = ca_cert
+        elif self._config.ca_cert:
+            self.session.verify = self._config.ca_cert
 
-        if client_cert:
-            self.session.cert = client_cert
+        client_timeout = self._config.client_timeout
+        if client_timeout == -1:
+            client_timeout = None
 
-        self.username = kwargs.get("username", None)
-        self.password = kwargs.get("password", None)
-        self.access_token = kwargs.get("access_token", None)
-        self.refresh_token = kwargs.get("refresh_token", None)
+        # Having two is kind of strange to me, but this is what Requests does
+        self.session.mount("https://", TimeoutAdapter(timeout=client_timeout))
+        self.session.mount("http://", TimeoutAdapter(timeout=client_timeout))
 
         # Configure the beer-garden URLs
-        scheme = "https" if ssl_enabled else "http"
         self.base_url = "%s://%s:%s%s" % (
-            scheme,
-            bg_host,
-            bg_port,
-            normalize_url_prefix(url_prefix),
+            "https" if self._config.ssl_enabled else "http",
+            self.bg_host,
+            self.bg_port,
+            normalize_url_prefix(self.bg_prefix),
         )
         self.version_url = self.base_url + "version"
         self.config_url = self.base_url + "config"
 
-        api_version = api_version or self.LATEST_VERSION
-        if api_version == 1:
+        if self.api_version == 1:
             self.system_url = self.base_url + "api/v1/systems/"
             self.instance_url = self.base_url + "api/v1/instances/"
             self.command_url = self.base_url + "api/v1/commands/"
             self.request_url = self.base_url + "api/v1/requests/"
             self.queue_url = self.base_url + "api/v1/queues/"
-            self.logging_config_url = self.base_url + "api/v1/config/logging/"
+            self.logging_url = self.base_url + "api/v1/logging/"
             self.job_url = self.base_url + "api/v1/jobs/"
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
 
+            # Deprecated
+            self.logging_config_url = self.base_url + "api/v1/config/logging/"
+
             self.event_url = self.base_url + "api/vbeta/events/"
+            self.file_url = self.base_url + "api/vbeta/files/"
         else:
-            raise ValueError("Invalid beer-garden API version: %s" % api_version)
+            raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
+
+    @staticmethod
+    def _load_config(args, kwargs):
+        """Load a config based on the CONNECTION section of the Brewtils Specification
+
+        This will load a configuration with the following source precedence:
+
+        1. kwargs
+        2. kwargs with "old" names ("host", "port", "url_prefix")
+        3. host and port passed as positional arguments
+        4. the global configuration (brewtils.plugin.CONFIG)
+
+        Args:
+            args: DEPRECATED - host and port
+            kwargs: Standard connection arguments to be used
+
+        Returns:
+            The resolved configuration object
+        """
+        spec = YapconfSpec(_CONNECTION_SPEC)
+
+        renamed = {}
+        for key in ["host", "port", "url_prefix"]:
+            if kwargs.get(key):
+                renamed["bg_" + key] = kwargs.get(key)
+
+        positional = {}
+        if len(args) > 0:
+            _deprecate(
+                "Heads up - passing bg_host as a positional argument is deprecated "
+                "and will be removed in version 4.0"
+            )
+            positional["bg_host"] = args[0]
+        if len(args) > 1:
+            _deprecate(
+                "Heads up - passing bg_port as a positional argument is deprecated "
+                "and will be removed in version 4.0"
+            )
+            positional["bg_port"] = args[1]
+
+        return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
+
+    def can_connect(self, **kwargs):
+        # type: (**Any) -> bool
+        """Determine if a connection to the Beer-garden server is possible
+
+        Args:
+            kwargs: Keyword arguments to pass to Requests session call
+
+        Returns:
+            A bool indicating if the connection attempt was successful. Will
+            return False only if a ConnectionError is raised during the attempt.
+            Any other exception will be re-raised.
+
+        Raises:
+            requests.exceptions.RequestException:
+                The connection attempt resulted in an exception that indicates
+                something other than a basic connection error. For example,
+                an error with certificate verification.
+        """
+        try:
+            self.session.get(self.config_url, **kwargs)
+        except requests.exceptions.ConnectionError as ex:
+            if type(ex) == requests.exceptions.ConnectionError:
+                return False
+            raise
+
+        return True
 
     @enable_auth
     def get_version(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET to the version URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: The request response
+        Returns:
+            Requests Response object
         """
-        return self.session.get(self.version_url, params=kwargs)
+        if kwargs:
+            _deprecate(
+                "Keyword arguments for get_version are no longer used and will be "
+                "removed in a future release."
+            )
+
+        return self.session.get(self.version_url)
 
     @enable_auth
     def get_config(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET to the config URL
 
-        :param kwargs: Passed to underlying Requests method
-        :return: The request response
+        Returns:
+            Requests Response object
         """
-        return self.session.get(self.config_url, **kwargs)
+        if kwargs:
+            _deprecate(
+                "Keyword arguments for get_config are no longer used and will be "
+                "removed in a future release."
+            )
+
+        return self.session.get(self.config_url)
 
     @enable_auth
     def get_logging_config(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET to the logging config URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: The request response
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
-        return self.session.get(self.logging_config_url, params=kwargs)
+        return self.session.get(self.logging_url, params=kwargs)
 
     @enable_auth
     def get_systems(self, **kwargs):
+        # type: (**Any) -> Response
         """Perform a GET on the System collection URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: The request response
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.system_url, params=kwargs)
 
     @enable_auth
     def get_system(self, system_id, **kwargs):
+        # type: (str, **Any) -> Response
         """Performs a GET on the System URL
 
-        :param system_id: ID of system
-        :param kwargs: Parameters to be used in the GET request
-        :return: Response to the request
+        Args:
+            system_id: System ID
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.system_url + system_id, params=kwargs)
 
     @enable_auth
     def post_systems(self, payload):
+        # type: (str) -> Response
         """Performs a POST on the System URL
 
-        :param payload: New request definition
-        :return: Response to the request
+        Args:
+            payload: New System definition
+
+        Returns:
+            Requests Response object
         """
         return self.session.post(
             self.system_url, data=payload, headers=self.JSON_HEADERS
@@ -233,11 +323,15 @@ class RestClient(object):
 
     @enable_auth
     def patch_system(self, system_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on a System URL
 
-        :param system_id: ID of system
-        :param payload: The update specification
-        :return: Response
+        Args:
+            system_id: System ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.system_url + str(system_id), data=payload, headers=self.JSON_HEADERS
@@ -245,29 +339,41 @@ class RestClient(object):
 
     @enable_auth
     def delete_system(self, system_id):
+        # type: (str) -> Response
         """Performs a DELETE on a System URL
 
-        :param system_id: The ID of the system to remove
-        :return: Response to the request
+        Args:
+            system_id: System ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.system_url + system_id)
 
     @enable_auth
     def get_instance(self, instance_id):
+        # type: (str) -> Response
         """Performs a GET on the Instance URL
 
-        :param instance_id: ID of instance
-        :return: Response to the request
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.instance_url + instance_id)
 
     @enable_auth
     def patch_instance(self, instance_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on the instance URL
 
-        :param instance_id: ID of instance
-        :param payload: The update specification
-        :return: Response
+        Args:
+            instance_id: Instance ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.instance_url + str(instance_id),
@@ -277,51 +383,73 @@ class RestClient(object):
 
     @enable_auth
     def delete_instance(self, instance_id):
+        # type: (str) -> Response
         """Performs a DELETE on an Instance URL
 
-        :param instance_id: The ID of the instance to remove
-        :return: Response to the request
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.instance_url + instance_id)
 
     @enable_auth
     def get_commands(self):
-        """Performs a GET on the Commands URL"""
+        # type: () -> Response
+        """Performs a GET on the Commands URL
+
+        Returns:
+            Requests Response object
+        """
         return self.session.get(self.command_url)
 
     @enable_auth
     def get_command(self, command_id):
+        # type: (str) -> Response
         """Performs a GET on the Command URL
 
-        :param command_id: ID of command
-        :return: Response to the request
+        Args:
+            command_id: Command ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.command_url + command_id)
 
     @enable_auth
     def get_requests(self, **kwargs):
+        # type: (**Any) -> Response
         """Performs a GET on the Requests URL
 
-        :param kwargs: Parameters to be used in the GET request
-        :return: Response to the request
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.request_url, params=kwargs)
 
     @enable_auth
     def get_request(self, request_id):
+        # type: (str) -> Response
         """Performs a GET on the Request URL
 
-        :param request_id: ID of request
-        :return: Response to the request
+        Args:
+            request_id: Request ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.request_url + request_id)
 
     @enable_auth
     def post_requests(self, payload, **kwargs):
+        # type: (str, **Any) -> Response
         """Performs a POST on the Request URL
 
         Args:
-            payload: New request definition
+            payload: New Request definition
             kwargs: Extra request parameters
 
         Keyword Args:
@@ -329,7 +457,7 @@ class RestClient(object):
             timeout: Maximum seconds to wait
 
         Returns:
-            Response to the request
+            Requests Response object
         """
         return self.session.post(
             self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
@@ -337,11 +465,15 @@ class RestClient(object):
 
     @enable_auth
     def patch_request(self, request_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on the Request URL
 
-        :param request_id: ID of request
-        :param payload: New request definition
-        :return: Response to the request
+        Args:
+            request_id: Request ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.request_url + str(request_id), data=payload, headers=self.JSON_HEADERS
@@ -349,11 +481,15 @@ class RestClient(object):
 
     @enable_auth
     def post_event(self, payload, publishers=None):
+        # type: (str, List[str]) -> Response
         """Performs a POST on the event URL
 
-        :param payload: New event definition
-        :param publishers: Array of publishers to use
-        :return: Response to the request
+        Args:
+            payload: Serialized new event definition
+            publishers: Array of publishers to use
+
+        Returns:
+            Requests Response object
         """
         return self.session.post(
             self.event_url,
@@ -364,61 +500,87 @@ class RestClient(object):
 
     @enable_auth
     def get_queues(self):
+        # type: () -> Response
         """Performs a GET on the Queues URL
 
-        :return: Response to the request
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.queue_url)
 
     @enable_auth
     def delete_queues(self):
+        # type: () -> Response
         """Performs a DELETE on the Queues URL
 
-        :return: Response to the request
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.queue_url)
 
     @enable_auth
     def delete_queue(self, queue_name):
+        # type: (str) -> Response
         """Performs a DELETE on a specific Queue URL
 
-        :return: Response to the request
+        Args:
+            queue_name: Queue name
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.queue_url + queue_name)
 
     @enable_auth
     def get_jobs(self, **kwargs):
+        # type: (**Any) -> Response
         """Performs a GET on the Jobs URL.
 
-        Returns: Response to the request
+        Args:
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.job_url, params=kwargs)
 
     @enable_auth
     def get_job(self, job_id):
+        # type: (str) -> Response
         """Performs a GET on the Job URL
 
-        :param job_id: ID of job
-        :return: Response to the request
+        Args:
+            job_id: Job ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.job_url + job_id)
 
     @enable_auth
     def post_jobs(self, payload):
+        # type: (str) -> Response
         """Performs a POST on the Job URL
 
-        :param payload: New job definition
-        :return: Response to the request
+        Args:
+            payload: New Job definition
+
+        Returns:
+            Requests Response object
         """
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
     @enable_auth
     def patch_job(self, job_id, payload):
+        # type: (str, str) -> Response
         """Performs a PATCH on the Job URL
 
-        :param job_id: ID of request
-        :param payload: New job definition
-        :return: Response to the request
+        Args:
+            job_id: Job ID
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
         """
         return self.session.patch(
             self.job_url + str(job_id), data=payload, headers=self.JSON_HEADERS
@@ -426,23 +588,70 @@ class RestClient(object):
 
     @enable_auth
     def delete_job(self, job_id):
+        # type: (str) -> Response
         """Performs a DELETE on a Job URL
 
-        :param job_id: The ID of the job to remove
-        :return: Response to the request
+        Args:
+            job_id: Job ID
+
+        Returns:
+            Requests Response object
         """
         return self.session.delete(self.job_url + job_id)
 
     @enable_auth
+    def get_file(self, file_id, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a GET on the specific File URL
+
+        Args:
+            file_id: File ID
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.get(self.file_url + file_id, **kwargs)
+
+    @enable_auth
+    def post_files(self, file_dict):
+        # type: (Dict[str, tuple]) -> Response
+        """Performs a POST on the file URL.
+
+        Files should be in the form:
+
+            {"identifier": ("desired_filename", open("filename", "rb")) }
+
+        Args:
+            file_dict: Dictionary of filename to files
+
+        Returns:
+            Requests Response object
+        """
+        # This is here in case we have not authenticated yet. Without this
+        # code, it is possible for us to perform the POST, which will call
+        # read on each of the files, that method fails with a 4XX, we then
+        # authenticate and try again, only to post an empty file.
+        for info in file_dict.values():
+            info[1].seek(0)
+
+        return self.session.post(self.file_url, files=file_dict)
+
+    @enable_auth
     def get_user(self, user_identifier):
+        # type: (str) -> Response
         """Performs a GET on the specific User URL
 
-        :return: Response to the request
-        :param user_identifier: ID or username of User
+        Args:
+            user_identifier: User ID or username
+
+        Returns:
+            Requests Response object
         """
         return self.session.get(self.user_url + user_identifier)
 
     def get_tokens(self, username=None, password=None):
+        # type: (str, str) -> Response
         """Use a username and password to get access and refresh tokens
 
         Args:
@@ -450,7 +659,7 @@ class RestClient(object):
             password: Beergarden password
 
         Returns:
-            Response object
+            Requests Response object
         """
         response = self.session.post(
             self.token_url,
@@ -473,13 +682,14 @@ class RestClient(object):
         return response
 
     def refresh(self, refresh_token=None):
+        # type: (str) -> Response
         """Use a refresh token to obtain a new access token
 
         Args:
             refresh_token: Refresh token to use
 
         Returns:
-            Response object
+            Requests Response object
         """
         refresh_token = refresh_token or self.refresh_token
         response = self.session.get(
@@ -498,14 +708,3 @@ class RestClient(object):
             self.session.headers["Authorization"] = "Bearer " + self.access_token
 
         return response
-
-
-class BrewmasterRestClient(RestClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterRestClient'. This name will be removed in version "
-            "3.0, please use 'RestClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterRestClient, self).__init__(*args, **kwargs)

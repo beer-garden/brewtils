@@ -1,25 +1,41 @@
 # -*- coding: utf-8 -*-
-import logging
-import warnings
 
-import requests.exceptions
+import six
 import wrapt
 
+from brewtils.config import get_connection_info
 from brewtils.errors import (
-    FetchError,
-    ValidationError,
-    SaveError,
-    DeleteError,
-    RestConnectionError,
-    NotFoundError,
     ConflictError,
+    DeleteError,
+    FetchError,
+    NotFoundError,
+    RestConnectionError,
     RestError,
-    WaitExceededError,
+    SaveError,
     TooLargeError,
+    ValidationError,
+    WaitExceededError,
+    _deprecate,
 )
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
+
+
+def get_easy_client(**kwargs):
+    """Easy way to get an EasyClient
+
+    The benefit to this method over creating an EasyClient directly is that
+    this method will also search the environment for parameters. Kwargs passed
+    to this method will take priority, however.
+
+    Args:
+        **kwargs: Options for configuring the EasyClient
+
+    Returns:
+        :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
+    """
+    return EasyClient(**get_connection_info(**kwargs))
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
@@ -64,7 +80,7 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
 
 def wrap_response(
     return_boolean=False,
-    parse_method="",
+    parse_method=None,
     parse_many=False,
     default_exc=RestError,
     raise_404=True,
@@ -73,8 +89,8 @@ def wrap_response(
 
     Args:
         return_boolean: If True, a successful response will also return True
-        parse_method: The response's json will be passed to this method of the SchemaParser
-        parse_many: This will be passed as the 'many' parameter when parsing the response
+        parse_method: Response json will be passed to this method of the SchemaParser
+        parse_many: Will be passed as the 'many' parameter when parsing the response
         default_exc: Will be passed to handle_response_failure for failed responses
         raise_404: Will be passed to handle_response_failure for failed responses
 
@@ -98,12 +114,10 @@ def wrap_response(
             if return_boolean:
                 return True
 
-            if not hasattr(instance.parser, parse_method):
-                return response
+            if parse_method is None:
+                return response.json()
 
-            return getattr(instance.parser, parse_method)(
-                response.json(), many=parse_many
-            )
+            return getattr(SchemaParser, parse_method)(response.json(), many=parse_many)
         else:
             handle_response_failure(
                 response, default_exc=default_exc, raise_404=raise_404
@@ -120,56 +134,27 @@ class EasyClient(object):
     operations than is exposed by the lower-level RestClient. On the other hand,
     the SystemClient is much better for generating Beergarden Requests.
 
-    Keyword Args:
-        bg_host (str): Beergarden hostname
-        bg_port (int): Beergarden port
-        ssl_enabled (Optional[bool]): Whether to use SSL (HTTP vs HTTPS)
-        api_version (Optional[int]): The REST API version
-        ca_cert (Optional[str]): Path to CA certificate file
-        client_cert (Optional[str]): Path to client certificate file
-        parser (Optional[SchemaParser]): Parser to use
-        logger (Optional[Logger]): Logger to use
-        url_prefix (Optional[str]): Beergarden REST API prefix
-        ca_verify (Optional[bool]): Whether to verify the server cert hostname
-        username (Optional[str]): Username for authentication
-        password (Optional[str]): Password for authentication
-        access_token (Optional[str]): Access token for authentication
-        refresh_token (Optional[str]): Refresh token for authentication
-        client_timeout (Optional[float]): Max time to wait for a server response
-
+    Args:
+        bg_host (str): Beer-garden hostname
+        bg_port (int): Beer-garden port
+        bg_url_prefix (str): URL path that will be used as a prefix when communicating
+            with Beer-garden. Useful if Beer-garden is running on a URL other than '/'.
+        ssl_enabled (bool): Whether to use SSL for Beer-garden communication
+        ca_cert (str): Path to certificate file containing the certificate of the
+            authority that issued the Beer-garden server certificate
+        ca_verify (bool): Whether to verify Beer-garden server certificate
+        client_cert (str): Path to client certificate to use when communicating with
+            Beer-garden
+        api_version (int): Beer-garden API version to use
+        client_timeout (int): Max time to wait for Beer-garden server response
+        username (str): Username for Beer-garden authentication
+        password (str): Password for Beer-garden authentication
+        access_token (str): Access token for Beer-garden authentication
+        refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    def __init__(
-        self,
-        bg_host=None,
-        bg_port=None,
-        ssl_enabled=False,
-        api_version=None,
-        ca_cert=None,
-        client_cert=None,
-        parser=None,
-        logger=None,
-        url_prefix=None,
-        ca_verify=True,
-        **kwargs
-    ):
-        bg_host = bg_host or kwargs.get("host")
-        bg_port = bg_port or kwargs.get("port")
-
-        self.logger = logger or logging.getLogger(__name__)
-        self.parser = parser or SchemaParser()
-
-        self.client = RestClient(
-            bg_host=bg_host,
-            bg_port=bg_port,
-            ssl_enabled=ssl_enabled,
-            api_version=api_version,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            url_prefix=url_prefix,
-            ca_verify=ca_verify,
-            **kwargs
-        )
+    def __init__(self, **kwargs):
+        self.client = RestClient(**kwargs)
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.
@@ -189,14 +174,7 @@ class EasyClient(object):
                 an error with certificate verification.
 
         """
-        try:
-            self.client.get_config(**kwargs)
-        except requests.exceptions.ConnectionError as ex:
-            if type(ex) == requests.exceptions.ConnectionError:
-                return False
-            raise
-
-        return True
+        return self.client.can_connect(**kwargs)
 
     @wrap_response(default_exc=FetchError)
     def get_version(self, **kwargs):
@@ -211,18 +189,46 @@ class EasyClient(object):
         """
         return self.client.get_version(**kwargs)
 
-    @wrap_response(parse_method="parse_logging_config", default_exc=RestConnectionError)
-    def get_logging_config(self, system_name):
-        """Get logging configuration for a System
-
-        Args:
-            system_name (str): The name of the System
+    @wrap_response(default_exc=FetchError)
+    def get_config(self):
+        """Get configuration
 
         Returns:
-            LoggingConfig: The configuration object
+            dict: Configuration dictionary
 
         """
-        return self.client.get_logging_config(system_name=system_name)
+        return self.client.get_config()
+
+    @wrap_response(default_exc=FetchError)
+    def get_logging_config(self, system_name=None, local=False):
+        """Get a logging configuration
+
+        Note that the system_name is not relevant and is only provided for
+        backward-compatibility.
+
+        Args:
+            system_name (str): UNUSED
+
+        Returns:
+            dict: The configuration object
+
+        """
+        return self.client.get_logging_config(local=local)
+
+    @wrap_response(
+        parse_method="parse_system", parse_many=False, default_exc=FetchError
+    )
+    def get_system(self, system_id, **kwargs):
+        """Get a System
+
+        Args:
+            system_id: The Id
+
+        Returns:
+            The System
+
+        """
+        return self.client.get_system(system_id, **kwargs)
 
     def find_unique_system(self, **kwargs):
         """Find a unique system
@@ -242,7 +248,10 @@ class EasyClient(object):
 
         """
         if "id" in kwargs:
-            return self._find_system_by_id(kwargs.pop("id"), **kwargs)
+            try:
+                return self.get_system(kwargs.pop("id"), **kwargs)
+            except NotFoundError:
+                return None
         else:
             systems = self.find_systems(**kwargs)
 
@@ -278,7 +287,7 @@ class EasyClient(object):
             System: The newly-created system
 
         """
-        return self.client.post_systems(self.parser.serialize_system(system))
+        return self.client.post_systems(SchemaParser.serialize_system(system))
 
     @wrap_response(parse_method="parse_system", parse_many=False, default_exc=SaveError)
     def update_system(self, system_id, new_commands=None, **kwargs):
@@ -289,6 +298,7 @@ class EasyClient(object):
             new_commands (Optional[List[Command]]): New System commands
 
         Keyword Args:
+            add_instance (Instance): An Instance to append
             metadata (dict): New System metadata
             description (str): New System description
             display_name (str): New System display name
@@ -300,12 +310,17 @@ class EasyClient(object):
         """
         operations = []
         metadata = kwargs.pop("metadata", {})
+        add_instance = kwargs.pop("add_instance", None)
 
         if new_commands:
-            commands = self.parser.serialize_command(
+            commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )
             operations.append(PatchOperation("replace", "/commands", commands))
+
+        if add_instance:
+            instance = SchemaParser.serialize_instance(add_instance, to_string=False)
+            operations.append(PatchOperation("add", "/instance", instance))
 
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))
@@ -315,7 +330,7 @@ class EasyClient(object):
                 operations.append(PatchOperation("replace", "/%s" % key, value))
 
         return self.client.patch_system(
-            system_id, self.parser.serialize_patch(operations, many=True)
+            system_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
     def remove_system(self, **kwargs):
@@ -341,18 +356,22 @@ class EasyClient(object):
     @wrap_response(
         parse_method="parse_instance", parse_many=False, default_exc=SaveError
     )
-    def initialize_instance(self, instance_id):
+    def initialize_instance(self, instance_id, runner_id=None):
         """Start an Instance
 
         Args:
             instance_id (str): The Instance ID
+            runner_id (str): The PluginRunner ID, if any
 
         Returns:
             Instance: The updated Instance
 
         """
         return self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(PatchOperation("initialize"))
+            instance_id,
+            SchemaParser.serialize_patch(
+                PatchOperation(operation="initialize", value={"runner_id": runner_id})
+            ),
         )
 
     @wrap_response(
@@ -370,33 +389,54 @@ class EasyClient(object):
         """
         return self.client.get_instance(instance_id)
 
+    @wrap_response(
+        parse_method="parse_instance", parse_many=False, default_exc=SaveError
+    )
+    def update_instance(self, instance_id, **kwargs):
+        """Update an Instance status
+
+        Args:
+            instance_id (str): The Instance ID
+
+        Keyword Args:
+            new_status (str): The new status
+            metadata (dict): Will be added to existing instance metadata
+
+        Returns:
+            Instance: The updated Instance
+
+        """
+        operations = []
+        new_status = kwargs.pop("new_status", None)
+        metadata = kwargs.pop("metadata", {})
+
+        if new_status:
+            operations.append(PatchOperation("replace", "/status", new_status))
+
+        if metadata:
+            operations.append(PatchOperation("update", "/metadata", metadata))
+
+        return self.client.patch_instance(
+            instance_id, SchemaParser.serialize_patch(operations, many=True)
+        )
+
     def get_instance_status(self, instance_id):
-        """Get an Instance
-
-        WARNING: This method currently returns the Instance, not the Instance's status.
-        This behavior will be corrected in 3.0.
-
-        To prepare for this change please use get_instance() instead of this method.
+        """Get an Instance's status
 
         Args:
             instance_id: The Id
 
         Returns:
-            The status
+            The Instance's status
 
         """
-        warnings.warn(
-            "This method currently returns the Instance, not the Instance's status. "
-            "This behavior will be corrected in 3.0. To prepare please use "
-            "get_instance() instead of this method.",
-            FutureWarning,
+        _deprecate(
+            "This method is deprecated and scheduled to be removed in 4.0. "
+            "Please use get_instance() instead."
         )
 
-        return self.get_instance(instance_id)
+        return self.get_instance(instance_id).status
 
-    @wrap_response(
-        parse_method="parse_instance", parse_many=False, default_exc=SaveError
-    )
     def update_instance_status(self, instance_id, new_status):
         """Update an Instance status
 
@@ -408,12 +448,12 @@ class EasyClient(object):
             Instance: The updated Instance
 
         """
-        return self.client.patch_instance(
-            instance_id,
-            self.parser.serialize_patch(
-                PatchOperation("replace", "/status", new_status)
-            ),
+        _deprecate(
+            "This method is deprecated and scheduled to be removed in 4.0. "
+            "Please use update_instance() instead."
         )
+
+        return self.update_instance(instance_id, new_status=new_status)
 
     @wrap_response(return_boolean=True, default_exc=SaveError)
     def instance_heartbeat(self, instance_id):
@@ -427,7 +467,7 @@ class EasyClient(object):
 
         """
         return self.client.patch_instance(
-            instance_id, self.parser.serialize_patch(PatchOperation("heartbeat"))
+            instance_id, SchemaParser.serialize_patch(PatchOperation("heartbeat"))
         )
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
@@ -445,6 +485,21 @@ class EasyClient(object):
             raise DeleteError("Cannot delete an instance without an id")
 
         return self.client.delete_instance(instance_id)
+
+    @wrap_response(
+        parse_method="parse_request", parse_many=False, default_exc=FetchError
+    )
+    def get_request(self, request_id):
+        """Get a Request
+
+        Args:
+            request_id: The Id
+
+        Returns:
+            The Request
+
+        """
+        return self.client.get_request(request_id)
 
     def find_unique_request(self, **kwargs):
         """Find a unique request
@@ -464,7 +519,10 @@ class EasyClient(object):
 
         """
         if "id" in kwargs:
-            return self._find_request_by_id(kwargs.pop("id"))
+            try:
+                return self.get_request(kwargs.pop("id"))
+            except NotFoundError:
+                return None
         else:
             all_requests = self.find_requests(**kwargs)
 
@@ -510,7 +568,7 @@ class EasyClient(object):
 
         """
         return self.client.post_requests(
-            self.parser.serialize_request(request), **kwargs
+            SchemaParser.serialize_request(request), **kwargs
         )
 
     @wrap_response(
@@ -539,7 +597,7 @@ class EasyClient(object):
             operations.append(PatchOperation("replace", "/error_class", error_class))
 
         return self.client.patch_request(
-            request_id, self.parser.serialize_patch(operations, many=True)
+            request_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
     @wrap_response(return_boolean=True)
@@ -567,18 +625,20 @@ class EasyClient(object):
         event = args[0] if args else Event(**kwargs)
 
         return self.client.post_event(
-            self.parser.serialize_event(event), publishers=publishers
+            SchemaParser.serialize_event(event), publishers=publishers
         )
 
-    @wrap_response(parse_method="parse_queue", parse_many=True)
+    @wrap_response(parse_method="parse_queue", parse_many=True, default_exc=FetchError)
     def get_queues(self):
         """Retrieve all queue information
 
-        :return: The response
+        Returns:
+            List[Queue]: List of all Queues
+
         """
         return self.client.get_queues()
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_queue(self, queue_name):
         """Cancel and remove all Requests from a message queue
 
@@ -591,7 +651,7 @@ class EasyClient(object):
         """
         return self.client.delete_queue(queue_name)
 
-    @wrap_response(return_boolean=True)
+    @wrap_response(return_boolean=True, default_exc=DeleteError)
     def clear_all_queues(self):
         """Cancel and remove all Requests in all queues
 
@@ -625,7 +685,7 @@ class EasyClient(object):
             Job: The newly-created Job
 
         """
-        return self.client.post_jobs(self.parser.serialize_job(job))
+        return self.client.post_jobs(SchemaParser.serialize_job(job))
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def remove_job(self, job_id):
@@ -653,7 +713,7 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "PAUSED")])
 
     def resume_job(self, job_id):
         """Resume a Job
@@ -665,7 +725,66 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
+        return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
+
+    def stream_to_sink(self, file_id, sink, **kwargs):
+        """Stream the given file id to the sink.
+
+        Examples:
+
+            To stream a given file to a local file you can do::
+
+                with open("filename", "rb") as my_file:
+                    client.stream_to_sink("id", my_file)
+
+        Args:
+            file_id: The file ID
+            sink: An object with a `.write` method, often times this is
+            an open file descriptor.
+
+        Keyword Args:
+            chunk_size: Size of chunks as they are written/read (defaults to 4096)
+
+        """
+        chunk_size = kwargs.get("chunk_size", 4096)
+        with self.client.get_file(file_id, stream=True) as response:
+            if not response.ok:
+                handle_response_failure(response)
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                sink.write(chunk)
+
+    def upload_file(self, file_to_upload, desired_filename=None):
+        """Upload a given file to the Beer Garden server.
+
+        Args:
+            file_to_upload: Can either be an open file descriptor or a path.
+            desired_filename: The desired filename, if none is provided it
+            will use the basename of the file_to_upload
+
+        Returns:
+            A dictionary of the bytes parameter that should be used during
+            request creation.
+
+        """
+        if isinstance(file_to_upload, six.string_types):
+            fd = open(file_to_upload, "rb")
+            require_close = True
+        else:
+            fd = file_to_upload
+            require_close = False
+
+        desired_filename = desired_filename or fd.name
+        try:
+            files = {"upload_id": (desired_filename, fd)}
+            response = self.client.post_files(files)
+        finally:
+            if require_close:
+                fd.close()
+
+        if not response.ok:
+            handle_response_failure(response, default_exc=SaveError)
+
+        return response.json()["upload_id"]
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError
@@ -691,15 +810,6 @@ class EasyClient(object):
         """
         return self.get_user(self.client.username or "anonymous")
 
-    @wrap_response(
-        parse_method="parse_system",
-        parse_many=False,
-        default_exc=FetchError,
-        raise_404=False,
-    )
-    def _find_system_by_id(self, system_id, **kwargs):
-        return self.client.get_system(system_id, **kwargs)
-
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def _remove_system_by_id(self, system_id):
         if system_id is None:
@@ -707,28 +817,8 @@ class EasyClient(object):
 
         return self.client.delete_system(system_id)
 
-    @wrap_response(
-        parse_method="parse_request",
-        parse_many=False,
-        default_exc=FetchError,
-        raise_404=False,
-    )
-    def _find_request_by_id(self, request_id):
-        return self.client.get_request(request_id)
-
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def _patch_job(self, job_id, operations):
         return self.client.patch_job(
-            job_id, self.parser.serialize_patch(operations, many=True)
+            job_id, SchemaParser.serialize_patch(operations, many=True)
         )
-
-
-class BrewmasterEasyClient(EasyClient):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Call made to 'BrewmasterEasyClient'. This name will be "
-            "removed in version 3.0, please use 'EasyClient' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super(BrewmasterEasyClient, self).__init__(*args, **kwargs)

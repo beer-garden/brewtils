@@ -5,11 +5,11 @@ from mock import Mock, patch
 
 import brewtils.decorators
 from brewtils.decorators import (
-    system,
+    _resolve_display_modifiers,
     command,
     parameter,
     parameters,
-    _resolve_display_modifiers,
+    system,
 )
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
@@ -58,8 +58,8 @@ def wrap_functions(request):
 
 class TestSystem(object):
     def test_system_basic(self, sys):
-        assert 1 == len(sys._commands)
-        assert "foo" == sys._commands[0].name
+        assert len(sys._bg_commands) == 1
+        assert sys._bg_commands[0].name == "foo"
 
     def test_system(self):
         @system(bg_name="sys", bg_version="1.0.0")
@@ -70,8 +70,8 @@ class TestSystem(object):
 
         assert SystemClass._bg_name == "sys"
         assert SystemClass._bg_version == "1.0.0"
-        assert 1 == len(SystemClass._commands)
-        assert "foo" == SystemClass._commands[0].name
+        assert len(SystemClass._bg_commands) == 1
+        assert SystemClass._bg_commands[0].name == "foo"
 
 
 class TestParameter(object):
@@ -122,6 +122,7 @@ class TestParameter(object):
     @pytest.mark.parametrize(
         "t,expected",
         [
+            (None, "Any"),
             (str, "String"),
             (int, "Integer"),
             (float, "Float"),
@@ -132,12 +133,21 @@ class TestParameter(object):
             ("Float", "Float"),
             ("Boolean", "Boolean"),
             ("Dictionary", "Dictionary"),
+            ("DateTime", "DateTime"),
             ("Any", "Any"),
+            ("file", "Bytes"),
+            ("string", "String"),
         ],
     )
     def test_types(self, cmd, t, expected):
         wrapped = parameter(cmd, key="foo", type=t)
         assert expected == wrapped._command.get_parameter_by_key("foo").type
+
+    def test_file_type_info(self, cmd):
+        wrapped = parameter(cmd, key="foo", type="file")
+        assert wrapped._command.get_parameter_by_key("foo").type_info == {
+            "storage": "gridfs"
+        }
 
     def test_values(self, cmd, param_definition):
         wrapped = parameter(cmd, **param_definition)
@@ -167,14 +177,11 @@ class TestParameter(object):
         assert_parameter_equal(param, Parameter(**param_definition))
 
     def test_is_kwarg_missing(self, param_definition):
-        with pytest.raises(PluginParamError) as ex:
+        with pytest.raises(PluginParamError, match=param_definition["key"] + ".*cmd"):
 
             @parameter(is_kwarg=True, **param_definition)
             def cmd(_):
                 return None
-
-        assert param_definition["key"] in str(ex)
-        assert "cmd" in str(ex)
 
     @pytest.mark.parametrize(
         "default,expected",
@@ -266,6 +273,15 @@ class TestParameter(object):
             ),
             (
                 list(range(100)),
+                {
+                    "type": "static",
+                    "value": list(range(100)),
+                    "display": "typeahead",
+                    "strict": True,
+                },
+            ),
+            (
+                range(100),
                 {
                     "type": "static",
                     "value": list(range(100)),
@@ -397,9 +413,8 @@ class TestParameters(object):
     @pytest.mark.parametrize("args", [[], [1, 2, 3]])
     def test_bad_arity(self, args):
         # Must be called with either just one arg, or one arg + the function
-        with pytest.raises(PluginParamError) as ex:
+        with pytest.raises(PluginParamError, match=r"single argument"):
             parameters(*args)
-        assert "single argument" in str(ex)
 
     @pytest.mark.parametrize(
         "arg1,arg2",
@@ -496,6 +511,7 @@ class TestCommand(object):
         assert cmd._command.name == "_cmd"
         assert cmd._command.command_type == "INFO"
         assert cmd._command.description == "desc2"
+        assert cmd._command.hidden is False
         assert cmd._command.output_type == "JSON"
 
     def test_generate_command_python2(self, func_mock):

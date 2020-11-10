@@ -2,10 +2,11 @@
 
 import calendar
 import datetime
+from functools import partial
 
-import simplejson
 import marshmallow
-from marshmallow import Schema, post_dump, post_load, pre_load, fields
+import simplejson
+from marshmallow import Schema, fields, post_load, pre_load
 from marshmallow.utils import UTC
 from marshmallow_polyfield import PolyField
 
@@ -15,6 +16,7 @@ __all__ = [
     "CommandSchema",
     "ParameterSchema",
     "RequestSchema",
+    "RequestFileSchema",
     "PatchSchema",
     "LoggingConfigSchema",
     "EventSchema",
@@ -26,7 +28,55 @@ __all__ = [
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
+    "FileTriggerSchema",
+    "GardenSchema",
+    "OperationSchema",
 ]
+
+# This will be updated after all the schema classes are defined
+model_schema_map = {}
+
+
+def _serialize_model(_, obj, type_field=None, allowed_types=None):
+    model_type = getattr(obj, type_field)
+
+    if model_type not in model_schema_map or (
+        allowed_types and model_type not in allowed_types
+    ):
+        raise TypeError("Invalid model type %s" % model_type)
+
+    return model_schema_map.get(model_type)()
+
+
+def _deserialize_model(_, data, type_field=None, allowed_types=None):
+    if data[type_field] not in model_schema_map or (
+        allowed_types and data[type_field] not in allowed_types
+    ):
+        raise TypeError("Invalid payload type %s" % data[type_field])
+
+    return model_schema_map.get(data[type_field])()
+
+
+class ModelField(PolyField):
+    """Field representing a Brewtils model
+
+    Args:
+        type_field: Schema field that contains the type information for this field
+        allowed_types: A list of allowed model type strings
+        **kwargs: Will be passed to the superclass
+
+    """
+
+    def __init__(self, type_field="payload_type", allowed_types=None, **kwargs):
+        super(ModelField, self).__init__(
+            serialization_schema_selector=partial(
+                _serialize_model, type_field=type_field, allowed_types=allowed_types
+            ),
+            deserialization_schema_selector=partial(
+                _deserialize_model, type_field=type_field, allowed_types=allowed_types
+            ),
+            **kwargs
+        )
 
 
 class DateTime(fields.DateTime):
@@ -39,6 +89,10 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def to_epoch(dt, localtime=False):
+        # If already in epoch form just return it
+        if isinstance(dt, int):
+            return dt
+
         if localtime and dt.tzinfo is not None:
             localized = dt
         else:
@@ -52,6 +106,10 @@ class DateTime(fields.DateTime):
 
     @staticmethod
     def from_epoch(epoch):
+        # If already in datetime form just return it
+        if isinstance(epoch, datetime.datetime):
+            return epoch
+
         # utcfromtimestamp will correctly parse milliseconds in Python 3,
         # but in Python 2 we need to help it
         seconds, millis = divmod(epoch, 1000)
@@ -90,17 +148,15 @@ class BaseSchema(Schema):
 
 
 class ChoicesSchema(BaseSchema):
-
-    type = fields.Str()
-    display = fields.Str()
-    value = fields.Raw(many=True)
-    strict = fields.Bool(default=False)
-    details = fields.Dict()
+    type = fields.Str(allow_none=True)
+    display = fields.Str(allow_none=True)
+    value = fields.Raw(allow_none=True, many=True)
+    strict = fields.Bool(allow_none=True, default=False)
+    details = fields.Dict(allow_none=True)
 
 
 class ParameterSchema(BaseSchema):
-
-    key = fields.Str()
+    key = fields.Str(allow_none=True)
     type = fields.Str(allow_none=True)
     multi = fields.Bool(allow_none=True)
     display_name = fields.Str(allow_none=True)
@@ -114,12 +170,11 @@ class ParameterSchema(BaseSchema):
     minimum = fields.Int(allow_none=True)
     regex = fields.Str(allow_none=True)
     form_input_type = fields.Str(allow_none=True)
+    type_info = fields.Dict(allow_none=True)
 
 
 class CommandSchema(BaseSchema):
-
-    id = fields.Str(allow_none=True)
-    name = fields.Str()
+    name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     parameters = fields.Nested("ParameterSchema", many=True)
     command_type = fields.Str(allow_none=True)
@@ -128,13 +183,12 @@ class CommandSchema(BaseSchema):
     form = fields.Dict(allow_none=True)
     template = fields.Str(allow_none=True)
     icon_name = fields.Str(allow_none=True)
-    system = fields.Nested("SystemSchema", only=("id",), allow_none=True)
+    hidden = fields.Boolean(allow_none=True)
 
 
 class InstanceSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
-    name = fields.Str()
+    name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
     status_info = fields.Nested("StatusInfoSchema", allow_none=True)
@@ -145,17 +199,23 @@ class InstanceSchema(BaseSchema):
 
 
 class SystemSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
-    name = fields.Str()
+    name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
-    version = fields.Str()
+    version = fields.Str(allow_none=True)
     max_instances = fields.Integer(allow_none=True)
     icon_name = fields.Str(allow_none=True)
     instances = fields.Nested("InstanceSchema", many=True, allow_none=True)
-    commands = fields.Nested("CommandSchema", many=True)
+    commands = fields.Nested("CommandSchema", many=True, allow_none=True)
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    local = fields.Bool(allow_none=True)
+
+
+class RequestFileSchema(BaseSchema):
+    storage_type = fields.Str(allow_none=True)
+    filename = fields.Str(allow_none=True)
 
 
 class RequestTemplateSchema(BaseSchema):
@@ -164,23 +224,23 @@ class RequestTemplateSchema(BaseSchema):
     system = fields.Str(allow_none=True)
     system_version = fields.Str(allow_none=True)
     instance_name = fields.Str(allow_none=True)
+    namespace = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    command_type = fields.Str(allow_none=True)
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    output_type = fields.Str(allow_none=True)
 
 
 class RequestSchema(RequestTemplateSchema):
-
     id = fields.Str(allow_none=True)
     parent = fields.Nested("self", exclude=("children",), allow_none=True)
     children = fields.Nested(
         "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
     )
     output = fields.Str(allow_none=True)
-    output_type = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    command_type = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
@@ -189,18 +249,39 @@ class RequestSchema(RequestTemplateSchema):
 
 
 class StatusInfoSchema(BaseSchema):
-
     heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
 
 
 class PatchSchema(BaseSchema):
-
-    operation = fields.Str()
+    operation = fields.Str(allow_none=True)
     path = fields.Str(allow_none=True)
     value = fields.Raw(allow_none=True)
 
     @pre_load(pass_many=True)
     def unwrap_envelope(self, data, many):
+        """Helper function for parsing the different patch formats.
+
+        This exists because previously multiple patches serialized like::
+
+            {
+                "operations": [
+                    {"operation": "replace", ...},
+                    {"operation": "replace", ...}
+                    ...
+                ]
+            }
+
+        But we also wanted to be able to handle a simple list::
+
+            [
+                {"operation": "replace", ...},
+                {"operation": "replace", ...}
+                ...
+            ]
+
+        Patches are now (as of v3) serialized as the latter. Prior to v3 they were
+        serialized as the former.
+        """
         if isinstance(data, list):
             return data
         elif "operations" in data:
@@ -208,13 +289,8 @@ class PatchSchema(BaseSchema):
         else:
             return [data]
 
-    @post_dump(pass_many=True)
-    def wrap_envelope(self, data, many):
-        return {u"operations": data if many else [data]}
-
 
 class LoggingConfigSchema(BaseSchema):
-
     level = fields.Str(allow_none=True)
     formatters = fields.Dict(allow_none=True)
     handlers = fields.Dict(allow_none=True)
@@ -223,14 +299,19 @@ class LoggingConfigSchema(BaseSchema):
 class EventSchema(BaseSchema):
 
     name = fields.Str(allow_none=True)
-    payload = fields.Dict(allow_none=True)
-    error = fields.Bool(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
 
+    payload_type = fields.Str(allow_none=True)
+    payload = ModelField(allow_none=True)
+
+    error = fields.Bool(allow_none=True)
+    error_message = fields.Str(allow_none=True)
+
 
 class QueueSchema(BaseSchema):
-
     name = fields.Str(allow_none=True)
     system = fields.Str(allow_none=True)
     version = fields.Str(allow_none=True)
@@ -241,7 +322,6 @@ class QueueSchema(BaseSchema):
 
 
 class PrincipalSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
     roles = fields.Nested("RoleSchema", many=True, allow_none=True)
@@ -251,7 +331,6 @@ class PrincipalSchema(BaseSchema):
 
 
 class RoleSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
@@ -260,21 +339,18 @@ class RoleSchema(BaseSchema):
 
 
 class RefreshTokenSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
     expires = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    payload = fields.Dict()
+    payload = fields.Dict(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):
-
     run_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
     timezone = fields.Str(allow_none=True)
 
 
 class IntervalTriggerSchema(BaseSchema):
-
     weeks = fields.Int(allow_none=True)
     days = fields.Int(allow_none=True)
     hours = fields.Int(allow_none=True)
@@ -288,7 +364,6 @@ class IntervalTriggerSchema(BaseSchema):
 
 
 class CronTriggerSchema(BaseSchema):
-
     year = fields.Str(allow_none=True)
     month = fields.Str(allow_none=True)
     day = fields.Str(allow_none=True)
@@ -303,42 +378,34 @@ class CronTriggerSchema(BaseSchema):
     jitter = fields.Int(allow_none=True)
 
 
-TRIGGER_TYPE_TO_SCHEMA = {
-    "interval": IntervalTriggerSchema,
-    "date": DateTriggerSchema,
-    "cron": CronTriggerSchema,
-}
+class FileTriggerSchema(BaseSchema):
+    pattern = fields.List(fields.Str(), allow_none=True)
+    path = fields.Str(allow_none=True)
+    recursive = fields.Bool(allow_none=True)
+    callbacks = fields.Dict(fields.Bool(), allow_none=True)
 
 
-def serialize_trigger_selector(_, obj):
-    try:
-        return TRIGGER_TYPE_TO_SCHEMA[obj.trigger_type]()
-    except KeyError:
-        pass
-
-    raise TypeError("Could not detect %s trigger type schema" % obj.trigger_type)
-
-
-def deserialize_trigger_selector(_, data):
-    try:
-        return TRIGGER_TYPE_TO_SCHEMA[data["trigger_type"]]()
-    except KeyError:
-        pass
-
-    raise TypeError("Could not detect %s trigger type schema" % data["trigger_type"])
+class GardenSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    status = fields.Str(allow_none=True)
+    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    connection_type = fields.Str(allow_none=True)
+    connection_params = fields.Dict(allow_none=True)
+    namespaces = fields.List(fields.Str(), allow_none=True)
+    systems = fields.Nested("SystemSchema", many=True, allow_none=True)
 
 
 class JobSchema(BaseSchema):
-
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     trigger_type = fields.Str(allow_none=True)
-    trigger = PolyField(
+    trigger = ModelField(
+        type_field="trigger_type",
+        allowed_types=["interval", "date", "cron", "file"],
         allow_none=True,
-        serialization_schema_selector=serialize_trigger_selector,
-        deserialization_schema_selector=deserialize_trigger_selector,
     )
-    request_template = fields.Nested("RequestTemplateSchema")
+    request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
     next_run_time = DateTime(allow_none=True, format="epoch", example="1500065932000")
@@ -346,3 +413,48 @@ class JobSchema(BaseSchema):
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
+
+
+class OperationSchema(BaseSchema):
+    model_type = fields.Str(allow_none=True)
+    model = ModelField(allow_none=True, type_field="model_type")
+
+    args = fields.List(fields.Str(), allow_none=True)
+    kwargs = fields.Dict(allow_none=True)
+
+    target_garden_name = fields.Str(allow_none=True)
+    source_garden_name = fields.Str(allow_none=True)
+    operation_type = fields.Str(allow_none=True)
+
+
+model_schema_map.update(
+    {
+        "Choices": ChoicesSchema,
+        "Command": CommandSchema,
+        "CronTrigger": CronTriggerSchema,
+        "DateTrigger": DateTriggerSchema,
+        "Event": EventSchema,
+        "FileTrigger": FileTriggerSchema,
+        "Garden": GardenSchema,
+        "Instance": InstanceSchema,
+        "IntervalTrigger": IntervalTriggerSchema,
+        "Job": JobSchema,
+        "LoggingConfig": LoggingConfigSchema,
+        "Queue": QueueSchema,
+        "Parameter": ParameterSchema,
+        "PatchOperation": PatchSchema,
+        "Principal": PrincipalSchema,
+        "RefreshToken": RefreshTokenSchema,
+        "Request": RequestSchema,
+        "RequestFile": RequestFileSchema,
+        "RequestTemplate": RequestTemplateSchema,
+        "Role": RoleSchema,
+        "System": SystemSchema,
+        "Operation": OperationSchema,
+        # Compatibility for the Job trigger types
+        "interval": IntervalTriggerSchema,
+        "date": DateTriggerSchema,
+        "cron": CronTriggerSchema,
+        "file": FileTriggerSchema,
+    }
+)

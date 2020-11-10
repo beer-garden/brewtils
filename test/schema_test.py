@@ -6,12 +6,15 @@ from pytest_lazyfixture import lazy_fixture
 
 from brewtils.models import System
 from brewtils.schemas import (
-    DateTime,
     BaseSchema,
+    DateTime,
     SystemSchema,
-    serialize_trigger_selector,
-    deserialize_trigger_selector,
+    _deserialize_model,
+    _serialize_model,
+    model_schema_map,
 )
+
+from brewtils.schema_parser import SchemaParser
 
 
 class TestSchemas(object):
@@ -30,25 +33,64 @@ class TestSchemas(object):
         assert "name" in attributes
         assert "__model__" not in attributes
 
+
+class TestFields(object):
     @pytest.mark.parametrize(
         "dt,localtime,expected",
         [
             (lazy_fixture("ts_dt"), False, lazy_fixture("ts_epoch")),
             (lazy_fixture("ts_dt"), True, lazy_fixture("ts_epoch")),
-            (lazy_fixture("ts_dt_with_tz"), False, lazy_fixture("ts_epoch_with_tz")),
-            (lazy_fixture("ts_dt_with_tz"), True, lazy_fixture("ts_epoch")),
+            (lazy_fixture("ts_dt_eastern"), False, lazy_fixture("ts_epoch_eastern")),
+            (lazy_fixture("ts_dt_eastern"), True, lazy_fixture("ts_epoch")),
+            (lazy_fixture("ts_epoch"), False, lazy_fixture("ts_epoch")),
+            (lazy_fixture("ts_epoch"), True, lazy_fixture("ts_epoch")),
         ],
     )
     def test_to_epoch(self, dt, localtime, expected):
         assert DateTime.to_epoch(dt, localtime) == expected
 
-    def test_from_epoch(self, ts_epoch, ts_dt):
-        assert DateTime.from_epoch(ts_epoch) == ts_dt
+    @pytest.mark.parametrize(
+        "epoch,expected",
+        [
+            (lazy_fixture("ts_epoch"), lazy_fixture("ts_dt")),
+            (lazy_fixture("ts_dt"), lazy_fixture("ts_dt")),
+        ],
+    )
+    def test_from_epoch(self, epoch, expected):
+        assert DateTime.from_epoch(epoch) == expected
 
-    def test_serialize_trigger_selector(self):
+    def test_modelfield_serialize_invalid_type(self):
         with pytest.raises(TypeError):
-            serialize_trigger_selector("ignored", Mock(trigger_type="INVALID"))
+            _serialize_model(
+                "ignored", Mock(payload_type="INVALID"), type_field="payload_type"
+            )
 
-    def test_deserialize_trigger_selector(self):
+    def test_modelfield_serialize_unallowed_type(self):
         with pytest.raises(TypeError):
-            deserialize_trigger_selector("ignored", {"trigger_type": "INVALID"})
+            _serialize_model(
+                "ignored",
+                Mock(payload_type="foo"),
+                type_field="payload_type",
+                allowed_types=["bar"],
+            )
+
+    def test_modelfield_deserialize_invalid_type(self):
+        with pytest.raises(TypeError):
+            _deserialize_model(
+                "ignored", {"payload_type": "INVALID"}, type_field="payload_type"
+            )
+
+    def test_modelfield_deserialize_unallowed_type(self):
+        with pytest.raises(TypeError):
+            _deserialize_model(
+                "ignored",
+                {"payload_type": "foo"},
+                type_field="payload_type",
+                allowed_types=["bar"],
+            )
+
+    def test_deserailize_mapping(self):
+        models = list(set(model_schema_map[dic] for dic in model_schema_map))
+        assert len(models) == len(
+            SchemaParser._models
+        ), "Missing mapped schema for deserialization"

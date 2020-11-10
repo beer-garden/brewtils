@@ -1,6 +1,36 @@
 Brewtils Changelog
 ==================
 
+3.0.0
+-----
+Date: 11/10/20
+
+Note: This is a major upgrade with several breaking changes. Please see the
+`Upgrade Guide
+<https://github.com/beer-garden/brewtils/blob/master/UPGRADING.md>`_ for all changes.
+
+New Features
+^^^^^^^^^^^^
+- Plugins now automatically load configuration from CLI and environment variables
+- Logging configuration is loaded automatically when Plugins are created
+- No longer need to pass connection information to System/Easy/Rest Clients
+- Parameter choices definition can be a non-list iterable (beer-garden/#512)
+- It's now easier to specify an alternate parent when making a request (beer-garden/#336)
+- SchemaParser can now directly serialize dicts and Boxes (#239)
+
+Bug Fixes
+^^^^^^^^^
+- EasyClient.get_instance_status is deprecated but now actually returns the instance status
+
+Other Changes
+^^^^^^^^^^^^^
+- Plugins are now multi-threaded by default (#47)
+- Better error messages when using SystemClient with raise_on_error=True (beer-garden/#689)
+- Various deprecated names have been removed
+- Can now defer setting a Plugin client
+- EasyClient.get_version returns actual version information instead of Response object
+- Using a pika version <1 is deprecated
+
 2.4.15
 -----
 Date: 10/13/20
@@ -10,7 +40,7 @@ Bug Fixes
 - Fixing command invocation error when request has no parameters (beer-garden/#351)
 
 2.4.14
------
+------
 Date: 1/30/20
 
 Bug Fixes
@@ -18,7 +48,7 @@ Bug Fixes
 - Better error handling if a request exceeds 16MB size limit (beer-garden/#308)
 
 2.4.13
------
+------
 Date: 1/13/20
 
 Bug Fixes
@@ -26,7 +56,7 @@ Bug Fixes
 - Requests republished to rabbit are now persistent (beer-garden/#397)
 
 2.4.12
------
+------
 Date: 1/10/20
 
 Other Changes
@@ -34,7 +64,7 @@ Other Changes
 - Reverting a log message level that was incorrectly set to INFO
 
 2.4.11
------
+------
 Date: 12/9/19
 
 Other Changes
@@ -42,7 +72,7 @@ Other Changes
 - Plugins always attempt to notify Beer-garden when terminating (beer-garden/#376)
 
 2.4.10
------
+------
 Date: 11/12/19
 
 Bug Fixes
@@ -98,7 +128,7 @@ Other Changes
 ^^^^^^^^^^^^^
 - Support for new header-style authentication token (#122)
 - Added EasyClient.get_instance, deprecated get_instance_status (beer-garden/#231)
-- Parameters with is_kwarg on command without **kwargs will raise (beer-garden/#216)
+- Parameters with is_kwarg on command without \**kwargs will raise (beer-garden/#216)
 
 2.4.5
 -----

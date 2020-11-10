@@ -2,8 +2,13 @@
 
 import json
 import logging
+import warnings
+from functools import partial
 
 from six import string_types
+
+# Helper to make deprecation easy
+_deprecate = partial(warnings.warn, category=DeprecationWarning, stacklevel=2)
 
 
 class BrewtilsException(Exception):
@@ -130,10 +135,9 @@ class DiscardMessageException(RequestProcessException):
 class RepublishRequestException(RequestProcessException):
     """Republish to the end of the message queue
 
-    :param request: The Request to republish
-    :param headers: A dictionary of headers to be used by
-        `brewtils.request_consumer.RequestConsumer`
-    :type request: :py:class:`brewtils.models.Request`
+    Args:
+        request: The Request to republish
+        headers: A dictionary of headers to be used by `brewtils.pika.PikaConsumer`
     """
 
     def __init__(self, request, headers):
@@ -218,6 +222,9 @@ class RequestFailedError(RestError):
     def __init__(self, request):
         self.request = request
 
+    def __str__(self):
+        return str(self.request.output)
+
 
 class NotFoundError(RestClientError):
     """Error Indicating a 404 was raised on the server"""
@@ -247,17 +254,6 @@ class TooLargeError(RestClientError):
 WaitExceededError = TimeoutExceededError
 ConnectionTimeoutError = TimeoutExceededError
 
-BrewmasterModelError = ModelError
-BrewmasterModelValidationError = ModelValidationError
-BrewmasterRestError = RestError
-BrewmasterRestClientError = RestClientError
-BrewmasterRestServerError = RestServerError
-BrewmasterConnectionError = RestConnectionError
-BrewmasterTimeoutError = ConnectionTimeoutError
-BrewmasterFetchError = FetchError
-BrewmasterValidationError = ValidationError
-BrewmasterSaveError = SaveError
-BrewmasterDeleteError = DeleteError
 BGConflictError = ConflictError
 BGRequestFailedError = RequestFailedError
 BGNotFoundError = NotFoundError
@@ -270,13 +266,13 @@ def parse_exception_as_json(exc):
     If the exception has a single argument, no attributes, and the attribute
     can be converted to a valid JSON string, then that will be returned.
 
-    Otherwise, a string version of the following form will be returned:
+    Otherwise, a string version of the following form will be returned::
 
-    {
-        "message": "",
-        "arguments": [],
-        "attributes": {}
-    }
+        {
+            "message": "",
+            "arguments": [],
+            "attributes": {}
+        }
 
     Where "message" is just str(exc), "arguments" is a list of all the
     arguments passed to the exception attempted to be converted to a valid

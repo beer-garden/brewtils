@@ -13,23 +13,26 @@ from functools import partial
 
 import brewtils.test
 from brewtils.models import (
-    System,
-    Command,
-    Instance,
-    Parameter,
-    Request,
-    PatchOperation,
-    LoggingConfig,
-    Event,
-    Queue,
     Choices,
-    Principal,
-    Role,
-    Job,
-    IntervalTrigger,
-    DateTrigger,
+    Command,
     CronTrigger,
+    DateTrigger,
+    Event,
+    Garden,
+    Instance,
+    IntervalTrigger,
+    Job,
+    LoggingConfig,
+    Operation,
+    Parameter,
+    PatchOperation,
+    Principal,
+    Queue,
+    Request,
+    RequestFile,
     RequestTemplate,
+    Role,
+    System,
 )
 
 __all__ = [
@@ -48,6 +51,8 @@ __all__ = [
     "assert_role_equal",
     "assert_system_equal",
     "assert_job_equal",
+    "assert_request_file_equal",
+    "assert_operation_equal",
 ]
 
 
@@ -86,10 +91,16 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
 
     if expected_type is not None:
         _assert(
-            isinstance(obj1, expected_type), "obj1 was not an {0}".format(expected_type)
+            isinstance(obj1, expected_type),
+            "type mismatch for obj1: expected '{0}' but was '{1}'".format(
+                expected_type, type(obj1)
+            ),
         )
         _assert(
-            isinstance(obj2, expected_type), "obj2 was not an {0}".format(expected_type)
+            isinstance(obj2, expected_type),
+            "type mismatch for obj2: expected '{0}' but was '{1}'".format(
+                expected_type, type(obj2)
+            ),
         )
     _assert(type(obj1) is type(obj2), "obj1 and obj2 are not the same type.")
 
@@ -108,8 +119,9 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
             nested2 = getattr(obj2, key)
 
             if isinstance(nested1, list) and isinstance(nested2, list):
-                l1 = sorted(getattr(obj1, key))
-                l2 = sorted(getattr(obj2, key))
+                l1 = sorted(getattr(obj1, key), key=lambda x: str(x))
+                l2 = sorted(getattr(obj2, key), key=lambda x: str(x))
+
                 _assert(
                     len(l1) == len(l2), "Length of list field %s was different" % key
                 )
@@ -125,7 +137,7 @@ def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
 
     This is a safety measure in case these functions are used outside of a testing
     context. This isn't recommended, but naked asserts are still unacceptable in any
-    packaged code. This method will translate the various comparision functions to a
+    packaged code. This method will translate the various comparison functions to a
     simple boolean return.
 
     Note that in a testing context the AssertionError is re-raised. This is because it's
@@ -167,28 +179,21 @@ assert_instance_equal = partial(_assert_wrapper, expected_type=Instance)
 assert_choices_equal = partial(_assert_wrapper, expected_type=Choices)
 assert_patch_equal = partial(_assert_wrapper, expected_type=PatchOperation)
 assert_logging_config_equal = partial(_assert_wrapper, expected_type=LoggingConfig)
-assert_event_equal = partial(_assert_wrapper, expected_type=Event)
 assert_queue_equal = partial(_assert_wrapper, expected_type=Queue)
 assert_request_template_equal = partial(_assert_wrapper, expected_type=RequestTemplate)
 assert_trigger_equal = partial(
     _assert_wrapper, expected_type=(CronTrigger, DateTrigger, IntervalTrigger)
 )
+assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
-
-    # Command's system field only serializes the system's id
-    def compare_system(sys1, sys2):
-        _assert(sys1.id == sys2.id, "System IDs were not equal")
 
     return _assert_wrapper(
         obj1,
         obj2,
         expected_type=Command,
-        deep_fields={
-            "parameters": partial(assert_parameter_equal, do_raise=True),
-            "system": compare_system,
-        },
+        deep_fields={"parameters": partial(assert_parameter_equal, do_raise=True)},
         do_raise=do_raise,
     )
 
@@ -202,6 +207,25 @@ def assert_parameter_equal(obj1, obj2, do_raise=False):
             "parameters": partial(assert_parameter_equal, do_raise=True),
             "choices": partial(assert_choices_equal, do_raise=True),
         },
+        do_raise=do_raise,
+    )
+
+
+def assert_event_equal(obj1, obj2, do_raise=False):
+
+    _assert(obj1.payload_type == obj2.payload_type, "Payload types were not equal")
+
+    comparison_func_name = "_assert_wrapper"
+    if obj1.payload_type:
+        comparison_func_name = "assert_%s_equal" % obj1.payload_type.lower()
+
+    payload_compare = getattr(brewtils.test.comparable, comparison_func_name)
+
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Event,
+        deep_fields={"payload": partial(payload_compare, do_raise=True)},
         do_raise=do_raise,
     )
 
@@ -296,5 +320,34 @@ def assert_job_equal(obj1, obj2, do_raise=False):
             "trigger": partial(assert_trigger_equal, do_raise=True),
             "request_template": partial(assert_request_template_equal, do_raise=True),
         },
+        do_raise=do_raise,
+    )
+
+
+def assert_operation_equal(obj1, obj2, do_raise=False):
+
+    _assert(obj1.model_type == obj2.model_type, "Model types were not equal")
+
+    comparison_func_name = "_assert_wrapper"
+    if obj1.model_type:
+        comparison_func_name = "assert_%s_equal" % obj1.model_type.lower()
+
+    model_compare = getattr(brewtils.test.comparable, comparison_func_name)
+
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Operation,
+        deep_fields={"model": partial(model_compare, do_raise=True)},
+        do_raise=do_raise,
+    )
+
+
+def assert_garden_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Garden,
+        deep_fields={"systems": partial(assert_system_equal, do_raise=True)},
         do_raise=do_raise,
     )

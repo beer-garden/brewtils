@@ -36,7 +36,6 @@ __all__ = [
     "register",
 ]
 
-
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,
 # instead just using the original function. This is pretty much exactly what we want - we
 # aren't using decorators for their 'real' purpose of wrapping a function, we just want to add
@@ -49,9 +48,9 @@ def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
     Creates some properties on the class:
-      * ``_commands``: holds all registered commands
-      * ``_name``: an optional system name
-      * ``_version``: an optional system version
+      * ``_bg_name``: an optional system name
+      * ``_bg_version``: an optional system version
+      * ``_bg_commands``: holds all registered commands
       * ``_current_request``: Reference to the currently executing request
 
     Args:
@@ -75,9 +74,9 @@ def system(cls=None, bg_name=None, bg_version=None):
         if method_command:
             commands.append(method_command)
 
-    cls._commands = commands
     cls._bg_name = bg_name
     cls._bg_version = bg_version
+    cls._bg_commands = commands
     cls._current_request = property(
         lambda self: brewtils.plugin.request_context.current_request
     )
@@ -89,6 +88,7 @@ def command(
     _wrapped=None,
     command_type="ACTION",
     output_type="STRING",
+    hidden=False,
     schema=None,
     form=None,
     template=None,
@@ -105,16 +105,20 @@ def command(
         def echo_json(self, message):
             return message
 
-    :param _wrapped: The function to decorate. This is handled as a positional argument and
-        shouldn't be explicitly set.
-    :param command_type: The command type. Valid options are Command.COMMAND_TYPES.
-    :param output_type: The output type. Valid options are Command.OUTPUT_TYPES.
-    :param schema: A custom schema definition.
-    :param form: A custom form definition.
-    :param template: A custom template definition.
-    :param icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
-    :param description: The command description. Will override the function's docstring.
-    :return: The decorated function.
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+        command_type: The command type. Valid options are Command.COMMAND_TYPES.
+        output_type: The output type. Valid options are Command.OUTPUT_TYPES.
+        schema: A custom schema definition.
+        form: A custom form definition.
+        template: A custom template definition.
+        icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
+        hidden: Status whether command is visible on the user interface.
+        description: The command description. Will override the function's docstring.
+
+    Returns:
+        The decorated function
     """
     if _wrapped is None:
         return functools.partial(
@@ -123,6 +127,7 @@ def command(
             output_type=output_type,
             schema=schema,
             form=form,
+            hidden=hidden,
             template=template,
             icon_name=icon_name,
             description=description,
@@ -131,6 +136,7 @@ def command(
     generated_command = _generate_command_from_function(_wrapped)
     generated_command.command_type = command_type
     generated_command.output_type = output_type
+    generated_command.hidden = hidden
     generated_command.icon_name = icon_name
 
     if description:
@@ -176,40 +182,48 @@ def parameter(
 ):
     """Decorator that enables Parameter specifications for a beer-garden Command
 
-    This decorator is intended to be used when more specification is desired for a Parameter.
+    This is intended to be used when more specification is desired for a Parameter.
 
     For example::
 
-        @parameter(key="message", description="Message to echo", optional=True, type="String",
-                   default="Hello, World!")
+        @parameter(
+            key="message",
+            description="Message to echo",
+            optional=True,
+            type="String",
+            default="Hello, World!",
+        )
         def echo(self, message):
             return message
 
-    :param _wrapped: The function to decorate. This is handled as a positional argument and
-        shouldn't be explicitly set.
-    :param key: String specifying the parameter identifier. Must match an argument name of the
-        decorated function.
-    :param type: String indicating the type to use for this parameter.
-    :param multi: Boolean indicating if this parameter is a multi. See documentation for
-        discussion of what this means.
-    :param display_name: String that will be displayed as a label in the user interface.
-    :param optional: Boolean indicating if this parameter must be specified.
-    :param default: The value this parameter will be assigned if not overridden when creating a
-        request.
-    :param description: An additional string that will be displayed in the user interface.
-    :param choices: List or dictionary specifying allowed values. See documentation for more
-        information.
-    :param nullable: Boolean indicating if this parameter is allowed to be null.
-    :param maximum: Integer indicating the maximum value of the parameter.
-    :param minimum: Integer indicating the minimum value of the parameter.
-    :param regex: String describing a regular expression constraint on the parameter.
-    :param is_kwarg: Boolean indicating if this parameter is meant to be part of the decorated
-        function's kwargs.
-    :param model: Class to be used as a model for this parameter. Must be a Python type object,
-        not an instance.
-    :param form_input_type: Only used for string fields. Changes the form input field
-        (e.g. textarea)
-    :return: The decorated function.
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+        key: String specifying the parameter identifier. Must match an argument name of
+            the decorated function.
+        type: String indicating the type to use for this parameter.
+        multi: Boolean indicating if this parameter is a multi. See documentation for
+            discussion of what this means.
+        display_name: String that will be displayed as a label in the user interface.
+        optional: Boolean indicating if this parameter must be specified.
+        default: The value this parameter will be assigned if not overridden when
+            creating a request.
+        description: An additional string that will be displayed in the user interface.
+        choices: List or dictionary specifying allowed values. See documentation for
+            more information.
+        nullable: Boolean indicating if this parameter is allowed to be null.
+        maximum: Integer indicating the maximum value of the parameter.
+        minimum: Integer indicating the minimum value of the parameter.
+        regex: String describing a regular expression constraint on the parameter.
+        is_kwarg: Boolean indicating if this parameter is meant to be part of the
+            decorated function's kwargs.
+        model: Class to be used as a model for this parameter. Must be a Python type
+            object, not an instance.
+        form_input_type: Only used for string fields. Changes the form input field
+            (e.g. textarea)
+
+    Returns:
+        The decorated function
     """
     if _wrapped is None:
         return functools.partial(
@@ -240,7 +254,7 @@ def parameter(
     # Every parameter needs a key, so stop that right here
     if key is None:
         raise PluginParamError(
-            "Found a parameter definition without a key for " "command '%s'" % cmd.name
+            "Found a parameter definition without a key for command '%s'" % cmd.name
         )
 
     # If the command doesn't already have a parameter with this key then the
@@ -290,6 +304,12 @@ def parameter(
     )
 
     param.choices = _format_choices(param.choices)
+
+    # Type info is where type specific information goes. For now, this is specific
+    # to file types. See #289 for more details.
+    param.type_info = {}
+    if param.type == "Bytes":
+        param.type_info = {"storage": "gridfs"}
 
     # Model is another special case - it requires its own handling
     if model is not None:
@@ -363,11 +383,12 @@ def parameters(*args):
 
 
 def _update_func_command(func_command, generated_command):
-    """Updates the current function's command with info, (will not override plugin_params)"""
+    """Update the current function's Command"""
     func_command.name = generated_command.name
     func_command.description = generated_command.description
     func_command.command_type = generated_command.command_type
     func_command.output_type = generated_command.output_type
+    func_command.hidden = generated_command.hidden
     func_command.schema = generated_command.schema
     func_command.form = generated_command.form
     func_command.template = generated_command.template
@@ -375,7 +396,10 @@ def _update_func_command(func_command, generated_command):
 
 
 def _generate_command_from_function(func):
-    """Generates a Command from a function. Uses first line of pydoc as the description."""
+    """Generate a Command from a function
+
+    Will use the first line of the function's docstring as the description.
+    """
     # Required for Python 2/3 compatibility
     if hasattr(func, "func_name"):
         command_name = func.func_name
@@ -397,7 +421,9 @@ def _generate_command_from_function(func):
 
 def _generate_params_from_function(func):
     """Generate Parameters from function arguments.
-    Will set the Parameter key, default value, and optional value."""
+
+    Will set the Parameter key, default value, and optional value.
+    """
     parameters_to_return = []
 
     code = six.get_function_code(func)
@@ -437,6 +463,7 @@ def _generate_nested_params(model_class):
         maximum = parameter_definition.maximum
         minimum = parameter_definition.minimum
         regex = parameter_definition.regex
+        type_info = parameter_definition.type_info
 
         choices = _format_choices(parameter_definition.choices)
 
@@ -461,6 +488,7 @@ def _generate_nested_params(model_class):
                 maximum=maximum,
                 minimum=minimum,
                 regex=regex,
+                type_info=type_info,
             )
         )
     return parameters_to_return
@@ -537,8 +565,14 @@ def _format_type(param_type):
         return "Boolean"
     elif param_type == dict:
         return "Dictionary"
+    elif str(param_type).lower() == "file":
+        return "Bytes"
+    elif str(param_type).lower() == "datetime":
+        return "DateTime"
+    elif not param_type:
+        return "Any"
     else:
-        return param_type
+        return str(param_type).title()
 
 
 def _format_choices(choices):
@@ -549,22 +583,15 @@ def _format_choices(choices):
         return "select" if len(display_value) <= 50 else "typeahead"
 
     def determine_type(type_value):
-        if isinstance(type_value, (list, dict)):
-            return "static"
-        elif type_value.startswith("http"):
-            return "url"
-        else:
-            return "command"
+        if isinstance(type_value, six.string_types):
+            return "url" if type_value.startswith("http") else "command"
+
+        return "static"
 
     if not choices:
         return None
 
-    if not isinstance(choices, (list, six.string_types, dict)):
-        raise PluginParamError(
-            "Invalid 'choices' provided. Must be a list, dictionary or string."
-        )
-
-    elif isinstance(choices, dict):
+    if isinstance(choices, dict):
         if not choices.get("value"):
             raise PluginParamError(
                 "No 'value' provided for choices. You must at least "
@@ -608,8 +635,22 @@ def _format_choices(choices):
                 "Invalid choices display '%s' - Valid display options are %s"
                 % (display, Choices.DISPLAYS)
             )
-    else:
+
+    elif isinstance(choices, str):
         value = choices
+        display = determine_display(value)
+        choice_type = determine_type(value)
+        strict = True
+
+    else:
+        try:
+            # Assume some sort of iterable
+            value = list(choices)
+        except TypeError:
+            raise PluginParamError(
+                "Invalid 'choices': must be a string, dictionary, or iterable."
+            )
+
         display = determine_display(value)
         choice_type = determine_type(value)
         strict = True

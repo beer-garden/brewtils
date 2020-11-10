@@ -262,8 +262,6 @@ The `Plugin.run()` method now raises a `brewtils.errors.RestConnectionError` if 
 ### `SystemClient`
 
 #### Alternate Parent
-TODO - This is really a new feature, may not need to be in the Upgrade Guide.
-
 It's now easier to specify an alternate parent Request when using the `SystemClient`:
 
 ```python

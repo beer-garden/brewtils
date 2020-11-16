@@ -161,9 +161,7 @@ publish-docker: docker-build ## push the docker images
 	docker push $(DOCKER_NAME):python2-$(VERSION)
 	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
 	docker push $(DOCKER_NAME):docs-$(VERSION)
+	docker push $(DOCKER_NAME):latest
+	docker push $(DOCKER_NAME):python3
+	docker push $(DOCKER_NAME):python2
 	docker push $(DOCKER_NAME):docs
-
-	## Add this back in one 3.0 is released
-	#docker push $(DOCKER_NAME):python3
-	#docker push $(DOCKER_NAME):python2
-	#docker push $(DOCKER_NAME):latest

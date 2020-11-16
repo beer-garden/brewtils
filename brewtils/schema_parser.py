@@ -26,6 +26,7 @@ class SchemaParser(object):
         "CronTriggerSchema": brewtils.models.CronTrigger,
         "DateTriggerSchema": brewtils.models.DateTrigger,
         "EventSchema": brewtils.models.Event,
+        "FileTriggerSchema": brewtils.models.FileTrigger,
         "GardenSchema": brewtils.models.Garden,
         "InstanceSchema": brewtils.models.Instance,
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,

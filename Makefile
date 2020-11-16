@@ -123,6 +123,9 @@ docker-build: docs ## build the docker images
 	docker tag $(DOCKER_NAME):docs-$(VERSION) $(DOCKER_NAME):docs
 
 # Documentation
+docs-deps: ## install dependencies for documentation
+	pip install -c requirements.txt sphinx sphinx_rtd_theme
+
 docs: ## generate Sphinx HTML documentation, including API docs
 	sphinx-apidoc -o docs/ $(MODULE_NAME)
 	$(MAKE) -C docs html

@@ -454,8 +454,8 @@ class SystemClient(object):
             parameters=kwargs,
         )
 
-        bytes_params = self._commands[command].parameter_keys_by_type("Bytes")
-        resolver = UploadResolver(request, bytes_params, self._resolvers)
+        file_params = self._commands[command].parameter_keys_by_type("Base64")
+        resolver = UploadResolver(request, file_params, self._resolvers)
         request.parameters = resolver.resolve_parameters()
 
         return request

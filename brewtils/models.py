@@ -380,7 +380,12 @@ class Parameter(BaseModel):
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
 
-    def __init__(self, storage_type=None, filename=None, id=None, ):
+    def __init__(
+        self,
+        storage_type=None,
+        filename=None,
+        id=None,
+    ):
         self.storage_type = storage_type
         self.filename = filename
         self.id = id
@@ -398,8 +403,18 @@ class RequestFile(BaseModel):
 class File(BaseModel):
     schema = "FileSchema"
 
-    def __init__(self, id=None, owner_id=None, owner_type=None, created_at=None,
-                 file_name=None, file_size=None, chunks=None, chunk_size=None, owner=None):
+    def __init__(
+        self,
+        id=None,
+        owner_id=None,
+        owner_type=None,
+        created_at=None,
+        file_name=None,
+        file_size=None,
+        chunks=None,
+        chunk_size=None,
+        owner=None,
+    ):
         self.id = id
         self.owner_id = owner_id
         self.owner_type = owner_type

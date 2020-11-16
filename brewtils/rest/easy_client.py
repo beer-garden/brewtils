@@ -2,6 +2,7 @@
 
 import six
 import wrapt
+from io import StringIO
 
 from brewtils.config import get_connection_info
 from brewtils.errors import (
@@ -152,6 +153,10 @@ class EasyClient(object):
         access_token (str): Access token for Beer-garden authentication
         refresh_token (str): Refresh token for Beer-garden authentication
     """
+
+    _default_file_params = {
+        "chunk_size": 255 * 1024,
+    }
 
     def __init__(self, **kwargs):
         self.client = RestClient(**kwargs)
@@ -753,19 +758,78 @@ class EasyClient(object):
             for chunk in response.iter_content(chunk_size=chunk_size):
                 sink.write(chunk)
 
-    def upload_file(self, file_to_upload, desired_filename=None):
+    def _check_file_validity(self, file_id):
+        """Upload a given file to the Beer Garden server.
+
+        Args:
+            file_id: The BG-assigned file id.
+
+        Returns:
+            A file object
+        """
+        response = self.client.get_file(file_id, params={"verify": True})
+        if not response.ok:
+            return False, None
+
+        metadata_json = response.json()
+
+        if "valid" in metadata_json and metadata_json["valid"]:
+            return True, metadata_json
+        else:
+            return False, metadata_json
+
+    def download_file(self, file_id):
+        """Upload a given file to the Beer Garden server.
+
+        Args:
+            file_id: The beer garden-assigned file id.
+
+        Returns:
+            A file object
+        """
+        (valid, meta) = self._check_file_validity(file_id)
+        file_obj = StringIO("")
+        if valid:
+            for x in range(meta["number_of_chunks"]):
+                resp = self.client.get_file(file_id, params={"chunk": x})
+                if resp.ok:
+                    file_obj.write(resp.text)
+                else:
+                    raise ValueError("Could not fetch chunk %d" % x)
+        else:
+            raise ValidationError("Requested file %s is incomplete." % file_id)
+
+        file_obj.seek(0)
+        return file_obj
+
+    def delete_file(self, file_id):
+        """Delete a given file on the Beer Garden server.
+
+        Args:
+            file_id: The beer garden-assigned file id.
+
+        Returns:
+            The API response
+        """
+        return self.client.delete_file(file_id)
+
+    def upload_file(self, file_to_upload, desired_filename=None, file_params=None):
         """Upload a given file to the Beer Garden server.
 
         Args:
             file_to_upload: Can either be an open file descriptor or a path.
             desired_filename: The desired filename, if none is provided it
             will use the basename of the file_to_upload
+            file_params: The metadata surrounding the file.
+                Valid Keys: file_name, file_size, chunk_size, owner_id, owner_type
 
         Returns:
-            A dictionary of the bytes parameter that should be used during
-            request creation.
+            A BG file ID.
 
         """
+        default_file_params = {}
+
+        # Establish the file descriptor
         if isinstance(file_to_upload, six.string_types):
             fd = open(file_to_upload, "rb")
             require_close = True
@@ -773,10 +837,24 @@ class EasyClient(object):
             fd = file_to_upload
             require_close = False
 
-        desired_filename = desired_filename or fd.name
+        default_file_params["file_name"] = desired_filename or fd.name
+
+        # Determine the file size
+        cur_cursor = fd.tell()
+        default_file_params["file_size"] = fd.seek(0, 2) - cur_cursor
+        fd.seek(cur_cursor)
+        if file_params is not None:
+            file_params["file_size"] = default_file_params["file_size"]
+
+        # Set the parameters to be sent
+        file_params = file_params or dict(
+            default_file_params, **self._default_file_params
+        )
         try:
-            files = {"upload_id": (desired_filename, fd)}
-            response = self.client.post_files(files)
+            response = self.client.post_file(
+                fd, file_params, current_position=cur_cursor
+            )
+            fd.seek(cur_cursor)
         finally:
             if require_close:
                 fd.close()
@@ -784,7 +862,19 @@ class EasyClient(object):
         if not response.ok:
             handle_response_failure(response, default_exc=SaveError)
 
-        return response.json()["upload_id"]
+        # The file post is best effort; make sure to verify before we let the
+        # user do anything with it
+        file_id = response.json()["id"]
+        (valid, meta) = self._check_file_validity(file_id)
+        if valid:
+            return file_id
+        else:
+            # Clean up if you can
+            self.client.delete_file(fd, file_params)
+            raise ValidationError(
+                "Error occurred while uploading file %s"
+                % default_file_params["file_name"]
+            )
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError

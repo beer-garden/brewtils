@@ -27,73 +27,35 @@ class GridfsResolver(object):
     def __init__(self, client):
         self.client = client
 
-    def download(self, bytes_parameter, writer):
+    def download(self, file_id, *args):
         """Download the given bytes parameter.
 
         Args:
-            bytes_parameter: A specific request's parameter value.
-            writer: File-like object that has a `write` method.
+            file_id: A BG generated file ID
         """
-        self.client.stream_to_sink(bytes_parameter["id"], writer)
+        return self.client.download_file(file_id)
 
-    def upload(self, value):
+    def upload(self, value, **kwargs):
         """Upload the given value to the server if necessary.
 
         The value can be one of the following:
 
-        1. A dictionary with a storage_type and filename.
-        2. A string pointing to a valid filename.
-        3. An open file descriptor.
-
-        If you use a dictionary, and include an "id" the resolver will
-        assume you have already uploaded the file, and skip doing it for you.
+        1. A string representation of a valid filename.
+        2. An open file descriptor.
 
         Args:
             value: Value to upload.
 
         Returns:
-            A valid dictionary to use as a bytes parameter.
+            A valid beer garden assigned ID
         """
         if sys.version_info[0] == 2:
             file_types = (io.IOBase, file)  # noqa: F821
         else:
             file_types = (io.IOBase,)
-        if isinstance(value, dict):
-            return self._upload_dict(value)
-        elif isinstance(value, six.string_types):
-            return self._upload_filename(value)
-        elif isinstance(value, file_types):
-            return self._upload_file_descriptor(value)
+        if isinstance(value, six.string_types) or isinstance(value, file_types):
+            return self.client.upload_file(value, **kwargs)
         else:
             raise ValidationError(
-                "Do not know how to upload bytes type %s" % type(value)
+                "Do not know how to upload value of type %s" % type(value)
             )
-
-    def _upload_dict(self, value):
-        if "id" in value:
-            return value
-
-        if "filename" not in value:
-            raise ValidationError(
-                "When uploading a bytes object as a dictionary, you must include a 'filename' key."
-            )
-
-        return self._upload_filename(value["filename"], value.get("desired_filename"))
-
-    def _upload_filename(self, filename, desired_filename=None):
-        if not os.path.isfile(filename):
-            raise ValidationError(
-                "Cannot upload a bytes object if the file does not exist %s" % filename
-            )
-
-        desired_filename = desired_filename or os.path.basename(filename)
-
-        with open(filename, "rb") as file_to_upload:
-            return self._upload_file_descriptor(file_to_upload, desired_filename)
-
-    def _upload_file_descriptor(self, fd, filename=None):
-        if filename is None and hasattr(fd, "name"):
-            filename = os.path.basename(fd.name)
-
-        filename = filename or str(fd)
-        return self.client.upload_file(fd, filename)

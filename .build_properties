@@ -1,3 +1,0 @@
-MODULE_NAME=brewtils
-PACKAGE_NAME=brewtils
-BUILD_IMAGE=beer-garden/build

@@ -29,6 +29,7 @@ __all__ = [
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
+    "FileTriggerSchema",
     "GardenSchema",
     "OperationSchema",
 ]
@@ -382,6 +383,13 @@ class CronTriggerSchema(BaseSchema):
     jitter = fields.Int(allow_none=True)
 
 
+class FileTriggerSchema(BaseSchema):
+    pattern = fields.List(fields.Str(), allow_none=True)
+    path = fields.Str(allow_none=True)
+    recursive = fields.Bool(allow_none=True)
+    callbacks = fields.Dict(fields.Bool(), allow_none=True)
+
+
 class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
@@ -399,7 +407,7 @@ class JobSchema(BaseSchema):
     trigger_type = fields.Str(allow_none=True)
     trigger = ModelField(
         type_field="trigger_type",
-        allowed_types=["interval", "date", "cron"],
+        allowed_types=["interval", "date", "cron", "file"],
         allow_none=True,
     )
     request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
@@ -431,6 +439,7 @@ model_schema_map.update(
         "CronTrigger": CronTriggerSchema,
         "DateTrigger": DateTriggerSchema,
         "Event": EventSchema,
+        "FileTrigger": FileTriggerSchema,
         "Garden": GardenSchema,
         "Instance": InstanceSchema,
         "IntervalTrigger": IntervalTriggerSchema,
@@ -451,5 +460,6 @@ model_schema_map.update(
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,
         "cron": CronTriggerSchema,
+        "file": FileTriggerSchema,
     }
 )

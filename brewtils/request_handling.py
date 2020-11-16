@@ -211,7 +211,7 @@ class RequestProcessor(object):
             )
 
         if self._resolvers:
-            keys = json.loads(headers.get("resolve_parameters", "[]"), encoding="utf-8")
+            keys = json.loads(headers.get("resolve_parameters", "[]"))
             with DownloadResolver(
                 request, keys, self._resolvers, self._working_directory
             ) as resolved_params:

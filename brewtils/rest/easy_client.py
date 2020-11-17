@@ -793,7 +793,7 @@ class EasyClient(object):
             for x in range(meta["number_of_chunks"]):
                 resp = self.client.get_file(file_id, params={"chunk": x})
                 if resp.ok:
-                    file_obj.write(resp.text)
+                    file_obj.write(resp.json()["data"])
                 else:
                     raise ValueError("Could not fetch chunk %d" % x)
         else:
@@ -864,13 +864,13 @@ class EasyClient(object):
 
         # The file post is best effort; make sure to verify before we let the
         # user do anything with it
-        file_id = response.json()["id"]
+        file_id = response.json()["file_id"]
         (valid, meta) = self._check_file_validity(file_id)
         if valid:
             return file_id
         else:
             # Clean up if you can
-            self.client.delete_file(fd, file_params)
+            self.client.delete_file(file_id)
             raise ValidationError(
                 "Error occurred while uploading file %s"
                 % default_file_params["file_name"]

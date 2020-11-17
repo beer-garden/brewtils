@@ -26,6 +26,7 @@ __all__ = [
     "RequestFile",
     "File",
     "FileChunk",
+    "FileStatus",
     "RequestTemplate",
     "DateTrigger",
     "CronTrigger",
@@ -455,6 +456,63 @@ class FileChunk(BaseModel):
             self.file_id,
             self.offset,
         )
+
+
+class FileStatus(BaseModel):
+    schema = "FileStatusSchema"
+
+    def __init__(
+        self,
+        owner_id=None,
+        owner_type=None,
+        created_at=None,
+        file_name=None,
+        file_size=None,
+        chunks=None,
+        chunk_size=None,
+        chunk_id=None,
+        file_id=None,
+        offset=None,
+        data=None,
+        valid=None,
+        missing_chunks=None,
+        expected_max_size=None,
+        size_ok=None,
+        expected_number_of_chunks=None,
+        number_of_chunks=None,
+        chunks_ok=None,
+        operation_complete=None,
+        message=None,
+    ):
+        # Top-level file info
+        self.file_id = file_id
+        self.file_name = file_name
+        self.file_size = file_size
+        self.created_at = created_at
+        self.chunk_size = chunk_size
+        self.chunks = chunks
+        self.owner_id = owner_id
+        self.owner_type = owner_type
+        # Chunk info
+        self.chunk_id = chunk_id
+        self.offset = offset
+        self.data = data
+        # Validation metadata
+        self.valid = valid
+        self.missing_chunks = missing_chunks
+        self.expected_number_of_chunks = expected_number_of_chunks
+        self.expected_max_size = expected_max_size
+        self.number_of_chunks = number_of_chunks
+        self.size_ok = size_ok
+        self.chunks_ok = chunks_ok
+        self.operation_complete = operation_complete
+        self.message = message
+
+    def __str__(self):
+        return "%s" % self.__dict__
+
+    def __repr__(self):
+        return "<FileStatus: %s>" % self.__dict__
 
 
 class RequestTemplate(BaseModel):

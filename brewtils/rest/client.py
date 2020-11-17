@@ -650,7 +650,7 @@ class RestClient(object):
         # Establish a top-level file handle first
         result = self.session.get(self.file_url + "id/", params=file_params)
         if result.ok:
-            file_id = result.json()["id"]
+            file_id = result.json()["file_id"]
             offset = 0
             retry = 0
             current_cursor = 0
@@ -677,7 +677,9 @@ class RestClient(object):
                     fd.seek(current_cursor)
                     retry += 1
                 else:
-                    break
+                    raise RuntiemError("Could not send chunk %s, ran out of retries" % offset)
+        else:
+            raise RuntimeError("Could not request file ID for file %s" % fd.name)
 
         return result
 

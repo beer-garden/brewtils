@@ -19,6 +19,7 @@ __all__ = [
     "RequestFileSchema",
     "FileSchema",
     "FileChunkSchema",
+    "FileStatusSchema",
     "PatchSchema",
     "LoggingConfigSchema",
     "EventSchema",
@@ -239,6 +240,32 @@ class FileChunkSchema(BaseSchema):
     owner = fields.Raw(allow_none=True)
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
+
+
+class FileStatusSchema(BaseSchema):
+    # Top-level file info
+    file_id = fields.Str(allow_none=True)
+    created_at = fields.Str(allow_none=True)
+    file_name = fields.Str(allow_none=True)
+    file_size = fields.Int(allow_none=True)
+    chunk_size = fields.Int(allow_none=True)
+    chunks = fields.Dict(allow_none=True)
+    owner_id = fields.Str(allow_none=True)
+    owner_type = fields.Str(allow_none=True)
+    # Chunk info
+    chunk_id = fields.Str(allow_none=True)
+    offset = fields.Int(allow_none=True)
+    data = fields.Str(allow_none=True)
+    # Validation metadata
+    valid = fields.Bool(allow_none=True)
+    missing_chunks = fields.List(fields.Int(), allow_none=True)
+    expected_number_of_chunks = fields.Int(allow_none=True)
+    expected_max_size = fields.Int(allow_none=True)
+    number_of_chunks = fields.Int(allow_none=True)
+    size_ok = fields.Bool(allow_none=True)
+    chunks_ok = fields.Bool(allow_none=True)
+    operation_complete = fields.Bool(allow_none=True)
+    message = fields.Str(allow_none=True)
 
 
 class RequestTemplateSchema(BaseSchema):
@@ -472,6 +499,7 @@ model_schema_map.update(
         "RequestFile": RequestFileSchema,
         "File": FileSchema,
         "FileChunk": FileChunkSchema,
+        "FileStatus": FileStatusSchema,
         "RequestTemplate": RequestTemplateSchema,
         "Role": RoleSchema,
         "System": SystemSchema,

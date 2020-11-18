@@ -312,6 +312,26 @@ class TestStartup(object):
         )
         assert work_dir_base in plugin._config.working_directory
 
+    def test_success_no_ns(
+        self, plugin, admin_processor, request_processor, bg_system, bg_instance
+    ):
+        plugin._config.namespace = None
+        bg_system.namespace = None
+
+        plugin._ez_client.update_system = Mock(return_value=plugin._system)
+        plugin._initialize_processors = Mock(
+            return_value=(admin_processor, request_processor)
+        )
+
+        plugin._startup()
+        assert admin_processor.startup.called is True
+        assert request_processor.startup.called is True
+
+        work_dir_base = os.path.join(
+            bg_system.name, bg_instance.name, bg_system.version
+        )
+        assert work_dir_base in plugin._config.working_directory
+
     def test_connect_fail(self, plugin, admin_processor, request_processor):
         plugin._ez_client.can_connect.return_value = False
 

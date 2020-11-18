@@ -304,10 +304,12 @@ class Plugin(object):
         self._admin_processor, self._request_processor = self._initialize_processors()
 
         if self._config.working_directory is None:
+            app_parts = [self._system.name, self._instance.name]
+            if self._system.namespace:
+                app_parts.insert(0, self._system.namespace)
+
             self._config.working_directory = appdirs.user_data_dir(
-                appname=os.path.join(
-                    self._system.namespace, self._system.name, self._instance.name
-                ),
+                appname=os.path.join(*app_parts),
                 version=self._system.version,
             )
 

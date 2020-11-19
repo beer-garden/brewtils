@@ -3,6 +3,7 @@ import json
 import logging
 import logging.config
 import os
+import signal
 import threading
 
 import appdirs
@@ -210,6 +211,10 @@ class Plugin(object):
 
         # And with _system and _ez_client we can ask for the real logging config
         self._initialize_logging()
+
+        # Finally, save off the SIGTERM handler and set it to something cleaner
+        self._sigterm_orig = signal.getsignal(signal.SIGTERM)
+        signal.signal(signal.SIGTERM, signal.getsignal(signal.SIGINT))
 
     def run(self):
         if not self._client:

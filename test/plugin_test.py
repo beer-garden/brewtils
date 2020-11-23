@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
+import logging.config
 import os
 import warnings
 
-import logging
-import logging.config
 import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
@@ -27,6 +27,7 @@ from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
     _ez_client = Mock(
         name="ez_client",
+        get_version=Mock(return_value={"beer_garden_version": "3.0.0"}),
         create_system=Mock(return_value=bg_system),
         initialize_instance=Mock(return_value=bg_instance),
         get_logging_config=Mock(return_value=bg_logging_config),
@@ -617,6 +618,39 @@ class TestValidationFunctions(object):
             plugin._shutdown_event.set()
             with pytest.raises(RequestProcessingError):
                 plugin._is_running(Mock())
+
+
+class TestLegacyGarden(object):
+    def test_non_legacy(self, plugin, ez_client):
+        # Default ez_client setup is to act in non-legacy mode
+        assert plugin._legacy_garden() is False
+
+    def test_legacy(self, caplog, plugin, ez_client):
+        ez_client.get_version.return_value = {
+            "brew_view_version": "2.4.19",
+        }
+
+        with caplog.at_level(logging.WARNING):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+
+                assert plugin._legacy_garden() is True
+
+                assert len(w) == 1
+                assert w[0].category == DeprecationWarning
+
+        assert len(caplog.messages) == 1
+        assert "legacy Beer Garden" in caplog.messages[0]
+
+    def test_query_failure(self, caplog, plugin, ez_client):
+        ez_client.get_version.side_effect = RestConnectionError("Whoopsie")
+
+        with caplog.at_level(logging.DEBUG):
+            assert plugin._legacy_garden() is False
+
+        assert len(caplog.messages) == 2
+        assert "assuming non-legacy" in caplog.messages[0]
+        assert "Underlying exception" in caplog.messages[1]
 
 
 class TestSetupLogging(object):

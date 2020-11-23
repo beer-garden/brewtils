@@ -3,15 +3,14 @@
 import functools
 import json
 from datetime import datetime
-from typing import Any, Dict, List
-from base64 import b64encode, b64decode
+from typing import Any, List
+from base64 import b64encode
 
 import jwt
 import requests.exceptions
 import urllib3
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
-from requests.models import Response
 from yapconf import YapconfSpec
 
 import brewtils.plugin
@@ -631,7 +630,6 @@ class RestClient(object):
 
     @enable_auth
     def post_file(self, fd, file_params, current_position=0):
-        # type: (File, Dictionary(String, Any)) -> Response
         """Performs a POST on the file URL.
 
         Args:
@@ -677,7 +675,9 @@ class RestClient(object):
                     fd.seek(current_cursor)
                     retry += 1
                 else:
-                    raise RuntimeError("Could not send chunk %s, ran out of retries" % offset)
+                    raise RuntimeError(
+                        "Could not send chunk %s, ran out of retries" % offset
+                    )
         else:
             raise RuntimeError("Could not request file ID for file %s" % fd.name)
 

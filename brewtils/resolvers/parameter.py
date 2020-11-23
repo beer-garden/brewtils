@@ -1,6 +1,4 @@
 import logging
-import os
-import shutil
 import six
 
 from brewtils.errors import ValidationError

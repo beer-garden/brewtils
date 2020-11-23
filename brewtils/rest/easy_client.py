@@ -823,7 +823,7 @@ class EasyClient(object):
             desired_filename: The desired filename, if none is provided it
             will use the basename of the file_to_upload
             file_params: The metadata surrounding the file.
-                Valid Keys: file_name, file_size, chunk_size, owner_id, owner_type
+                Valid Keys: See brewtils File model
 
         Returns:
             A BG file ID.
@@ -839,7 +839,10 @@ class EasyClient(object):
             fd = file_to_upload
             require_close = False
 
-        default_file_params["file_name"] = desired_filename or fd.name
+        try:
+            default_file_params["file_name"] = desired_filename or fd.name
+        except AttributeError:
+            default_file_params["file_name"] = "no_file_name_provided"
 
         # Determine the file size
         cur_cursor = fd.tell()

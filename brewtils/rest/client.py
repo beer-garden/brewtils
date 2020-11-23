@@ -677,7 +677,7 @@ class RestClient(object):
                     fd.seek(current_cursor)
                     retry += 1
                 else:
-                    raise RuntiemError("Could not send chunk %s, ran out of retries" % offset)
+                    raise RuntimeError("Could not send chunk %s, ran out of retries" % offset)
         else:
             raise RuntimeError("Could not request file ID for file %s" % fd.name)
 

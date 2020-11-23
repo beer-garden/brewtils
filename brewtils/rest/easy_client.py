@@ -2,7 +2,8 @@
 
 import six
 import wrapt
-from io import StringIO
+from io import BytesIO
+from base64 import b64decode
 
 from brewtils.config import get_connection_info
 from brewtils.errors import (
@@ -788,12 +789,13 @@ class EasyClient(object):
             A file object
         """
         (valid, meta) = self._check_file_validity(file_id)
-        file_obj = StringIO("")
+        file_obj = BytesIO()
         if valid:
             for x in range(meta["number_of_chunks"]):
                 resp = self.client.get_file(file_id, params={"chunk": x})
                 if resp.ok:
-                    file_obj.write(resp.json()["data"])
+                    data = resp.json()["data"]
+                    file_obj.write(b64decode(data))
                 else:
                     raise ValueError("Could not fetch chunk %d" % x)
         else:

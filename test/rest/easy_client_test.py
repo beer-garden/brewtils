@@ -4,7 +4,6 @@ import warnings
 
 import pytest
 from mock import ANY, Mock
-from bson import ObjectId
 from base64 import b64encode, b64decode
 
 import brewtils.rest.easy_client
@@ -31,7 +30,7 @@ from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
 
 @pytest.fixture
 def target_file_id():
-    return "%s %s" % (UI_FILE_ID_PREFIX, str(ObjectId))
+    return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
 
 
 @pytest.fixture

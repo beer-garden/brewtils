@@ -7,7 +7,6 @@ import pytest
 import requests.exceptions
 from mock import ANY, MagicMock, Mock
 from yapconf.exceptions import YapconfItemError
-from bson import ObjectId
 
 import brewtils.rest
 from brewtils.rest.client import RestClient
@@ -329,7 +328,7 @@ class TestRestClient(object):
 
     @pytest.fixture
     def target_file_id(self):
-        return "%s %s" % (UI_FILE_ID_PREFIX, str(ObjectId))
+        return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
 
     def test_post_file(
         self, monkeypatch, client, session_mock, target_file_metadata, target_file_id

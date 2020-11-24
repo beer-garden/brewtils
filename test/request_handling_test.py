@@ -3,7 +3,6 @@ import json
 import logging
 import sys
 import threading
-from bson import ObjectId
 
 import pytest
 from mock import ANY, MagicMock, Mock
@@ -35,7 +34,7 @@ class CustomException(SuppressStacktrace):
 
 @pytest.fixture
 def target_file_id():
-    return "%s %s" % (UI_FILE_ID_PREFIX, str(ObjectId))
+    return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
 
 
 class TestRequestProcessor(object):

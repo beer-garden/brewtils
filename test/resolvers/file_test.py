@@ -1,7 +1,6 @@
 import os
 import pytest
 from mock import Mock
-from bson import ObjectId
 
 from brewtils.errors import ValidationError
 from brewtils.resolvers import FileResolver
@@ -15,7 +14,7 @@ def resolver():
 
 @pytest.fixture
 def target_file_id():
-    return "%s %s" % (UI_FILE_ID_PREFIX, str(ObjectId))
+    return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
 
 
 @pytest.fixture

@@ -46,9 +46,9 @@ def test_upload_unknown(resolver):
 
 def test_upload_filename_does_not_exist(monkeypatch, resolver):
     monkeypatch.setattr(
-        resolver.client, "upload_file", Mock(side_effect=FileNotFoundError())
+        resolver.client, "upload_file", Mock(side_effect=ValidationError())
     )
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValidationError):
         resolver.upload("DOES_NOT_EXIST")
 
 

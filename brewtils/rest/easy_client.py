@@ -807,7 +807,10 @@ class EasyClient(object):
 
         # Establish the file descriptor
         if isinstance(file_to_upload, six.string_types):
-            fd = open(file_to_upload, "rb")
+            try:
+                fd = open(file_to_upload, "rb")
+            except Exception:
+                raise ValidationError("Could not open the requested file name.")
             require_close = True
         else:
             fd = file_to_upload

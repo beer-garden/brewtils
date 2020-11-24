@@ -6,12 +6,10 @@ import six
 from brewtils.errors import ValidationError
 
 
-class GridfsResolver(object):
-    """Bytes-Resolver for GridFS
-
+class FileResolver(object):
+    """
     Resolvers are meant to be written for specific storage types.
-    In this case, we are just simply using the API to stream bytes
-    into a file.
+    In this case, we are uploading and downloading file chunks.
 
     This class is meant to be used transparently to Plugin developers.
     Resolvers respond to two methods:

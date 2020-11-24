@@ -733,32 +733,6 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
-    def stream_to_sink(self, file_id, sink, **kwargs):
-        """Stream the given file id to the sink.
-
-        Examples:
-
-            To stream a given file to a local file you can do::
-
-                with open("filename", "rb") as my_file:
-                    client.stream_to_sink("id", my_file)
-
-        Args:
-            file_id: The file ID
-            sink: An object with a `.write` method, often times this is
-            an open file descriptor.
-
-        Keyword Args:
-            chunk_size: Size of chunks as they are written/read (defaults to 4096)
-
-        """
-        chunk_size = kwargs.get("chunk_size", 4096)
-        with self.client.get_file(file_id, stream=True) as response:
-            if not response.ok:
-                handle_response_failure(response)
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                sink.write(chunk)
-
     def _check_file_validity(self, file_id):
         """Upload a given file to the Beer Garden server.
 

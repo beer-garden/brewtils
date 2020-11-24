@@ -4,6 +4,8 @@ import warnings
 
 import pytest
 from mock import ANY, Mock
+from bson import ObjectId
+from base64 import b64encode, b64decode
 
 import brewtils.rest.easy_client
 from brewtils.errors import (
@@ -24,6 +26,21 @@ from brewtils.rest.easy_client import (
     handle_response_failure,
 )
 from brewtils.schema_parser import SchemaParser
+from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
+
+
+@pytest.fixture
+def target_file_id():
+    return "%s %s" % (UI_FILE_ID_PREFIX, str(ObjectId))
+
+
+@pytest.fixture
+def target_file():
+    fp = Mock()
+    fp.tell = Mock(return_value=0)
+    fp.seek = Mock(return_value=1024)
+    fp.read = Mock(side_effect=iter([b"content", None]))
+    return fp
 
 
 @pytest.fixture
@@ -433,35 +450,38 @@ def test_get_user(client, rest_client, success, bg_principal):
 
 
 class TestRequestFileUpload(object):
-    def test_stream_to_sink_fail(self, client, rest_client, not_found):
-        def mock_exit(_, exc_type, exc_value, traceback):
-            if exc_value is not None:
-                raise exc_value
+    def test_stream_to_sink_fail(self, client, rest_client):
+        client._check_file_validity = Mock(return_value=(False, {}))
+        rest_client.get_file.return_value = None
+        with pytest.raises(ValidationError):
+            client.download_file("file_id")
 
-        mock_get = Mock(__enter__=Mock(return_value=not_found), __exit__=mock_exit)
-        sink = Mock()
-        rest_client.get_file.return_value = mock_get
-        with pytest.raises(NotFoundError):
-            client.stream_to_sink("file_id", sink)
+    def test_download_file(self, client, rest_client, target_file, target_file_id):
+        file_data = b64encode(target_file.read())
 
-    def test_stream_to_sink(self, client, rest_client):
-        response = Mock(
-            status_code=200, ok=True, iter_content=Mock(return_value=["chunk"])
+        client._check_file_validity = Mock(
+            return_value=(
+                True,
+                {
+                    "file_id": target_file_id,
+                    "number_of_chunks": 1,
+                },
+            )
         )
-        mock_get = Mock(__enter__=Mock(return_value=response), __exit__=Mock())
-        sink = Mock()
-        rest_client.get_file.return_value = mock_get
-        client.stream_to_sink("file_id", sink)
-        sink.write.assert_called_with("chunk")
+        response = Mock()
+        response.ok = True
+        response.json = Mock(return_value={"data": file_data})
+        rest_client.get_file.return_value = response
+        byte_obj = client.download_file("file_id")
+        assert byte_obj.read() == b64decode(file_data)
 
-    def test_upload_file(self, client, rest_client, success):
-        file_to_upload = Mock()
-        success.json = Mock(return_value={"upload_id": "SERVER_RESPONSE"})
-        rest_client.post_files.return_value = success
-        assert client.upload_file(file_to_upload, "desired_name") == "SERVER_RESPONSE"
+    def test_upload_file(self, client, rest_client, success, target_file):
+        success.json = Mock(return_value={"file_id": "SERVER_RESPONSE"})
+        rest_client.post_file.return_value = success
+        client._check_file_validity = Mock(return_value=(True, {}))
+        assert client.upload_file(target_file, "desired_name") == "SERVER_RESPONSE"
 
-    def test_upload_file_fail(self, client, rest_client, server_error):
-        file_to_upload = Mock()
-        rest_client.post_files.return_value = server_error
+    def test_upload_file_fail(self, client, rest_client, server_error, target_file):
+        rest_client.post_file.return_value = server_error
         with pytest.raises(SaveError):
-            assert client.upload_file(file_to_upload, "desired_name")
+            assert client.upload_file(target_file, "desired_name")

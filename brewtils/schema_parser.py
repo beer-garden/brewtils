@@ -41,6 +41,7 @@ class SchemaParser(object):
         "RequestFileSchema": brewtils.models.RequestFile,
         "FileSchema": brewtils.models.File,
         "FileChunkSchema": brewtils.models.FileChunk,
+        "FileStatusSchema": brewtils.models.FileStatus,
         "RequestTemplateSchema": brewtils.models.RequestTemplate,
         "RoleSchema": brewtils.models.Role,
         "SystemSchema": brewtils.models.System,

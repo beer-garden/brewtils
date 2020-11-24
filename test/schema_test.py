@@ -89,7 +89,7 @@ class TestFields(object):
                 allowed_types=["bar"],
             )
 
-    def test_deserailize_mapping(self):
+    def test_deserialize_mapping(self):
         models = list(set(model_schema_map[dic] for dic in model_schema_map))
         assert len(models) == len(
             SchemaParser._models

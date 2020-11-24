@@ -87,7 +87,7 @@ class ParameterResolver(object):
             return -1
 
     def _get_resolver(self, value):
-        storage_type = "gridfs"
+        storage_type = "file"
         if isinstance(value, dict):
             storage_type = value.get("storage_type", storage_type)
 
@@ -98,7 +98,7 @@ class ParameterResolver(object):
 
 
 class DownloadResolver(ParameterResolver):
-    def __init__(self, request, params_to_resolve, resolvers, base_directory):
+    def __init__(self, request, params_to_resolve, resolvers, *_):
         super(DownloadResolver, self).__init__(request, params_to_resolve, resolvers)
 
     def resolve_parameters(self):

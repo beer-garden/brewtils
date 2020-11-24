@@ -7,9 +7,11 @@ import pytest
 import requests.exceptions
 from mock import ANY, MagicMock, Mock
 from yapconf.exceptions import YapconfItemError
+from bson import ObjectId
 
 import brewtils.rest
 from brewtils.rest.client import RestClient
+from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
 
 
 class TestRestClient(object):
@@ -319,13 +321,28 @@ class TestRestClient(object):
 
     def test_get_file(self, client, session_mock):
         client.get_file("id")
-        session_mock.get.assert_called_with(client.file_url + "id")
+        session_mock.get.assert_called_with(client.file_url + "?file_id=" + "id")
 
-    def test_post_files(self, client, session_mock):
+    @pytest.fixture
+    def target_file_metadata(self):
+        return {"file_name": "test", "file_size": 1024, "chunk_size": 1024}
+
+    @pytest.fixture
+    def target_file_id(self):
+        return "%s %s" % (UI_FILE_ID_PREFIX, str(ObjectId))
+
+    def test_post_file(
+        self, monkeypatch, client, session_mock, target_file_metadata, target_file_id
+    ):
         open_file = Mock()
-        files = {"id": ("filename", open_file)}
-        client.post_files(files)
-        session_mock.post.assert_called_with(client.file_url, files=files)
+        open_file.read = Mock(side_effect=iter([b"My content", None]))
+        open_file.tell = Mock(return_value=0)
+        response = Mock()
+        response.ok = True
+        response.json = Mock(return_value={"file_id": target_file_id})
+        monkeypatch.setattr(client.session, "get", Mock(return_value=response))
+        ret = client.post_file(open_file, file_params=target_file_metadata)
+        assert ret == response
         open_file.seek.assert_called_with(0)
 
     def test_refresh(self, client, session_mock):

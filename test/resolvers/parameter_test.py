@@ -134,15 +134,16 @@ class TestDownloadResolver(object):
 
         def lookup_file(file_id):
             id_map = {
-                '%s 5cd2152c759cb4d72646a59b' % UI_FILE_ID_PREFIX: expected_files[0],
-                '%s 5cd2152c759cb4d72646a59c' % UI_FILE_ID_PREFIX: expected_files[1],
-                '%s 5cd2152c759cb4d72646a59d' % UI_FILE_ID_PREFIX: expected_files[2],
-                '%s 5cd2152c759cb4d72646a59e' % UI_FILE_ID_PREFIX: expected_files[3],
-                '%s 5cd2152c759cb4d72646a59f' % UI_FILE_ID_PREFIX: expected_files[4],
-                '%s 5cd2152c759cb4d72646a591' % UI_FILE_ID_PREFIX: expected_files[5],
-                '%s 5cd2152c759cb4d72646a592' % UI_FILE_ID_PREFIX: expected_files[6],
+                "%s 5cd2152c759cb4d72646a59b" % UI_FILE_ID_PREFIX: expected_files[0],
+                "%s 5cd2152c759cb4d72646a59c" % UI_FILE_ID_PREFIX: expected_files[1],
+                "%s 5cd2152c759cb4d72646a59d" % UI_FILE_ID_PREFIX: expected_files[2],
+                "%s 5cd2152c759cb4d72646a59e" % UI_FILE_ID_PREFIX: expected_files[3],
+                "%s 5cd2152c759cb4d72646a59f" % UI_FILE_ID_PREFIX: expected_files[4],
+                "%s 5cd2152c759cb4d72646a591" % UI_FILE_ID_PREFIX: expected_files[5],
+                "%s 5cd2152c759cb4d72646a592" % UI_FILE_ID_PREFIX: expected_files[6],
             }
             return id_map.get(file_id, None)
+
         monkeypatch.setattr(
             resolver.resolvers["file"],
             "download",

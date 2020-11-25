@@ -512,6 +512,19 @@ class SchemaParser(object):
         )
 
     @classmethod
+    def serialize_permission(cls, permission, to_string=True, **kwargs):
+        """Convert a permission model into serialized form
+
+        :param permission: The permission object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation
+        """
+        return cls.serialize(
+            permission, to_string=to_string, schema_name=brewtils.models.Permission.schema, **kwargs
+        )
+
+    @classmethod
     def serialize_refresh_token(cls, refresh_token, to_string=True, **kwargs):
         """Convert a role model into serialized form
 

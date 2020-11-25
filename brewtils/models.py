@@ -940,7 +940,15 @@ class Role(BaseModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Role: name=%s, permissions=%s, namespaces=%s>" % (self.name, self.permissions)
+        return "<Role: name=%s, permissions=%s>" % (self.name, self.permissions)
+
+    def __hash__(self):
+        return hash((self.name, self.permissions))
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.name == other.name and self.permissions == other.permissions
 
 
 class Permission(BaseModel):
@@ -948,8 +956,7 @@ class Permission(BaseModel):
 
     ACCESSES = ["CREATE", "READ", "MAINTAINER", "ADMIN"]
 
-    def __init__(self, id=None, namespace=None, access=None, is_local=None):
-        self.id = id
+    def __init__(self, namespace=None, access=None, is_local=None):
         self.namespace = namespace
         self.access = access
         self.is_local = is_local
@@ -965,6 +972,14 @@ class Permission(BaseModel):
 
     def __repr__(self):
         return "<Permission: namespace=%s, access=%s, is_local=%s>" % (self.namespace, self.access, self.is_local)
+
+    def __hash__(self):
+        return hash((self.namespace, self.access, self.is_local))
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.namespace == other.namespace and self.access == other.access and self.is_local == other.is_local
 
 
 class RefreshToken(BaseModel):
@@ -1199,11 +1214,11 @@ class FileTrigger(BaseModel):
     schema = "FileTriggerSchema"
 
     def __init__(
-        self,
-        pattern=None,
-        path=None,
-        recursive=None,
-        callbacks=None,
+            self,
+            pattern=None,
+            path=None,
+            recursive=None,
+            callbacks=None,
     ):
         self.pattern = pattern
         self.path = path

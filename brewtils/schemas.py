@@ -333,11 +333,10 @@ class RoleSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
-    permissions = fields.Nested("PermissionSchema", allow_none=True)
+    permissions = fields.Nested("PermissionSchema", many=True, allow_none=True)
 
 
 class PermissionSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     access = fields.Str(allow_none=True)
     is_local = fields.Boolean(allow_none=True)

@@ -314,7 +314,7 @@ def parameter(
     # Model is another special case - it requires its own handling
     if model is not None:
         param.type = "Dictionary"
-        param.parameters = _generate_nested_params(model)
+        param.parameters = _generate_nested_params(model.parameters)
 
         # If the model is not nullable and does not have a default we will try
         # to generate a one using the defaults defined on the model parameters
@@ -448,10 +448,18 @@ def _generate_params_from_function(func):
     return parameters_to_return
 
 
-def _generate_nested_params(model_class):
-    """Generates Nested Parameters from a Model Class"""
+def _generate_nested_params(parameter_list):
+    """Generate nested parameters from a list of Parameters
+
+    This function will take a list of Parameters and will return a new list of "real"
+    Parameters.
+
+    The main thing this does is ensure the choices specification is correct for all
+    Parameters in the tree.
+    """
     parameters_to_return = []
-    for parameter_definition in model_class.parameters:
+
+    for parameter_definition in parameter_list:
         key = parameter_definition.key
         parameter_type = parameter_definition.type
         multi = parameter_definition.multi
@@ -470,8 +478,7 @@ def _generate_nested_params(model_class):
         nested_parameters = []
         if parameter_definition.parameters:
             parameter_type = "Dictionary"
-            for nested_class in parameter_definition.parameters:
-                nested_parameters += _generate_nested_params(nested_class)
+            nested_parameters = _generate_nested_params(parameter_definition.parameters)
 
         parameters_to_return.append(
             Parameter(
@@ -491,6 +498,7 @@ def _generate_nested_params(model_class):
                 type_info=type_info,
             )
         )
+
     return parameters_to_return
 
 

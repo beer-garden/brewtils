@@ -237,7 +237,7 @@ class TestParameter(object):
                     display_name="x",
                     optional=True,
                     description="key1",
-                    parameters=[MyNestedModel, MyOtherNestedModel],
+                    parameters=MyNestedModel.parameters + MyOtherNestedModel.parameters,
                     default="xval",
                 )
             ]

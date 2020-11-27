@@ -471,7 +471,7 @@ def _generate_nested_params(model_class):
         if parameter_definition.parameters:
             parameter_type = "Dictionary"
             for nested_class in parameter_definition.parameters:
-                nested_parameters = _generate_nested_params(nested_class)
+                nested_parameters += _generate_nested_params(nested_class)
 
         parameters_to_return.append(
             Parameter(

@@ -227,7 +227,7 @@ class FileSchema(BaseSchema):
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
     owner = fields.Raw(allow_none=True)
-    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
@@ -245,7 +245,7 @@ class FileChunkSchema(BaseSchema):
 class FileStatusSchema(BaseSchema):
     # Top-level file info
     file_id = fields.Str(allow_none=True)
-    created_at = fields.Str(allow_none=True)
+    updated_at = fields.Str(allow_none=True)
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=True)
     chunk_size = fields.Int(allow_none=True)

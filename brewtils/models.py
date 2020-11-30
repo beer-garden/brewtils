@@ -410,7 +410,7 @@ class File(BaseModel):
         id=None,
         owner_id=None,
         owner_type=None,
-        created_at=None,
+        updated_at=None,
         file_name=None,
         file_size=None,
         chunks=None,
@@ -421,7 +421,7 @@ class File(BaseModel):
         self.owner_id = owner_id
         self.owner_type = owner_type
         self.owner = owner
-        self.created_at = created_at
+        self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks
@@ -465,7 +465,7 @@ class FileStatus(BaseModel):
         self,
         owner_id=None,
         owner_type=None,
-        created_at=None,
+        updated_at=None,
         file_name=None,
         file_size=None,
         chunks=None,
@@ -488,7 +488,7 @@ class FileStatus(BaseModel):
         self.file_id = file_id
         self.file_name = file_name
         self.file_size = file_size
-        self.created_at = created_at
+        self.updated_at = updated_at
         self.chunk_size = chunk_size
         self.chunks = chunks
         self.owner_id = owner_id

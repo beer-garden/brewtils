@@ -459,26 +459,26 @@ def _generate_nested_params(parameter_list):
     """
     parameters_to_return = []
 
-    for parameter_definition in parameter_list:
-        key = parameter_definition.key
-        parameter_type = parameter_definition.type
-        multi = parameter_definition.multi
-        display_name = parameter_definition.display_name
-        optional = parameter_definition.optional
-        default = parameter_definition.default
-        description = parameter_definition.description
-        nullable = parameter_definition.nullable
-        maximum = parameter_definition.maximum
-        minimum = parameter_definition.minimum
-        regex = parameter_definition.regex
-        type_info = parameter_definition.type_info
+    for param in parameter_list:
+        key = param.key
+        parameter_type = param.type
+        multi = param.multi
+        display_name = param.display_name
+        optional = param.optional
+        default = param.default
+        description = param.description
+        nullable = param.nullable
+        maximum = param.maximum
+        minimum = param.minimum
+        regex = param.regex
+        type_info = param.type_info
 
-        choices = _format_choices(parameter_definition.choices)
+        choices = _format_choices(param.choices)
 
         nested_parameters = []
-        if parameter_definition.parameters:
+        if param.parameters:
             parameter_type = "Dictionary"
-            nested_parameters = _generate_nested_params(parameter_definition.parameters)
+            nested_parameters = _generate_nested_params(param.parameters)
 
         parameters_to_return.append(
             Parameter(

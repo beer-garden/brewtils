@@ -11,6 +11,7 @@ import brewtils.plugin
 from brewtils.errors import (
     FetchError,
     RequestFailedError,
+    RequestProcessException,
     TimeoutExceededError,
     ValidationError,
 )
@@ -271,7 +272,7 @@ class SystemClient(object):
                 "System '%s' has no command named '%s'" % (self._system, command_name)
             )
 
-    def send_bg_request(self, **kwargs):
+    def send_bg_request(self, *args, **kwargs):
         """Actually create a Request and send it to Beer-garden
 
         .. note::
@@ -282,6 +283,7 @@ class SystemClient(object):
             ``create_bg_request``.
 
         Args:
+            args (list): Unused. Passing positional parameters indicates a bug
             kwargs (dict): All necessary request parameters, including Beer-garden
                 internal parameters
 
@@ -292,6 +294,15 @@ class SystemClient(object):
         Raises:
             ValidationError: Request creation failed validation on the server
         """
+        # First, if any positional args were given that's a bug, as it means someone
+        # tried to pass a parameter without a key:
+        # client.command_name(param)
+        if args:
+            raise RequestProcessException(
+                "Using positional arguments when creating a request is not allowed. "
+                "Please use keyword arguments instead."
+            )
+
         # Need to pop here, otherwise we'll try to send as a request parameter
         raise_on_error = kwargs.pop("_raise_on_error", self._raise_on_error)
         blocking = kwargs.pop("_blocking", self._blocking)

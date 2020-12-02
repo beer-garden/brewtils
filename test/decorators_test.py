@@ -328,6 +328,26 @@ class TestParameter(object):
 
             self._assert_correct(foo)
 
+        def test_non_parameter(self):
+            class MyModel(object):
+                parameters = [
+                    Parameter(
+                        key="key1",
+                        multi=False,
+                        display_name="x",
+                        optional=True,
+                        description="key1",
+                        parameters=["Not valid!"],
+                        default="xval",
+                    )
+                ]
+
+            with pytest.raises(PluginParamError):
+
+                @parameter(key="nested_complex", model=MyModel)
+                def foo(_, nested_complex):
+                    return nested_complex
+
         @staticmethod
         def _assert_correct(foo):
             assert hasattr(foo, "_command")

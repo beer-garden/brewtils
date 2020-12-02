@@ -18,7 +18,7 @@ except ImportError:
     from lark.common import ParseError
 
 from brewtils.choices import parse
-from brewtils.errors import PluginParamError
+from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Choices
 
 if sys.version_info.major == 2:
@@ -460,6 +460,16 @@ def _generate_nested_params(parameter_list):
     parameters_to_return = []
 
     for param in parameter_list:
+        # This is needed for backwards compatibility
+        # See https://github.com/beer-garden/beer-garden/issues/354
+        if not isinstance(param, Parameter) and hasattr(param, "parameters"):
+            _deprecate(
+                "Constructing a nested Parameters list using model class objects "
+                "is deprecated. Please pass the model's parameter list directly."
+            )
+            parameters_to_return += _generate_nested_params(param.parameters)
+            continue
+
         key = param.key
         parameter_type = param.type
         multi = param.multi

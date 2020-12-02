@@ -301,6 +301,33 @@ class TestParameter(object):
 
             self._assert_correct(foo)
 
+        def test_mixed_list(self, nested_1, nested_2):
+            class MyModel(object):
+                parameters = [
+                    Parameter(
+                        key="key1",
+                        multi=False,
+                        display_name="x",
+                        optional=True,
+                        description="key1",
+                        parameters=nested_1.parameters + [nested_2],
+                        default="xval",
+                    )
+                ]
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+
+                @parameter(key="nested_complex", model=MyModel)
+                def foo(_, nested_complex):
+                    return nested_complex
+
+                # Only 1 nested model class object this time
+                assert len(w) == 1
+                assert w[0].category == DeprecationWarning
+
+            self._assert_correct(foo)
+
         @staticmethod
         def _assert_correct(foo):
             assert hasattr(foo, "_command")

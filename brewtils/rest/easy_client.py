@@ -740,7 +740,7 @@ class EasyClient(object):
             file_id: The BG-assigned file id.
 
         Returns:
-            A tuple containing the result, and supporting metadata, if available
+            A tuple containing the result and supporting metadata, if available
         """
         response = self.client.get_file(file_id, params={"verify": True})
         if not response.ok:

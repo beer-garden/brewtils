@@ -734,13 +734,13 @@ class EasyClient(object):
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
     def _check_file_validity(self, file_id):
-        """Upload a given file to the Beer Garden server.
+        """Request that beer garden
 
         Args:
             file_id: The BG-assigned file id.
 
         Returns:
-            A file object
+            A tuple containing the result, and supporting metadata, if available
         """
         response = self.client.get_file(file_id, params={"verify": True})
         if not response.ok:
@@ -754,7 +754,7 @@ class EasyClient(object):
             return False, metadata_json
 
     def download_file(self, file_id):
-        """Upload a given file to the Beer Garden server.
+        """Download a file from the Beer Garden server.
 
         Args:
             file_id: The beer garden-assigned file id.

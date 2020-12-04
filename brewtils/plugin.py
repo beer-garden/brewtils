@@ -3,10 +3,15 @@ import json
 import logging
 import logging.config
 import os
+import signal
 import threading
 
 import appdirs
 from box import Box
+from packaging.version import Version
+from requests import ConnectionError as RequestsConnectionError
+
+import brewtils
 from brewtils.config import load_config
 from brewtils.errors import (
     ConflictError,
@@ -28,7 +33,6 @@ from brewtils.request_handling import (
 from brewtils.resolvers import build_resolver_map
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
-from requests import ConnectionError as RequestsConnectionError
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -195,21 +199,29 @@ class Plugin(object):
             )
         CONFIG = Box(self._config.to_dict(), default_box=True)
 
-        # Now that the config is loaded we can create the EasyClient
-        self._ez_client = EasyClient(logger=self._logger, **self._config)
-
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
-        # Namespace setup depends on self._system and self._ez_client
-        self._setup_namespace()
-
-        # Make sure this is set after _system
+        # Make sure this is set after self._system
         if client:
             self.client = client
 
-        # And with _system and _ez_client we can ask for the real logging config
-        self._initialize_logging()
+        # Now that the config is loaded we can create the EasyClient
+        self._ez_client = EasyClient(logger=self._logger, **self._config)
+
+        # With the EasyClient we can determine if this is an old garden
+        self._legacy = self._legacy_garden()
+
+        if not self._legacy:
+            # Namespace setup depends on self._system and self._ez_client
+            self._setup_namespace()
+
+            # And with _system and _ez_client we can ask for the real logging config
+            self._initialize_logging()
+
+        # Finally, save off the SIGTERM handler and set it to something cleaner
+        self._sigterm_orig = signal.getsignal(signal.SIGTERM)
+        signal.signal(signal.SIGTERM, signal.getsignal(signal.SIGINT))
 
     def run(self):
         if not self._client:
@@ -291,7 +303,7 @@ class Plugin(object):
             raise RestConnectionError("Cannot connect to the Beer-garden server")
 
         # If namespace couldn't be determined at init try one more time
-        if not self._config.namespace:
+        if not self._legacy and not self._config.namespace:
             self._setup_namespace()
 
         self._system = self._initialize_system()
@@ -299,10 +311,12 @@ class Plugin(object):
         self._admin_processor, self._request_processor = self._initialize_processors()
 
         if self._config.working_directory is None:
+            app_parts = [self._system.name, self._instance.name]
+            if self._system.namespace:
+                app_parts.insert(0, self._system.namespace)
+
             self._config.working_directory = appdirs.user_data_dir(
-                appname=os.path.join(
-                    self._system.namespace, self._system.name, self._instance.name
-                ),
+                appname=os.path.join(*app_parts),
                 version=self._system.version,
             )
 
@@ -567,6 +581,46 @@ class Plugin(object):
             raise RequestProcessingError(
                 "Unable to process message - currently shutting down"
             )
+
+    def _legacy_garden(self):
+        """Determine if this plugin is connected to a legacy garden"""
+        legacy = False
+
+        try:
+            # Need to be careful since v2 doesn't have "beer_garden_version"
+            raw_version = self._ez_client.get_version()
+            if "beer_garden_version" in raw_version:
+                bg_version = Version(raw_version["beer_garden_version"])
+            else:
+                bg_version = Version(raw_version["brew_view_version"])
+
+            if bg_version < Version("3"):
+                legacy = True
+
+                _deprecate(
+                    "Looks like your plugin is using version 3 brewtils but connecting "
+                    "to a version 2 Beer Garden. Please be aware that this "
+                    "functionality will stop being officially supported in the next "
+                    "brewtils minor release."
+                )
+
+                self._logger.warning(
+                    "This plugin is using brewtils version {0} but is connected to a "
+                    "legacy Beer Garden (version {1}). Please be aware that certain "
+                    "features such as namespaces and logging configuration will not "
+                    "work correctly until the Beer Garden is upgraded.".format(
+                        brewtils.__version__, bg_version
+                    )
+                )
+
+        except Exception as ex:
+            self._logger.warning(
+                "An exception was raised while attempting to determine Beer Garden "
+                "version, assuming non-legacy."
+            )
+            self._logger.debug("Underlying exception: %s" % ex, exc_info=True)
+
+        return legacy
 
     def _setup_logging(self, logger=None, **kwargs):
         """Set up logging configuration and get a logger for the Plugin

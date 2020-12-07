@@ -1,9 +1,9 @@
-from brewtils.resolvers.gridfs import GridfsResolver
+from brewtils.resolvers.file import FileResolver
 from brewtils.resolvers.parameter import DownloadResolver, UploadResolver
 
-__all__ = ["DownloadResolver", "GridfsResolver", "UploadResolver"]
+__all__ = ["DownloadResolver", "FileResolver", "UploadResolver"]
 
-_resolver_map = {"gridfs": {"class": GridfsResolver}}
+_resolver_map = {"file": {"class": FileResolver}}
 
 
 def build_resolver_map(easy_client):

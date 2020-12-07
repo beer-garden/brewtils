@@ -1,8 +1,9 @@
 import logging
-import os
-import shutil
+import six
 
 from brewtils.errors import ValidationError
+
+UI_FILE_ID_PREFIX = "BGFileID:"
 
 
 class ParameterResolver(object):
@@ -86,7 +87,7 @@ class ParameterResolver(object):
             return -1
 
     def _get_resolver(self, value):
-        storage_type = "gridfs"
+        storage_type = "file"
         if isinstance(value, dict):
             storage_type = value.get("storage_type", storage_type)
 
@@ -97,29 +98,46 @@ class ParameterResolver(object):
 
 
 class DownloadResolver(ParameterResolver):
-    def __init__(self, request, params_to_resolve, resolvers, base_directory):
+    def __init__(self, request, params_to_resolve, resolvers, *_):
         super(DownloadResolver, self).__init__(request, params_to_resolve, resolvers)
-        self.base_directory = base_directory
-        self._working_dir = os.path.join(str(self.base_directory), request.id or "")
 
-    def cleanup(self):
-        if os.path.isdir(self._working_dir):
-            shutil.rmtree(self._working_dir)
+    def resolve_parameters(self):
+        self.pre_resolve()
+        return self._recurse_and_resolve(self.parameters)
 
     def simple_resolve(self, value):
         resolver = self._get_resolver(value)
-        filename = value["filename"]
-        full_path = os.path.join(self._working_dir, filename)
-        if os.path.exists(full_path):
-            full_path = os.path.join(self._working_dir, value["id"])
+        return resolver.download(value)
 
-        with open(full_path, "wb") as file_to_write:
-            resolver.download(value, file_to_write)
-        return full_path
+    def _recurse_and_resolve(self, parameter, *_):
+        """Used to scan operations for the FileID prefix.
+        Parameters:
+            parameter: The object to be scanned.
+            ids: The current list of discovered file ids
+        Returns:
+            A list of file ids (may be empty).
+        """
+        if isinstance(parameter, six.string_types):
+            if UI_FILE_ID_PREFIX in parameter:
+                try:
+                    parameter = self.simple_resolve(parameter)
+                except (IndexError, ValueError):
+                    pass
 
-    def pre_resolve(self):
-        if not os.path.isdir(self._working_dir):
-            os.makedirs(self._working_dir)
+        elif isinstance(parameter, dict):
+            for (k, v) in parameter.items():
+                try:
+                    parameter[k] = self._recurse_and_resolve(v)
+                except (ReferenceError, IndexError):
+                    pass
+
+        elif isinstance(parameter, list):
+            for (i, item) in enumerate(parameter):
+                try:
+                    parameter[i] = self._recurse_and_resolve(item)
+                except IndexError:
+                    pass
+        return parameter
 
 
 class UploadResolver(ParameterResolver):

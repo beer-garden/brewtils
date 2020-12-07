@@ -324,6 +324,10 @@ def parameter(
                 if nested_param.default:
                     param.default[nested_param.key] = nested_param.default
 
+    if param.type == "Base64":
+        # Nullifying default file parameters for safety
+        param.default = None
+
     @wrapt.decorator(enabled=_wrap_functions)
     def wrapper(_double_wrapped, _, _args, _kwargs):
         return _double_wrapped(*_args, **_kwargs)

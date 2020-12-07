@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import os
 import sys
 import threading
 
@@ -26,10 +25,16 @@ from brewtils.models import Request
 from brewtils.request_handling import HTTPRequestUpdater, RequestProcessor
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import assert_request_equal
+from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
 
 
 class CustomException(SuppressStacktrace):
     pass
+
+
+@pytest.fixture
+def target_file_id():
+    return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
 
 
 class TestRequestProcessor(object):
@@ -332,27 +337,17 @@ class TestRequestProcessor(object):
             assert ret_val == getattr(target_mock, command).return_value
             getattr(target_mock, command).assert_called_with(p1="param")
 
-        def test_call_with_resolver(self, processor, target_mock, tmpdir):
+        def test_call_with_resolver(self, processor, target_mock, target_file_id):
             command = "foo"
-            headers = {"resolve_parameters": '[["p1"]]'}
             request = Request(
                 command=command,
-                parameters={
-                    "p1": {
-                        "storage_type": "test",
-                        "filename": "some_filename",
-                        "id": "123",
-                    }
-                },
+                parameters={"p1": target_file_id},
             )
 
-            resolvers = {"test": Mock(download=Mock(return_value=b"bytes_value"))}
+            resolvers = {"file": Mock(download=Mock(return_value=b"bytes_value"))}
             processor._resolvers = resolvers
-            processor._working_directory = tmpdir
-            processor._invoke_command(target_mock, request, headers)
-            getattr(target_mock, command).assert_called_with(
-                p1=os.path.join(str(tmpdir), "some_filename")
-            )
+            processor._invoke_command(target_mock, request, {})
+            getattr(target_mock, command).assert_called_with(p1=b"bytes_value")
 
 
 class TestHTTPRequestUpdater(object):

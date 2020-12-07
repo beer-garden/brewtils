@@ -24,6 +24,9 @@ __all__ = [
     "RefreshToken",
     "Job",
     "RequestFile",
+    "File",
+    "FileChunk",
+    "FileStatus",
     "RequestTemplate",
     "DateTrigger",
     "CronTrigger",
@@ -260,6 +263,7 @@ class Parameter(BaseModel):
         "Date",
         "DateTime",
         "Bytes",
+        "Base64",
     )
     FORM_INPUT_TYPES = ("textarea",)
 
@@ -378,9 +382,15 @@ class Parameter(BaseModel):
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
 
-    def __init__(self, storage_type=None, filename=None):
+    def __init__(
+        self,
+        storage_type=None,
+        filename=None,
+        id=None,
+    ):
         self.storage_type = storage_type
         self.filename = filename
+        self.id = id
 
     def __str__(self):
         return self.filename
@@ -390,6 +400,119 @@ class RequestFile(BaseModel):
             self.filename,
             self.storage_type,
         )
+
+
+class File(BaseModel):
+    schema = "FileSchema"
+
+    def __init__(
+        self,
+        id=None,
+        owner_id=None,
+        owner_type=None,
+        updated_at=None,
+        file_name=None,
+        file_size=None,
+        chunks=None,
+        chunk_size=None,
+        owner=None,
+    ):
+        self.id = id
+        self.owner_id = owner_id
+        self.owner_type = owner_type
+        self.owner = owner
+        self.updated_at = updated_at
+        self.file_name = file_name
+        self.file_size = file_size
+        self.chunks = chunks
+        self.chunk_size = chunk_size
+
+    def __str__(self):
+        return self.file_name
+
+    def __repr__(self):
+        return "<File: id=%s, file_name=%s, owner_id=%s>" % (
+            self.id,
+            self.file_name,
+            self.owner_id,
+        )
+
+
+class FileChunk(BaseModel):
+    schema = "FileChunkSchema"
+
+    def __init__(self, id=None, file_id=None, offset=None, data=None, owner=None):
+        self.id = id
+        self.file_id = file_id
+        self.offset = offset
+        self.data = data
+        self.owner = owner
+
+    def __str__(self):
+        return self.data
+
+    def __repr__(self):
+        return "<FileChunk: file_id=%s, offset=%s>" % (
+            self.file_id,
+            self.offset,
+        )
+
+
+class FileStatus(BaseModel):
+    schema = "FileStatusSchema"
+
+    def __init__(
+        self,
+        owner_id=None,
+        owner_type=None,
+        updated_at=None,
+        file_name=None,
+        file_size=None,
+        chunks=None,
+        chunk_size=None,
+        chunk_id=None,
+        file_id=None,
+        offset=None,
+        data=None,
+        valid=None,
+        missing_chunks=None,
+        expected_max_size=None,
+        size_ok=None,
+        expected_number_of_chunks=None,
+        number_of_chunks=None,
+        chunks_ok=None,
+        operation_complete=None,
+        message=None,
+    ):
+        # Top-level file info
+        self.file_id = file_id
+        self.file_name = file_name
+        self.file_size = file_size
+        self.updated_at = updated_at
+        self.chunk_size = chunk_size
+        self.chunks = chunks
+        self.owner_id = owner_id
+        self.owner_type = owner_type
+        # Chunk info
+        self.chunk_id = chunk_id
+        self.offset = offset
+        self.data = data
+        # Validation metadata
+        self.valid = valid
+        self.missing_chunks = missing_chunks
+        self.expected_number_of_chunks = expected_number_of_chunks
+        self.expected_max_size = expected_max_size
+        self.number_of_chunks = number_of_chunks
+        self.size_ok = size_ok
+        self.chunks_ok = chunks_ok
+        self.operation_complete = operation_complete
+        self.message = message
+
+    def __str__(self):
+        return "%s" % self.__dict__
+
+    def __repr__(self):
+        return "<FileStatus: %s>" % self.__dict__
 
 
 class RequestTemplate(BaseModel):

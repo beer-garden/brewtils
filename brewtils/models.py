@@ -21,6 +21,7 @@ __all__ = [
     "Queue",
     "Principal",
     "Role",
+    "Permission",
     "RefreshToken",
     "Job",
     "RequestFile",
@@ -912,7 +913,12 @@ class Principal(BaseModel):
         self.id = id
         self.username = username
         self.roles = roles
-        self.permissions = permissions
+        if permissions:
+            self.permissions = permissions
+        else:
+            self.permissions = list()
+            for role in self.roles:
+                self.permissions = self.permissions + role.permissions
         self.preferences = preferences
         self.metadata = metadata
 

@@ -1,7 +1,6 @@
 name: PR-Actions
 
-on: pull_requests
-
+on: pull_request
 
 jobs:
   PR-Tests:

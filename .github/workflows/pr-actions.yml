@@ -9,7 +9,7 @@ jobs:
       matrix:
         python-version: ['3.8' ]
         os: ['ubuntu-latest']
-    name: Linting Python ${{ matrix.python-version }}
+    name: Linting Python OS ${{ matrix.os }} - ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
 
@@ -41,7 +41,7 @@ jobs:
             pika-version: '0.13.1'
           - python-version: '3.4'
             pika-version: '0.13.1'
-    name: PyTests Python ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
+    name: PyTests Python OS ${{ matrix.os }} - ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
     steps:
       - uses: actions/checkout@v2
 
@@ -72,7 +72,7 @@ jobs:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
 
-    name: Code Coverage Python ${{ matrix.python-version }}
+    name: Code Coverage OS ${{ matrix.os }} - Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
 

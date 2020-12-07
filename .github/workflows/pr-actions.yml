@@ -1,9 +1,7 @@
 name: PR-Actions
 
 on:
-  push:
   pull_requests:
-    types: [opened]
 
 
 jobs:

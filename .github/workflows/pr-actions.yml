@@ -30,17 +30,15 @@ jobs:
         python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8']
         pika-version: ['0.13.1', '1.1.0']
         os: ['ubuntu-latest']
-#        exclude:
-#          - python-version: '3.9'
-#            pika-version: '0.13.1'
-#          - python-version: '3.7'
-#            pika-version: '0.13.1'
-#          - python-version: '3.6'
-#            pika-version: '0.13.1'
-#          - python-version: '3.5'
-#            pika-version: '0.13.1'
-#          - python-version: '3.4'
-#            pika-version: '0.13.1'
+        exclude:
+          - python-version: '3.7'
+            pika-version: '0.13.1'
+          - python-version: '3.6'
+            pika-version: '0.13.1'
+          - python-version: '3.5'
+            pika-version: '0.13.1'
+          - python-version: '3.4'
+            pika-version: '0.13.1'
     name: PyTests OS ${{ matrix.os }} - Python ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
     steps:
       - uses: actions/checkout@v2

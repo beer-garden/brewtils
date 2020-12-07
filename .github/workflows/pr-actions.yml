@@ -3,7 +3,27 @@ name: PR-Actions
 on: pull_request
 
 jobs:
-  PR-Tests:
+  Linting:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8', 'pypy2', 'pypy3' ]
+    name: PyTests Python ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run Linting
+        run: |
+          pip install black flake8
+          make lint
+
+  PyTest:
+    needs: Linting
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,7 +40,7 @@ jobs:
             pika-version: '0.13.1'
           - python-version: '3.4'
             pika-version: '0.13.1'
-    name: Linting Python ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
+    name: PyTests Python ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
     steps:
       - uses: actions/checkout@v2
 
@@ -34,14 +54,6 @@ jobs:
 
       - name: Install PIKA
         run: pip install pika==${{ matrix.pika-version }}
-
-      - name: Coverage
-        run: make coverage
-
-      - name: Run Linting
-        run: |
-          pip install black flake8
-          make lint
 
       - name: Run Tests
         run: make test

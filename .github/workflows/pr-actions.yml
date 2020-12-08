@@ -20,12 +20,12 @@ jobs:
 
       # Need to update if we support other OS's
       - name: Cache PIP Install
-          uses: actions/cache@v2
-          with:
-            path: ~/.cache/pip
-            key: ${{ runner.os }}-pip-lint-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
-            restore-keys: |
-              ${{ runner.os }}-pip-lint
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-lint-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-lint
 
       - name: Run Linting
         run: |
@@ -99,12 +99,12 @@ jobs:
 
       # Need to update if we support other OS's
       - name: Cache PIP Install
-          uses: actions/cache@v2
-          with:
-            path: ~/.cache/pip
-            key: ${{ runner.os }}-pip-coverage-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
-            restore-keys: |
-              ${{ runner.os }}-pip-coverage
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-coverage-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-coverage
 
       - name: Make Deps
         run: |

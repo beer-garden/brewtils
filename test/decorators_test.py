@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import warnings
 
 import pytest
 from mock import Mock, patch
@@ -202,62 +203,189 @@ class TestParameter(object):
         assert_parameter_equal(model_param.parameters[0], param_1)
         assert_parameter_equal(model_param.parameters[1], param_2)
 
-    def test_deep_nesting(self):
-        class MyNestedModel:
-            parameters = [
-                Parameter(
-                    key="key2",
-                    type="String",
-                    multi=False,
-                    display_name="y",
-                    optional=False,
-                    default="100",
-                    description="key2",
-                )
-            ]
+    class TestNesting(object):
+        """Tests nested model Parameter construction
 
-        class MyModel:
-            parameters = [
-                Parameter(
-                    key="key1",
-                    multi=False,
-                    display_name="x",
-                    optional=True,
-                    description="key1",
-                    parameters=[MyNestedModel],
-                    default="xval",
-                )
-            ]
+        This tests both the new, "correct" way to nest parameters (where the given
+        parameters are, in fact, actual Parameters):
 
-        @parameter(key="nested_complex", model=MyModel)
-        def foo(_, nested_complex):
-            return nested_complex
+          foo = Parameter(..., parameters=[list of actual Parameter objects], ...)
 
-        assert hasattr(foo, "_command")
-        assert len(foo._command.parameters) == 1
+        And the old, deprecated way (where the given parameters are *not* actual
+        Parameters, instead they're other Model class objects):
 
-        assert foo._command.parameters[0].key == "nested_complex"
-        assert foo._command.parameters[0].type == "Dictionary"
-        assert len(foo._command.parameters[0].parameters) == 1
+          foo = Parameter(..., parameters=[NestedModel], ...)
 
-        nested_param = foo._command.parameters[0].parameters[0]
-        assert nested_param.key == "key1"
-        assert nested_param.type == "Dictionary"
-        assert nested_param.multi is False
-        assert nested_param.display_name == "x"
-        assert nested_param.optional is True
-        assert nested_param.description == "key1"
-        assert len(nested_param.parameters) == 1
+        See https://github.com/beer-garden/beer-garden/issues/354 for full details.
+        """
 
-        double_nested = nested_param.parameters[0]
-        assert double_nested.key == "key2"
-        assert double_nested.type == "String"
-        assert double_nested.multi is False
-        assert double_nested.display_name == "y"
-        assert double_nested.optional is False
-        assert double_nested.default == "100"
-        assert double_nested.description == "key2"
-        assert len(double_nested.parameters) == 0
+        @pytest.fixture
+        def nested_1(self):
+            class NestedModel1(object):
+                parameters = [
+                    Parameter(
+                        key="key2",
+                        type="String",
+                        multi=False,
+                        display_name="y",
+                        optional=False,
+                        default="100",
+                        description="key2",
+                    )
+                ]
+
+            return NestedModel1
+
+        @pytest.fixture
+        def nested_2(self):
+            class NestedModel2(object):
+                parameters = [
+                    Parameter(
+                        key="key3",
+                        type="String",
+                        multi=False,
+                        display_name="z",
+                        optional=False,
+                        default="101",
+                        description="key3",
+                    )
+                ]
+
+            return NestedModel2
+
+        def test_nested_parameter_list(self, nested_1, nested_2):
+            class MyModel(object):
+                parameters = [
+                    Parameter(
+                        key="key1",
+                        multi=False,
+                        display_name="x",
+                        optional=True,
+                        description="key1",
+                        parameters=nested_1.parameters + nested_2.parameters,
+                        default="xval",
+                    )
+                ]
+
+            @parameter(key="nested_complex", model=MyModel)
+            def foo(_, nested_complex):
+                return nested_complex
+
+            self._assert_correct(foo)
+
+        def test_nested_model_list(self, nested_1, nested_2):
+            class MyModel(object):
+                parameters = [
+                    Parameter(
+                        key="key1",
+                        multi=False,
+                        display_name="x",
+                        optional=True,
+                        description="key1",
+                        parameters=[nested_1, nested_2],
+                        default="xval",
+                    )
+                ]
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+
+                @parameter(key="nested_complex", model=MyModel)
+                def foo(_, nested_complex):
+                    return nested_complex
+
+                # There are 2 nested model class objects so there should be 2 warnings
+                assert len(w) == 2
+                assert w[0].category == DeprecationWarning
+                assert w[1].category == DeprecationWarning
+
+            self._assert_correct(foo)
+
+        def test_mixed_list(self, nested_1, nested_2):
+            class MyModel(object):
+                parameters = [
+                    Parameter(
+                        key="key1",
+                        multi=False,
+                        display_name="x",
+                        optional=True,
+                        description="key1",
+                        parameters=nested_1.parameters + [nested_2],
+                        default="xval",
+                    )
+                ]
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+
+                @parameter(key="nested_complex", model=MyModel)
+                def foo(_, nested_complex):
+                    return nested_complex
+
+                # Only 1 nested model class object this time
+                assert len(w) == 1
+                assert w[0].category == DeprecationWarning
+
+            self._assert_correct(foo)
+
+        def test_non_parameter(self):
+            class MyModel(object):
+                parameters = [
+                    Parameter(
+                        key="key1",
+                        multi=False,
+                        display_name="x",
+                        optional=True,
+                        description="key1",
+                        parameters=["Not valid!"],
+                        default="xval",
+                    )
+                ]
+
+            with pytest.raises(PluginParamError):
+
+                @parameter(key="nested_complex", model=MyModel)
+                def foo(_, nested_complex):
+                    return nested_complex
+
+        @staticmethod
+        def _assert_correct(foo):
+            assert hasattr(foo, "_command")
+            assert len(foo._command.parameters) == 1
+
+            foo_param = foo._command.parameters[0]
+            assert foo_param.key == "nested_complex"
+            assert foo_param.type == "Dictionary"
+            assert len(foo_param.parameters) == 1
+
+            key1_param = foo_param.parameters[0]
+            assert key1_param.key == "key1"
+            assert key1_param.type == "Dictionary"
+            assert key1_param.multi is False
+            assert key1_param.display_name == "x"
+            assert key1_param.optional is True
+            assert key1_param.description == "key1"
+            assert len(key1_param.parameters) == 2
+
+            key2_param = key1_param.parameters[0]
+            assert key2_param.key == "key2"
+            assert key2_param.type == "String"
+            assert key2_param.multi is False
+            assert key2_param.display_name == "y"
+            assert key2_param.optional is False
+            assert key2_param.default == "100"
+            assert key2_param.description == "key2"
+            assert len(key2_param.parameters) == 0
+
+            key3_param = key1_param.parameters[1]
+            assert key3_param.key == "key3"
+            assert key3_param.type == "String"
+            assert key3_param.multi is False
+            assert key3_param.display_name == "z"
+            assert key3_param.optional is False
+            assert key3_param.default == "101"
+            assert key3_param.description == "key3"
+            assert len(key3_param.parameters) == 0
 
     @pytest.mark.parametrize(
         "choices,expected",

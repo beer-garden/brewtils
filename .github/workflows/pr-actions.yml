@@ -23,9 +23,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-lint-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-lint-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-lint
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-lint
 
       - name: Run Linting
         run: |
@@ -62,9 +62,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-install-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-install-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-install
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-install
 
       - name: Make Deps
         run: make deps
@@ -102,9 +102,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-coverage-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-coverage-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-coverage
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-coverage
 
       - name: Make Deps
         run: |

@@ -1,43 +1,61 @@
-#name: Tag-Actions
-#
-#on:
-#  push:
-#    tags:
-#      - '*'
-#
-#jobs:
-#  Docker:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Build image
-#        run: docker build . --file Dockerfile --tag $IMAGE_NAME
-#      - name: Log into registry
-#        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-#      - name: Run Dep Docs
-#        run: make deps-docs
-#      - name: Build Images
-#        run: make publish-docker VERSION=${GITHUB_REF/refs\/tags\//}
-#  PyPI:
-#    runs-on: ubuntu-latest
-#    strategy:
-#      matrix:
-#        python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8', 'pypy2', 'pypy3' ]
-#      name: Python ${{ matrix.python-version }} PyPi
-#      steps:
-#        - uses: actions/checkout@v2
-#        - name: Set up Python
-#          uses: actions/setup-python@v2
-#          with:
-#            python-version: ${{ matrix.python-version }}
-#        - name: Install dependencies
-#          run: |
-#            python -m pip install --upgrade pip
-#            pip install setuptools wheel twine
-#        - name: Build and publish
-#          env:
-#            TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-#            TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-#          run: |
-#            python setup.py sdist bdist_wheel
-#            twine upload dist/*
+name: Tag-Actions
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  PyPI:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8']
+      name: Python ${{ matrix.python-version }} PyPi
+      steps:
+        -
+        - uses: actions/checkout@v2
+          -
+        - name: Set up Python
+          uses: actions/setup-python@v2
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        # Need to update if we support other OS's
+        - name: Cache PIP Install
+          uses: actions/cache@v2
+          with:
+            path: ~/.cache/pip
+            key: ${{ runner.os }}-${{ matrix.python-version }}-pip-build-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+            restore-keys: |
+              ${{ runner.os }}-${{ matrix.python-version }}-pip-build
+
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip
+            pip install setuptools wheel twine
+        - name: Build and publish
+          env:
+            TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+            TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          run: |
+            python setup.py sdist bdist_wheel
+            twine upload dist/*
+
+  Docker:
+    needs: PyPi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+
+      - name: Log into registry
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Run Dep Docs
+        run: make deps-docs
+
+      - name: Build Images
+        run: make publish-docker VERSION=${GITHUB_REF/refs\/tags\//}

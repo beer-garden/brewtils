@@ -122,7 +122,12 @@ class RestClient(object):
 
         # Configure the session to use when making requests
         self.session = Session()
-        self.session.cert = self._config.client_cert
+
+        # This is what Requests is expecting
+        if self._config.client_key:
+            self.session.cert = (self._config.client_cert, self._config.client_key)
+        else:
+            self.session.cert = self._config.client_cert
 
         if not self._config.ca_verify:
             urllib3.disable_warnings()

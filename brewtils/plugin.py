@@ -219,10 +219,6 @@ class Plugin(object):
             # And with _system and _ez_client we can ask for the real logging config
             self._initialize_logging()
 
-        # Finally, save off the SIGTERM handler and set it to something cleaner
-        self._sigterm_orig = signal.getsignal(signal.SIGTERM)
-        signal.signal(signal.SIGTERM, signal.getsignal(signal.SIGINT))
-
     def run(self):
         if not self._client:
             raise AttributeError(
@@ -287,6 +283,16 @@ class Plugin(object):
             self._system.version,
         )
 
+    @staticmethod
+    def _set_signal_handlers():
+        """Ensure that SIGINT and SIGTERM will gracefully stop the Plugin"""
+
+        def _handler(_signal, _frame):
+            raise KeyboardInterrupt
+
+        signal.signal(signal.SIGINT, _handler)
+        signal.signal(signal.SIGTERM, _handler)
+
     def _startup(self):
         """Plugin startup procedure
 
@@ -323,6 +329,9 @@ class Plugin(object):
         self._logger.debug("Starting up processors")
         self._admin_processor.startup()
         self._request_processor.startup()
+
+        self._logger.debug("Setting signal handlers")
+        self._set_signal_handlers()
 
     def _shutdown(self):
         """Plugin shutdown procedure

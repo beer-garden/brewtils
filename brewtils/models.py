@@ -76,6 +76,9 @@ class Events(Enum):
     JOB_PAUSED = 35
     JOB_RESUMED = 36
     PLUGIN_LOGGER_FILE_CHANGE = 37
+    RUNNER_STARTED = 38
+    RUNNER_STOPPED = 39
+    RUNNER_REMOVED = 40
 
 
 class BaseModel(object):
@@ -1417,5 +1420,45 @@ class Operation(BaseModel):
                 self.model,
                 self.args,
                 self.kwargs,
+            )
+        )
+
+
+class Runner(BaseModel):
+    schema = "RunnerSchema"
+
+    def __init__(
+        self,
+        id=None,
+        name=None,
+        path=None,
+        instance_id=None,
+        stopped=None,
+        dead=None,
+        restart=None,
+    ):
+        self.id = id
+        self.name = name
+        self.path = path
+        self.instance_id = instance_id
+        self.stopped = stopped
+        self.dead = dead
+        self.restart = restart
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return (
+            "<Runner: id=%s, name=%s, path=%s, instance_id=%s, stopped=%s, dead=%s, "
+            "restart=%s>"
+            % (
+                self.id,
+                self.name,
+                self.path,
+                self.instance_id,
+                self.stopped,
+                self.dead,
+                self.restart,
             )
         )

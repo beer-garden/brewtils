@@ -477,6 +477,16 @@ class OperationSchema(BaseSchema):
     operation_type = fields.Str(allow_none=True)
 
 
+class RunnerSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    path = fields.Str(allow_none=True)
+    instance_id = fields.Str(allow_none=True)
+    stopped = fields.Boolean(allow_none=True)
+    dead = fields.Boolean(allow_none=True)
+    restart = fields.Boolean(allow_none=True)
+
+
 model_schema_map.update(
     {
         "Choices": ChoicesSchema,
@@ -504,6 +514,7 @@ model_schema_map.update(
         "Role": RoleSchema,
         "System": SystemSchema,
         "Operation": OperationSchema,
+        "Runner": RunnerSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

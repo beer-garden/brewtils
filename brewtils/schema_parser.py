@@ -46,6 +46,7 @@ class SchemaParser(object):
         "RoleSchema": brewtils.models.Role,
         "SystemSchema": brewtils.models.System,
         "OperationSchema": brewtils.models.Operation,
+        "RunnerSchema": brewtils.models.Runner,
     }
 
     logger = logging.getLogger(__name__)

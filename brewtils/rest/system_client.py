@@ -18,7 +18,6 @@ from brewtils.errors import (
 from brewtils.models import Request
 from brewtils.resolvers import UploadResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
-from brewtils.rest.utils import unroll_object
 
 
 class SystemClient(object):
@@ -214,16 +213,26 @@ class SystemClient(object):
 
         self._easy_client = EasyClient(**kwargs)
         self._resolvers = build_resolver_map(self._easy_client)
-        self.client_info = unroll_object(
-            self,
-            ignore=["client_info", "logger", "thread_pool", "easy_client", "resolvers"],
-            strip_characters="_",
-        )
-        self.client_info.update(self._easy_client.client_info)
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)
+
+    @property
+    def bg_resolved_system(self):
+        return self._system
+
+    @property
+    def bg_system_name(self):
+        return self._system_name
+
+    @property
+    def bg_system_version(self):
+        return self._version_constraint
+
+    @property
+    def bg_default_instance(self):
+        return self._default_instance
 
     def create_bg_request(self, command_name, **kwargs):
         """Create a callable that will execute a Beer-garden request when called.

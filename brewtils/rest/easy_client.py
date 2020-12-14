@@ -21,7 +21,6 @@ from brewtils.errors import (
 )
 from brewtils.models import Event, PatchOperation
 from brewtils.rest.client import RestClient
-from brewtils.rest.utils import unroll_object
 from brewtils.schema_parser import SchemaParser
 
 
@@ -162,11 +161,6 @@ class EasyClient(object):
 
     def __init__(self, **kwargs):
         self.client = RestClient(**kwargs)
-        # To handle future variables here
-        self.client_info = unroll_object(
-            self, ignore=["client", "client_info"], strip_characters="_"
-        )
-        self.client_info.update(self.client.client_info)
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.

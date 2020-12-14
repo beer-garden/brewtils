@@ -16,6 +16,7 @@ from yapconf import YapconfSpec
 import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
+from brewtils.rest.utils import unroll_object
 from brewtils.specification import _CONNECTION_SPEC
 
 
@@ -171,6 +172,10 @@ class RestClient(object):
             self.file_url = self.base_url + "api/v1/files/"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
+
+        self.client_info = unroll_object(
+            self, ignore=["client_info", "config", "session"], strip_characters="_"
+        )
 
     @staticmethod
     def _load_config(args, kwargs):

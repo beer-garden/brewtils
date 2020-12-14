@@ -18,6 +18,7 @@ from brewtils.errors import (
 from brewtils.models import Request
 from brewtils.resolvers import UploadResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
+from brewtils.rest.utils import unroll_object
 
 
 class SystemClient(object):
@@ -213,6 +214,12 @@ class SystemClient(object):
 
         self._easy_client = EasyClient(**kwargs)
         self._resolvers = build_resolver_map(self._easy_client)
+        self.client_info = unroll_object(
+            self,
+            ignore=["client_info", "logger", "thread_pool", "easy_client", "resolvers"],
+            strip_characters="_",
+        )
+        self.client_info.update(self._easy_client.client_info)
 
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""

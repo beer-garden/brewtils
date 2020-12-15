@@ -642,3 +642,15 @@ class TestCronTrigger(object):
 def test_str(model, str_expected, repr_expected):
     assert str(model) == str_expected
     assert repr(model) == repr_expected
+
+
+class TestRunner(object):
+    def test_str(self, bg_runner):
+        assert str(bg_runner) == bg_runner.name
+
+    def test_repr(self, bg_runner, bg_instance):
+        assert (
+            repr(bg_runner) == "<Runner: id=%s, name=system-1.0.0, "
+            "path=system-1.0.0, instance_id=%s, stopped=False, "
+            "dead=False, restart=True>" % (bg_runner.id, bg_instance.id)
+        )

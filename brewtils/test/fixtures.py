@@ -26,6 +26,7 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Role,
+    Runner,
     System,
 )
 
@@ -712,3 +713,24 @@ def bg_operation(operation_dict, bg_request):
     dict_copy = copy.deepcopy(operation_dict)
     dict_copy["model"] = bg_request
     return Operation(**dict_copy)
+
+
+@pytest.fixture
+def runner_dict(instance_dict):
+    """A runner as a dictionary."""
+
+    return {
+        "id": "EIBqyAVAyP",
+        "name": "system-1.0.0",
+        "path": "system-1.0.0",
+        "instance_id": instance_dict["id"],
+        "stopped": False,
+        "dead": False,
+        "restart": True,
+    }
+
+
+@pytest.fixture
+def bg_runner(runner_dict):
+    """A runner as a model."""
+    return Runner(**runner_dict)

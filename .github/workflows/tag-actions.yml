@@ -54,7 +54,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Run Dep Docs
-        run: make deps-docs
+        run: make docs-deps
 
       - name: Build Images
         run: make publish-docker VERSION=${GITHUB_REF/refs\/tags\//}

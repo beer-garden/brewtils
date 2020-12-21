@@ -8,6 +8,7 @@ import threading
 
 import appdirs
 from box import Box
+from jinja2 import Environment, FileSystemLoader
 from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 
@@ -199,6 +200,10 @@ class Plugin(object):
             )
         CONFIG = Box(self._config.to_dict(), default_box=True)
 
+        self._template_map = {}
+        if "template_loader" in kwargs:
+            self._env = Environment(loader=kwargs["template_loader"], autoescape=True)
+
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
@@ -263,8 +268,16 @@ class Plugin(object):
 
         # And commands always do
         self._system.commands = getattr(new_client, "_bg_commands", [])
+        self._template_map = self._get_template_map(self._system.commands)
 
         self._client = new_client
+
+    def _get_template_map(self, commands):
+        return {
+            c.name: self._env.get_template(c.output_template)
+            for c in commands
+            if c.output_template
+        }
 
     @property
     def system(self):
@@ -530,6 +543,8 @@ class Plugin(object):
             max_workers=self._config.max_concurrent,
             working_directory=self._config.working_directory,
             resolvers=build_resolver_map(self._ez_client),
+            # template_map={"better_jinja": self._env.get_template('test_template.j2')},
+            template_map=self._template_map,
         )
 
         return admin_processor, request_processor

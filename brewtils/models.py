@@ -101,6 +101,7 @@ class Command(BaseModel):
         schema=None,
         form=None,
         template=None,
+        output_template=None,
         icon_name=None,
         hidden=False,
     ):
@@ -112,6 +113,7 @@ class Command(BaseModel):
         self.schema = schema
         self.form = form
         self.template = template
+        self.output_template = output_template
         self.icon_name = icon_name
         self.hidden = hidden
 

@@ -185,6 +185,7 @@ class CommandSchema(BaseSchema):
     schema = fields.Dict(allow_none=True)
     form = fields.Dict(allow_none=True)
     template = fields.Str(allow_none=True)
+    output_template = fields.Str(allow_none=True)
     icon_name = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
 

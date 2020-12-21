@@ -92,6 +92,7 @@ def command(
     schema=None,
     form=None,
     template=None,
+    output_template=None,
     icon_name=None,
     description=None,
 ):
@@ -129,6 +130,7 @@ def command(
             form=form,
             hidden=hidden,
             template=template,
+            output_template=output_template,
             icon_name=icon_name,
             description=description,
         )
@@ -138,6 +140,7 @@ def command(
     generated_command.output_type = output_type
     generated_command.hidden = hidden
     generated_command.icon_name = icon_name
+    generated_command.output_template = output_template
 
     if description:
         generated_command.description = description

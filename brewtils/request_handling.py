@@ -55,6 +55,7 @@ class RequestProcessor(object):
         max_workers=None,
         resolvers=None,
         working_directory=None,
+        template_map=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
 
@@ -69,6 +70,7 @@ class RequestProcessor(object):
 
         self._resolvers = resolvers
         self._working_directory = working_directory
+        self._template_map = template_map
 
     def on_message_received(self, message, headers):
         """Callback function that will be invoked for received messages
@@ -155,7 +157,7 @@ class RequestProcessor(object):
 
     def _handle_invoke_success(self, request, output):
         request.status = "SUCCESS"
-        request.output = self._format_output(output)
+        request.output = self._format_output(request, output)
 
     def _handle_invoke_failure(self, request, exc):
         self.logger.log(
@@ -228,10 +230,15 @@ class RequestProcessor(object):
         else:
             return str(exc)
 
-    @staticmethod
-    def _format_output(output):
+    def _format_output(self, request, output):
         if isinstance(output, six.string_types):
             return output
+
+        if request.command in self._template_map:
+            try:
+                return self._template_map[request.command].render(**output)
+            except Exception as ex:
+                self.logger.error(ex)
 
         try:
             return json.dumps(output)

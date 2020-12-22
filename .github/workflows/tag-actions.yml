@@ -58,7 +58,7 @@ jobs:
           max_attempts: 5
           retry_on: error
           retry_wait_seconds: 10
-          command: pip install brewtils==${GITHUB_REF/refs\/tags\//}
+          command: pip install brewtils==${GITHUB_REF#refs/tags/}
 
   Docker:
     needs: Verify-PyPi
@@ -76,4 +76,4 @@ jobs:
         run: make docs-deps
 
       - name: Build Images
-        run: make publish-docker VERSION=${GITHUB_REF/refs\/tags\//}
+        run: make publish-docker VERSION=${GITHUB_REF#refs/tags/}

@@ -318,7 +318,7 @@ class EasyClient(object):
         metadata = kwargs.pop("metadata", {})
         add_instance = kwargs.pop("add_instance", None)
 
-        if new_commands:
+        if new_commands is not None:
             commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )

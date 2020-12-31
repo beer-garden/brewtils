@@ -182,6 +182,13 @@ class TestSystems(object):
             operation = parser.serialize_patch.call_args[0][0][0]
             assert operation.path == "/commands"
 
+        def test_empty_commands(self, client, rest_client, parser, success):
+            rest_client.patch_system.return_value = success
+
+            client.update_system("id", new_commands=[])
+            operation = parser.serialize_patch.call_args[0][0][0]
+            assert operation.path == "/commands"
+
         def test_add_instance(self, client, rest_client, parser, success, bg_instance):
             rest_client.patch_system.return_value = success
 

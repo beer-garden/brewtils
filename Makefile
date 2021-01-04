@@ -123,6 +123,9 @@ docker-build: docs ## build the docker images
 	docker tag $(DOCKER_NAME):docs-$(VERSION) $(DOCKER_NAME):docs
 
 # Documentation
+docs-deps: ## install dependencies for documentation
+	pip install -c requirements.txt sphinx sphinx_rtd_theme
+
 docs: ## generate Sphinx HTML documentation, including API docs
 	sphinx-apidoc -o docs/ $(MODULE_NAME)
 	$(MAKE) -C docs html
@@ -158,9 +161,7 @@ publish-docker: docker-build ## push the docker images
 	docker push $(DOCKER_NAME):python2-$(VERSION)
 	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
 	docker push $(DOCKER_NAME):docs-$(VERSION)
+	docker push $(DOCKER_NAME):latest
+	docker push $(DOCKER_NAME):python3
+	docker push $(DOCKER_NAME):python2
 	docker push $(DOCKER_NAME):docs
-
-	## Add this back in one 3.0 is released
-	#docker push $(DOCKER_NAME):python3
-	#docker push $(DOCKER_NAME):python2
-	#docker push $(DOCKER_NAME):latest

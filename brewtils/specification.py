@@ -49,6 +49,11 @@ _CONNECTION_SPEC = {
         "required": False,
         "alt_env_names": ["SSL_CLIENT_CERT"],
     },
+    "client_key": {
+        "type": "str",
+        "description": "Client key to use with Beergarden",
+        "required": False,
+    },
     "ssl_enabled": {
         "type": "bool",
         "description": "Use SSL when communicating with Beergarden",

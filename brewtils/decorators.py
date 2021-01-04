@@ -18,7 +18,7 @@ except ImportError:
     from lark.common import ParseError
 
 from brewtils.choices import parse
-from brewtils.errors import PluginParamError
+from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Choices
 
 if sys.version_info.major == 2:
@@ -314,7 +314,7 @@ def parameter(
     # Model is another special case - it requires its own handling
     if model is not None:
         param.type = "Dictionary"
-        param.parameters = _generate_nested_params(model)
+        param.parameters = _generate_nested_params(model.parameters)
 
         # If the model is not nullable and does not have a default we will try
         # to generate a one using the defaults defined on the model parameters
@@ -323,6 +323,10 @@ def parameter(
             for nested_param in param.parameters:
                 if nested_param.default:
                     param.default[nested_param.key] = nested_param.default
+
+    if param.type == "Base64":
+        # Nullifying default file parameters for safety
+        param.default = None
 
     @wrapt.decorator(enabled=_wrap_functions)
     def wrapper(_double_wrapped, _, _args, _kwargs):
@@ -448,49 +452,57 @@ def _generate_params_from_function(func):
     return parameters_to_return
 
 
-def _generate_nested_params(model_class):
-    """Generates Nested Parameters from a Model Class"""
+def _generate_nested_params(parameter_list):
+    """Generate nested parameters from a list of Parameters
+
+    This function will take a list of Parameters and will return a new list of "real"
+    Parameters.
+
+    The main thing this does is ensure the choices specification is correct for all
+    Parameters in the tree.
+    """
     parameters_to_return = []
-    for parameter_definition in model_class.parameters:
-        key = parameter_definition.key
-        parameter_type = parameter_definition.type
-        multi = parameter_definition.multi
-        display_name = parameter_definition.display_name
-        optional = parameter_definition.optional
-        default = parameter_definition.default
-        description = parameter_definition.description
-        nullable = parameter_definition.nullable
-        maximum = parameter_definition.maximum
-        minimum = parameter_definition.minimum
-        regex = parameter_definition.regex
-        type_info = parameter_definition.type_info
 
-        choices = _format_choices(parameter_definition.choices)
+    for param in parameter_list:
 
-        nested_parameters = []
-        if parameter_definition.parameters:
-            parameter_type = "Dictionary"
-            for nested_class in parameter_definition.parameters:
-                nested_parameters = _generate_nested_params(nested_class)
-
-        parameters_to_return.append(
-            Parameter(
-                key=key,
-                type=parameter_type,
-                multi=multi,
-                display_name=display_name,
-                optional=optional,
-                default=default,
-                description=description,
-                choices=choices,
-                parameters=nested_parameters,
-                nullable=nullable,
-                maximum=maximum,
-                minimum=minimum,
-                regex=regex,
-                type_info=type_info,
+        # This is already a Parameter. Only really need to interpret the choices
+        # definition and recurse down into nested Parameters
+        if isinstance(param, Parameter):
+            new_param = Parameter(
+                key=param.key,
+                type=param.type,
+                multi=param.multi,
+                display_name=param.display_name,
+                optional=param.optional,
+                default=param.default,
+                description=param.description,
+                choices=_format_choices(param.choices),
+                nullable=param.nullable,
+                maximum=param.maximum,
+                minimum=param.minimum,
+                regex=param.regex,
+                type_info=param.type_info,
             )
-        )
+
+            if param.parameters:
+                new_param.type = "Dictionary"
+                new_param.parameters = _generate_nested_params(param.parameters)
+
+            parameters_to_return.append(new_param)
+
+        # This is a model class object. Needed for backwards compatibility
+        # See https://github.com/beer-garden/beer-garden/issues/354
+        elif hasattr(param, "parameters"):
+            _deprecate(
+                "Constructing a nested Parameters list using model class objects "
+                "is deprecated. Please pass the model's parameter list directly."
+            )
+            parameters_to_return += _generate_nested_params(param.parameters)
+
+        # No clue!
+        else:
+            raise PluginParamError("Unable to generate parameter from '%s'" % param)
+
     return parameters_to_return
 
 

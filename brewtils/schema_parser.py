@@ -40,10 +40,14 @@ class SchemaParser(object):
         "RefreshTokenSchema": brewtils.models.RefreshToken,
         "RequestSchema": brewtils.models.Request,
         "RequestFileSchema": brewtils.models.RequestFile,
+        "FileSchema": brewtils.models.File,
+        "FileChunkSchema": brewtils.models.FileChunk,
+        "FileStatusSchema": brewtils.models.FileStatus,
         "RequestTemplateSchema": brewtils.models.RequestTemplate,
         "RoleSchema": brewtils.models.Role,
         "SystemSchema": brewtils.models.System,
         "OperationSchema": brewtils.models.Operation,
+        "RunnerSchema": brewtils.models.Runner,
     }
 
     logger = logging.getLogger(__name__)
@@ -260,7 +264,7 @@ class SchemaParser(object):
         :param garden: The raw input
         :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A System object
+        :return: A Garden object
         """
         return cls.parse(
             garden, brewtils.models.Garden, from_string=from_string, **kwargs
@@ -273,10 +277,23 @@ class SchemaParser(object):
         :param operation: The raw input
         :param from_string: True if input is a JSON string, False if a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Forward object
+        :return: An Operation object
         """
         return cls.parse(
             operation, brewtils.models.Operation, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_runner(cls, runner, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a runner model object
+
+        :param runner: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Runner object
+        """
+        return cls.parse(
+            runner, brewtils.models.Runner, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -563,7 +580,7 @@ class SchemaParser(object):
         :param garden: The instance object(s) to be serialized
         :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of instance
+        :return: Serialized representation of garden
         """
         return cls.serialize(
             garden,
@@ -579,12 +596,28 @@ class SchemaParser(object):
         :param operation: The instance object(s) to be serialized
         :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of instance
+        :return: Serialized representation of operation
         """
         return cls.serialize(
             operation,
             to_string=to_string,
             schema_name=brewtils.models.Operation.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_runner(cls, runner, to_string=True, **kwargs):
+        """Convert a runner model into serialized form
+
+        :param operation: The instance object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation of runner
+        """
+        return cls.serialize(
+            runner,
+            to_string=to_string,
+            schema_name=brewtils.models.Runner.schema,
             **kwargs
         )
 

@@ -10,6 +10,7 @@ import brewtils.rest
 from brewtils.errors import (
     FetchError,
     RequestFailedError,
+    RequestProcessException,
     TimeoutExceededError,
     ValidationError,
 )
@@ -261,6 +262,12 @@ class TestCreateRequest(object):
 
         with pytest.raises(ValidationError):
             client._construct_bg_request(**kwargs)
+
+    def test_positional_parameter(self, client, easy_client, mock_success):
+        easy_client.create_request.return_value = mock_success
+
+        with pytest.raises(RequestProcessException):
+            client.command_1("Positional Parameter")
 
 
 class TestExecute(object):

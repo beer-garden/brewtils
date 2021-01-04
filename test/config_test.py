@@ -27,6 +27,7 @@ def params():
         "api_version": 1,
         "ca_cert": "ca_cert",
         "client_cert": "client_cert",
+        "client_key": "client_key",
         "ca_verify": True,
         "username": None,
         "password": None,
@@ -46,6 +47,7 @@ class TestGetConnectionInfo(object):
         os.environ["BG_SSL_ENABLED"] = "False"
         os.environ["BG_CA_CERT"] = "ca_cert"
         os.environ["BG_CLIENT_CERT"] = "client_cert"
+        os.environ["BG_CLIENT_KEY"] = "client_key"
         os.environ["BG_URL_PREFIX"] = "/beer/"
         os.environ["BG_CA_VERIFY"] = "True"
 

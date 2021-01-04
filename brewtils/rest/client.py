@@ -3,7 +3,8 @@
 import functools
 import json
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, List
+from base64 import b64encode
 
 import jwt
 import requests.exceptions
@@ -121,7 +122,12 @@ class RestClient(object):
 
         # Configure the session to use when making requests
         self.session = Session()
-        self.session.cert = self._config.client_cert
+
+        # This is what Requests is expecting
+        if self._config.client_key:
+            self.session.cert = (self._config.client_cert, self._config.client_key)
+        else:
+            self.session.cert = self._config.client_cert
 
         if not self._config.ca_verify:
             urllib3.disable_warnings()
@@ -162,7 +168,7 @@ class RestClient(object):
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
-            self.file_url = self.base_url + "api/vbeta/files/"
+            self.file_url = self.base_url + "api/v1/files/"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -611,31 +617,76 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.get(self.file_url + file_id, **kwargs)
+        return self.session.get(self.file_url + "?file_id=" + file_id, **kwargs)
 
     @enable_auth
-    def post_files(self, file_dict):
-        # type: (Dict[str, tuple]) -> Response
-        """Performs a POST on the file URL.
-
-        Files should be in the form:
-
-            {"identifier": ("desired_filename", open("filename", "rb")) }
+    def delete_file(self, file_id, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a GET on the specific File URL
 
         Args:
-            file_dict: Dictionary of filename to files
+            file_id: File ID
+            kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
+        """
+        return self.session.delete(self.file_url + "?file_id=" + file_id, **kwargs)
+
+    @enable_auth
+    def post_file(self, fd, file_params, current_position=0):
+        """Performs a POST on the file URL.
+
+        Args:
+            fd: A file descriptor
+            file_params: Metadata about the file
+            current_position: The current cursor position for the file object
+
+        Returns:
+            A Requests Response object
         """
         # This is here in case we have not authenticated yet. Without this
         # code, it is possible for us to perform the POST, which will call
         # read on each of the files, that method fails with a 4XX, we then
         # authenticate and try again, only to post an empty file.
-        for info in file_dict.values():
-            info[1].seek(0)
+        fd.seek(current_position)
+        # Establish a top-level file handle first
+        result = self.session.get(self.file_url + "id/", params=file_params)
+        if result.ok:
+            file_id = result.json()["file_id"]
+            offset = 0
+            retry = 0
+            current_cursor = 0
+            # Break up the file into chunks and send them
+            while True:
+                current_cursor = fd.tell()
+                data = fd.read(file_params["chunk_size"])
+                if not data:
+                    break
+                if type(data) != bytes:
+                    data = bytes(data, "utf-8")
+                data = b64encode(data)
+                chunk_result = self.session.post(
+                    self.file_url + "?file_id=" + file_id,
+                    json={"data": data, "offset": offset},
+                )
 
-        return self.session.post(self.file_url, files=file_dict)
+                # Allow the system to try to resend the chunk a couple of
+                # times before giving up.
+                if chunk_result.ok:
+                    offset += 1
+                    retry = 0
+                elif retry < 3:
+                    fd.seek(current_cursor)
+                    retry += 1
+                else:
+                    raise RuntimeError(
+                        "Could not send chunk %s, ran out of retries" % offset
+                    )
+        else:
+            raise RuntimeError("Could not request file ID for file %s" % fd.name)
+
+        return result
 
     @enable_auth
     def get_user(self, user_identifier):

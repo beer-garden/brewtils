@@ -1,6 +1,25 @@
 Brewtils Changelog
 ==================
 
+3.0.1
+-----
+Date: 12/15/20
+
+New Features
+^^^^^^^^^^^^
+- Added ``client_key`` parameter to support separate key and cert files (beer-garden#785)
+- Better ``SystemClient`` error message if a positional parameter is used (beer-garden#775)
+- Plugins will now work when connected to a v2 Beer Garden (beer-garden#751)
+- Support for file-type parameters (beer-garden#368)
+
+Bug Fixes
+^^^^^^^^^
+- Using nested models when defining Parameters now works correctly (beer-garden#354)
+
+Other Changes
+^^^^^^^^^^^^^
+- Plugins now register a SIGTERM handler for shutdown consistency (beer-garden/#745)
+
 3.0.0
 -----
 Date: 11/10/20
@@ -32,7 +51,7 @@ Other Changes
 - Using a pika version <1 is deprecated
 
 2.4.15
------
+------
 Date: 10/13/20
 
 Bug Fixes

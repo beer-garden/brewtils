@@ -155,9 +155,7 @@ class EasyClient(object):
         refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    _default_file_params = {
-        "chunk_size": 255 * 1024,
-    }
+    _default_file_params = {"chunk_size": 255 * 1024}
 
     def __init__(self, **kwargs):
         self.client = RestClient(**kwargs)
@@ -857,6 +855,17 @@ class EasyClient(object):
                 "Error occurred while uploading file %s"
                 % default_file_params["file_name"]
             )
+
+    def post_forward(self, operation):
+        """Forwards an Operation to the Beer Garden server.
+
+        Args:
+            operation: The operation to be executed
+
+        Returns:
+            The API response
+        """
+        return self.client.post_forward(SchemaParser.serialize_operation(operation))
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError

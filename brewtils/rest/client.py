@@ -169,6 +169,8 @@ class RestClient(object):
 
             self.event_url = self.base_url + "api/vbeta/events/"
             self.file_url = self.base_url + "api/v1/files/"
+
+            self.forward_url = self.base_url + "api/v1/forward"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -687,6 +689,20 @@ class RestClient(object):
             raise RuntimeError("Could not request file ID for file %s" % fd.name)
 
         return result
+
+    @enable_auth
+    def post_forward(self, payload):
+        """Forwards an Operation to the Beer Garden server.
+
+        Args:
+            payload: The operation to be executed
+
+        Returns:
+            The API response
+        """
+        return self.session.post(
+            self.forward_url, data=payload, headers=self.JSON_HEADERS
+        )
 
     @enable_auth
     def get_user(self, user_identifier):

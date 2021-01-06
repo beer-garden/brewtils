@@ -882,6 +882,18 @@ class EasyClient(object):
         """
         return self.get_user(self.client.username or "anonymous")
 
+    @wrap_response(return_boolean=True)
+    def rescan(self):
+        """Rescan local plugin directory
+
+        Returns:
+            bool: True if rescan was successful
+
+        """
+        return self.client.patch_admin(
+            payload=SchemaParser.serialize_patch(PatchOperation(operation="rescan"))
+        )
+
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def _remove_system_by_id(self, system_id):
         if system_id is None:

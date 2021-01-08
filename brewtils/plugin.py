@@ -14,7 +14,7 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.config import load_config
-from brewtils.decorators import get_commands
+from brewtils.decorators import parse_client
 from brewtils.errors import (
     ConflictError,
     DiscardMessageException,
@@ -264,7 +264,7 @@ class Plugin(object):
             self._system.description = new_client.__doc__.split("\n")[0]
 
         # Now roll up / interpret all metadata to get the Commands
-        self._system.commands = get_commands(new_client)
+        self._system.commands = parse_client(new_client)
 
         try:
             # Put some attributes on the Client class

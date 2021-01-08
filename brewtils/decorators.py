@@ -40,7 +40,7 @@ __all__ = [
 _wrap_functions = False
 
 
-def get_commands(client):
+def parse_client(client):
     """Get a list of Beergarden Commands from a client object
 
     This will iterate over everything returned from dir, looking for metadata added

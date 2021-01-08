@@ -179,46 +179,6 @@ def command(
     return _wrapped
 
 
-def _initialize_command(method):
-    # type: (MethodType) -> Command
-    """Update a Command definition with info from the method
-
-    Args:
-        method: The method with the Command to initialize
-
-    Returns:
-        The initialized Command
-
-    """
-    cmd = getattr(method, "_command", Command())
-
-    cmd.name = _function_name(method)
-    cmd.description = cmd.description or _function_docstring(method)
-
-    resolved_mod = _resolve_display_modifiers(
-        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
-    )
-    cmd.schema = resolved_mod["schema"]
-    cmd.form = resolved_mod["form"]
-    cmd.template = resolved_mod["template"]
-
-    cmd.parameters += getattr(method, "parameters", [])
-    for arg in signature(method).parameters.values():
-        if arg.name not in cmd.parameter_keys():
-            cmd.parameters.append(Parameter(key=arg.name, optional=False))
-        else:
-            # I'm not super happy about this. It makes sense - positional arguments are
-            # "required", so mark them as non-optional, but it's really unexpected.
-            # A @parameter that doesn't specify "optional=" will have a different value
-            # based on the function signature. Regardless, we went with this originally
-            # so we need to keep it for back-compatibility
-            param = cmd.get_parameter_by_key(arg.name)
-            if param.optional is None:
-                param.optional = False
-
-    return cmd
-
-
 def parameter(
     _wrapped=None,  # type: Union[MethodType, Type]
     key=None,  # type: str
@@ -385,6 +345,46 @@ def parameters(*args):
     return wrapper(args[1])
 
 
+def _initialize_command(method):
+    # type: (MethodType) -> Command
+    """Update a Command definition with info from the method
+
+    Args:
+        method: The method with the Command to initialize
+
+    Returns:
+        The initialized Command
+
+    """
+    cmd = getattr(method, "_command", Command())
+
+    cmd.name = _function_name(method)
+    cmd.description = cmd.description or _function_docstring(method)
+
+    resolved_mod = _resolve_display_modifiers(
+        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
+    )
+    cmd.schema = resolved_mod["schema"]
+    cmd.form = resolved_mod["form"]
+    cmd.template = resolved_mod["template"]
+
+    cmd.parameters += getattr(method, "parameters", [])
+    for arg in signature(method).parameters.values():
+        if arg.name not in cmd.parameter_keys():
+            cmd.parameters.append(Parameter(key=arg.name, optional=False))
+        else:
+            # I'm not super happy about this. It makes sense - positional arguments are
+            # "required", so mark them as non-optional, but it's really unexpected.
+            # A @parameter that doesn't specify "optional=" will have a different value
+            # based on the function signature. Regardless, we went with this originally
+            # so we need to keep it for back-compatibility
+            param = cmd.get_parameter_by_key(arg.name)
+            if param.optional is None:
+                param.optional = False
+
+    return cmd
+
+
 def _function_name(func):
     # Required for Python 2/3 compatibility
     if hasattr(func, "func_name"):
@@ -463,143 +463,6 @@ def _resolve_display_modifiers(
             )
 
     return resolved
-
-
-def _format_type(param_type):
-    if param_type == str:
-        return "String"
-    elif param_type == int:
-        return "Integer"
-    elif param_type == float:
-        return "Float"
-    elif param_type == bool:
-        return "Boolean"
-    elif param_type == dict:
-        return "Dictionary"
-    elif str(param_type).lower() == "file":
-        return "Bytes"
-    elif str(param_type).lower() == "datetime":
-        return "DateTime"
-    elif not param_type:
-        return "Any"
-    else:
-        return str(param_type).title()
-
-
-def _format_choices(choices):
-    def determine_display(display_value):
-        if isinstance(display_value, six.string_types):
-            return "typeahead"
-
-        return "select" if len(display_value) <= 50 else "typeahead"
-
-    def determine_type(type_value):
-        if isinstance(type_value, six.string_types):
-            return "url" if type_value.startswith("http") else "command"
-
-        return "static"
-
-    if not choices:
-        return None
-
-    if isinstance(choices, dict):
-        if not choices.get("value"):
-            raise PluginParamError(
-                "No 'value' provided for choices. You must at least "
-                "provide valid values."
-            )
-
-        value = choices.get("value")
-        display = choices.get("display", determine_display(value))
-        choice_type = choices.get("type")
-        strict = choices.get("strict", True)
-
-        if choice_type is None:
-            choice_type = determine_type(value)
-        elif choice_type not in Choices.TYPES:
-            raise PluginParamError(
-                "Invalid choices type '%s' - Valid type options are %s"
-                % (choice_type, Choices.TYPES)
-            )
-        else:
-            if (
-                (
-                    choice_type == "command"
-                    and not isinstance(value, (six.string_types, dict))
-                )
-                or (choice_type == "url" and not isinstance(value, six.string_types))
-                or (choice_type == "static" and not isinstance(value, (list, dict)))
-            ):
-                allowed_types = {
-                    "command": "('string', 'dictionary')",
-                    "url": "('string')",
-                    "static": "('list', 'dictionary)",
-                }
-                raise PluginParamError(
-                    "Invalid choices value type '%s' - Valid value types for "
-                    "choice type '%s' are %s"
-                    % (type(value), choice_type, allowed_types[choice_type])
-                )
-
-        if display not in Choices.DISPLAYS:
-            raise PluginParamError(
-                "Invalid choices display '%s' - Valid display options are %s"
-                % (display, Choices.DISPLAYS)
-            )
-
-    elif isinstance(choices, str):
-        value = choices
-        display = determine_display(value)
-        choice_type = determine_type(value)
-        strict = True
-
-    else:
-        try:
-            # Assume some sort of iterable
-            value = list(choices)
-        except TypeError:
-            raise PluginParamError(
-                "Invalid 'choices': must be a string, dictionary, or iterable."
-            )
-
-        display = determine_display(value)
-        choice_type = determine_type(value)
-        strict = True
-
-    # Now parse out type-specific aspects
-    unparsed_value = ""
-    try:
-        if choice_type == "command":
-            if isinstance(value, six.string_types):
-                unparsed_value = value
-            else:
-                unparsed_value = value["command"]
-
-            details = parse(unparsed_value, parse_as="func")
-        elif choice_type == "url":
-            unparsed_value = value
-            details = parse(unparsed_value, parse_as="url")
-        else:
-            if isinstance(value, dict):
-                unparsed_value = choices.get("key_reference")
-                if unparsed_value is None:
-                    raise PluginParamError(
-                        "Specifying a static choices dictionary requires a "
-                        '"key_reference" field with a reference to another '
-                        'parameter ("key_reference": "${param_key}")'
-                    )
-
-                details = {"key_reference": parse(unparsed_value, parse_as="reference")}
-            else:
-                details = {}
-    except ParseError:
-        raise PluginParamError(
-            "Invalid choices definition - Unable to parse '%s'" % unparsed_value
-        )
-
-    return Choices(
-        type=choice_type, display=display, value=value, strict=strict, details=details
-    )
 
 
 def _initialize_parameter(
@@ -743,6 +606,143 @@ def _generate_nested_params(parameter_list):
             raise PluginParamError("Unable to generate parameter from '%s'" % param)
 
     return initialized_params
+
+
+def _format_type(param_type):
+    if param_type == str:
+        return "String"
+    elif param_type == int:
+        return "Integer"
+    elif param_type == float:
+        return "Float"
+    elif param_type == bool:
+        return "Boolean"
+    elif param_type == dict:
+        return "Dictionary"
+    elif str(param_type).lower() == "file":
+        return "Bytes"
+    elif str(param_type).lower() == "datetime":
+        return "DateTime"
+    elif not param_type:
+        return "Any"
+    else:
+        return str(param_type).title()
+
+
+def _format_choices(choices):
+    def determine_display(display_value):
+        if isinstance(display_value, six.string_types):
+            return "typeahead"
+
+        return "select" if len(display_value) <= 50 else "typeahead"
+
+    def determine_type(type_value):
+        if isinstance(type_value, six.string_types):
+            return "url" if type_value.startswith("http") else "command"
+
+        return "static"
+
+    if not choices:
+        return None
+
+    if isinstance(choices, dict):
+        if not choices.get("value"):
+            raise PluginParamError(
+                "No 'value' provided for choices. You must at least "
+                "provide valid values."
+            )
+
+        value = choices.get("value")
+        display = choices.get("display", determine_display(value))
+        choice_type = choices.get("type")
+        strict = choices.get("strict", True)
+
+        if choice_type is None:
+            choice_type = determine_type(value)
+        elif choice_type not in Choices.TYPES:
+            raise PluginParamError(
+                "Invalid choices type '%s' - Valid type options are %s"
+                % (choice_type, Choices.TYPES)
+            )
+        else:
+            if (
+                (
+                    choice_type == "command"
+                    and not isinstance(value, (six.string_types, dict))
+                )
+                or (choice_type == "url" and not isinstance(value, six.string_types))
+                or (choice_type == "static" and not isinstance(value, (list, dict)))
+            ):
+                allowed_types = {
+                    "command": "('string', 'dictionary')",
+                    "url": "('string')",
+                    "static": "('list', 'dictionary)",
+                }
+                raise PluginParamError(
+                    "Invalid choices value type '%s' - Valid value types for "
+                    "choice type '%s' are %s"
+                    % (type(value), choice_type, allowed_types[choice_type])
+                )
+
+        if display not in Choices.DISPLAYS:
+            raise PluginParamError(
+                "Invalid choices display '%s' - Valid display options are %s"
+                % (display, Choices.DISPLAYS)
+            )
+
+    elif isinstance(choices, str):
+        value = choices
+        display = determine_display(value)
+        choice_type = determine_type(value)
+        strict = True
+
+    else:
+        try:
+            # Assume some sort of iterable
+            value = list(choices)
+        except TypeError:
+            raise PluginParamError(
+                "Invalid 'choices': must be a string, dictionary, or iterable."
+            )
+
+        display = determine_display(value)
+        choice_type = determine_type(value)
+        strict = True
+
+    # Now parse out type-specific aspects
+    unparsed_value = ""
+    try:
+        if choice_type == "command":
+            if isinstance(value, six.string_types):
+                unparsed_value = value
+            else:
+                unparsed_value = value["command"]
+
+            details = parse(unparsed_value, parse_as="func")
+        elif choice_type == "url":
+            unparsed_value = value
+            details = parse(unparsed_value, parse_as="url")
+        else:
+            if isinstance(value, dict):
+                unparsed_value = choices.get("key_reference")
+                if unparsed_value is None:
+                    raise PluginParamError(
+                        "Specifying a static choices dictionary requires a "
+                        '"key_reference" field with a reference to another '
+                        'parameter ("key_reference": "${param_key}")'
+                    )
+
+                details = {"key_reference": parse(unparsed_value, parse_as="reference")}
+            else:
+                details = {}
+    except ParseError:
+        raise PluginParamError(
+            "Invalid choices definition - Unable to parse '%s'" % unparsed_value
+        )
+
+    return Choices(
+        type=choice_type, display=display, value=value, strict=strict, details=details
+    )
 
 
 def _validate_kwargness(_wrapped, param):

@@ -7,7 +7,7 @@ import os
 import sys
 from io import open
 from types import MethodType
-from typing import List
+from typing import Any, Dict, Iterable, List, Type, Union
 
 import requests
 import six
@@ -220,24 +220,24 @@ def _initialize_command(method):
 
 
 def parameter(
-    _wrapped=None,
-    key=None,
-    type=None,
-    multi=None,
-    display_name=None,
-    optional=None,
-    default=None,
-    description=None,
-    choices=None,
-    parameters=None,
-    nullable=None,
-    maximum=None,
-    minimum=None,
-    regex=None,
-    form_input_type=None,
-    type_info=None,
-    is_kwarg=None,
-    model=None,
+    _wrapped=None,  # type: Union[MethodType, Type]
+    key=None,  # type: str
+    type=None,  # type: str
+    multi=None,  # type: bool
+    display_name=None,  # type: str
+    optional=None,  # type: bool
+    default=None,  # type: Any
+    description=None,  # type: str
+    choices=None,  # type: Union[Dict, Iterable, str]
+    parameters=None,  # type: List[Parameter]
+    nullable=None,  # type: bool
+    maximum=None,  # type: int
+    minimum=None,  # type: int
+    regex=None,  # type: str
+    form_input_type=None,  # type: str
+    type_info=None,  # type: dict
+    is_kwarg=None,  # type: bool
+    model=None,  # type: Type
 ):
     """Decorator that enables Parameter specifications for a beer-garden Command
 
@@ -258,8 +258,8 @@ def parameter(
     Args:
         _wrapped: The function to decorate. This is handled as a positional argument and
             shouldn't be explicitly set.
-        key: String specifying the parameter identifier. Must match an argument name of
-            the decorated function.
+        key: String specifying the parameter identifier. If the decorated object is a
+            method the key must match an argument name.
         type: String indicating the type to use for this parameter.
         multi: Boolean indicating if this parameter is a multi. See documentation for
             discussion of what this means.
@@ -270,19 +270,23 @@ def parameter(
         description: An additional string that will be displayed in the user interface.
         choices: List or dictionary specifying allowed values. See documentation for
             more information.
+        parameters: Any nested parameters. See also: the 'model' argument.
         nullable: Boolean indicating if this parameter is allowed to be null.
         maximum: Integer indicating the maximum value of the parameter.
         minimum: Integer indicating the minimum value of the parameter.
         regex: String describing a regular expression constraint on the parameter.
+        form_input_type: Specify the form input field type (e.g. textarea). Only used
+            for string fields.
+        type_info: Type-specific information. Mostly reserved for future use.
         is_kwarg: Boolean indicating if this parameter is meant to be part of the
-            decorated function's kwargs.
+            decorated function's kwargs. Only applies when the decorated object is a
+            method.
         model: Class to be used as a model for this parameter. Must be a Python type
             object, not an instance.
-        form_input_type: Only used for string fields. Changes the form input field
-            (e.g. textarea)
 
     Returns:
         The decorated function
+
     """
     if _wrapped is None:
         return functools.partial(

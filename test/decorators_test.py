@@ -104,6 +104,7 @@ class TestParameter(object):
     use the basic fixture instead. Don't worry, we'll test the other one later!
 
     """
+
     def test_basic(self, param_definition, param):
         wrapped = parameter(cmd, **param_definition)
 

@@ -6,6 +6,8 @@ import json
 import os
 import sys
 from io import open
+from types import MethodType
+from typing import List
 
 import requests
 import six
@@ -107,15 +109,16 @@ def system(cls=None, bg_name=None, bg_version=None):
 
 
 def command(
-    _wrapped=None,
-    command_type="ACTION",
-    output_type="STRING",
-    hidden=False,
+    _wrapped=None,  # type: MethodType
+    description=None,  # type: str
+    parameters=None,  # type: List[Parameter]
+    command_type="ACTION",  # type: str
+    output_type="STRING",  # type: str
     schema=None,
     form=None,
     template=None,
-    icon_name=None,
-    description=None,
+    icon_name=None,  # type: str
+    hidden=False,  # type: bool
 ):
     """Decorator that marks a function as a beer-garden command
 
@@ -130,14 +133,19 @@ def command(
     Args:
         _wrapped: The function to decorate. This is handled as a positional argument and
             shouldn't be explicitly set.
+        description: The command description. If not given the first line of the method
+            docstring will be used.
+        parameters: A list of Command parameters. It's recommended to use @parameter
+            decorators to declare Parameters instead of declaring them here, but it is
+            allowed. Any Parameters given here will be merged with Parameters sourced
+            from decorators and inferred from the method signature.
         command_type: The command type. Valid options are Command.COMMAND_TYPES.
         output_type: The output type. Valid options are Command.OUTPUT_TYPES.
         schema: A custom schema definition.
         form: A custom form definition.
         template: A custom template definition.
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
-        hidden: Status whether command is visible on the user interface.
-        description: The command description. Will override the function's docstring.
+        hidden: Flag controlling whether the command is visible on the user interface.
 
     Returns:
         The decorated function
@@ -146,6 +154,7 @@ def command(
         return functools.partial(
             command,
             description=description,
+            parameters=parameters,
             command_type=command_type,
             output_type=output_type,
             schema=schema,
@@ -157,6 +166,7 @@ def command(
 
     _wrapped._command = Command(
         description=description,
+        parameters=parameters,
         command_type=command_type,
         output_type=output_type,
         schema=schema,
@@ -169,30 +179,31 @@ def command(
     return _wrapped
 
 
-def _initialize_command(func):
-    """Update a Command definition with info from the function definition
+def _initialize_command(method):
+    # type: (MethodType) -> Command
+    """Update a Command definition with info from the method
 
     Args:
-        func:
-        cmd:
+        method: The method with the Command to initialize
 
     Returns:
+        The initialized Command
 
     """
-    cmd = getattr(func, "_command", Command())
+    cmd = getattr(method, "_command", Command())
 
-    cmd.name = cmd.name or _function_name(func)
-    cmd.description = cmd.description or _function_docstring(func)
+    cmd.name = _function_name(method)
+    cmd.description = cmd.description or _function_docstring(method)
 
     resolved_mod = _resolve_display_modifiers(
-        func, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
+        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
     )
     cmd.schema = resolved_mod["schema"]
     cmd.form = resolved_mod["form"]
     cmd.template = resolved_mod["template"]
 
-    cmd.parameters = getattr(func, "parameters", [])
-    for arg in signature(func).parameters.values():
+    cmd.parameters += getattr(method, "parameters", [])
+    for arg in signature(method).parameters.values():
         if arg.name not in cmd.parameter_keys():
             cmd.parameters.append(Parameter(key=arg.name, optional=False))
         else:

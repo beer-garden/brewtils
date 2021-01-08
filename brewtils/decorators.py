@@ -212,9 +212,10 @@ def parameter(
     maximum=None,
     minimum=None,
     regex=None,
+    form_input_type=None,
+    type_info=None,
     is_kwarg=None,
     model=None,
-    form_input_type=None,
 ):
     """Decorator that enables Parameter specifications for a beer-garden Command
 
@@ -278,6 +279,7 @@ def parameter(
             minimum=minimum,
             regex=regex,
             form_input_type=form_input_type,
+            type_info=type_info,
             is_kwarg=is_kwarg,
             model=model,
         )
@@ -300,6 +302,7 @@ def parameter(
             minimum=minimum,
             regex=regex,
             form_input_type=form_input_type,
+            type_info=type_info,
             is_kwarg=is_kwarg,
             model=model,
         )
@@ -584,12 +587,13 @@ def _initialize_parameter(
     default=None,
     description=None,
     choices=None,
+    parameters=None,
     nullable=None,
     maximum=None,
     minimum=None,
     regex=None,
     form_input_type=None,
-    parameters=None,
+    type_info=None,
     is_kwarg=None,
     model=None,
 ):
@@ -620,20 +624,20 @@ def _initialize_parameter(
     """
     param = param or Parameter(
         key=key,
+        type=type,
         multi=multi,
         display_name=display_name,
-        # optional=False if optional is None else optional,  # TODO CHEKC THIS
         optional=optional,
         default=default,
         description=description,
+        choices=choices,
+        parameters=parameters,
         nullable=nullable,
         maximum=maximum,
         minimum=minimum,
         regex=regex,
         form_input_type=form_input_type,
-        type=type,
-        choices=choices,
-        parameters=parameters,
+        type_info=type_info,
         is_kwarg=is_kwarg,
         model=model,
     )

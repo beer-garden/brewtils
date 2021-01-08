@@ -27,13 +27,10 @@ else:
     from inspect import signature, Parameter as InspectParameter
 
 __all__ = [
-    "system",
+    "command",
     "parameter",
     "parameters",
-    "command",
-    "command_registrar",
-    "plugin_param",
-    "register",
+    "system",
 ]
 
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,

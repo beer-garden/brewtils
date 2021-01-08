@@ -701,6 +701,25 @@ def _format_choices(choices):
 
 
 # Alias the old names for compatibility
-command_registrar = system
-plugin_param = parameter
-register = command
+def command_registrar():
+    _deprecate(
+        "Looks like you're using the '@command_registrar' decorator. Heads up - this "
+        "name will be removed in version 4.0, please use '@system' instead. Thanks!"
+    )
+    return system
+
+
+def register():
+    _deprecate(
+        "Looks like you're using the '@register' decorator. Heads up - this name will "
+        "be removed in version 4.0, please use '@command' instead. Thanks!"
+    )
+    return command
+
+
+def plugin_param():
+    _deprecate(
+        "Looks like you're using the '@plugin_param' decorator. Heads up - this name "
+        "will be removed in version 4.0, please use '@parameter' instead. Thanks!"
+    )
+    return parameter

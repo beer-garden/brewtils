@@ -163,6 +163,7 @@ class RestClient(object):
             self.job_url = self.base_url + "api/v1/jobs/"
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
+            self.admin_url = self.base_url + "api/v1/admin/"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
@@ -700,6 +701,21 @@ class RestClient(object):
             Requests Response object
         """
         return self.session.get(self.user_url + user_identifier)
+
+    @enable_auth
+    def patch_admin(self, payload):
+        # type: (str) -> Response
+        """Performs a PATCH on the admin URL
+
+        Args:
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.patch(
+            self.admin_url, data=payload, headers=self.JSON_HEADERS
+        )
 
     def get_tokens(self, username=None, password=None):
         # type: (str, str) -> Response

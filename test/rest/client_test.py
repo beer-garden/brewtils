@@ -90,6 +90,7 @@ class TestRestClient(object):
             ("job_url", "http://host:80%sapi/v1/jobs/"),
             ("token_url", "http://host:80%sapi/v1/tokens/"),
             ("user_url", "http://host:80%sapi/v1/users/"),
+            ("admin_url", "http://host:80%sapi/v1/admin/"),
         ],
     )
     def test_version_1_uri(self, url_prefix, client, url, expected):
@@ -108,6 +109,7 @@ class TestRestClient(object):
             ("job_url", "https://host:80%sapi/v1/jobs/"),
             ("token_url", "https://host:80%sapi/v1/tokens/"),
             ("user_url", "https://host:80%sapi/v1/users/"),
+            ("admin_url", "https://host:80%sapi/v1/admin/"),
         ],
     )
     def test_version_1_uri_ssl(self, url_prefix, ssl_client, url, expected):
@@ -343,6 +345,12 @@ class TestRestClient(object):
         ret = client.post_file(open_file, file_params=target_file_metadata)
         assert ret == response
         open_file.seek.assert_called_with(0)
+
+    def test_patch_admin(self, client, session_mock):
+        client.patch_admin(payload="payload")
+        session_mock.patch.assert_called_with(
+            client.admin_url, data="payload", headers=client.JSON_HEADERS
+        )
 
     def test_refresh(self, client, session_mock):
         response = Mock(ok=True)

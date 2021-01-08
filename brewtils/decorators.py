@@ -56,10 +56,12 @@ def get_commands(client):
         method_parameters = getattr(method, "parameters", [])
 
         if inspect.ismethod(method) and (method_command or method_parameters):
-            method_command = method_command or Command()
+            method_command = _initialize_command(
+                method, method_command or Command(parameters=method_parameters)
+            )
 
-            method_command = fix_command(method, method_command)
-            method_command.parameters = fix_parameters(method_parameters, func=method)
+            for p in method_command.parameters:
+                _initialize_parameter(param=p, func=method)
 
             bg_commands.append(method_command)
 
@@ -159,7 +161,7 @@ def command(
     return _wrapped
 
 
-def fix_command(func, cmd):
+def _initialize_command(func, cmd):
     """Update a Command definition with info from the function definition
 
     Args:
@@ -169,7 +171,7 @@ def fix_command(func, cmd):
     Returns:
 
     """
-    cmd.name = _function_name(func)
+    cmd.name = cmd.name or _function_name(func)
     cmd.description = cmd.description or _function_docstring(func)
 
     resolved_mod = _resolve_display_modifiers(
@@ -178,6 +180,11 @@ def fix_command(func, cmd):
     cmd.schema = resolved_mod["schema"]
     cmd.form = resolved_mod["form"]
     cmd.template = resolved_mod["template"]
+
+    cmd.parameters = cmd.parameters or []
+    for arg in signature(func).parameters.values():
+        if arg.name not in cmd.parameter_keys():
+            cmd.parameters.append(Parameter(key=arg.name, optional=False))
 
     return cmd
 
@@ -192,6 +199,7 @@ def parameter(
     default=None,
     description=None,
     choices=None,
+    parameters=None,
     nullable=None,
     maximum=None,
     minimum=None,
@@ -256,6 +264,7 @@ def parameter(
             default=default,
             description=description,
             choices=choices,
+            parameters=parameters,
             nullable=nullable,
             maximum=maximum,
             minimum=minimum,
@@ -266,8 +275,9 @@ def parameter(
         )
 
     _wrapped.parameters = getattr(_wrapped, "parameters", [])
+
     _wrapped.parameters.append(
-        _initialize_parameter(
+        Parameter(
             key=key,
             type=type,
             multi=multi,
@@ -276,6 +286,7 @@ def parameter(
             default=default,
             description=description,
             choices=choices,
+            parameters=parameters,
             nullable=nullable,
             maximum=maximum,
             minimum=minimum,
@@ -629,7 +640,8 @@ def _format_choices(choices):
 
 
 def _initialize_parameter(
-    param=None,  # explain this
+    param=None,
+    func=None,
     key=None,
     type=None,
     multi=None,
@@ -654,17 +666,20 @@ def _initialize_parameter(
     a Parameter without using it. This made things like nested models difficult to do
     correctly.
 
-    There are several "fake" kwargs you can use when creating a parameter, "model"
-    being the primary.
-
     There are also some checks and translation that need to happen for every Parameter,
     most notably the "choices" attribute.
 
-    This function will ensure all that happens regardless of how a Parameter is created.
+    This method also ensures that these checks and translations occur for child
+    Parameters.
 
     Args:
-        param: An already-created Parameter. If this is given all the other kwargs will
-        be ignored
+        param: An already-created Parameter. If this is given all the other
+        Parameter-creation kwargs will be ignored
+        func: The function this Parameter will be used on. This will only exist for
+        top-level Parameters (Parameters that have a Command as their parent, not
+        another Parameter). If given, additional checks will be performed to ensure the
+        Parameter matches the function signature.
+
 
     Keyword Args:
         Will be used to construct a new Parameter
@@ -673,7 +688,8 @@ def _initialize_parameter(
         key=key,
         multi=multi,
         display_name=display_name,
-        optional=False if optional is None else optional,  # TODO CHEKC THIS
+        # optional=False if optional is None else optional,  # TODO CHEKC THIS
+        optional=optional,
         default=default,
         description=description,
         nullable=nullable,
@@ -681,8 +697,8 @@ def _initialize_parameter(
         minimum=minimum,
         regex=regex,
         form_input_type=form_input_type,
-        type=_format_type(type),
-        choices=_format_choices(choices),
+        type=type,
+        choices=choices,
         parameters=parameters,
         is_kwarg=is_kwarg,
         model=model,
@@ -691,6 +707,14 @@ def _initialize_parameter(
     # Every parameter needs a key, so stop that right here
     if param.key is None:
         raise PluginParamError("Attempted to create a parameter without a key")
+
+    param.type = _format_type(param.type)
+    param.choices = _format_choices(param.choices)
+
+    if func:
+        func_default = _validate_kwargness(func, param)
+        if func_default and param.default is None:
+            param.default = func_default
 
     # Type info is where type specific information goes. For now, this is specific
     # to file types. See #289 for more details.

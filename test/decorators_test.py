@@ -59,20 +59,25 @@ def wrap_functions(request):
 
 class TestSystem(object):
     def test_system_basic(self, sys):
-        assert len(sys._bg_commands) == 1
-        assert sys._bg_commands[0].name == "foo"
+        assert hasattr(sys, "_bg_name")
+        assert hasattr(sys, "_bg_version")
+        assert hasattr(sys, "_bg_commands")
+        assert hasattr(sys, "_current_request")
 
-    def test_system(self):
+    def test_system_with_args(self):
         @system(bg_name="sys", bg_version="1.0.0")
         class SystemClass(object):
             @command
             def foo(self):
                 pass
 
+        assert hasattr(SystemClass, "_bg_name")
+        assert hasattr(SystemClass, "_bg_version")
+        assert hasattr(SystemClass, "_bg_commands")
+        assert hasattr(SystemClass, "_current_request")
+
         assert SystemClass._bg_name == "sys"
         assert SystemClass._bg_version == "1.0.0"
-        assert len(SystemClass._bg_commands) == 1
-        assert SystemClass._bg_commands[0].name == "foo"
 
 
 class TestParameter(object):

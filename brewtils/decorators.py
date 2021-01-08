@@ -358,8 +358,8 @@ def _initialize_command(method):
     """
     cmd = getattr(method, "_command", Command())
 
-    cmd.name = _function_name(method)
-    cmd.description = cmd.description or _function_docstring(method)
+    cmd.name = _method_name(method)
+    cmd.description = cmd.description or _method_docstring(method)
 
     resolved_mod = _resolve_display_modifiers(
         method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
@@ -385,22 +385,44 @@ def _initialize_command(method):
     return cmd
 
 
-def _function_name(func):
-    # Required for Python 2/3 compatibility
-    if hasattr(func, "func_name"):
-        command_name = func.func_name
+def _method_name(method):
+    # type: (MethodType) -> str
+    """Get the name of a method
+
+    This is needed for Python 2 / 3 compatibility
+
+    Args:
+        method: Method to inspect
+
+    Returns:
+        Method name
+
+    """
+    if hasattr(method, "func_name"):
+        command_name = method.func_name
     else:
-        command_name = func.__name__
+        command_name = method.__name__
 
     return command_name
 
 
-def _function_docstring(func):
-    # Required for Python 2/3 compatibility
-    if hasattr(func, "func_doc"):
-        docstring = func.func_doc
+def _method_docstring(method):
+    # type: (MethodType) -> str
+    """Parse out the first line of the docstring from a method
+
+    This is needed for Python 2 / 3 compatibility
+
+    Args:
+        method: Method to inspect
+
+    Returns:
+        First line of docstring
+
+    """
+    if hasattr(method, "func_doc"):
+        docstring = method.func_doc
     else:
-        docstring = func.__doc__
+        docstring = method.__doc__
 
     return docstring.split("\n")[0] if docstring else None
 

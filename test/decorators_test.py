@@ -50,6 +50,19 @@ def param_definition():
     }
 
 
+@pytest.fixture
+def param():
+    return Parameter(
+        key="foo",
+        type="String",
+        description="Mutant",
+        default="Charles",
+        display_name="Professor X",
+        optional=True,
+        multi=True,
+    )
+
+
 @pytest.fixture(params=[True, False])
 def wrap_functions(request):
     brewtils.decorators._wrap_functions = request.param
@@ -81,6 +94,25 @@ class TestSystem(object):
 
 
 class TestParameter(object):
+    """Test parameter decorator
+
+    This doesn't really do anything except create uninitialized Parameter objects and
+    throw them in the method's parameters list.
+
+    Because the created Parameters are uninitialized it's too annoying to use the
+    normal bg_parameter fixture since nested parameters, choices, etc. won't match. So
+    use the basic fixture instead. Don't worry, we'll test the other one later!
+
+    """
+    def test_basic(self, param_definition, param):
+        wrapped = parameter(cmd, **param_definition)
+
+        assert hasattr(wrapped, "parameters")
+        assert len(wrapped.parameters) == 1
+        assert_parameter_equal(wrapped.parameters[0], param)
+
+
+class TestParameterLegacy(object):
     @pytest.fixture
     def param_1(self):
         return Parameter(

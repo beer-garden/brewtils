@@ -45,20 +45,17 @@ def get_commands(client):
 
     This will iterate over everything returned from dir, looking for metadata added
     by the decorators.
-    """
 
+    """
     bg_commands = []
 
     for attr in dir(client):
         method = getattr(client, attr)
 
-        method_command = getattr(method, "_command", None)
-        method_parameters = getattr(method, "parameters", [])
-
-        if inspect.ismethod(method) and (method_command or method_parameters):
-            method_command = _initialize_command(
-                method, method_command or Command(parameters=method_parameters)
-            )
+        if inspect.ismethod(method) and (
+            hasattr(method, "_command") or hasattr(method, "parameters")
+        ):
+            method_command = _initialize_command(method)
 
             for p in method_command.parameters:
                 _initialize_parameter(param=p, func=method)
@@ -161,7 +158,7 @@ def command(
     return _wrapped
 
 
-def _initialize_command(func, cmd):
+def _initialize_command(func):
     """Update a Command definition with info from the function definition
 
     Args:
@@ -171,6 +168,8 @@ def _initialize_command(func, cmd):
     Returns:
 
     """
+    cmd = getattr(func, "_command", Command())
+
     cmd.name = cmd.name or _function_name(func)
     cmd.description = cmd.description or _function_docstring(func)
 
@@ -181,10 +180,19 @@ def _initialize_command(func, cmd):
     cmd.form = resolved_mod["form"]
     cmd.template = resolved_mod["template"]
 
-    cmd.parameters = cmd.parameters or []
+    cmd.parameters = getattr(func, "parameters", [])
     for arg in signature(func).parameters.values():
         if arg.name not in cmd.parameter_keys():
             cmd.parameters.append(Parameter(key=arg.name, optional=False))
+        else:
+            # I'm not super happy about this. It makes sense - positional arguments are
+            # "required", so mark them as non-optional, but it's really unexpected.
+            # A @parameter that doesn't specify "optional=" will have a different value
+            # based on the function signature. Regardless, we went with this originally
+            # so we need to keep it for back-compatibility
+            param = cmd.get_parameter_by_key(arg.name)
+            if param.optional is None:
+                param.optional = False
 
     return cmd
 

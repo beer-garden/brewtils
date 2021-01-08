@@ -308,24 +308,6 @@ def parameter(
     return _wrapped
 
 
-def fix_parameters(params, func=None):
-    """Initialize parameters"""
-
-    new_params = []
-
-    for param in params:
-
-        # If func is given these are top-level parameters, which get additional handling
-        if func:
-            func_default = _validate_kwargness(func, param)
-            if func_default and param.default is None:
-                param.default = func_default
-
-        new_params.append(_initialize_parameter(param=param))
-
-    return new_params
-
-
 def parameters(*args):
     """Specify multiple Parameter definitions at once
 
@@ -361,9 +343,6 @@ def parameters(*args):
     elif len(args) != 2:
         raise PluginParamError("@parameters takes a single argument")
 
-    # if not isinstance(args[1], types.FunctionType):
-    #     raise PluginParamError("@parameters must be applied to a function")
-
     try:
         for param in args[0]:
             parameter(args[1], **param)
@@ -375,30 +354,6 @@ def parameters(*args):
         return _double_wrapped(*_args, **_kwargs)
 
     return wrapper(args[1])
-
-
-# def _generate_command_from_function(func):
-#     """Generate a Command from a function
-#
-#     Will use the first line of the function's docstring as the description.
-#     """
-#     # Required for Python 2/3 compatibility
-#     if hasattr(func, "func_name"):
-#         command_name = func.func_name
-#     else:
-#         command_name = func.__name__
-#
-#     # Required for Python 2/3 compatibility
-#     if hasattr(func, "func_doc"):
-#         docstring = func.func_doc
-#     else:
-#         docstring = func.__doc__
-#
-#     return Command(
-#         name=command_name,
-#         description=docstring.split("\n")[0] if docstring else None,
-#         parameters=_generate_params_from_function(func),
-#     )
 
 
 def _function_name(func):
@@ -419,35 +374,6 @@ def _function_docstring(func):
         docstring = func.__doc__
 
     return docstring.split("\n")[0] if docstring else None
-
-
-# def _generate_params_from_function(func):
-#     """Generate Parameters from function arguments.
-#
-#     Will set the Parameter key, default value, and optional value.
-#     """
-#     parameters_to_return = []
-#
-#     code = six.get_function_code(func)
-#     function_arguments = list(code.co_varnames or [])[: code.co_argcount]
-#     function_defaults = list(six.get_function_defaults(func) or [])
-#
-#     while len(function_defaults) != len(function_arguments):
-#         function_defaults.insert(0, None)
-#
-#     for index, param_name in enumerate(function_arguments):
-#         # Skip Self or Class reference
-#         if index == 0 and isinstance(func, types.FunctionType):
-#             continue
-#
-#         default = function_defaults[index]
-#         optional = False if default is None else True
-#
-#         parameters_to_return.append(
-#             Parameter(key=param_name, default=default, optional=optional)
-#         )
-#
-#     return parameters_to_return
 
 
 def _resolve_display_modifiers(
@@ -843,36 +769,6 @@ def _validate_kwargness(_wrapped, param):
 
         if sig_param.default != InspectParameter.empty:
             return sig_param.default
-
-    # # If the command doesn't already have a parameter with this key then the
-    # # method doesn't have an explicit keyword argument with <key> as the name.
-    # # That's only OK if this parameter is meant to be part of the **kwargs.
-    # param = cmd.get_parameter_by_key(param.key)
-    # if param is None:
-    #     if param.is_kwarg:
-    #         param = Parameter(key=key, optional=False)
-    #         cmd.parameters.append(param)
-    #     else:
-    #         raise PluginParamError(
-    #             "Parameter '%s' was not an explicit keyword argument for "
-    #             "command '%s' and was not marked as part of kwargs (should "
-    #             "is_kwarg be True?)" % (key, cmd.name)
-    #         )
-    #
-    # # Next, fail if the param is_kwarg=True and the method doesn't have a **kwargs
-    # if is_kwarg:
-    #     kwarg_declared = False
-    #     for p in signature(_wrapped).parameters.values():
-    #         if p.kind == InspectParameter.VAR_KEYWORD:
-    #             kwarg_declared = True
-    #             break
-    #
-    #     if not kwarg_declared:
-    #         raise PluginParamError(
-    #             "Parameter '%s' of command '%s' was declared as a kwarg argument "
-    #             "(is_kwarg=True) but the command method does not declare a **kwargs "
-    #             "argument" % (key, cmd.name)
-    #         )
 
 
 # Alias the old names for compatibility

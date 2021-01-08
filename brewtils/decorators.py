@@ -68,7 +68,18 @@ def parse_client(client):
 def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
-    Creates some properties on the class:
+    This doesn't really do anything anymore, and is now pretty much deprecated. This
+    should really be named "client," but after consideration it doesn't really need to
+    exist at all - the Client is whatever you tell the Plugin it is, no need for
+    a special decorator.
+
+    For historical purposes - the functionality of the ``parse_client`` function was
+    previously in this decorator.
+
+    This does creates some attributes on the class for back-compatability reasons (and
+    to stop linters from complaining). But these are just placeholders until the actual
+    values are determined when the Plugin client is set:
+
       * ``_bg_name``: an optional system name
       * ``_bg_version``: an optional system version
       * ``_bg_commands``: holds all registered commands
@@ -86,10 +97,10 @@ def system(cls=None, bg_name=None, bg_version=None):
     if cls is None:
         return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
 
+    # Assign these here so linters don't complain
     cls._bg_name = bg_name
     cls._bg_version = bg_version
-
-    # Assign this here so linters don't complain
+    cls._bg_commands = []
     cls._current_request = None
 
     return cls

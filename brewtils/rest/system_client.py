@@ -441,10 +441,9 @@ class SystemClient(object):
         if system_display:
             metadata["system_display_name"] = system_display
 
+        # Don't check namespace - https://github.com/beer-garden/beer-garden/issues/827
         if command is None:
             raise ValidationError("Unable to send a request with no command")
-        if system_namespace is None:
-            raise ValidationError("Unable to send a request with no system namespace")
         if system_name is None:
             raise ValidationError("Unable to send a request with no system name")
         if system_version is None:

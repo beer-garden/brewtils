@@ -244,7 +244,6 @@ class TestCreateRequest(object):
         "remove_kwarg",
         [
             "_command",
-            "_system_namespace",
             "_system_name",
             "_system_version",
             "_instance_name",
@@ -253,7 +252,6 @@ class TestCreateRequest(object):
     def test_missing_field(self, client, remove_kwarg):
         kwargs = {
             "_command": "",
-            "_system_namespace": "",
             "_system_name": "",
             "_system_version": "",
             "_instance_name": "",

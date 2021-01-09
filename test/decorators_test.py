@@ -14,7 +14,7 @@ from brewtils.decorators import (
 )
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
-from brewtils.test.comparable import assert_parameter_equal
+from brewtils.test.comparable import assert_command_equal, assert_parameter_equal
 
 
 @pytest.fixture
@@ -71,13 +71,13 @@ def wrap_functions(request):
 
 
 class TestSystem(object):
-    def test_system_basic(self, sys):
+    def test_basic(self, sys):
         assert hasattr(sys, "_bg_name")
         assert hasattr(sys, "_bg_version")
         assert hasattr(sys, "_bg_commands")
         assert hasattr(sys, "_current_request")
 
-    def test_system_with_args(self):
+    def test_with_args(self):
         @system(bg_name="sys", bg_version="1.0.0")
         class SystemClass(object):
             @command
@@ -91,6 +91,21 @@ class TestSystem(object):
 
         assert SystemClass._bg_name == "sys"
         assert SystemClass._bg_version == "1.0.0"
+
+
+class TestCommand(object):
+    def test_basic(self, command_dict, bg_command):
+        # Removing things that need to be initialized
+        bg_command.name = None
+        bg_command.parameters = []
+        del command_dict["name"]
+        del command_dict["parameters"]
+
+        @command(**command_dict)
+        def foo():
+            pass
+
+        assert_command_equal(foo._command, bg_command)
 
 
 class TestParameter(object):
@@ -615,7 +630,7 @@ class TestParameters(object):
         assert func(self, test_mock) == test_mock
 
 
-class TestCommand(object):
+class TestCommandLegacy(object):
     @pytest.fixture
     def func_mock(self):
         code_mock = Mock(

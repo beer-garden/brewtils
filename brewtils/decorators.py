@@ -114,9 +114,9 @@ def command(
     parameters=None,  # type: List[Parameter]
     command_type="ACTION",  # type: str
     output_type="STRING",  # type: str
-    schema=None,
-    form=None,
-    template=None,
+    schema=None,  # type: Union[dict, str]
+    form=None,  # type: Union[dict, list, str]
+    template=None,  # type: str
     icon_name=None,  # type: str
     hidden=False,  # type: bool
 ):
@@ -428,7 +428,11 @@ def _method_docstring(method):
 
 
 def _resolve_display_modifiers(
-    wrapped, command_name, schema=None, form=None, template=None
+    wrapped,  # type: MethodType
+    command_name,  # type: str
+    schema=None,  # type: Union[dict, str]
+    form=None,  # type: Union[dict, list, str]
+    template=None,  # type: str
 ):
     def _load_from_url(url):
         response = requests.get(url)

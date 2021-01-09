@@ -464,11 +464,15 @@ class SystemClient(object):
             parameters=kwargs,
         )
 
-        file_params = self._commands[command].parameter_keys_by_type("Base64")
-        resolver = UploadResolver(request, file_params, self._resolvers)
-        request.parameters = resolver.resolve_parameters()
+        request.parameters = self._resolve_parameters(command, request)
 
         return request
+
+    def _resolve_parameters(self, command, request):
+        file_params = self._commands[command].parameter_keys_by_type("Base64")
+        resolver = UploadResolver(request, file_params, self._resolvers)
+
+        return resolver.resolve_parameters()
 
     @staticmethod
     def _determine_latest(systems):

@@ -249,7 +249,9 @@ class TestCreateRequest(object):
             "_instance_name",
         ],
     )
-    def test_missing_field(self, client, remove_kwarg):
+    def test_missing_field(self, monkeypatch, client, remove_kwarg):
+        monkeypatch.setattr(client, "_resolve_parameters", Mock())
+
         kwargs = {
             "_command": "",
             "_system_name": "",

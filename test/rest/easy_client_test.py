@@ -182,6 +182,13 @@ class TestSystems(object):
             operation = parser.serialize_patch.call_args[0][0][0]
             assert operation.path == "/commands"
 
+        def test_empty_commands(self, client, rest_client, parser, success):
+            rest_client.patch_system.return_value = success
+
+            client.update_system("id", new_commands=[])
+            operation = parser.serialize_patch.call_args[0][0][0]
+            assert operation.path == "/commands"
+
         def test_add_instance(self, client, rest_client, parser, success, bg_instance):
             rest_client.patch_system.return_value = success
 
@@ -446,6 +453,27 @@ def test_get_user(client, rest_client, success, bg_principal):
 
     client.get_user(bg_principal.username)
     rest_client.get_user.assert_called_once_with(bg_principal.username)
+
+
+class TestRescan(object):
+    def test_success(self, client, rest_client, parser, success, bg_command):
+        rest_client.patch_admin.return_value = success
+
+        assert client.rescan() is True
+        assert rest_client.patch_admin.called is True
+
+        patch_op = parser.serialize_patch.call_args[0][0]
+        assert patch_op.operation == "rescan"
+
+    def test_failure(self, client, rest_client, parser, server_error, bg_command):
+        rest_client.patch_admin.return_value = server_error
+
+        with pytest.raises(RestError):
+            client.rescan()
+        assert rest_client.patch_admin.called is True
+
+        patch_op = parser.serialize_patch.call_args[0][0]
+        assert patch_op.operation == "rescan"
 
 
 class TestRequestFileUpload(object):

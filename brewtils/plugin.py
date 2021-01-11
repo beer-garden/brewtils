@@ -4,6 +4,7 @@ import logging
 import logging.config
 import os
 import signal
+import sys
 import threading
 
 import appdirs
@@ -293,6 +294,18 @@ class Plugin(object):
         signal.signal(signal.SIGINT, _handler)
         signal.signal(signal.SIGTERM, _handler)
 
+    @staticmethod
+    def _set_exception_hook(logger):
+        """Ensure uncaught exceptions are logged instead of being written to stderr"""
+
+        def _hook(exc_type, exc_value, traceback):
+            logger.error(
+                "An uncaught exception was raised in the plugin process:",
+                exc_info=(exc_type, exc_value, traceback),
+            )
+
+        sys.excepthook = _hook
+
     def _startup(self):
         """Plugin startup procedure
 
@@ -403,6 +416,10 @@ class Plugin(object):
                 "configuration. The default configuration will be used instead. Caused "
                 "by: {0}".format(ex)
             )
+            return
+
+        # Finally, log uncaught exceptions using the configuration instead of stderr
+        self._set_exception_hook(self._logger)
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info

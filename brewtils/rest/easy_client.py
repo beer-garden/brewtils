@@ -316,7 +316,7 @@ class EasyClient(object):
         metadata = kwargs.pop("metadata", {})
         add_instance = kwargs.pop("add_instance", None)
 
-        if new_commands:
+        if new_commands is not None:
             commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )
@@ -890,6 +890,18 @@ class EasyClient(object):
 
         """
         return self.get_user(self.client.username or "anonymous")
+
+    @wrap_response(return_boolean=True)
+    def rescan(self):
+        """Rescan local plugin directory
+
+        Returns:
+            bool: True if rescan was successful
+
+        """
+        return self.client.patch_admin(
+            payload=SchemaParser.serialize_patch(PatchOperation(operation="rescan"))
+        )
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def _remove_system_by_id(self, system_id):

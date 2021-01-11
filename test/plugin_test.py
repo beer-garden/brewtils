@@ -24,6 +24,13 @@ from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
 @pytest.fixture(autouse=True)
+def stub_dangerous(monkeypatch):
+    """Stub out stuff that could interfere with pytest"""
+    monkeypatch.setattr(brewtils.plugin.Plugin, "_set_signal_handlers", Mock())
+    monkeypatch.setattr(brewtils.plugin.Plugin, "_set_exception_hook", Mock())
+
+
+@pytest.fixture(autouse=True)
 def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
     _ez_client = Mock(
         name="ez_client",

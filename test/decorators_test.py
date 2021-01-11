@@ -815,3 +815,38 @@ class TestResolveModifiers(object):
 
         with pytest.raises(PluginParamError):
             _resolve_display_modifiers(Mock(), Mock(), **args)
+
+
+class TestDeprecations(object):
+    def test_command_registrar(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            from brewtils.decorators import command_registrar  # noqa F401
+
+            command_registrar()
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "command_registrar" in str(w[0].message)
+
+    def test_register(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            from brewtils.decorators import register  # noqa F401
+
+            register()
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "register" in str(w[0].message)
+
+    def test_plugin_param(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            from brewtils.decorators import plugin_param  # noqa F401
+
+            plugin_param()
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "plugin_param" in str(w[0].message)

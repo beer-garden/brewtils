@@ -111,16 +111,19 @@ coverage-view: coverage ## view coverage report in a browser
 docker-login: ## log in to the docker registry
 	echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USER}" --password-stdin
 
-docker-build: docs ## build the docker images
+docker-build-docs: docs
+	docker build -t $(DOCKER_NAME):docs-$(VERSION) -f docs/Dockerfile docs/
+	docker tag $(DOCKER_NAME):docs-$(VERSION) $(DOCKER_NAME):docs
+
+docker-build:
 	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
 	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
 	docker build -t $(DOCKER_NAME):python2-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
 	docker build -t $(DOCKER_NAME):python2-onbuild-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
-	docker build -t $(DOCKER_NAME):docs-$(VERSION) -f docs/Dockerfile docs/
 	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):latest
 	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):python3
 	docker tag $(DOCKER_NAME):python2-$(VERSION) $(DOCKER_NAME):python2
-	docker tag $(DOCKER_NAME):docs-$(VERSION) $(DOCKER_NAME):docs
+
 
 # Documentation
 docs-deps: ## install dependencies for documentation
@@ -160,8 +163,10 @@ publish-docker: docker-build ## push the docker images
 	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
 	docker push $(DOCKER_NAME):python2-$(VERSION)
 	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
-	docker push $(DOCKER_NAME):docs-$(VERSION)
 	docker push $(DOCKER_NAME):latest
 	docker push $(DOCKER_NAME):python3
 	docker push $(DOCKER_NAME):python2
+
+publish-docker-docs: docker-build-docs ## push the docker images
+	docker push $(DOCKER_NAME):docs-$(VERSION)
 	docker push $(DOCKER_NAME):docs

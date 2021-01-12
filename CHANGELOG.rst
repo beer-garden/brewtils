@@ -7,13 +7,13 @@ Date: 1/11/21
 
 Bug Fixes
 ^^^^^^^^^
-- Fixed Plugin Logging hook to ensure logs are written when Plugin shuts down unexptendetly (Issue #787 / PR #276)
+- Fixed Plugin Logging hook to ensure logs are written when Plugin shuts down unexpectedly (Issue #787 / PR #276)
 - Properly handle empty command list (PR #277)
 
 New Features
 ^^^^^^^^^^^^
 - Adding check for PyPi before building Docker Images in Github Actions (PR #275)
-- Addes ReScan Method the Easy Client (Issue #815 / PR #278)
+- Adds ReScan Method the Easy Client (Issue #815 / PR #278)
 - Deprecation warnings for annotations `command_registrar`, `register`, and `plugin_param` (Issue #825 / PR #280)
 - Removes requirement for Namespace when submitting Request through the Easy Client (Issue #827 / PR #281)
 

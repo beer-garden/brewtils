@@ -797,7 +797,7 @@ def _validate_kwargness(_wrapped, param):
     # Couldn't find the parameter. That's OK if this parameter is meant to be part of
     # the **kwargs AND the function has a **kwargs parameter.
     if sig_param is None:
-        if param.is_kwarg is False:
+        if not param.is_kwarg:
             raise PluginParamError(
                 "Parameter was not not marked as part of kwargs and wasn't found in "
                 "the method signature (should is_kwarg be True?)"

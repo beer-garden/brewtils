@@ -7,16 +7,17 @@ Date: 1/11/21
 
 Bug Fixes
 ^^^^^^^^^
-- Fixed Plugin Logging hook to ensure logs are written when Plugin shuts down unexpectedly (Issue #787 / PR #276)
-- Properly handle empty command list (PR #277)
+- SystemClient no longer disallows creating a Request for a System without a namespace (Issue #827 / PR #281)
+- Logs are now written correctly when a Plugin encounters an uncaught exception after initialization (Issue #787 / PR #276)
+- Plugin registration will now behave as expected when the list of plugin Commands is empty (Issue #806 / PR #277)
 
 New Features
 ^^^^^^^^^^^^
-- Adding check for PyPi before building Docker Images in Github Actions (PR #275)
-- Adds ReScan Method the Easy Client (Issue #815 / PR #278)
-- Deprecation warnings for annotations `command_registrar`, `register`, and `plugin_param` (Issue #825 / PR #280)
-- Removes requirement for Namespace when submitting Request through the Easy Client (Issue #827 / PR #281)
+- Added a Rescan method to the EasyClient (Issue #815 / PR #278)
 
+Other Changes
+^^^^^^^^^^^^^
+- The decorators ``command_registrar``, ``register``, and ``plugin_param`` are officially deprecated (Issue #825 / PR #280)
 
 3.0.1
 -----

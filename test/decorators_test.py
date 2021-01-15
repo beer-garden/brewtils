@@ -818,35 +818,72 @@ class TestResolveModifiers(object):
 
 
 class TestDeprecations(object):
-    def test_command_registrar(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+    class TestCommandRegistrar(object):
+        def test_basic(self):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
 
-            from brewtils.decorators import command_registrar  # noqa F401
+                from brewtils.decorators import command_registrar  # noqa F401
 
-            command_registrar()
+                @command_registrar
+                class SystemClass(object):
+                    @command
+                    def foo(self):
+                        pass
 
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "command_registrar" in str(w[0].message)
+                assert len(SystemClass._bg_commands) == 1
+                assert SystemClass._bg_commands[0].name == "foo"
 
-    def test_register(self):
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert "command_registrar" in str(w[0].message)
+
+        def test_arguments(self):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+
+                from brewtils.decorators import command_registrar  # noqa F401
+
+                @command_registrar(bg_name="sys", bg_version="1.0.0")
+                class SystemClass(object):
+                    @command
+                    def foo(self):
+                        pass
+
+                assert SystemClass._bg_name == "sys"
+                assert SystemClass._bg_version == "1.0.0"
+                assert len(SystemClass._bg_commands) == 1
+                assert SystemClass._bg_commands[0].name == "foo"
+
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert "command_registrar" in str(w[0].message)
+
+    def test_register(self, cmd):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
             from brewtils.decorators import register  # noqa F401
 
-            register()
+            assert not hasattr(cmd, "_command")
+            register(cmd)
+
+            assert hasattr(cmd, "_command")
+            assert cmd._command.name == "_cmd"
+            assert cmd._command.description == "Docstring"
+            assert len(cmd._command.parameters) == 1
 
             assert issubclass(w[0].category, DeprecationWarning)
             assert "register" in str(w[0].message)
 
-    def test_plugin_param(self):
+    def test_plugin_param(self, cmd, param_definition):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
             from brewtils.decorators import plugin_param  # noqa F401
 
-            plugin_param()
+            wrapped = plugin_param(cmd, **param_definition)
+            param = wrapped._command.get_parameter_by_key("foo")
+
+            assert_parameter_equal(param, Parameter(**param_definition))
 
             assert issubclass(w[0].category, DeprecationWarning)
             assert "plugin_param" in str(w[0].message)

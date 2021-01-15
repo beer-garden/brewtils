@@ -14,6 +14,7 @@ from brewtils.errors import (
     RequestProcessException,
     TimeoutExceededError,
     ValidationError,
+    _deprecate,
 )
 from brewtils.models import Request
 from brewtils.resolvers import UploadResolver, build_resolver_map
@@ -187,12 +188,20 @@ class SystemClient(object):
         refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger(__name__)
 
         self._loaded = False
         self._system = None
         self._commands = None
+
+        # Need this for back-compatibility (see #836)
+        if len(args) > 2:
+            _deprecate(
+                "Heads up - passing system_name as a positional argument is deprecated "
+                "and will be removed in version 4.0",
+            )
+            kwargs.setdefault("system_name", args[2])
 
         self._system_name = kwargs.get("system_name")
         self._version_constraint = kwargs.get("version_constraint", "latest")
@@ -211,7 +220,10 @@ class SystemClient(object):
         max_concurrent = kwargs.get("max_concurrent", (cpu_count() or 1) * 5)
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
-        self._easy_client = EasyClient(**kwargs)
+        # This points DeprecationWarnings at the right line
+        kwargs.setdefault("stacklevel", 5)
+
+        self._easy_client = EasyClient(*args, **kwargs)
         self._resolvers = build_resolver_map(self._easy_client)
 
     def __getattr__(self, item):

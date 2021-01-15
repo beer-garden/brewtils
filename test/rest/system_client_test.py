@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import warnings
 from concurrent.futures import wait
 
 import pytest
@@ -89,6 +90,16 @@ def sleep_patch(monkeypatch):
     mock = Mock(name="sleep mock")
     monkeypatch.setattr(brewtils.rest.system_client.time, "sleep", mock)
     return mock
+
+
+def test_old_positional_args():
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        SystemClient("host", 80, "system")
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
 
 
 class TestLoadBgSystem(object):

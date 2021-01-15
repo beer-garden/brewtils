@@ -14,6 +14,7 @@ from brewtils.errors import (
     RequestProcessException,
     TimeoutExceededError,
     ValidationError,
+    _deprecate,
 )
 from brewtils.models import Request
 from brewtils.resolvers import UploadResolver, build_resolver_map
@@ -194,9 +195,12 @@ class SystemClient(object):
         self._system = None
         self._commands = None
 
-        # Need this for back-compatibility (see #836). The RestClient is going to yell
-        # about deprecation, so just worry about what SystemClient needs
+        # Need this for back-compatibility (see #836)
         if len(args) > 2:
+            _deprecate(
+                "Heads up - passing system_name as a positional argument is deprecated "
+                "and will be removed in version 4.0",
+            )
             kwargs.setdefault("system_name", args[2])
 
         self._system_name = kwargs.get("system_name")

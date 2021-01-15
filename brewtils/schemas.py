@@ -226,6 +226,7 @@ class FileSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
+    owner = fields.Raw(load_only=True, allow_none=True)
     job = fields.Raw(allow_none=True)
     request = fields.Raw(allow_none=True)
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")

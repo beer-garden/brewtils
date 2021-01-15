@@ -418,12 +418,14 @@ class File(BaseModel):
         file_size=None,
         chunks=None,
         chunk_size=None,
+        owner=None,
         job=None,
         request=None,
     ):
         self.id = id
         self.owner_id = owner_id
         self.owner_type = owner_type
+        self.owner = owner
         self.job = job
         self.request = request
         self.updated_at = updated_at

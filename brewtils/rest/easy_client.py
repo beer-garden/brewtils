@@ -157,8 +157,11 @@ class EasyClient(object):
 
     _default_file_params = {"chunk_size": 255 * 1024}
 
-    def __init__(self, **kwargs):
-        self.client = RestClient(**kwargs)
+    def __init__(self, *args, **kwargs):
+        # This points DeprecationWarnings at the right line
+        kwargs.setdefault("stacklevel", 4)
+
+        self.client = RestClient(*args, **kwargs)
 
     def can_connect(self, **kwargs):
         """Determine if the Beergarden server is responding.

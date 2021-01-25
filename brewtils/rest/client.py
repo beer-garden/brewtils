@@ -204,13 +204,15 @@ class RestClient(object):
         if len(args) > 0:
             _deprecate(
                 "Heads up - passing bg_host as a positional argument is deprecated "
-                "and will be removed in version 4.0"
+                "and will be removed in version 4.0",
+                stacklevel=kwargs.get("stacklevel", 3),
             )
             positional["bg_host"] = args[0]
         if len(args) > 1:
             _deprecate(
                 "Heads up - passing bg_port as a positional argument is deprecated "
-                "and will be removed in version 4.0"
+                "and will be removed in version 4.0",
+                stacklevel=kwargs.get("stacklevel", 3),
             )
             positional["bg_port"] = args[1]
 

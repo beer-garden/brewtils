@@ -1,6 +1,24 @@
 Brewtils Changelog
 ==================
 
+3.0.2
+-----
+Date: 1/11/21
+
+Bug Fixes
+^^^^^^^^^
+- SystemClient no longer disallows creating a Request for a System without a namespace (Issue #827 / PR #281)
+- Logs are now written correctly when a Plugin encounters an uncaught exception after initialization (Issue #787 / PR #276)
+- Plugin registration will now behave as expected when the list of plugin Commands is empty (Issue #806 / PR #277)
+
+New Features
+^^^^^^^^^^^^
+- Added a Rescan method to the EasyClient (Issue #815 / PR #278)
+
+Other Changes
+^^^^^^^^^^^^^
+- The decorators ``command_registrar``, ``register``, and ``plugin_param`` are officially deprecated (Issue #825 / PR #280)
+
 3.0.1
 -----
 Date: 12/15/20

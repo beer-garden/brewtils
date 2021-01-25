@@ -36,6 +36,8 @@ jobs:
           pip install setuptools wheel twine
 
       - name: Build and publish
+        # If the package already exists, we can continue on with releasing the Docker Images
+        continue-on-error: true
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
@@ -72,8 +74,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Build Images
+        run: make publish-docker VERSION=${GITHUB_REF#refs/tags/}
+
       - name: Run Dep Docs
         run: make docs-deps
 
-      - name: Build Images
-        run: make publish-docker VERSION=${GITHUB_REF#refs/tags/}
+      - name: Build Doc Images
+        run: make publish-docker-docs VERSION=${GITHUB_REF#refs/tags/}

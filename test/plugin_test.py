@@ -633,9 +633,7 @@ class TestLegacyGarden(object):
         assert plugin._legacy_garden() is False
 
     def test_legacy(self, caplog, plugin, ez_client):
-        ez_client.get_version.return_value = {
-            "brew_view_version": "2.4.19",
-        }
+        ez_client.get_version.return_value = {"brew_view_version": "2.4.19"}
 
         with caplog.at_level(logging.WARNING):
             with warnings.catch_warnings(record=True) as w:

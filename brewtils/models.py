@@ -385,12 +385,7 @@ class Parameter(BaseModel):
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
 
-    def __init__(
-        self,
-        storage_type=None,
-        filename=None,
-        id=None,
-    ):
+    def __init__(self, storage_type=None, filename=None, id=None):
         self.storage_type = storage_type
         self.filename = filename
         self.id = id
@@ -455,10 +450,7 @@ class FileChunk(BaseModel):
         return self.data
 
     def __repr__(self):
-        return "<FileChunk: file_id=%s, offset=%s>" % (
-            self.file_id,
-            self.offset,
-        )
+        return "<FileChunk: file_id=%s, offset=%s>" % (self.file_id, self.offset)
 
 
 class FileStatus(BaseModel):
@@ -1300,13 +1292,7 @@ class CronTrigger(BaseModel):
 class FileTrigger(BaseModel):
     schema = "FileTriggerSchema"
 
-    def __init__(
-        self,
-        pattern=None,
-        path=None,
-        recursive=None,
-        callbacks=None,
-    ):
+    def __init__(self, pattern=None, path=None, recursive=None, callbacks=None):
         self.pattern = pattern
         self.path = path
         self.recursive = recursive

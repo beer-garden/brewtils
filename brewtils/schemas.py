@@ -280,6 +280,7 @@ class RequestTemplateSchema(BaseSchema):
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    hidden = fields.Boolean(allow_none=True)
     output_type = fields.Str(allow_none=True)
 
 

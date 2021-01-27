@@ -516,6 +516,7 @@ model_schema_map.update(
         "FileStatus": FileStatusSchema,
         "RequestTemplate": RequestTemplateSchema,
         "Role": RoleSchema,
+        "Permission": PermissionSchema,
         "System": SystemSchema,
         "Operation": OperationSchema,
         "Runner": RunnerSchema,

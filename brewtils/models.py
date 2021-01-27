@@ -1085,9 +1085,6 @@ class Permission(BaseModel):
         self.access = access
         self.is_local = is_local
 
-    def __hash__(self):
-        return self.__str__()
-
     def __str__(self):
         if self.is_local:
             return "LOCAL: %s" % self.access

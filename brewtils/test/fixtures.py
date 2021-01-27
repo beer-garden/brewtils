@@ -28,6 +28,7 @@ from brewtils.models import (
     Role,
     Runner,
     System,
+    Permission,
 )
 
 
@@ -487,37 +488,50 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def principal_dict(role_dict):
+def principal_dict(role_dict, permission_dict):
     return {
         "id": "58542eb571afd47ead90d24f",
         "username": "admin",
         "roles": [role_dict],
-        "permissions": ["bg-all"],
+        "permissions": [permission_dict],
         "preferences": {"theme": "dark"},
         "metadata": {"foo": "bar"},
     }
 
 
 @pytest.fixture
-def bg_principal(principal_dict, bg_role):
+def bg_principal(principal_dict, bg_role, bg_permission):
     dict_copy = copy.deepcopy(principal_dict)
     dict_copy["roles"] = [bg_role]
+    dict_copy["permissions"] = [bg_permission]
     return Principal(**dict_copy)
 
 
 @pytest.fixture
-def role_dict():
+def permission_dict():
+    return {"namespace": "default", "access": "ADMIN", "is_local": False}
+
+
+@pytest.fixture
+def bg_permission(permission_dict):
+    dict_copy = copy.deepcopy(permission_dict)
+    return Permission(**dict_copy)
+
+
+@pytest.fixture
+def role_dict(permission_dict):
     return {
         "id": "58542eb571afd47ead90d26f",
         "name": "bg-admin",
         "description": "The admin role",
-        "permissions": ["bg-all"],
+        "permissions": [permission_dict],
     }
 
 
 @pytest.fixture
-def bg_role(role_dict):
+def bg_role(role_dict, bg_permission):
     dict_copy = copy.deepcopy(role_dict)
+    dict_copy["permissions"] = [bg_permission]
     return Role(**dict_copy)
 
 

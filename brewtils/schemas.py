@@ -375,6 +375,7 @@ class PrincipalSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
     roles = fields.Nested("RoleSchema", many=True, allow_none=True)
+    permissions = fields.Nested("PermissionSchema", many=True, allow_none=True)
     preferences = fields.Dict(allow_none=True)
     metadata = fields.Dict(allow_none=True)
 

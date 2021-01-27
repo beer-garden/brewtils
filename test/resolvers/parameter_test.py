@@ -103,12 +103,7 @@ class TestDownloadResolver(object):
 
     def test_multi_bytes_resolve(self, test_resolvers, bytes_param):
         request = Mock(
-            parameters={
-                "multi_bytes": [
-                    bytes_param,
-                    bytes_param,
-                ]
-            },
+            parameters={"multi_bytes": [bytes_param, bytes_param]},
             is_ephemeral=False,
             id="123",
         )
@@ -145,9 +140,7 @@ class TestDownloadResolver(object):
             return id_map.get(file_id, None)
 
         monkeypatch.setattr(
-            resolver.resolvers["file"],
-            "download",
-            Mock(side_effect=lookup_file),
+            resolver.resolvers["file"], "download", Mock(side_effect=lookup_file)
         )
         actual_params = resolver.resolve_parameters()
         assert actual_params == {
@@ -163,11 +156,7 @@ class TestDownloadResolver(object):
         }
 
     def test_with(self, bytes_request, test_resolvers):
-        with DownloadResolver(
-            bytes_request,
-            [["bytes"]],
-            test_resolvers,
-        ) as params:
+        with DownloadResolver(bytes_request, [["bytes"]], test_resolvers) as params:
             assert "bytes" in params
 
     def test_with_unexpected_exception(self, tmpdir, test_resolvers, bytes_request):

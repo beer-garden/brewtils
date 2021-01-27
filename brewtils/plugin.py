@@ -335,8 +335,7 @@ class Plugin(object):
                 app_parts.insert(0, self._system.namespace)
 
             self._config.working_directory = appdirs.user_data_dir(
-                appname=os.path.join(*app_parts),
-                version=self._system.version,
+                appname=os.path.join(*app_parts), version=self._system.version
             )
 
         self._logger.debug("Starting up processors")

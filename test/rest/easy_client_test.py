@@ -487,13 +487,7 @@ class TestRequestFileUpload(object):
         file_data = b64encode(target_file.read())
 
         client._check_file_validity = Mock(
-            return_value=(
-                True,
-                {
-                    "file_id": target_file_id,
-                    "number_of_chunks": 1,
-                },
-            )
+            return_value=(True, {"file_id": target_file_id, "number_of_chunks": 1})
         )
         response = Mock()
         response.ok = True

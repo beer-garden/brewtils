@@ -26,12 +26,7 @@ if sys.version_info.major == 2:
 else:
     from inspect import signature, Parameter as InspectParameter
 
-__all__ = [
-    "command",
-    "parameter",
-    "parameters",
-    "system",
-]
+__all__ = ["command", "parameter", "parameters", "system"]
 
 # The wrapt module has a cool feature where you can disable wrapping a decorated function,
 # instead just using the original function. This is pretty much exactly what we want - we

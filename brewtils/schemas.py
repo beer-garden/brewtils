@@ -45,7 +45,7 @@ def _serialize_model(_, obj, type_field=None, allowed_types=None):
     model_type = getattr(obj, type_field)
 
     if model_type not in model_schema_map or (
-            allowed_types and model_type not in allowed_types
+        allowed_types and model_type not in allowed_types
     ):
         raise TypeError("Invalid model type %s" % model_type)
 
@@ -54,7 +54,7 @@ def _serialize_model(_, obj, type_field=None, allowed_types=None):
 
 def _deserialize_model(_, data, type_field=None, allowed_types=None):
     if data[type_field] not in model_schema_map or (
-            allowed_types and data[type_field] not in allowed_types
+        allowed_types and data[type_field] not in allowed_types
     ):
         raise TypeError("Invalid payload type %s" % data[type_field])
 

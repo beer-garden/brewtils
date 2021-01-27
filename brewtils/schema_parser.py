@@ -538,7 +538,10 @@ class SchemaParser(object):
         :return: Serialized representation
         """
         return cls.serialize(
-            permission, to_string=to_string, schema_name=brewtils.models.Permission.schema, **kwargs
+            permission,
+            to_string=to_string,
+            schema_name=brewtils.models.Permission.schema,
+            **kwargs
         )
 
     @classmethod

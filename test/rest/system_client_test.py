@@ -126,16 +126,12 @@ class TestLoadBgSystem(object):
         client.load_bg_system()
         assert client._system == system_2
         easy_client.find_systems.assert_called_once_with(
-            name=system_1.name,
-            namespace="",
+            name=system_1.name, namespace=""
         )
 
     @pytest.mark.parametrize(
         "constraint,systems",
-        [
-            ("1.0.0", lazy_fixture("system_1")),
-            (None, lazy_fixture("system_1")),
-        ],
+        [("1.0.0", lazy_fixture("system_1")), (None, lazy_fixture("system_1"))],
     )
     def test_non_latest(self, client, easy_client, system_1, constraint, systems):
         client._version_constraint = constraint
@@ -146,9 +142,7 @@ class TestLoadBgSystem(object):
         assert client._system == system_1
 
         easy_client.find_unique_system.assert_called_once_with(
-            name=system_1.name,
-            version=constraint,
-            namespace="",
+            name=system_1.name, version=constraint, namespace=""
         )
 
     def test_failure_with_constraint(self, client, easy_client):
@@ -182,8 +176,7 @@ class TestLoadBgSystem(object):
         client.load_bg_system()
         assert client._system == system_1
         easy_client.find_systems.assert_called_once_with(
-            name=system_1.name,
-            namespace="foo",
+            name=system_1.name, namespace="foo"
         )
 
 
@@ -253,12 +246,7 @@ class TestCreateRequest(object):
 
     @pytest.mark.parametrize(
         "remove_kwarg",
-        [
-            "_command",
-            "_system_name",
-            "_system_version",
-            "_instance_name",
-        ],
+        ["_command", "_system_name", "_system_version", "_instance_name"],
     )
     def test_missing_field(self, monkeypatch, client, remove_kwarg):
         monkeypatch.setattr(client, "_resolve_parameters", Mock())

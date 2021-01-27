@@ -199,7 +199,7 @@ class SystemClient(object):
         if len(args) > 2:
             _deprecate(
                 "Heads up - passing system_name as a positional argument is deprecated "
-                "and will be removed in version 4.0",
+                "and will be removed in version 4.0"
             )
             kwargs.setdefault("system_name", args[2])
 

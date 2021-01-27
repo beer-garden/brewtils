@@ -339,10 +339,7 @@ class TestRequestProcessor(object):
 
         def test_call_with_resolver(self, processor, target_mock, target_file_id):
             command = "foo"
-            request = Request(
-                command=command,
-                parameters={"p1": target_file_id},
-            )
+            request = Request(command=command, parameters={"p1": target_file_id})
 
             resolvers = {"file": Mock(download=Mock(return_value=b"bytes_value"))}
             processor._resolvers = resolvers

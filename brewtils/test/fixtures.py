@@ -342,7 +342,6 @@ def request_template_dict():
         "command_type": "ACTION",
         "parameters": {"message": "hey!"},
         "comment": "hi!",
-        "hidden": None,
         "metadata": {"request": "stuff"},
         "output_type": "STRING",
     }

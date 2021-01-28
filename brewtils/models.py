@@ -530,7 +530,6 @@ class RequestTemplate(BaseModel):
         "command_type",
         "parameters",
         "comment",
-        "hidden",
         "metadata",
         "output_type",
     ]
@@ -545,7 +544,6 @@ class RequestTemplate(BaseModel):
         command_type=None,
         parameters=None,
         comment=None,
-        hidden=None,
         metadata=None,
         output_type=None,
     ):
@@ -557,7 +555,6 @@ class RequestTemplate(BaseModel):
         self.command_type = command_type
         self.parameters = parameters
         self.comment = comment
-        self.hidden = hidden
         self.metadata = metadata or {}
         self.output_type = output_type
 
@@ -620,7 +617,6 @@ class Request(RequestTemplate):
             parameters=parameters,
             comment=comment,
             metadata=metadata,
-            hidden=hidden,
             output_type=output_type,
         )
         self.id = id

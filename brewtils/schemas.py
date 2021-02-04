@@ -292,6 +292,7 @@ class RequestSchema(RequestTemplateSchema):
         "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
     )
     output = fields.Str(allow_none=True)
+    hidden = fields.Boolean(allow_none=True)
     status = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")

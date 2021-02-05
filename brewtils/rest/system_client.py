@@ -193,7 +193,7 @@ class SystemClient(object):
 
         self._loaded = False
         self._system = None
-        self._commands = None
+        self._commands = {}
 
         # Need this for back-compatibility (see #836)
         if len(args) > 2:
@@ -481,10 +481,25 @@ class SystemClient(object):
         return request
 
     def _resolve_parameters(self, command, request):
-        file_params = self._commands[command].parameter_keys_by_type("Base64")
-        resolver = UploadResolver(request, file_params, self._resolvers)
+        """Attempt to upload any necessary file parameters
 
-        return resolver.resolve_parameters()
+        This will inspect the Command model for the given command, looking for file
+        parameters. Any file parameters will be "resolved" (aka uploaded) before
+        continuing.
+
+        If the command name can not be found in the current list of commands the
+        parameter list will just be returned. This most likely indicates a direct
+        invocation of send_bg_request since a bad command name should be caught earlier
+        in the "normal" workflow.
+        """
+        if command not in self._commands:
+            return request.parameters
+
+        b64_params = self._commands[command].parameter_keys_by_type("Base64")
+        if not b64_params:
+            return request.parameters
+
+        return UploadResolver(request, b64_params, self._resolvers).resolve_parameters()
 
     @staticmethod
     def _determine_latest(systems):

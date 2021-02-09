@@ -42,26 +42,6 @@ __all__ = [
 _wrap_functions = False
 
 
-def parse_client(client):
-    """Get a list of Beergarden Commands from a client object
-
-    This will iterate over everything returned from dir, looking for metadata added
-    by the decorators.
-
-    """
-    bg_commands = []
-
-    for attr in dir(client):
-        method = getattr(client, attr)
-
-        method_command = _parse_method(method)
-
-        if method_command:
-            bg_commands.append(method_command)
-
-    return bg_commands
-
-
 def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
@@ -338,6 +318,26 @@ def parameters(*args):
         return _double_wrapped(*_args, **_kwargs)
 
     return wrapper(args[1])
+
+
+def _parse_client(client):
+    """Get a list of Beergarden Commands from a client object
+
+    This will iterate over everything returned from dir, looking for metadata added
+    by the decorators.
+
+    """
+    bg_commands = []
+
+    for attr in dir(client):
+        method = getattr(client, attr)
+
+        method_command = _parse_method(method)
+
+        if method_command:
+            bg_commands.append(method_command)
+
+    return bg_commands
 
 
 def _parse_method(method):

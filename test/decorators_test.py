@@ -8,6 +8,8 @@ import brewtils.decorators
 from brewtils.decorators import (
     _format_choices,
     _format_type,
+    _method_name,
+    _method_docstring,
     _resolve_display_modifiers,
     command,
     command_registrar,
@@ -618,6 +620,16 @@ class TestDecoratorCombinations(object):
         assert_parameter_equal(
             _cmd._command.parameters[0], Parameter(**param_definition)
         )
+
+
+class TestMethodName(object):
+    def test_name(self, cmd):
+        assert _method_name(cmd) == "_cmd"
+
+
+class TestMethodDocstring(object):
+    def test_docstring(self, cmd):
+        assert _method_docstring(cmd) == "Docstring"
 
 
 class TestResolveModifiers(object):

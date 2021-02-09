@@ -54,14 +54,9 @@ def parse_client(client):
     for attr in dir(client):
         method = getattr(client, attr)
 
-        if inspect.ismethod(method) and (
-            hasattr(method, "_command") or hasattr(method, "parameters")
-        ):
-            method_command = _initialize_command(method)
+        method_command = _parse_method(method)
 
-            for p in method_command.parameters:
-                _initialize_parameter(param=p, func=method)
-
+        if method_command:
             bg_commands.append(method_command)
 
     return bg_commands
@@ -343,6 +338,29 @@ def parameters(*args):
         return _double_wrapped(*_args, **_kwargs)
 
     return wrapper(args[1])
+
+
+def _parse_method(method):
+    """Parse a method object as a Beer-garden command target
+
+    If the method looks like a valid command target (based on the presence of certain
+    attributes) then this method will initialize necessary metadata.
+
+    Args:
+        method: The method to parse
+
+    Returns:
+        The modified method
+    """
+    if (inspect.ismethod(method) or inspect.isfunction(method)) and (
+        hasattr(method, "_command") or hasattr(method, "parameters")
+    ):
+        method_command = _initialize_command(method)
+
+        for p in method_command.parameters:
+            _initialize_parameter(param=p, func=method)
+
+        return method_command
 
 
 def _initialize_command(method):

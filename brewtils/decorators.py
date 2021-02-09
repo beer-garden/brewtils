@@ -653,6 +653,15 @@ def _generate_nested_params(parameter_list):
 
 
 def _format_type(param_type):
+    # type: (Any) -> str
+    """Parse Parameter type
+
+    Args:
+        param_type: Raw Parameter type, usually from a decorator
+
+    Returns:
+        Properly formatted string describing the parameter type
+    """
     if param_type == str:
         return "String"
     elif param_type == int:

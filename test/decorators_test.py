@@ -35,11 +35,12 @@ def sys():
 
 @pytest.fixture
 def cmd():
-    def _cmd(_, foo):
-        """Docstring"""
-        return foo
+    class Bar(object):
+        def _cmd(self, foo):
+            """Docstring"""
+            return foo
 
-    return _cmd
+    return Bar._cmd
 
 
 @pytest.fixture

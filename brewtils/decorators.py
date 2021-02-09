@@ -7,7 +7,7 @@ import os
 import sys
 from io import open
 from types import MethodType
-from typing import Any, Dict, Iterable, List, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Type, Union
 
 import requests
 import six
@@ -674,6 +674,16 @@ def _format_type(param_type):
 
 
 def _format_choices(choices):
+    # type: (Union[dict, str, Iterable]) -> Optional[Choices]
+    """Parse choices definition
+
+    Args:
+        choices: Raw choices definition, usually from a decorator
+
+    Returns:
+        Choices: Dictionary that fully describes a choices specification
+    """
+
     def determine_display(display_value):
         if isinstance(display_value, six.string_types):
             return "typeahead"

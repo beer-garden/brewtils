@@ -379,8 +379,12 @@ def _initialize_command(method):
     cmd.template = resolved_mod["template"]
 
     cmd.parameters += getattr(method, "parameters", [])
-    for arg in signature(method).parameters.values():
+    for index, arg in enumerate(signature(method).parameters.values()):
         if arg.name not in cmd.parameter_keys():
+            # Don't want to include special parameters
+            if index == 0 and arg.name in ("self", "cls"):
+                continue
+
             cmd.parameters.append(Parameter(key=arg.name, optional=False))
         else:
             # I'm not super happy about this. It makes sense - positional arguments are

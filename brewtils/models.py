@@ -1078,7 +1078,7 @@ class Role(BaseModel):
 class Permission(BaseModel):
     schema = "PermissionSchema"
 
-    ACCESSES = ["CREATE", "READ", "MAINTAINER", "ADMIN"]
+    ACCESSES = ["READ", "OPERATOR", "ADMIN"]
 
     def __init__(self, namespace=None, access=None, is_local=None):
         self.namespace = namespace

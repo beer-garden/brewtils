@@ -29,17 +29,6 @@ from brewtils.test.comparable import assert_command_equal, assert_parameter_equa
 
 
 @pytest.fixture
-def sys():
-    @system
-    class SystemClass(object):
-        @command
-        def foo(self):
-            pass
-
-    return SystemClass
-
-
-@pytest.fixture
 def cmd():
     class Bar(object):
         def _cmd(self, foo):
@@ -129,11 +118,17 @@ def wrap_functions(request):
 
 
 class TestSystem(object):
-    def test_basic(self, sys):
-        assert hasattr(sys, "_bg_name")
-        assert hasattr(sys, "_bg_version")
-        assert hasattr(sys, "_bg_commands")
-        assert hasattr(sys, "_current_request")
+    def test_basic(self):
+        @system
+        class SystemClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert hasattr(SystemClass, "_bg_name")
+        assert hasattr(SystemClass, "_bg_version")
+        assert hasattr(SystemClass, "_bg_commands")
+        assert hasattr(SystemClass, "_current_request")
 
     def test_with_args(self):
         @system(bg_name="sys", bg_version="1.0.0")

@@ -307,17 +307,16 @@ def parameters(*args):
     elif len(args) != 2:
         raise PluginParamError("@parameters takes a single argument")
 
+    params = args[0]
+    _wrapped = args[1]
+
     try:
-        for param in args[0]:
-            parameter(args[1], **param)
+        for param in params:
+            parameter(_wrapped, **param)
     except TypeError:
         raise PluginParamError("@parameters arg must be an iterable of dictionaries")
 
-    @wrapt.decorator(enabled=_wrap_functions)
-    def wrapper(_double_wrapped, _, _args, _kwargs):
-        return _double_wrapped(*_args, **_kwargs)
-
-    return wrapper(args[1])
+    return _wrapped
 
 
 def _parse_client(client):

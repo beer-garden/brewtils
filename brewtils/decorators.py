@@ -520,7 +520,7 @@ def _initialize_parameter(
     param.choices = _format_choices(param.choices)
 
     if func:
-        func_default = _validate_kwargness(func, param)
+        func_default = _validate_signature(func, param)
         if func_default and param.default is None:
             param.default = func_default
 
@@ -817,7 +817,7 @@ def _format_choices(choices):
     )
 
 
-def _validate_kwargness(_wrapped, param):
+def _validate_signature(_wrapped, param):
     # type: (MethodType, Parameter) -> Optional[Any]
     """Ensure that a Parameter lines up with the method signature, determine default
 

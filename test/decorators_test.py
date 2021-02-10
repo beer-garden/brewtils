@@ -285,7 +285,7 @@ class TestParseMethod(object):
         assert _parse_method(cmd_kwargs) is not None
 
     def test_parameters(self, cmd):
-        cmd = parameters(cmd, [{"key": "foo"}])
+        cmd = parameters([{"key": "foo"}], cmd)
         assert _parse_method(cmd) is not None
 
     def test_cmd_parameter(self, cmd):

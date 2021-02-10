@@ -12,6 +12,7 @@ from brewtils.decorators import (
     _initialize_parameter,
     _method_docstring,
     _method_name,
+    _parse_method,
     _resolve_display_modifiers,
     _validate_signature,
     command,
@@ -189,6 +190,39 @@ class TestParameter(object):
         wrapped = parameter(cmd, **param_definition)
 
         assert wrapped(self, test_mock) == test_mock
+
+
+class TestParseMethod(object):
+    """Test the various ways of marking a method as a Command"""
+
+    def test_non_command(self, cmd):
+        assert _parse_method(cmd) is None
+
+    def test_only_command(self, cmd):
+        cmd = command(cmd)
+        assert _parse_method(cmd) is not None
+
+    def test_one_parameter(self, cmd):
+        cmd = parameter(cmd, key="foo")
+        assert _parse_method(cmd) is not None
+
+    def test_multiple_parameter(self, cmd_kwargs):
+        cmd_kwargs = parameter(cmd_kwargs, key="foo", is_kwarg=True)
+        cmd_kwargs = parameter(cmd_kwargs, key="bar", is_kwarg=True)
+        assert _parse_method(cmd_kwargs) is not None
+
+    def test_parameters(self, cmd):
+        cmd = parameters(cmd, [{"key": "foo"}])
+        assert _parse_method(cmd) is not None
+
+    def test_cmd_parameter(self, cmd):
+        cmd = command(cmd)
+        cmd = parameter(cmd, key="foo")
+        assert _parse_method(cmd) is not None
+
+    def test_no_key(self, cmd):
+        with pytest.raises(PluginParamError):
+            _parse_method(parameter(cmd))
 
 
 class TestInitializeParameter(object):

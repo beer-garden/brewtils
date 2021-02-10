@@ -11,7 +11,6 @@ from typing import Any, Dict, Iterable, List, Optional, Type, Union
 
 import requests
 import six
-import wrapt
 
 try:
     from lark import ParseError
@@ -23,7 +22,7 @@ from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Choices
 
 if sys.version_info.major == 2:
-    from funcsigs import signature, Parameter as InspectParameter
+    from funcsigs import signature, Parameter as InspectParameter  # noqa
 else:
     from inspect import signature, Parameter as InspectParameter
 
@@ -33,13 +32,6 @@ __all__ = [
     "parameters",
     "system",
 ]
-
-# The wrapt module has a cool feature where you can disable wrapping a decorated function,
-# instead just using the original function. This is pretty much exactly what we want - we
-# aren't using decorators for their 'real' purpose of wrapping a function, we just want to add
-# some metadata to the function object. So we'll disable the wrapping normally, but we need to
-# test that enabling the wrapping would work.
-_wrap_functions = False
 
 
 def system(cls=None, bg_name=None, bg_version=None):

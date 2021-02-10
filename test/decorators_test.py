@@ -112,13 +112,6 @@ def param():
     )
 
 
-@pytest.fixture(params=[True, False])
-def wrap_functions(request):
-    brewtils.decorators._wrap_functions = request.param
-    yield
-    brewtils.decorators._wrap_functions = False
-
-
 class TestOverall(object):
     """Test end-to-end functionality"""
 
@@ -265,7 +258,7 @@ class TestParameter(object):
         assert len(wrapped.parameters) == 1
         assert_parameter_equal(wrapped.parameters[0], param)
 
-    def test_wrapper(self, cmd, param_definition, wrap_functions):
+    def test_wrapper(self, cmd, param_definition):
         test_mock = Mock()
         wrapped = parameter(cmd, **param_definition)
 

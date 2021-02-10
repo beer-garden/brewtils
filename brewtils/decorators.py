@@ -321,6 +321,7 @@ def parameters(*args):
 
 
 def _parse_client(client):
+    # type: (object) -> List[Command]
     """Get a list of Beergarden Commands from a client object
 
     This will iterate over everything returned from dir, looking for metadata added

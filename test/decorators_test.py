@@ -13,6 +13,7 @@ from brewtils.decorators import (
     _initialize_parameter,
     _method_docstring,
     _method_name,
+    _parse_client,
     _parse_method,
     _resolve_display_modifiers,
     _validate_signature,
@@ -116,6 +117,63 @@ def wrap_functions(request):
     brewtils.decorators._wrap_functions = request.param
     yield
     brewtils.decorators._wrap_functions = False
+
+
+class TestOverall(object):
+    """Test end-to-end functionality"""
+
+    def test_generate_params(self):
+        class Unused(object):
+            @command
+            def _cmd(self, x, y="some_default"):
+                return x, y
+
+        cmds = _parse_client(Unused)
+
+        param_x = cmds[0].get_parameter_by_key("x")
+        assert param_x.key == "x"
+        assert param_x.default is None
+        assert param_x.optional is False
+
+        param_y = cmds[0].get_parameter_by_key("y")
+        assert param_y.key == "y"
+        assert param_y.default == "some_default"
+        assert param_y.optional is True
+
+    class TestDecoratorCombinations(object):
+        def test_command_then_parameter(self, param_definition):
+            class Unused(object):
+                @parameter(**param_definition)
+                @command(command_type="INFO", output_type="JSON")
+                def cmd(self, foo):
+                    return foo
+
+            cmds = _parse_client(Unused)
+
+            c = cmds[0]
+            assert c.name == "cmd"
+            assert c.command_type == "INFO"
+            assert c.output_type == "JSON"
+            assert len(c.parameters) == 1
+
+            assert_parameter_equal(c.parameters[0], Parameter(**param_definition))
+
+        def test_parameter_then_command(self, param_definition):
+            class Unused(object):
+                @command(command_type="INFO", output_type="JSON")
+                @parameter(**param_definition)
+                def cmd(self, foo):
+                    return foo
+
+            cmds = _parse_client(Unused)
+
+            c = cmds[0]
+            assert c.name == "cmd"
+            assert c.command_type == "INFO"
+            assert c.output_type == "JSON"
+            assert len(c.parameters) == 1
+
+            assert_parameter_equal(c.parameters[0], Parameter(**param_definition))
 
 
 class TestSystem(object):
@@ -547,40 +605,6 @@ class TestInitializeCommand(object):
     # TODO
     def test_parameters_generation(self):
         pass
-
-
-class TestDecoratorCombinations(object):
-    def test_command_then_parameter(self, cmd, param_definition):
-        @parameter(**param_definition)
-        @command(command_type="INFO", output_type="JSON")
-        def _cmd(_, foo):
-            return foo
-
-        assert hasattr(_cmd, "_command")
-        assert _cmd._command.name == "_cmd"
-        assert _cmd._command.command_type == "INFO"
-        assert _cmd._command.output_type == "JSON"
-        assert len(_cmd._command.parameters) == 1
-
-        assert_parameter_equal(
-            _cmd._command.parameters[0], Parameter(**param_definition)
-        )
-
-    def test_parameter_then_command(self, cmd, param_definition):
-        @command(command_type="INFO", output_type="JSON")
-        @parameter(**param_definition)
-        def _cmd(_, foo):
-            return foo
-
-        assert hasattr(_cmd, "_command")
-        assert _cmd._command.name == "_cmd"
-        assert _cmd._command.command_type == "INFO"
-        assert _cmd._command.output_type == "JSON"
-        assert len(_cmd._command.parameters) == 1
-
-        assert_parameter_equal(
-            _cmd._command.parameters[0], Parameter(**param_definition)
-        )
 
 
 class TestMethodName(object):

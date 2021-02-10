@@ -9,6 +9,7 @@ from brewtils.decorators import (
     _format_choices,
     _format_type,
     _generate_nested_params,
+    _initialize_command,
     _initialize_parameter,
     _method_docstring,
     _method_name,
@@ -147,6 +148,8 @@ class TestSystem(object):
 
 
 class TestCommand(object):
+    """Test command decorator"""
+
     def test_basic(self, command_dict, bg_command):
         # Removing things that need to be initialized
         bg_command.name = None
@@ -159,6 +162,30 @@ class TestCommand(object):
             pass
 
         assert_command_equal(foo._command, bg_command)
+
+    def test_function(self, cmd):
+        """Ensure the wrapped function still works as expected"""
+        command(cmd)
+
+        # TODO - This is not great, this self is not correct
+        assert cmd(self, "input") == "input"
+
+    def test_wrapper(self, cmd):
+        """Ensure the wrapper function works as expected"""
+        test_mock = Mock()
+        wrapped = command(cmd)
+
+        # TODO - This is not great, this self is not correct
+        assert wrapped(self, test_mock) == test_mock
+
+    def test_multiple(self, cmd):
+        """Subsequent decorators should completely overwrite previous ones"""
+        command(cmd, command_type="ACTION", description="desc1", output_type="JSON")
+        command(cmd, command_type="INFO", description="desc2")
+
+        assert cmd._command.command_type == "INFO"
+        assert cmd._command.description == "desc2"
+        assert cmd._command.output_type == "STRING"  # This is the default
 
 
 class TestParameter(object):
@@ -497,84 +524,15 @@ class TestParameters(object):
         assert func(self, test_mock) == test_mock
 
 
-class TestCommandLegacy(object):
-    @pytest.fixture
-    def func_mock(self):
-        code_mock = Mock(
-            co_varnames=["var1"], co_argcount=1, spec=["co_varnames", "co_argcount"]
-        )
-
-        return Mock(
-            __name__="__name__",
-            __doc__="__doc__",
-            __code__=code_mock,
-            __defaults__=["default1"],
-            func_code=code_mock,
-            func_defaults=["default1"],
-            spec=["__name__", "__doc__", "__code__", "__defaults__"],
-        )
-
-    @pytest.mark.parametrize("wrap", [True, False])
-    def test_command_function(self, cmd, wrap):
-        brewtils.decorators._wrap_functions = wrap
-        command(cmd)
-
-        assert cmd(self, "input") == "input"
-
-    def test_command_wrapper(self, cmd, wrap_functions):
-        test_mock = Mock()
-        wrapped = command(cmd)
-
-        assert wrapped(self, test_mock) == test_mock
-
+class TestInitializeCommand(object):
     def test_generate_command(self, cmd):
         assert not hasattr(cmd, "_command")
-        command(cmd)
 
-        assert hasattr(cmd, "_command")
-        assert cmd._command.name == "_cmd"
-        assert cmd._command.description == "Docstring"
-        assert len(cmd._command.parameters) == 1
+        cmd = _initialize_command(cmd)
 
-    def test_generate_params(self):
-        @command
-        def _cmd(_, x, y="some_default"):
-            return x, y
-
-        param_x = _cmd._command.get_parameter_by_key("x")
-        param_y = _cmd._command.get_parameter_by_key("y")
-
-        assert param_x.key == "x"
-        assert param_x.default is None
-        assert param_x.optional is False
-
-        assert param_y.key == "y"
-        assert param_y.default == "some_default"
-        assert param_y.optional is True
-
-    def test_update(self, cmd):
-        command(cmd, command_type="ACTION", description="desc1", output_type="XML")
-        command(cmd, command_type="INFO", description="desc2", output_type="JSON")
-
-        assert cmd._command.name == "_cmd"
-        assert cmd._command.command_type == "INFO"
-        assert cmd._command.description == "desc2"
-        assert cmd._command.hidden is False
-        assert cmd._command.output_type == "JSON"
-
-    def test_generate_command_python2(self, func_mock):
-        # Apparently Python 2 adds some extra stuff
-        func_mock.func_name = "func_name"
-        func_mock.func_doc = "func_doc"
-
-        command(func_mock)
-        assert "func_name" == func_mock._command.name
-        assert "func_doc" == func_mock._command.description
-
-    def test_generate_command_python3(self, func_mock):
-        command(func_mock)
-        assert "__name__" == func_mock._command.name
-        assert "__doc__" == func_mock._command.description
+        assert cmd.name == "_cmd"
+        assert cmd.description == "Docstring"
+        assert len(cmd.parameters) == 1
 
     def test_overwrite_docstring(self):
         new_description = "So descriptive"
@@ -584,7 +542,11 @@ class TestCommandLegacy(object):
             """This is a doc"""
             pass
 
-        assert _cmd._command.description == new_description
+        assert _initialize_command(_cmd).description == new_description
+
+    # TODO
+    def test_parameters_generation(self):
+        pass
 
 
 class TestDecoratorCombinations(object):

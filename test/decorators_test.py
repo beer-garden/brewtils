@@ -9,6 +9,7 @@ from brewtils.decorators import (
     _format_choices,
     _format_type,
     _generate_nested_params,
+    _initialize_parameter,
     _method_docstring,
     _method_name,
     _resolve_display_modifiers,
@@ -183,8 +184,14 @@ class TestParameter(object):
         assert len(wrapped.parameters) == 1
         assert_parameter_equal(wrapped.parameters[0], param)
 
+    def test_wrapper(self, cmd, param_definition, wrap_functions):
+        test_mock = Mock()
+        wrapped = parameter(cmd, **param_definition)
 
-class TestParameterLegacy(object):
+        assert wrapped(self, test_mock) == test_mock
+
+
+class TestInitializeParameter(object):
     @pytest.fixture
     def param_1(self):
         return Parameter(
@@ -216,54 +223,31 @@ class TestParameterLegacy(object):
 
         return MyModel
 
-    def test_no_command_decorator(self, cmd):
-        assert not hasattr(cmd, "_command")
-        parameter(cmd, key="foo")
-        assert hasattr(cmd, "_command")
-
-    def test_no_key(self, cmd):
-        with pytest.raises(PluginParamError):
-            parameter(cmd)
-
-    def test_wrong_key(self, cmd):
-        with pytest.raises(PluginParamError):
-            parameter(cmd, key="bar")
-
-    def test_file_type_info(self, cmd):
-        wrapped = parameter(cmd, key="foo", type="file")
-        assert wrapped._command.get_parameter_by_key("foo").type_info == {
+    def test_file_type_info(self):
+        assert _initialize_parameter(Parameter(key="foo", type="file")).type_info == {
             "storage": "gridfs"
         }
 
     def test_values(self, cmd, param_definition):
-        wrapped = parameter(cmd, **param_definition)
-        param = wrapped._command.get_parameter_by_key("foo")
-
-        assert_parameter_equal(param, Parameter(**param_definition))
-
-    def test_parameter_wrapper(self, cmd, param_definition, wrap_functions):
-        test_mock = Mock()
-        wrapped = parameter(cmd, **param_definition)
-
-        assert wrapped(self, test_mock) == test_mock
+        """This seems like a weird test"""
+        p = _initialize_parameter(**param_definition)
+        assert_parameter_equal(p, Parameter(**param_definition))
 
     @pytest.mark.parametrize(
         "default", [None, 1, "bar", [], ["bar"], {}, {"bar"}, {"foo": "bar"}]
     )
-    def test_defaults(self, cmd, default):
-        wrapped = parameter(cmd, key="foo", default=default)
-        assert wrapped._command.get_parameter_by_key("foo").default == default
+    def test_defaults(self, default):
+        p = Parameter(key="foo", default=default)
+        assert _initialize_parameter(p).default == default
 
     @pytest.mark.parametrize(
         "default,expected",
         [(None, {"key1": 1, "key2": "100"}), ({"key1", 123}, {"key1", 123})],
     )
     def test_model(self, my_model, param_1, param_2, default, expected):
-        @parameter(key="foo", model=my_model, default=default)
-        def cmd(_, foo):
-            return foo
-
-        model_param = cmd._command.get_parameter_by_key("foo")
+        model_param = _initialize_parameter(
+            Parameter(key="foo", model=my_model, default=default)
+        )
 
         assert model_param.key == "foo"
         assert model_param.type == "Dictionary"
@@ -303,11 +287,9 @@ class TestParameterLegacy(object):
                     )
                 ]
 
-            @parameter(key="nested_complex", model=MyModel)
-            def foo(_, nested_complex):
-                return nested_complex
+            p = _initialize_parameter(Parameter(key="nested", model=MyModel))
 
-            self._assert_correct(foo)
+            self._assert_correct(p)
 
         def test_nested_model_list(self, nested_1, nested_2):
             class MyModel(object):
@@ -326,16 +308,14 @@ class TestParameterLegacy(object):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
 
-                @parameter(key="nested_complex", model=MyModel)
-                def foo(_, nested_complex):
-                    return nested_complex
+                p = _initialize_parameter(Parameter(key="nested", model=MyModel))
 
                 # There are 2 nested model class objects so there should be 2 warnings
                 assert len(w) == 2
                 assert w[0].category == DeprecationWarning
                 assert w[1].category == DeprecationWarning
 
-            self._assert_correct(foo)
+            self._assert_correct(p)
 
         def test_mixed_list(self, nested_1, nested_2):
             class MyModel(object):
@@ -354,15 +334,13 @@ class TestParameterLegacy(object):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
 
-                @parameter(key="nested_complex", model=MyModel)
-                def foo(_, nested_complex):
-                    return nested_complex
+                p = _initialize_parameter(Parameter(key="nested", model=MyModel))
 
                 # Only 1 nested model class object this time
                 assert len(w) == 1
                 assert w[0].category == DeprecationWarning
 
-            self._assert_correct(foo)
+            self._assert_correct(p)
 
         def test_non_parameter(self):
             class MyModel(object):
@@ -379,22 +357,15 @@ class TestParameterLegacy(object):
                 ]
 
             with pytest.raises(PluginParamError):
-
-                @parameter(key="nested_complex", model=MyModel)
-                def foo(_, nested_complex):
-                    return nested_complex
+                _initialize_parameter(Parameter(key="nested", model=MyModel))
 
         @staticmethod
-        def _assert_correct(foo):
-            assert hasattr(foo, "_command")
-            assert len(foo._command.parameters) == 1
+        def _assert_correct(param):
+            assert param.key == "nested"
+            assert param.type == "Dictionary"
+            assert len(param.parameters) == 1
 
-            foo_param = foo._command.parameters[0]
-            assert foo_param.key == "nested_complex"
-            assert foo_param.type == "Dictionary"
-            assert len(foo_param.parameters) == 1
-
-            key1_param = foo_param.parameters[0]
+            key1_param = param.parameters[0]
             assert key1_param.key == "key1"
             assert key1_param.type == "Dictionary"
             assert key1_param.multi is False

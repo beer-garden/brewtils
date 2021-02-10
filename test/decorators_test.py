@@ -510,25 +510,11 @@ class TestInitializeParameter(object):
 
 
 class TestParameters(object):
-    def test_parameters_wrapper(self, cmd, param_definition, wrap_functions):
+    def test_wrapper(self, cmd, param_definition):
         test_mock = Mock()
         wrapped = parameters([param_definition], cmd)
 
         assert wrapped(self, test_mock) == test_mock
-
-    def test_equivalence(self, param_definition):
-        # We need two separate copies of _cmd here, but pytest doesn't like you calling
-        # fixtures directly. So just re-define the function here:
-        def cmd(_, foo):
-            """Docstring"""
-            return foo
-
-        func1 = parameter(cmd, **param_definition)
-        func2 = parameters([param_definition], cmd)
-
-        assert_parameter_equal(
-            func1._command.parameters[0], func2._command.parameters[0]
-        )
 
     def test_decorator_equivalence(self, param_definition):
         @parameter(**param_definition)
@@ -539,15 +525,21 @@ class TestParameters(object):
         def func2(_, foo):
             return foo
 
-        assert_parameter_equal(
-            func1._command.parameters[0], func2._command.parameters[0]
-        )
+        assert_parameter_equal(func1.parameters[0], func2.parameters[0])
 
     @pytest.mark.parametrize("args", [[], [1, 2, 3]])
     def test_bad_arity(self, args):
         # Must be called with either just one arg, or one arg + the function
         with pytest.raises(PluginParamError, match=r"single argument"):
             parameters(*args)
+
+    def test_bad_arity_decorator(self):
+        # Must be called with either just one arg, or one arg + the function
+        with pytest.raises(PluginParamError, match=r"single argument"):
+
+            @parameters([{"key": "first"}], "extra")
+            def func(_, first):
+                return first
 
     @pytest.mark.parametrize(
         "arg1,arg2",
@@ -561,25 +553,21 @@ class TestParameters(object):
         with pytest.raises(PluginParamError):
             parameters(arg1, arg2)
 
-    def test_dict_values(self, cmd, param_definition, wrap_functions):
-        test_mock = Mock()
-        wrapped = parameters({"foo": param_definition}.values(), cmd)
+    def test_dict_values(self, cmd, param_definition):
+        parameters({"foo": param_definition}.values(), cmd)
 
-        assert len(cmd._command.parameters) == 1
-        assert cmd._command.parameters[0].key == "foo"
-        assert wrapped(self, test_mock) == test_mock
+        assert len(cmd.parameters) == 1
+        assert cmd.parameters[0].key == "foo"
 
-    def test_dict_values_decorator(self, param_definition, wrap_functions):
-        test_mock = Mock()
+    def test_dict_values_decorator(self, param_definition):
         param_spec = {"foo": param_definition}
 
         @parameters(param_spec.values())
         def func(_, foo):
             return foo
 
-        assert len(func._command.parameters) == 1
-        assert func._command.parameters[0].key == "foo"
-        assert func(self, test_mock) == test_mock
+        assert len(func.parameters) == 1
+        assert func.parameters[0].key == "foo"
 
 
 class TestInitializeCommand(object):

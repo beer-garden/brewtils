@@ -7,7 +7,7 @@ import os
 import sys
 from io import open
 from types import MethodType
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
 
 import requests
 import six
@@ -76,7 +76,7 @@ def system(cls=None, bg_name=None, bg_version=None):
 
 
 def command(
-    _wrapped=None,  # type: MethodType
+    _wrapped=None,  # type: Union[Callable, MethodType]
     description=None,  # type: str
     parameters=None,  # type: List[Parameter]
     command_type="ACTION",  # type: str
@@ -147,7 +147,7 @@ def command(
 
 
 def parameter(
-    _wrapped=None,  # type: Union[MethodType, Type]
+    _wrapped=None,  # type: Union[Callable, MethodType, Type]
     key=None,  # type: str
     type=None,  # type: str
     multi=None,  # type: bool
@@ -302,8 +302,8 @@ def parameters(*args):
     params = args[0]
     _wrapped = args[1]
 
-    if not isinstance(_wrapped, MethodType):
-        raise PluginParamError("@parameters must be applied to a method")
+    if not callable(_wrapped):
+        raise PluginParamError("@parameters must be applied to a callable")
 
     try:
         for param in params:

@@ -302,6 +302,9 @@ def parameters(*args):
     params = args[0]
     _wrapped = args[1]
 
+    if not isinstance(_wrapped, MethodType):
+        raise PluginParamError("@parameters must be applied to a method")
+
     try:
         for param in params:
             parameter(_wrapped, **param)

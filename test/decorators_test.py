@@ -8,8 +8,9 @@ import brewtils.decorators
 from brewtils.decorators import (
     _format_choices,
     _format_type,
-    _method_name,
+    _generate_nested_params,
     _method_docstring,
+    _method_name,
     _resolve_display_modifiers,
     command,
     command_registrar,
@@ -56,6 +57,42 @@ def param_definition():
         "optional": True,
         "multi": True,
     }
+
+
+@pytest.fixture
+def nested_1():
+    class NestedModel1(object):
+        parameters = [
+            Parameter(
+                key="key2",
+                type="String",
+                multi=False,
+                display_name="y",
+                optional=False,
+                default="100",
+                description="key2",
+            )
+        ]
+
+    return NestedModel1
+
+
+@pytest.fixture
+def nested_2():
+    class NestedModel2(object):
+        parameters = [
+            Parameter(
+                key="key3",
+                type="String",
+                multi=False,
+                display_name="z",
+                optional=False,
+                default="101",
+                description="key3",
+            )
+        ]
+
+    return NestedModel2
 
 
 @pytest.fixture
@@ -255,40 +292,6 @@ class TestParameterLegacy(object):
 
         See https://github.com/beer-garden/beer-garden/issues/354 for full details.
         """
-
-        @pytest.fixture
-        def nested_1(self):
-            class NestedModel1(object):
-                parameters = [
-                    Parameter(
-                        key="key2",
-                        type="String",
-                        multi=False,
-                        display_name="y",
-                        optional=False,
-                        default="100",
-                        description="key2",
-                    )
-                ]
-
-            return NestedModel1
-
-        @pytest.fixture
-        def nested_2(self):
-            class NestedModel2(object):
-                parameters = [
-                    Parameter(
-                        key="key3",
-                        type="String",
-                        multi=False,
-                        display_name="z",
-                        optional=False,
-                        default="101",
-                        description="key3",
-                    )
-                ]
-
-            return NestedModel2
 
         def test_nested_parameter_list(self, nested_1, nested_2):
             class MyModel(object):
@@ -630,6 +633,43 @@ class TestMethodName(object):
 class TestMethodDocstring(object):
     def test_docstring(self, cmd):
         assert _method_docstring(cmd) == "Docstring"
+
+
+class TestGenerateNestedParameters(object):
+    @pytest.fixture(autouse=True)
+    def init_mock(self, monkeypatch):
+        """Mock out _initialize_parameter functionality
+
+        We don't want to actually test _initialize_parameter here, just that it was
+        called correctly.
+        """
+        m = Mock()
+        monkeypatch.setattr(brewtils.decorators, "_initialize_parameter", m)
+        return m
+
+    def test_parameter(self, init_mock, param):
+        res = _generate_nested_params([param])
+
+        assert len(res) == 1
+        assert res[0] == init_mock.return_value
+        init_mock.assert_called_once_with(param=param)
+
+    def test_deprecated_model(self, init_mock, nested_1):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            res = _generate_nested_params([nested_1])
+
+            assert len(res) == 1
+            assert res[0] == init_mock.return_value
+            init_mock.assert_called_once_with(param=nested_1.parameters[0])
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "model class objects" in str(w[0].message)
+
+    def test_unknown_type(self):
+        with pytest.raises(PluginParamError):
+            _generate_nested_params(["This isn't a parameter!"])  # noqa
 
 
 class TestResolveModifiers(object):

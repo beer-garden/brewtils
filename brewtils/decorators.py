@@ -466,6 +466,7 @@ def _initialize_parameter(
     is_kwarg=None,
     model=None,
 ):
+    # type: (...) -> Parameter
     """Helper method to 'fix' Parameters
 
     This exists to move logic out of the @parameter decorator. Previously there was a
@@ -553,6 +554,7 @@ def _initialize_parameter(
 
 
 def _generate_nested_params(parameter_list):
+    # type: (Iterable[Parameter, object]) -> List[Parameter]
     """Generate nested parameters from a list of Parameters or a Model object
 
     This exists for backwards compatibility with the "old

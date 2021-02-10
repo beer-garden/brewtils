@@ -818,18 +818,32 @@ def _format_choices(choices):
 
 
 def _validate_kwargness(_wrapped, param):
-    """Try to ensure that a Parameter lines up with the method signature
+    # type: (MethodType, Parameter) -> Optional[Any]
+    """Ensure that a Parameter lines up with the method signature, determine default
+
+    This will raise a PluginParamError if there are any validation issues.
+
+    It will also return the "default" according to the method signature. For example,
+    the following would return "foo" for Parameter param:
+
+    .. code-block:: python
+
+        def my_command(self, param="foo"):
+            ...
 
     It's expected that this will only be called for Parameters where this makes sense
     (aka top-level Parameters). It doesn't make sense to call this for model Parameters,
     so you shouldn't do that.
 
     Args:
-        _wrapped:
-        param:
+        _wrapped: The underlying target method object
+        param: The Parameter definitions
 
     Returns:
+        The default value according to the method signature, if any
 
+    Raises:
+        PluginParamError: There was a validation problem
     """
     sig_param = None  # The actual inspect.Parameter from the signature
     has_kwargs = False  # Does the func have **kwargs?

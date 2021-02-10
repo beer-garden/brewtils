@@ -12,6 +12,7 @@ from brewtils.decorators import (
     _method_docstring,
     _method_name,
     _resolve_display_modifiers,
+    _validate_kwargness,
     command,
     command_registrar,
     parameter,
@@ -42,6 +43,16 @@ def cmd():
         def _cmd(self, foo):
             """Docstring"""
             return foo
+
+    return Bar._cmd
+
+
+@pytest.fixture
+def cmd_kwargs():
+    class Bar(object):
+        def _cmd(self, **kwargs):
+            """Docstring"""
+            pass
 
     return Bar._cmd
 
@@ -242,21 +253,6 @@ class TestParameterLegacy(object):
     def test_defaults(self, cmd, default):
         wrapped = parameter(cmd, key="foo", default=default)
         assert wrapped._command.get_parameter_by_key("foo").default == default
-
-    def test_is_kwarg(self, param_definition):
-        @parameter(is_kwarg=True, **param_definition)
-        def cmd(_, **kwargs):
-            return kwargs
-
-        param = cmd._command.get_parameter_by_key("foo")
-        assert_parameter_equal(param, Parameter(**param_definition))
-
-    def test_is_kwarg_missing(self, param_definition):
-        with pytest.raises(PluginParamError, match=param_definition["key"] + ".*cmd"):
-
-            @parameter(is_kwarg=True, **param_definition)
-            def cmd(_):
-                return None
 
     @pytest.mark.parametrize(
         "default,expected",
@@ -928,6 +924,48 @@ class TestFormatChoices(object):
     def test_choices_error(self, cmd, choices):
         with pytest.raises(PluginParamError):
             _format_choices(choices)
+
+
+class TestValidateKwargness(object):
+    class TestSuccess(object):
+        def test_not_kwarg_no_default(self, cmd):
+            assert _validate_kwargness(cmd, Parameter(key="foo")) is None
+
+        def test_kwarg_no_default(self, cmd_kwargs):
+            assert (
+                _validate_kwargness(cmd_kwargs, Parameter(key="foo", is_kwarg=True))
+                is None
+            )
+
+        def test_default(self):
+            class Tester(object):
+                def c(self, foo="bar"):
+                    pass
+
+            assert _validate_kwargness(Tester.c, Parameter(key="foo")) == "bar"  # noqa
+
+    class TestFailure(object):
+        def test_mismatch_is_kwarg_true(self, cmd):
+            with pytest.raises(PluginParamError):
+                _validate_kwargness(cmd, Parameter(key="foo", is_kwarg=True))
+
+        def test_mismatch_is_kwarg_false(self, cmd_kwargs):
+            with pytest.raises(PluginParamError):
+                _validate_kwargness(cmd_kwargs, Parameter(key="foo", is_kwarg=False))
+
+        def test_no_kwargs_in_signature(self, cmd):
+            with pytest.raises(PluginParamError):
+                _validate_kwargness(cmd, Parameter(key="extra", is_kwarg=True))
+
+        # This is not valid syntax in Python < 3.8, so punting on this (it does work
+        # for me right now :)
+        # def test_positional_only(self):
+        #     class Tester(object):
+        #         def c(self, foo, /):
+        #             pass
+        #
+        #     with pytest.raises(PluginParamError):
+        #         _validate_kwargness(Tester.c, Parameter(key="foo"))  # noqa
 
 
 class TestDeprecations(object):

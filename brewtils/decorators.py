@@ -306,7 +306,11 @@ def parameters(*args, _partial=False):
     # This is the second invocation
     else:
         if len(args) != 2:
-            raise PluginParamError("@parameters takes a single argument")
+            raise PluginParamError(
+                "Incorrect number of arguments for parameters partial call. Did you "
+                "set _partial=True? If so, please don't do that. If not, please let "
+                "the Beergarden team know how you got here!"
+            )
 
     params = args[0]
     _wrapped = args[1]

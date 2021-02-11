@@ -538,8 +538,8 @@ class TestParameters(object):
         "args",
         [
             [],  # no args
-            [[{"key": "a"}], 2],  # too many args
-            [[{"key": "a"}], 2, 3],  # way too many args
+            [[{"key": "foo"}], 2],  # too many args
+            [[{"key": "foo"}], 2, 3],  # way too many args
         ],
     )
     def test_bad_arg_count(self, args):
@@ -547,23 +547,26 @@ class TestParameters(object):
         with pytest.raises(PluginParamError, match=r"single argument"):
 
             @parameters(*args)
-            def func(_, first):
-                return first
+            def func(foo):
+                return foo
 
     def test_no_parens(self):
         """Again, need an argument"""
         with pytest.raises(PluginParamError, match=r"single argument"):
 
             @parameters
-            def func(_, first):
-                return first
+            def func(foo):
+                return foo
 
     @pytest.mark.parametrize(
         "args",
         [
             ["string"],  # bad type
             [lambda x: x],  # decorator might be applied to wrong thing
-            [[{"key": "a"}], lambda x: x],  # decorator might be applied to wrong thing
+            [
+                [{"key": "foo"}],
+                lambda x: x,
+            ],  # decorator might be applied to wrong thing
         ],
     )
     def test_bad_args(self, args):
@@ -571,8 +574,8 @@ class TestParameters(object):
         with pytest.raises(PluginParamError):
 
             @parameters(*args)
-            def func(_, first):
-                return first
+            def func(foo):
+                return foo
 
     def test_bad_application(self):
         """I don't even know how you would do this. Something like:
@@ -587,6 +590,14 @@ class TestParameters(object):
         with pytest.raises(PluginParamError, match=r"callable"):
             partial = parameters([{"key": "foo"}])
             partial("not a callable")
+
+    def test_bad_partial_call(self, param_definition):
+        """Again, I don't even know how you would do this if you follow directions."""
+        with pytest.raises(PluginParamError, match=r"partial call"):
+
+            @parameters([param_definition], _partial=True)
+            def func(foo):
+                return foo
 
 
 class TestInitializeCommand(object):

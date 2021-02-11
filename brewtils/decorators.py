@@ -455,6 +455,77 @@ def _method_docstring(method):
     return docstring.split("\n")[0] if docstring else None
 
 
+def _resolve_display_modifiers(
+    wrapped,  # type: MethodType
+    command_name,  # type: str
+    schema=None,  # type: Union[dict, str]
+    form=None,  # type: Union[dict, list, str]
+    template=None,  # type: str
+):
+    # type: (...) -> dict
+    """Parse display modifier parameter attributes
+
+    Returns:
+        Dictionary that fully describes a display specification
+    """
+
+    def _load_from_url(url):
+        response = requests.get(url)
+        if response.headers.get("content-type", "").lower() == "application/json":
+            return json.loads(response.text)
+        return response.text
+
+    def _load_from_path(path):
+        current_dir = os.path.dirname(inspect.getfile(wrapped))
+        file_path = os.path.abspath(os.path.join(current_dir, path))
+
+        with open(file_path, "r") as definition_file:
+            return definition_file.read()
+
+    resolved = {}
+
+    for key, value in {"schema": schema, "form": form, "template": template}.items():
+
+        if isinstance(value, six.string_types):
+            try:
+                if value.startswith("http"):
+                    resolved[key] = _load_from_url(value)
+
+                elif value.startswith("/") or value.startswith("."):
+                    loaded_value = _load_from_path(value)
+                    resolved[key] = (
+                        loaded_value if key == "template" else json.loads(loaded_value)
+                    )
+
+                elif key == "template":
+                    resolved[key] = value
+
+                else:
+                    raise PluginParamError(
+                        "%s specified for command '%s' was not a "
+                        "definition, file path, or URL" % (key, command_name)
+                    )
+            except Exception as ex:
+                raise PluginParamError(
+                    "Error reading %s definition from '%s' for command "
+                    "'%s': %s" % (key, value, command_name, ex)
+                )
+
+        elif value is None or (key in ["schema", "form"] and isinstance(value, dict)):
+            resolved[key] = value
+
+        elif key == "form" and isinstance(value, list):
+            resolved[key] = {"type": "fieldset", "items": value}
+
+        else:
+            raise PluginParamError(
+                "%s specified for command '%s' was not a definition, "
+                "file path, or URL" % (key, command_name)
+            )
+
+    return resolved
+
+
 def _initialize_parameter(
     param=None,
     func=None,
@@ -561,114 +632,6 @@ def _initialize_parameter(
                     param.default[nested_param.key] = nested_param.default
 
     return param
-
-
-def _generate_nested_params(parameter_list):
-    # type: (Iterable[Parameter, object]) -> List[Parameter]
-    """Generate nested parameters from a list of Parameters or a Model object
-
-    This exists for backwards compatibility with the "old
-
-    This function will take a list of Parameters and will return a new list of "real"
-    Parameters.
-
-    The main thing this does is ensure the choices specification is correct for all
-    Parameters in the tree.
-    """
-    initialized_params = []
-
-    for param in parameter_list:
-
-        # This is already a Parameter. Only really need to interpret the choices
-        # definition and recurse down into nested Parameters
-        if isinstance(param, Parameter):
-            initialized_params.append(_initialize_parameter(param=param))
-
-        # This is a model class object. Needed for backwards compatibility
-        # See https://github.com/beer-garden/beer-garden/issues/354
-        elif hasattr(param, "parameters"):
-            _deprecate(
-                "Constructing a nested Parameters list using model class objects "
-                "is deprecated. Please pass the model's parameter list directly."
-            )
-            initialized_params += _generate_nested_params(param.parameters)
-
-        # No clue!
-        else:
-            raise PluginParamError("Unable to generate parameter from '%s'" % param)
-
-    return initialized_params
-
-
-def _resolve_display_modifiers(
-    wrapped,  # type: MethodType
-    command_name,  # type: str
-    schema=None,  # type: Union[dict, str]
-    form=None,  # type: Union[dict, list, str]
-    template=None,  # type: str
-):
-    # type: (...) -> dict
-    """Parse display modifier parameter attributes
-
-    Returns:
-        Dictionary that fully describes a display specification
-    """
-
-    def _load_from_url(url):
-        response = requests.get(url)
-        if response.headers.get("content-type", "").lower() == "application/json":
-            return json.loads(response.text)
-        return response.text
-
-    def _load_from_path(path):
-        current_dir = os.path.dirname(inspect.getfile(wrapped))
-        file_path = os.path.abspath(os.path.join(current_dir, path))
-
-        with open(file_path, "r") as definition_file:
-            return definition_file.read()
-
-    resolved = {}
-
-    for key, value in {"schema": schema, "form": form, "template": template}.items():
-
-        if isinstance(value, six.string_types):
-            try:
-                if value.startswith("http"):
-                    resolved[key] = _load_from_url(value)
-
-                elif value.startswith("/") or value.startswith("."):
-                    loaded_value = _load_from_path(value)
-                    resolved[key] = (
-                        loaded_value if key == "template" else json.loads(loaded_value)
-                    )
-
-                elif key == "template":
-                    resolved[key] = value
-
-                else:
-                    raise PluginParamError(
-                        "%s specified for command '%s' was not a "
-                        "definition, file path, or URL" % (key, command_name)
-                    )
-            except Exception as ex:
-                raise PluginParamError(
-                    "Error reading %s definition from '%s' for command "
-                    "'%s': %s" % (key, value, command_name, ex)
-                )
-
-        elif value is None or (key in ["schema", "form"] and isinstance(value, dict)):
-            resolved[key] = value
-
-        elif key == "form" and isinstance(value, list):
-            resolved[key] = {"type": "fieldset", "items": value}
-
-        else:
-            raise PluginParamError(
-                "%s specified for command '%s' was not a definition, "
-                "file path, or URL" % (key, command_name)
-            )
-
-    return resolved
 
 
 def _format_type(param_type):
@@ -895,6 +858,43 @@ def _validate_signature(_wrapped, param):
 
         if sig_param.default != InspectParameter.empty:
             return sig_param.default
+
+
+def _generate_nested_params(parameter_list):
+    # type: (Iterable[Parameter, object]) -> List[Parameter]
+    """Generate nested parameters from a list of Parameters or a Model object
+
+    This exists for backwards compatibility with the "old
+
+    This function will take a list of Parameters and will return a new list of "real"
+    Parameters.
+
+    The main thing this does is ensure the choices specification is correct for all
+    Parameters in the tree.
+    """
+    initialized_params = []
+
+    for param in parameter_list:
+
+        # This is already a Parameter. Only really need to interpret the choices
+        # definition and recurse down into nested Parameters
+        if isinstance(param, Parameter):
+            initialized_params.append(_initialize_parameter(param=param))
+
+        # This is a model class object. Needed for backwards compatibility
+        # See https://github.com/beer-garden/beer-garden/issues/354
+        elif hasattr(param, "parameters"):
+            _deprecate(
+                "Constructing a nested Parameters list using model class objects "
+                "is deprecated. Please pass the model's parameter list directly."
+            )
+            initialized_params += _generate_nested_params(param.parameters)
+
+        # No clue!
+        else:
+            raise PluginParamError("Unable to generate parameter from '%s'" % param)
+
+    return initialized_params
 
 
 # Alias the old names for compatibility

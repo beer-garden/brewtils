@@ -265,6 +265,103 @@ class TestParameter(object):
         assert wrapped(self, test_mock) == test_mock
 
 
+class TestParameters(object):
+    def test_wrapper(self, param_definition):
+        test_mock = Mock()
+
+        @parameters([param_definition])
+        def cmd(foo):
+            return foo
+
+        assert cmd(test_mock) == test_mock
+
+    def test_decorator_equivalence(self, param_definition):
+        @parameter(**param_definition)
+        def func1(_, foo):
+            return foo
+
+        @parameters([param_definition])
+        def func2(_, foo):
+            return foo
+
+        assert_parameter_equal(func1.parameters[0], func2.parameters[0])
+
+    def test_dict_values(self, param_definition):
+        param_spec = {"foo": param_definition}
+
+        @parameters(param_spec.values())
+        def func(foo):
+            return foo
+
+        assert len(func.parameters) == 1
+        assert func.parameters[0].key == "foo"
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            [],  # no args
+            [[{"key": "foo"}], 2],  # too many args
+            [[{"key": "foo"}], 2, 3],  # way too many args
+        ],
+    )
+    def test_bad_arg_count(self, args):
+        """Must be called with just one argument"""
+        with pytest.raises(PluginParamError, match=r"single argument"):
+
+            @parameters(*args)
+            def func(foo):
+                return foo
+
+    def test_no_parens(self):
+        """Again, need an argument"""
+        with pytest.raises(PluginParamError, match=r"single argument"):
+
+            @parameters
+            def func(foo):
+                return foo
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            ["string"],  # bad type
+            [lambda x: x],  # decorator might be applied to wrong thing
+            [
+                [{"key": "foo"}],
+                lambda x: x,
+            ],  # decorator might be applied to wrong thing
+        ],
+    )
+    def test_bad_args(self, args):
+        """Test the other ways args can be bad"""
+        with pytest.raises(PluginParamError):
+
+            @parameters(*args)
+            def func(foo):
+                return foo
+
+    def test_bad_application(self):
+        """I don't even know how you would do this. Something like:
+
+        .. code-block:: python
+
+            @parameters([{"key": "foo", ...}])
+            some non-callable thing
+
+        Which isn't valid syntax. But if it WERE, it would be handled!
+        """
+        with pytest.raises(PluginParamError, match=r"callable"):
+            partial = parameters([{"key": "foo"}])
+            partial("not a callable")
+
+    def test_bad_partial_call(self, param_definition):
+        """Again, I don't even know how you would do this if you follow directions."""
+        with pytest.raises(PluginParamError, match=r"partial call"):
+
+            @parameters([param_definition], _partial=True)
+            def func(foo):
+                return foo
+
+
 class TestParseMethod(object):
     """Test the various ways of marking a method as a Command"""
 
@@ -297,6 +394,157 @@ class TestParseMethod(object):
     def test_no_key(self, cmd):
         with pytest.raises(PluginParamError):
             _parse_method(parameter(cmd))
+
+
+class TestInitializeCommand(object):
+    def test_generate_command(self, cmd):
+        assert not hasattr(cmd, "_command")
+
+        cmd = _initialize_command(cmd)
+
+        assert cmd.name == "_cmd"
+        assert cmd.description == "Docstring"
+        assert len(cmd.parameters) == 1
+
+    def test_overwrite_docstring(self):
+        new_description = "So descriptive"
+
+        @command(description=new_description)
+        def _cmd(_):
+            """This is a doc"""
+            pass
+
+        assert _initialize_command(_cmd).description == new_description
+
+    # TODO
+    def test_parameters_generation(self):
+        pass
+
+
+class TestMethodName(object):
+    def test_name(self, cmd):
+        assert _method_name(cmd) == "_cmd"
+
+
+class TestMethodDocstring(object):
+    def test_docstring(self, cmd):
+        assert _method_docstring(cmd) == "Docstring"
+
+
+class TestResolveModifiers(object):
+    @pytest.mark.parametrize(
+        "args",
+        [
+            {"schema": None, "form": None, "template": None},
+            {"schema": {}, "form": {}, "template": None},
+            {"schema": {}, "form": {"type": "fieldset", "items": []}, "template": None},
+        ],
+    )
+    def test_identity(self, args):
+        assert args == _resolve_display_modifiers(Mock(), Mock(), **args)
+
+    @pytest.mark.parametrize(
+        "field,args,expected",
+        [
+            ("form", {"form": []}, {"type": "fieldset", "items": []}),
+            ("template", {"template": "<html>"}, "<html>"),
+        ],
+    )
+    def test_aspects(self, field, args, expected):
+        assert expected == _resolve_display_modifiers(Mock(), Mock(), **args).get(field)
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            {"template": {}},
+            {"schema": ""},
+            {"form": ""},
+            {"schema": 123},
+            {"form": 123},
+            {"template": 123},
+        ],
+    )
+    def test_type_errors(self, args):
+        with pytest.raises(PluginParamError):
+            _resolve_display_modifiers(Mock(), Mock(), **args)
+
+    def test_load_url(self, requests_mock):
+        args = {
+            "schema": "http://test/schema",
+            "form": "http://test/form",
+            "template": "http://test/template",
+        }
+        expected = {
+            "schema": {"schema": "test"},
+            "form": {"form": "test"},
+            "template": "<html></html>",
+        }
+
+        requests_mock.get(
+            args["schema"],
+            json=expected["schema"],
+            headers={"content-type": "application/json"},
+        )
+        requests_mock.get(
+            args["form"],
+            json=expected["form"],
+            headers={"content-type": "application/json"},
+        )
+        requests_mock.get(
+            args["template"],
+            text=expected["template"],
+            headers={"content-type": "text/html"},
+        )
+
+        resolved = _resolve_display_modifiers(Mock(), Mock(), **args)
+        assert resolved["schema"] == expected["schema"]
+        assert resolved["form"] == expected["form"]
+        assert resolved["template"] == expected["template"]
+
+    @pytest.mark.parametrize(
+        "args,expected",
+        [
+            ({"schema": "/abs/path/schema.json"}, "/abs/path/schema.json"),
+            ({"schema": "../rel/schema.json"}, "/abs/test/rel/schema.json"),
+        ],
+    )
+    def test_load_file(self, monkeypatch, args, expected):
+        inspect_mock = Mock()
+        inspect_mock.getfile.return_value = "/abs/test/dir/client.py"
+        monkeypatch.setattr("brewtils.decorators.inspect", inspect_mock)
+
+        with patch("brewtils.decorators.open") as op_mock:
+            op_mock.return_value.__enter__.return_value.read.return_value = "{}"
+            _resolve_display_modifiers(Mock(), Mock(), **args)
+
+        op_mock.assert_called_once_with(expected, "r")
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            {"schema": "http://test"},
+            {"form": "http://test"},
+            {"template": "http://test"},
+        ],
+    )
+    def test_url_resolve_error(self, monkeypatch, args):
+        requests_mock = Mock()
+        requests_mock.get.side_effect = Exception
+        monkeypatch.setattr("brewtils.decorators.requests", requests_mock)
+
+        with pytest.raises(PluginParamError):
+            _resolve_display_modifiers(Mock(), Mock(), **args)
+
+    @pytest.mark.parametrize(
+        "args", [{"schema": "./test"}, {"form": "./test"}, {"template": "./test"}]
+    )
+    def test_file_resolve_error(self, monkeypatch, args):
+        open_mock = Mock()
+        open_mock.side_effect = Exception
+        monkeypatch.setattr("brewtils.decorators.open", open_mock)
+
+        with pytest.raises(PluginParamError):
+            _resolve_display_modifiers(Mock(), Mock(), **args)
 
 
 class TestInitializeParameter(object):
@@ -503,291 +751,6 @@ class TestInitializeParameter(object):
             assert len(key3_param.parameters) == 0
 
 
-class TestParameters(object):
-    def test_wrapper(self, param_definition):
-        test_mock = Mock()
-
-        @parameters([param_definition])
-        def cmd(foo):
-            return foo
-
-        assert cmd(test_mock) == test_mock
-
-    def test_decorator_equivalence(self, param_definition):
-        @parameter(**param_definition)
-        def func1(_, foo):
-            return foo
-
-        @parameters([param_definition])
-        def func2(_, foo):
-            return foo
-
-        assert_parameter_equal(func1.parameters[0], func2.parameters[0])
-
-    def test_dict_values(self, param_definition):
-        param_spec = {"foo": param_definition}
-
-        @parameters(param_spec.values())
-        def func(foo):
-            return foo
-
-        assert len(func.parameters) == 1
-        assert func.parameters[0].key == "foo"
-
-    @pytest.mark.parametrize(
-        "args",
-        [
-            [],  # no args
-            [[{"key": "foo"}], 2],  # too many args
-            [[{"key": "foo"}], 2, 3],  # way too many args
-        ],
-    )
-    def test_bad_arg_count(self, args):
-        """Must be called with just one argument"""
-        with pytest.raises(PluginParamError, match=r"single argument"):
-
-            @parameters(*args)
-            def func(foo):
-                return foo
-
-    def test_no_parens(self):
-        """Again, need an argument"""
-        with pytest.raises(PluginParamError, match=r"single argument"):
-
-            @parameters
-            def func(foo):
-                return foo
-
-    @pytest.mark.parametrize(
-        "args",
-        [
-            ["string"],  # bad type
-            [lambda x: x],  # decorator might be applied to wrong thing
-            [
-                [{"key": "foo"}],
-                lambda x: x,
-            ],  # decorator might be applied to wrong thing
-        ],
-    )
-    def test_bad_args(self, args):
-        """Test the other ways args can be bad"""
-        with pytest.raises(PluginParamError):
-
-            @parameters(*args)
-            def func(foo):
-                return foo
-
-    def test_bad_application(self):
-        """I don't even know how you would do this. Something like:
-
-        .. code-block:: python
-
-            @parameters([{"key": "foo", ...}])
-            some non-callable thing
-
-        Which isn't valid syntax. But if it WERE, it would be handled!
-        """
-        with pytest.raises(PluginParamError, match=r"callable"):
-            partial = parameters([{"key": "foo"}])
-            partial("not a callable")
-
-    def test_bad_partial_call(self, param_definition):
-        """Again, I don't even know how you would do this if you follow directions."""
-        with pytest.raises(PluginParamError, match=r"partial call"):
-
-            @parameters([param_definition], _partial=True)
-            def func(foo):
-                return foo
-
-
-class TestInitializeCommand(object):
-    def test_generate_command(self, cmd):
-        assert not hasattr(cmd, "_command")
-
-        cmd = _initialize_command(cmd)
-
-        assert cmd.name == "_cmd"
-        assert cmd.description == "Docstring"
-        assert len(cmd.parameters) == 1
-
-    def test_overwrite_docstring(self):
-        new_description = "So descriptive"
-
-        @command(description=new_description)
-        def _cmd(_):
-            """This is a doc"""
-            pass
-
-        assert _initialize_command(_cmd).description == new_description
-
-    # TODO
-    def test_parameters_generation(self):
-        pass
-
-
-class TestMethodName(object):
-    def test_name(self, cmd):
-        assert _method_name(cmd) == "_cmd"
-
-
-class TestMethodDocstring(object):
-    def test_docstring(self, cmd):
-        assert _method_docstring(cmd) == "Docstring"
-
-
-class TestGenerateNestedParameters(object):
-    @pytest.fixture(autouse=True)
-    def init_mock(self, monkeypatch):
-        """Mock out _initialize_parameter functionality
-
-        We don't want to actually test _initialize_parameter here, just that it was
-        called correctly.
-        """
-        m = Mock()
-        monkeypatch.setattr(brewtils.decorators, "_initialize_parameter", m)
-        return m
-
-    def test_parameter(self, init_mock, param):
-        res = _generate_nested_params([param])
-
-        assert len(res) == 1
-        assert res[0] == init_mock.return_value
-        init_mock.assert_called_once_with(param=param)
-
-    def test_deprecated_model(self, init_mock, nested_1):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            res = _generate_nested_params([nested_1])
-
-            assert len(res) == 1
-            assert res[0] == init_mock.return_value
-            init_mock.assert_called_once_with(param=nested_1.parameters[0])
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "model class objects" in str(w[0].message)
-
-    def test_unknown_type(self):
-        with pytest.raises(PluginParamError):
-            _generate_nested_params(["This isn't a parameter!"])  # noqa
-
-
-class TestResolveModifiers(object):
-    @pytest.mark.parametrize(
-        "args",
-        [
-            {"schema": None, "form": None, "template": None},
-            {"schema": {}, "form": {}, "template": None},
-            {"schema": {}, "form": {"type": "fieldset", "items": []}, "template": None},
-        ],
-    )
-    def test_identity(self, args):
-        assert args == _resolve_display_modifiers(Mock(), Mock(), **args)
-
-    @pytest.mark.parametrize(
-        "field,args,expected",
-        [
-            ("form", {"form": []}, {"type": "fieldset", "items": []}),
-            ("template", {"template": "<html>"}, "<html>"),
-        ],
-    )
-    def test_aspects(self, field, args, expected):
-        assert expected == _resolve_display_modifiers(Mock(), Mock(), **args).get(field)
-
-    @pytest.mark.parametrize(
-        "args",
-        [
-            {"template": {}},
-            {"schema": ""},
-            {"form": ""},
-            {"schema": 123},
-            {"form": 123},
-            {"template": 123},
-        ],
-    )
-    def test_type_errors(self, args):
-        with pytest.raises(PluginParamError):
-            _resolve_display_modifiers(Mock(), Mock(), **args)
-
-    def test_load_url(self, requests_mock):
-        args = {
-            "schema": "http://test/schema",
-            "form": "http://test/form",
-            "template": "http://test/template",
-        }
-        expected = {
-            "schema": {"schema": "test"},
-            "form": {"form": "test"},
-            "template": "<html></html>",
-        }
-
-        requests_mock.get(
-            args["schema"],
-            json=expected["schema"],
-            headers={"content-type": "application/json"},
-        )
-        requests_mock.get(
-            args["form"],
-            json=expected["form"],
-            headers={"content-type": "application/json"},
-        )
-        requests_mock.get(
-            args["template"],
-            text=expected["template"],
-            headers={"content-type": "text/html"},
-        )
-
-        resolved = _resolve_display_modifiers(Mock(), Mock(), **args)
-        assert resolved["schema"] == expected["schema"]
-        assert resolved["form"] == expected["form"]
-        assert resolved["template"] == expected["template"]
-
-    @pytest.mark.parametrize(
-        "args,expected",
-        [
-            ({"schema": "/abs/path/schema.json"}, "/abs/path/schema.json"),
-            ({"schema": "../rel/schema.json"}, "/abs/test/rel/schema.json"),
-        ],
-    )
-    def test_load_file(self, monkeypatch, args, expected):
-        inspect_mock = Mock()
-        inspect_mock.getfile.return_value = "/abs/test/dir/client.py"
-        monkeypatch.setattr("brewtils.decorators.inspect", inspect_mock)
-
-        with patch("brewtils.decorators.open") as op_mock:
-            op_mock.return_value.__enter__.return_value.read.return_value = "{}"
-            _resolve_display_modifiers(Mock(), Mock(), **args)
-
-        op_mock.assert_called_once_with(expected, "r")
-
-    @pytest.mark.parametrize(
-        "args",
-        [
-            {"schema": "http://test"},
-            {"form": "http://test"},
-            {"template": "http://test"},
-        ],
-    )
-    def test_url_resolve_error(self, monkeypatch, args):
-        requests_mock = Mock()
-        requests_mock.get.side_effect = Exception
-        monkeypatch.setattr("brewtils.decorators.requests", requests_mock)
-
-        with pytest.raises(PluginParamError):
-            _resolve_display_modifiers(Mock(), Mock(), **args)
-
-    @pytest.mark.parametrize(
-        "args", [{"schema": "./test"}, {"form": "./test"}, {"template": "./test"}]
-    )
-    def test_file_resolve_error(self, monkeypatch, args):
-        open_mock = Mock()
-        open_mock.side_effect = Exception
-        monkeypatch.setattr("brewtils.decorators.open", open_mock)
-
-        with pytest.raises(PluginParamError):
-            _resolve_display_modifiers(Mock(), Mock(), **args)
-
-
 class TestFormatType(object):
     @pytest.mark.parametrize(
         "t,expected",
@@ -930,7 +893,7 @@ class TestFormatChoices(object):
             _format_choices(choices)
 
 
-class TestValidateKwargness(object):
+class TestValidateSignature(object):
     class TestSuccess(object):
         def test_not_kwarg_no_default(self, cmd):
             assert _validate_signature(cmd, Parameter(key="foo")) is None
@@ -970,6 +933,43 @@ class TestValidateKwargness(object):
         #
         #     with pytest.raises(PluginParamError):
         #         _validate_signature(Tester.c, Parameter(key="foo"))  # noqa
+
+
+class TestGenerateNestedParameters(object):
+    @pytest.fixture(autouse=True)
+    def init_mock(self, monkeypatch):
+        """Mock out _initialize_parameter functionality
+
+        We don't want to actually test _initialize_parameter here, just that it was
+        called correctly.
+        """
+        m = Mock()
+        monkeypatch.setattr(brewtils.decorators, "_initialize_parameter", m)
+        return m
+
+    def test_parameter(self, init_mock, param):
+        res = _generate_nested_params([param])
+
+        assert len(res) == 1
+        assert res[0] == init_mock.return_value
+        init_mock.assert_called_once_with(param=param)
+
+    def test_deprecated_model(self, init_mock, nested_1):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            res = _generate_nested_params([nested_1])
+
+            assert len(res) == 1
+            assert res[0] == init_mock.return_value
+            init_mock.assert_called_once_with(param=nested_1.parameters[0])
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "model class objects" in str(w[0].message)
+
+    def test_unknown_type(self):
+        with pytest.raises(PluginParamError):
+            _generate_nested_params(["This isn't a parameter!"])  # noqa
 
 
 class TestDeprecations(object):

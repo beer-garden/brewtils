@@ -596,6 +596,10 @@ class TestInitializeParameter(object):
         p = Parameter(key="foo", default=default)
         assert _initialize_parameter(p).default == default
 
+    def test_file_defaults(self):
+        """File parameter defaults should be cleared for safety"""
+        assert _initialize_parameter(Parameter(key="f", type="Base64")).default is None
+
     @pytest.mark.parametrize(
         "default,expected",
         [(None, {"key1": 1, "key2": "100"}), ({"key1", 123}, {"key1", 123})],

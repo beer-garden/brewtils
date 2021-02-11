@@ -264,7 +264,7 @@ def parameter(
     return _wrapped
 
 
-def parameters(*args):
+def parameters(*args, _partial=False):
     """Specify multiple Parameter definitions at once
 
     This can be useful for commands which have a large number of complicated
@@ -290,14 +290,23 @@ def parameters(*args):
         *args (iterable): Positional arguments
             The first (and only) positional argument must be a list containing
             dictionaries that describe parameters.
+        _partial: Used for bookkeeping. Don't set this yourself!
 
     Returns:
         func: The decorated function
     """
-    if len(args) == 1:
-        return functools.partial(parameters, args[0])
-    elif len(args) != 2:
+    # This is the first invocation
+    if not _partial:
+        # Need the callable check to prevent applying the decorator with no parenthesis
+        if len(args) == 1 and not callable(args[0]):
+            return functools.partial(parameters, args[0], _partial=True)
+
         raise PluginParamError("@parameters takes a single argument")
+
+    # This is the second invocation
+    else:
+        if len(args) != 2:
+            raise PluginParamError("@parameters takes a single argument")
 
     params = args[0]
     _wrapped = args[1]

@@ -285,7 +285,8 @@ class TestParseMethod(object):
         assert _parse_method(cmd_kwargs) is not None
 
     def test_parameters(self, cmd):
-        cmd = parameters([{"key": "foo"}], cmd)
+        partial = parameters([{"key": "foo"}])
+        cmd = partial(cmd)
         assert _parse_method(cmd) is not None
 
     def test_cmd_parameter(self, cmd):
@@ -503,11 +504,14 @@ class TestInitializeParameter(object):
 
 
 class TestParameters(object):
-    def test_wrapper(self, cmd, param_definition):
+    def test_wrapper(self, param_definition):
         test_mock = Mock()
-        wrapped = parameters([param_definition], cmd)
 
-        assert wrapped(self, test_mock) == test_mock
+        @parameters([param_definition])
+        def cmd(foo):
+            return foo
+
+        assert cmd(test_mock) == test_mock
 
     def test_decorator_equivalence(self, param_definition):
         @parameter(**param_definition)
@@ -520,47 +524,69 @@ class TestParameters(object):
 
         assert_parameter_equal(func1.parameters[0], func2.parameters[0])
 
-    @pytest.mark.parametrize("args", [[], [1, 2, 3]])
-    def test_bad_arity(self, args):
-        # Must be called with either just one arg, or one arg + the function
-        with pytest.raises(PluginParamError, match=r"single argument"):
-            parameters(*args)
-
-    def test_bad_arity_decorator(self):
-        # Must be called with either just one arg, or one arg + the function
-        with pytest.raises(PluginParamError, match=r"single argument"):
-
-            @parameters([{"key": "first"}], "extra")
-            def func(_, first):
-                return first
-
-    @pytest.mark.parametrize(
-        "arg1,arg2",
-        [
-            (1, cmd),  # arg1 needs to be iterable
-            ([1], cmd),  # arg1 item needs to be **able
-            ([], 1),  # arg2 must be a FunctionType
-        ],
-    )
-    def test_bad_args(self, arg1, arg2):
-        with pytest.raises(PluginParamError):
-            parameters(arg1, arg2)
-
-    def test_dict_values(self, cmd, param_definition):
-        parameters({"foo": param_definition}.values(), cmd)
-
-        assert len(cmd.parameters) == 1
-        assert cmd.parameters[0].key == "foo"
-
-    def test_dict_values_decorator(self, param_definition):
+    def test_dict_values(self, param_definition):
         param_spec = {"foo": param_definition}
 
         @parameters(param_spec.values())
-        def func(_, foo):
+        def func(foo):
             return foo
 
         assert len(func.parameters) == 1
         assert func.parameters[0].key == "foo"
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            [],  # no args
+            [[{"key": "a"}], 2],  # too many args
+            [[{"key": "a"}], 2, 3],  # way too many args
+        ],
+    )
+    def test_bad_arg_count(self, args):
+        """Must be called with just one argument"""
+        with pytest.raises(PluginParamError, match=r"single argument"):
+
+            @parameters(*args)
+            def func(_, first):
+                return first
+
+    def test_no_parens(self):
+        """Again, need an argument"""
+        with pytest.raises(PluginParamError, match=r"single argument"):
+
+            @parameters
+            def func(_, first):
+                return first
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            ["string"],  # bad type
+            [lambda x: x],  # decorator might be applied to wrong thing
+            [[{"key": "a"}], lambda x: x],  # decorator might be applied to wrong thing
+        ],
+    )
+    def test_bad_args(self, args):
+        """Test the other ways args can be bad"""
+        with pytest.raises(PluginParamError):
+
+            @parameters(*args)
+            def func(_, first):
+                return first
+
+    def test_bad_application(self):
+        """I don't even know how you would do this. Something like:
+
+        .. code-block:: python
+
+            @parameters([{"key": "foo", ...}])
+            some non-callable thing
+
+        Which isn't valid syntax. But if it WERE, it would be handled!
+        """
+        with pytest.raises(PluginParamError, match=r"callable"):
+            partial = parameters([{"key": "foo"}])
+            partial("not a callable")
 
 
 class TestInitializeCommand(object):

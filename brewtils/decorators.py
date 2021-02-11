@@ -45,7 +45,7 @@ def system(cls=None, bg_name=None, bg_version=None):
     For historical purposes - the functionality of the ``parse_client`` function was
     previously in this decorator.
 
-    This does creates some attributes on the class for back-compatability reasons (and
+    This does creates some attributes on the class for back-compatibility reasons (and
     to stop linters from complaining). But these are just placeholders until the actual
     values are determined when the Plugin client is set:
 
@@ -87,7 +87,7 @@ def command(
     icon_name=None,  # type: str
     hidden=False,  # type: bool
 ):
-    """Decorator that marks a function as a beer-garden command
+    """Decorator for specifying Command details
 
     For example:
 
@@ -166,9 +166,7 @@ def parameter(
     is_kwarg=None,  # type: bool
     model=None,  # type: Type
 ):
-    """Decorator that enables Parameter specifications for a beer-garden Command
-
-    This is intended to be used when more specification is desired for a Parameter.
+    """Decorator for specifying Parameter details
 
     For example::
 
@@ -265,7 +263,7 @@ def parameter(
 
 
 def parameters(*args, _partial=False):
-    """Specify multiple Parameter definitions at once
+    """Decorator for specifying multiple Parameter definitions at once
 
     This can be useful for commands which have a large number of complicated
     parameters but aren't good candidates for a Model.

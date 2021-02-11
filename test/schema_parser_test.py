@@ -114,6 +114,12 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
+                    brewtils.models.Operation,
+                    lazy_fixture("operation_dict"),
+                    assert_principal_equal,
+                    lazy_fixture("bg_operation"),
+            ),
+            (
                 brewtils.models.Principal,
                 lazy_fixture("principal_dict"),
                 assert_principal_equal,
@@ -234,6 +240,12 @@ class TestParse(object):
                 lazy_fixture("queue_dict"),
                 assert_queue_equal,
                 lazy_fixture("bg_queue"),
+            ),
+            (
+                "parse_operation",
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
             ),
             (
                 "parse_principal",
@@ -357,6 +369,12 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
+                brewtils.models.Operation,
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
+            (
                 brewtils.models.Principal,
                 lazy_fixture("principal_dict"),
                 assert_principal_equal,
@@ -477,6 +495,12 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
+                "parse_operation",
+                lazy_fixture("operation_dict"),
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
+            (
                 "parse_principal",
                 lazy_fixture("principal_dict"),
                 assert_principal_equal,
@@ -573,6 +597,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
+            (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
             (lazy_fixture("bg_principal"), lazy_fixture("principal_dict")),
             (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
             (lazy_fixture("bg_permission"), lazy_fixture("permission_dict")),
@@ -628,6 +653,11 @@ class TestSerialize(object):
             ("serialize_event", lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             ("serialize_queue", lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
             (
+                "serialize_operation",
+                lazy_fixture("bg_operation"),
+                lazy_fixture("operation_dict"),
+            ),
+            (
                 "serialize_principal",
                 lazy_fixture("bg_principal"),
                 lazy_fixture("principal_dict"),
@@ -682,6 +712,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
+            (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
             (lazy_fixture("bg_principal"), lazy_fixture("principal_dict")),
             (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
             (lazy_fixture("bg_permission"), lazy_fixture("permission_dict")),
@@ -754,6 +785,11 @@ class TestRoundTrip(object):
             (brewtils.models.Event, assert_event_equal, lazy_fixture("bg_event")),
             (brewtils.models.Queue, assert_queue_equal, lazy_fixture("bg_queue")),
             (
+                brewtils.models.Operation,
+                assert_operation_equal,
+                lazy_fixture("bg_operation"),
+            ),
+            (
                 brewtils.models.Principal,
                 assert_principal_equal,
                 lazy_fixture("bg_principal"),
@@ -795,6 +831,7 @@ class TestRoundTrip(object):
             (brewtils.models.LoggingConfig, lazy_fixture("logging_config_dict")),
             (brewtils.models.Event, lazy_fixture("event_dict")),
             (brewtils.models.Queue, lazy_fixture("queue_dict")),
+            (brewtils.models.Operation, lazy_fixture("operation_dict")),
             (brewtils.models.Principal, lazy_fixture("principal_dict")),
             (brewtils.models.Role, lazy_fixture("role_dict")),
             (brewtils.models.Permission, lazy_fixture("permission_dict")),

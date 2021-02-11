@@ -1432,6 +1432,7 @@ class Operation(BaseModel):
         target_garden_name=None,
         source_garden_name=None,
         operation_type=None,
+        principal=None,
     ):
         self.model = model
         self.model_type = model_type
@@ -1440,6 +1441,7 @@ class Operation(BaseModel):
         self.target_garden_name = target_garden_name
         self.source_garden_name = source_garden_name
         self.operation_type = operation_type
+        self.principal = principal
 
     def __str__(self):
         return "%s" % self.operation_type

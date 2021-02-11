@@ -488,6 +488,21 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
+def operation_dict(principal_dict):
+    return {
+        "operation_type": "REQUEST_READ",
+        "principal": principal_dict,
+    }
+
+
+@pytest.fixture
+def bg_operation(bg_principal):
+    dict_copy = copy.deepcopy(operation_dict)
+    dict_copy["principal"] = bg_principal
+    return Operation(**dict_copy)
+
+
+@pytest.fixture
 def principal_dict(role_dict, permission_dict):
     return {
         "id": "58542eb571afd47ead90d24f",

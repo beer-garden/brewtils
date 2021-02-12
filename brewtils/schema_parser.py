@@ -118,6 +118,17 @@ class SchemaParser(object):
         )
 
     @classmethod
+    def parse_file(cls, file, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a  file model object
+
+        :param file: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A File object
+        """
+        return cls.parse(file, brewtils.models.File, from_string=from_string, **kwargs)
+
+    @classmethod
     def parse_request(cls, request, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a request model object
 

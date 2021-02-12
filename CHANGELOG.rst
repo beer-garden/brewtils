@@ -1,6 +1,21 @@
 Brewtils Changelog
 ==================
 
+3.1.0
+-----
+2/5/21
+
+Bug Fixes
+^^^^^^^^^
+- SystemClient parameter resolution no longer always fails if no system is assigned (Issue #859 / PR #289)
+- Added positional arguments back-compatibility for EasyClient and SystemClient creation (Issue #836 / PR #286)
+- Fixed regression relating to old decorator deprecations (Issue #835 / PR #285)
+
+Other Changes
+^^^^^^^^^^^^^
+- Added 'hidden' field to Request ile model (Issue #414 / PR #288)
+- Added 'job' and 'request' fields to File model (Issue #833 / PR #284)
+
 3.0.2
 -----
 Date: 1/11/21

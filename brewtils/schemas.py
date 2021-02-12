@@ -227,6 +227,8 @@ class FileSchema(BaseSchema):
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
     owner = fields.Raw(allow_none=True)
+    job = fields.Raw(allow_none=True)
+    request = fields.Raw(allow_none=True)
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
@@ -291,6 +293,7 @@ class RequestSchema(RequestTemplateSchema):
         "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
     )
     output = fields.Str(allow_none=True)
+    hidden = fields.Boolean(allow_none=True)
     status = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")

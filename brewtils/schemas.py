@@ -277,6 +277,7 @@ class RequestTemplateSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
     command_type = fields.Str(allow_none=True)
+    expiration_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)

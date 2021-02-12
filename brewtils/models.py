@@ -520,6 +520,7 @@ class RequestTemplate(BaseModel):
         "namespace",
         "command",
         "command_type",
+        "expiration_date",
         "parameters",
         "comment",
         "metadata",
@@ -534,6 +535,7 @@ class RequestTemplate(BaseModel):
         namespace=None,
         command=None,
         command_type=None,
+        expiration_date=None,
         parameters=None,
         comment=None,
         metadata=None,
@@ -545,6 +547,7 @@ class RequestTemplate(BaseModel):
         self.namespace = namespace
         self.command = command
         self.command_type = command_type
+        self.expiration_date = expiration_date
         self.parameters = parameters
         self.comment = comment
         self.metadata = metadata or {}
@@ -591,6 +594,7 @@ class Request(RequestTemplate):
         output_type=None,
         status=None,
         command_type=None,
+        expiration_date=None,
         created_at=None,
         error_class=None,
         metadata=None,
@@ -615,6 +619,7 @@ class Request(RequestTemplate):
         self.children = children
         self.output = output
         self._status = status
+        self.expiration_date = expiration_date
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class

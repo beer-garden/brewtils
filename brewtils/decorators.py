@@ -7,7 +7,7 @@ import os
 import sys
 from io import open
 from types import MethodType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import requests
 import six
@@ -347,31 +347,71 @@ def _parse_client(client):
 
 
 def _parse_method(method):
+    # type: (MethodType) -> Optional[Command]
     """Parse a method object as a Beer-garden command target
 
     If the method looks like a valid command target (based on the presence of certain
-    attributes) then this method will initialize necessary metadata.
+    attributes) then this method will initialize things:
+
+    - The command will be initialized.
+    - Every parameter will be initialized. Initializing a parameter is recursive - each
+      nested parameter will also be initialized.
+    - Top-level parameters are validated to ensure they match the method signature.
 
     Args:
-        method: The method to parse
+        method: Method to parse
 
     Returns:
-        The modified method
+        Beergarden Command targeting the given method
     """
     if (inspect.ismethod(method) or inspect.isfunction(method)) and (
         hasattr(method, "_command") or hasattr(method, "parameters")
     ):
         method_command = _initialize_command(method)
 
-        for p in method_command.parameters:
-            _initialize_parameter(param=p, func=method)
+        for param in method_command.parameters:
+            _initialize_parameter(param=param)
+            _validate_signature(param=param, method=method)
 
         return method_command
 
 
 def _initialize_command(method):
     # type: (MethodType) -> Command
-    """Update a Command definition with info from the method
+    """Initialize a Command
+
+    This takes care of ensuring a Command object is in the correct form. Things like:
+
+    - Assigning the name from the method name
+    - Pulling the description from the method docstring, if necessary
+    - Resolving display modifiers (schema, form, template)
+
+    It will also add / modify the Command's parameter list:
+
+    - Any arguments in the method signature that were not already known Parameters will
+      be added
+    - Any arguments that WERE already known (most likely from a @parameter decorator)
+      will potentially have their default and optional values updated:
+
+      - If either attribute is already defined (specified in the decorator) then that
+        value will be used. Explicit values will NOT be overridden.
+      - If the default attribute is not already defined then it will be set to the value
+        of the default parameter from the method signature, if any.
+      - If the optional attribute is not already defined then it will be set to True if
+        a default value exists in the method signature, otherwise it will be set to
+        False.
+
+    The parameter modification is confusing - see the _sig_info docstring for examples.
+
+    A final note - I'm not super happy about this. It makes sense - positional arguments
+    are "required", so mark them as non-optional. It's not *wrong*, but it's unexpected.
+    A @parameter that doesn't specify "optional=" will have a different optionality
+    based on the function signature.
+
+    Regardless, we went with this originally. If we want to change it we need to go
+    though a deprecation cycle and *loudly* publicize it since things wouldn't break
+    loudly for plugin developers, their plugins would just be subtly (but importantly)
+    different.
 
     Args:
         method: The method with the Command to initialize
@@ -392,23 +432,35 @@ def _initialize_command(method):
     cmd.form = resolved_mod["form"]
     cmd.template = resolved_mod["template"]
 
+    # Now we need to deal with parameters. Start with ones from @parameter decorators.
     cmd.parameters += getattr(method, "parameters", [])
-    for index, arg in enumerate(signature(method).parameters.values()):
-        if arg.name not in cmd.parameter_keys():
-            # Don't want to include special parameters
-            if index == 0 and arg.name in ("self", "cls"):
-                continue
 
-            cmd.parameters.append(Parameter(key=arg.name, optional=False))
+    # Now we need to reconcile the parameters with the method signature
+    for index, arg in enumerate(signature(method).parameters.values()):
+
+        # Don't want to include special parameters
+        if index == 0 and arg.name in ("self", "cls"):
+            continue
+
+        # Grab default and optionality according to the signature. We'll need it later.
+        sig_default, sig_optional = _sig_info(arg)
+
+        # Here the parameter was not previously defined so just add it to the list
+        if arg.name not in cmd.parameter_keys():
+            cmd.parameters.append(
+                Parameter(key=arg.name, default=sig_default, optional=sig_optional)
+            )
+
+        # Here the parameter WAS previously defined. So we potentially need to update
+        # the default and optional values (if they weren't explicitly set).
         else:
-            # I'm not super happy about this. It makes sense - positional arguments are
-            # "required", so mark them as non-optional, but it's really unexpected.
-            # A @parameter that doesn't specify "optional=" will have a different value
-            # based on the function signature. Regardless, we went with this originally
-            # so we need to keep it for back-compatibility
             param = cmd.get_parameter_by_key(arg.name)
+
+            if param.default is None:
+                param.default = sig_default
+
             if param.optional is None:
-                param.optional = False
+                param.optional = sig_optional
 
     return cmd
 
@@ -526,9 +578,49 @@ def _resolve_display_modifiers(
     return resolved
 
 
+def _sig_info(arg):
+    # type: (InspectParameter) -> Tuple[Any, bool]
+    """Get the default and optionality of a method argument
+
+    This will return the "default" according to the method signature. For example, the
+    following would return "foo" as the default for Parameter param:
+
+    .. code-block:: python
+
+        def my_command(self, param="foo"):
+            ...
+
+    The "optional" value returned will be a boolean indicating the presence of a default
+    argument. In the example above the "optional" value will be True. However, in the
+    following example the value would be False (and the "default" value will be None):
+
+    .. code-block:: python
+
+        def my_command(self, param):
+            ...
+
+    A separate optional return is needed to indicate when a default is provided in the
+    signature, but the default is None. In the following, the default will still be
+    None, but the optional value will be True:
+
+    .. code-block:: python
+
+        def my_command(self, param=None):
+            ...
+
+    Args:
+        arg: The method argument
+
+    Returns:
+        Tuple of (signature default, optionality)
+    """
+    if arg.default != InspectParameter.empty:
+        return arg.default, True
+    return None, False
+
+
 def _initialize_parameter(
     param=None,
-    func=None,
     key=None,
     type=None,
     multi=None,
@@ -548,7 +640,7 @@ def _initialize_parameter(
     model=None,
 ):
     # type: (...) -> Parameter
-    """Helper method to 'fix' Parameters
+    """Initialize a Parameter
 
     This exists to move logic out of the @parameter decorator. Previously there was a
     fair amount of logic in the decorator, which meant that it wasn't feasible to create
@@ -564,11 +656,6 @@ def _initialize_parameter(
     Args:
         param: An already-created Parameter. If this is given all the other
         Parameter-creation kwargs will be ignored
-        func: The function this Parameter will be used on. This will only exist for
-        top-level Parameters (Parameters that have a Command as their parent, not
-        another Parameter). If given, additional checks will be performed to ensure the
-        Parameter matches the function signature.
-
 
     Keyword Args:
         Will be used to construct a new Parameter
@@ -599,11 +686,6 @@ def _initialize_parameter(
 
     param.type = _format_type(param.type)
     param.choices = _format_choices(param.choices)
-
-    if func:
-        func_default = _validate_signature(func, param)
-        if func_default and param.default is None:
-            param.default = func_default
 
     # Type info is where type specific information goes. For now, this is specific
     # to file types. See #289 for more details.
@@ -790,38 +872,31 @@ def _format_choices(choices):
     )
 
 
-def _validate_signature(_wrapped, param):
-    # type: (MethodType, Parameter) -> Optional[Any]
-    """Ensure that a Parameter lines up with the method signature, determine default
+def _validate_signature(param, method):
+    # type: (Parameter, MethodType) -> None
+    """Ensure that a Parameter conforms to the method signature
 
-    This will raise a PluginParamError if there are any validation issues.
-
-    It will also return the "default" according to the method signature. For example,
-    the following would return "foo" for Parameter param:
-
-    .. code-block:: python
-
-        def my_command(self, param="foo"):
-            ...
+    This will do some validation and will raise a PluginParamError if there are any
+    issues.
 
     It's expected that this will only be called for Parameters where this makes sense
     (aka top-level Parameters). It doesn't make sense to call this for model Parameters,
     so you shouldn't do that.
 
     Args:
-        _wrapped: The underlying target method object
-        param: The Parameter definitions
+        param: Parameter definition
+        method: Target method object
 
     Returns:
-        The default value according to the method signature, if any
+        None
 
     Raises:
         PluginParamError: There was a validation problem
     """
-    sig_param = None  # The actual inspect.Parameter from the signature
-    has_kwargs = False  # Does the func have **kwargs?
+    sig_param = None
+    has_kwargs = False
 
-    for p in signature(_wrapped).parameters.values():
+    for p in signature(method).parameters.values():
         if p.name == param.key:
             sig_param = p
         if p.kind == InspectParameter.VAR_KEYWORD:
@@ -855,9 +930,6 @@ def _validate_signature(_wrapped, param):
             raise PluginParamError(
                 "Sorry, positional-only type parameters are not supported"
             )
-
-        if sig_param.default != InspectParameter.empty:
-            return sig_param.default
 
 
 def _generate_nested_params(parameter_list):

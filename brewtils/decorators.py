@@ -872,6 +872,43 @@ def _format_choices(choices):
     )
 
 
+def _generate_nested_params(parameter_list):
+    # type: (Iterable[Parameter, object]) -> List[Parameter]
+    """Generate nested parameters from a list of Parameters or a Model object
+
+    This exists for backwards compatibility with the "old
+
+    This function will take a list of Parameters and will return a new list of "real"
+    Parameters.
+
+    The main thing this does is ensure the choices specification is correct for all
+    Parameters in the tree.
+    """
+    initialized_params = []
+
+    for param in parameter_list:
+
+        # This is already a Parameter. Only really need to interpret the choices
+        # definition and recurse down into nested Parameters
+        if isinstance(param, Parameter):
+            initialized_params.append(_initialize_parameter(param=param))
+
+        # This is a model class object. Needed for backwards compatibility
+        # See https://github.com/beer-garden/beer-garden/issues/354
+        elif hasattr(param, "parameters"):
+            _deprecate(
+                "Constructing a nested Parameters list using model class objects "
+                "is deprecated. Please pass the model's parameter list directly."
+            )
+            initialized_params += _generate_nested_params(param.parameters)
+
+        # No clue!
+        else:
+            raise PluginParamError("Unable to generate parameter from '%s'" % param)
+
+    return initialized_params
+
+
 def _validate_signature(param, method):
     # type: (Parameter, MethodType) -> None
     """Ensure that a Parameter conforms to the method signature
@@ -930,43 +967,6 @@ def _validate_signature(param, method):
             raise PluginParamError(
                 "Sorry, positional-only type parameters are not supported"
             )
-
-
-def _generate_nested_params(parameter_list):
-    # type: (Iterable[Parameter, object]) -> List[Parameter]
-    """Generate nested parameters from a list of Parameters or a Model object
-
-    This exists for backwards compatibility with the "old
-
-    This function will take a list of Parameters and will return a new list of "real"
-    Parameters.
-
-    The main thing this does is ensure the choices specification is correct for all
-    Parameters in the tree.
-    """
-    initialized_params = []
-
-    for param in parameter_list:
-
-        # This is already a Parameter. Only really need to interpret the choices
-        # definition and recurse down into nested Parameters
-        if isinstance(param, Parameter):
-            initialized_params.append(_initialize_parameter(param=param))
-
-        # This is a model class object. Needed for backwards compatibility
-        # See https://github.com/beer-garden/beer-garden/issues/354
-        elif hasattr(param, "parameters"):
-            _deprecate(
-                "Constructing a nested Parameters list using model class objects "
-                "is deprecated. Please pass the model's parameter list directly."
-            )
-            initialized_params += _generate_nested_params(param.parameters)
-
-        # No clue!
-        else:
-            raise PluginParamError("Unable to generate parameter from '%s'" % param)
-
-    return initialized_params
 
 
 # Alias the old names for compatibility

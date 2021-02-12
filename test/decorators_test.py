@@ -897,6 +897,43 @@ class TestFormatChoices(object):
             _format_choices(choices)
 
 
+class TestGenerateNestedParameters(object):
+    @pytest.fixture(autouse=True)
+    def init_mock(self, monkeypatch):
+        """Mock out _initialize_parameter functionality
+
+        We don't want to actually test _initialize_parameter here, just that it was
+        called correctly.
+        """
+        m = Mock()
+        monkeypatch.setattr(brewtils.decorators, "_initialize_parameter", m)
+        return m
+
+    def test_parameter(self, init_mock, param):
+        res = _generate_nested_params([param])
+
+        assert len(res) == 1
+        assert res[0] == init_mock.return_value
+        init_mock.assert_called_once_with(param=param)
+
+    def test_deprecated_model(self, init_mock, nested_1):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            res = _generate_nested_params([nested_1])
+
+            assert len(res) == 1
+            assert res[0] == init_mock.return_value
+            init_mock.assert_called_once_with(param=nested_1.parameters[0])
+
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "model class objects" in str(w[0].message)
+
+    def test_unknown_type(self):
+        with pytest.raises(PluginParamError):
+            _generate_nested_params(["This isn't a parameter!"])  # noqa
+
+
 class TestValidateSignature(object):
     class TestSuccess(object):
         def test_not_kwarg_no_default(self, cmd):
@@ -937,43 +974,6 @@ class TestValidateSignature(object):
         #
         #     with pytest.raises(PluginParamError):
         #         _validate_signature(Parameter(key="foo"), Tester.c)  # noqa
-
-
-class TestGenerateNestedParameters(object):
-    @pytest.fixture(autouse=True)
-    def init_mock(self, monkeypatch):
-        """Mock out _initialize_parameter functionality
-
-        We don't want to actually test _initialize_parameter here, just that it was
-        called correctly.
-        """
-        m = Mock()
-        monkeypatch.setattr(brewtils.decorators, "_initialize_parameter", m)
-        return m
-
-    def test_parameter(self, init_mock, param):
-        res = _generate_nested_params([param])
-
-        assert len(res) == 1
-        assert res[0] == init_mock.return_value
-        init_mock.assert_called_once_with(param=param)
-
-    def test_deprecated_model(self, init_mock, nested_1):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            res = _generate_nested_params([nested_1])
-
-            assert len(res) == 1
-            assert res[0] == init_mock.return_value
-            init_mock.assert_called_once_with(param=nested_1.parameters[0])
-
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "model class objects" in str(w[0].message)
-
-    def test_unknown_type(self):
-        with pytest.raises(PluginParamError):
-            _generate_nested_params(["This isn't a parameter!"])  # noqa
 
 
 class TestDeprecations(object):

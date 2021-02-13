@@ -963,21 +963,11 @@ class TestGenerateNestedParameters(object):
 
 class TestValidateSignature(object):
     class TestSuccess(object):
-        def test_not_kwarg_no_default(self, cmd):
-            assert _validate_signature(Parameter(key="foo"), cmd) is None
+        def test_positional(self, cmd):
+            _validate_signature(Parameter(key="foo"), cmd)
 
-        def test_kwarg_no_default(self, cmd_kwargs):
-            assert (
-                _validate_signature(Parameter(key="foo", is_kwarg=True), cmd_kwargs)
-                is None
-            )
-
-        def test_default(self):
-            class Tester(object):
-                def c(self, foo="bar"):
-                    pass
-
-            assert _validate_signature(Parameter(key="foo"), Tester.c) == "bar"  # noqa
+        def test_kwarg(self, cmd_kwargs):
+            _validate_signature(Parameter(key="foo", is_kwarg=True), cmd_kwargs)
 
     class TestFailure(object):
         def test_mismatch_is_kwarg_true(self, cmd):

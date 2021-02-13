@@ -409,9 +409,166 @@ class TestInitializeCommand(object):
 
         assert _initialize_command(_cmd).description == new_description
 
-    # TODO
-    def test_parameters_generation(self):
-        pass
+    class TestParameterReconciliation(object):
+        """Test that the parameters line up correctly"""
+
+        class TestPositional(object):
+            """For positional arguments"""
+
+            def test_no_parameter_decorator(self):
+                @command
+                def cmd(foo):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default is None
+                assert bg_cmd.parameters[0].optional is False
+
+            def test_decorator_consistent(self):
+                """Decorator values are what would have been determined"""
+
+                @command
+                @parameter(key="foo", default=None, optional=False)
+                def cmd(foo):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default is None
+                assert bg_cmd.parameters[0].optional is False
+
+            def test_decorator_inconsistent(self):
+                """Decorator values take precedence"""
+
+                @command
+                @parameter(key="foo", default="hi", optional=True)
+                def cmd(foo):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default == "hi"
+                assert bg_cmd.parameters[0].optional is True
+
+        class TestKwargNone(object):
+            """Kwarg argument with None default"""
+
+            def test_no_parameter_decorator(self):
+                @command
+                def cmd(foo=None):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default is None
+                assert bg_cmd.parameters[0].optional is True
+
+            def test_decorator_consistent(self):
+                """Decorator values are what would have been determined"""
+
+                @command
+                @parameter(key="foo", default=None, optional=True)
+                def cmd(foo=None):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default is None
+                assert bg_cmd.parameters[0].optional is True
+
+            def test_decorator_inconsistent(self):
+                """Decorator values take precedence"""
+
+                @command
+                @parameter(key="foo", default="hi", optional=False)
+                def cmd(foo=None):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default == "hi"
+                assert bg_cmd.parameters[0].optional is False
+
+        class TestKwargString(object):
+            """Kwarg argument with string default"""
+
+            def test_no_parameter_decorator(self):
+                @command
+                def cmd(foo="hi"):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default == "hi"
+                assert bg_cmd.parameters[0].optional is True
+
+            def test_decorator_consistent(self):
+                """Decorator values are what would have been determined"""
+
+                @command
+                @parameter(key="foo", default="hi", optional=True)
+                def cmd(foo="hi"):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].default == "hi"
+                assert bg_cmd.parameters[0].optional is True
+
+            def test_decorator_inconsistent(self):
+                """Decorator values kind of take precedence
+
+                THIS ONE IS DIFFERENT!!!
+
+                Specifically, the default value of this will actually be the signature
+                default "hi" instead of the decorator default None.
+
+                This is because there's no way to distinguish this:
+
+                  @parameter(key="foo", default=None, optional=False)
+
+                from this:
+
+                  @parameter(key="foo", optional=False)
+
+                And in the latter case the "correct" behavior is to use the default
+                value from the signature.
+
+                This test is the cornerest of the cases, and if anyone actually wrote a
+                command this way they should expect it to be a toss-up which default is
+                actually used. Therefore I'm decreeing this to be The Correct Behavior.
+                """
+
+                @command
+                @parameter(key="foo", default=None, optional=False)
+                def cmd(foo="hi"):
+                    return foo
+
+                bg_cmd = _initialize_command(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].optional is False
+
+                # AGAIN, THIS ONE IS DIFFERENT!!!!
+                assert bg_cmd.parameters[0].default == "hi"
 
 
 class TestMethodName(object):

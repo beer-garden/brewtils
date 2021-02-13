@@ -131,7 +131,7 @@ def command(
             hidden=hidden,
         )
 
-    _wrapped._command = Command(
+    new_command = Command(
         description=description,
         parameters=parameters,
         command_type=command_type,
@@ -142,6 +142,12 @@ def command(
         icon_name=icon_name,
         hidden=hidden,
     )
+
+    # Python 2 compatibility
+    if hasattr(_wrapped, "__func__"):
+        _wrapped.__func__._command = new_command
+    else:
+        _wrapped._command = new_command
 
     return _wrapped
 
@@ -235,29 +241,33 @@ def parameter(
             model=model,
         )
 
-    _wrapped.parameters = getattr(_wrapped, "parameters", [])
-
-    _wrapped.parameters.append(
-        Parameter(
-            key=key,
-            type=type,
-            multi=multi,
-            display_name=display_name,
-            optional=optional,
-            default=default,
-            description=description,
-            choices=choices,
-            parameters=parameters,
-            nullable=nullable,
-            maximum=maximum,
-            minimum=minimum,
-            regex=regex,
-            form_input_type=form_input_type,
-            type_info=type_info,
-            is_kwarg=is_kwarg,
-            model=model,
-        )
+    new_parameter = Parameter(
+        key=key,
+        type=type,
+        multi=multi,
+        display_name=display_name,
+        optional=optional,
+        default=default,
+        description=description,
+        choices=choices,
+        parameters=parameters,
+        nullable=nullable,
+        maximum=maximum,
+        minimum=minimum,
+        regex=regex,
+        form_input_type=form_input_type,
+        type_info=type_info,
+        is_kwarg=is_kwarg,
+        model=model,
     )
+
+    # Python 2 compatibility
+    if hasattr(_wrapped, "__func__"):
+        _wrapped.__func__.parameters = getattr(_wrapped, "parameters", [])
+        _wrapped.__func__.parameters.append(new_parameter)
+    else:
+        _wrapped.parameters = getattr(_wrapped, "parameters", [])
+        _wrapped.parameters.append(new_parameter)
 
     return _wrapped
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import warnings
 
 import pytest
@@ -16,6 +17,7 @@ from brewtils.decorators import (
     _parse_client,
     _parse_method,
     _resolve_display_modifiers,
+    _sig_info,
     _validate_signature,
     command,
     command_registrar,
@@ -28,6 +30,11 @@ from brewtils.decorators import (
 from brewtils.errors import PluginParamError
 from brewtils.models import Parameter
 from brewtils.test.comparable import assert_command_equal, assert_parameter_equal
+
+if sys.version_info.major == 2:
+    from funcsigs import signature  # noqa
+else:
+    from inspect import signature  # noqa
 
 
 @pytest.fixture
@@ -545,6 +552,26 @@ class TestResolveModifiers(object):
 
         with pytest.raises(PluginParamError):
             _resolve_display_modifiers(Mock(), Mock(), **args)
+
+
+class TestSigInfo(object):
+    def test_positional(self):
+        def cmd(foo):
+            return foo
+
+        assert _sig_info(signature(cmd).parameters["foo"]) == (None, False)
+
+    def test_string_kwarg(self):
+        def cmd(foo="hi"):
+            return foo
+
+        assert _sig_info(signature(cmd).parameters["foo"]) == ("hi", True)
+
+    def test_none_kwarg(self):
+        def cmd(foo=None):
+            return foo
+
+        assert _sig_info(signature(cmd).parameters["foo"]) == (None, True)
 
 
 class TestInitializeParameter(object):

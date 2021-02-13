@@ -24,7 +24,7 @@ from brewtils.models import Command, Parameter, Choices
 if sys.version_info.major == 2:
     from funcsigs import signature, Parameter as InspectParameter  # noqa
 else:
-    from inspect import signature, Parameter as InspectParameter
+    from inspect import signature, Parameter as InspectParameter  # noqa
 
 __all__ = [
     "command",

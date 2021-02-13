@@ -40,21 +40,21 @@ else:
 @pytest.fixture
 def cmd():
     class Bar(object):
-        def _cmd(self, foo):
+        def cmd(self, foo):
             """Docstring"""
             return foo
 
-    return Bar._cmd
+    return Bar.cmd
 
 
 @pytest.fixture
 def cmd_kwargs():
     class Bar(object):
-        def _cmd(self, **kwargs):
+        def cmd(self, **kwargs):
             """Docstring"""
             pass
 
-    return Bar._cmd
+    return Bar.cmd
 
 
 @pytest.fixture
@@ -68,6 +68,11 @@ def param_definition():
         "optional": True,
         "multi": True,
     }
+
+
+@pytest.fixture
+def param(param_definition):
+    return Parameter(**param_definition)
 
 
 @pytest.fixture
@@ -104,19 +109,6 @@ def nested_2():
         ]
 
     return NestedModel2
-
-
-@pytest.fixture
-def param():
-    return Parameter(
-        key="foo",
-        type="String",
-        description="Mutant",
-        default="Charles",
-        display_name="Professor X",
-        optional=True,
-        multi=True,
-    )
 
 
 class TestOverall(object):
@@ -221,20 +213,14 @@ class TestCommand(object):
 
         assert_command_equal(foo._command, bg_command)
 
-    def test_function(self, cmd):
+    def test_function(self):
         """Ensure the wrapped function still works as expected"""
-        command(cmd)
 
-        # TODO - This is not great, this self is not correct
-        assert cmd(self, "input") == "input"
+        @command
+        def cmd(foo):
+            return foo
 
-    def test_wrapper(self, cmd):
-        """Ensure the wrapper function works as expected"""
-        test_mock = Mock()
-        wrapped = command(cmd)
-
-        # TODO - This is not great, this self is not correct
-        assert wrapped(self, test_mock) == test_mock
+        assert cmd("input") == "input"
 
     def test_multiple(self, cmd):
         """Subsequent decorators should completely overwrite previous ones"""
@@ -259,28 +245,31 @@ class TestParameter(object):
     """
 
     def test_basic(self, param_definition, param):
-        wrapped = parameter(cmd, **param_definition)
+        @parameter(**param_definition)
+        def cmd(foo):
+            return foo
 
-        assert hasattr(wrapped, "parameters")
-        assert len(wrapped.parameters) == 1
-        assert_parameter_equal(wrapped.parameters[0], param)
+        assert hasattr(cmd, "parameters")
+        assert len(cmd.parameters) == 1
+        assert_parameter_equal(cmd.parameters[0], param)
 
-    def test_wrapper(self, cmd, param_definition):
-        test_mock = Mock()
-        wrapped = parameter(cmd, **param_definition)
+    def test_function(self, param_definition):
+        """Ensure the wrapped function still works as expected"""
 
-        assert wrapped(self, test_mock) == test_mock
+        @parameter(**param_definition)
+        def cmd(foo):
+            return foo
+
+        assert cmd("input") == "input"
 
 
 class TestParameters(object):
-    def test_wrapper(self, param_definition):
-        test_mock = Mock()
-
+    def test_function(self, param_definition):
         @parameters([param_definition])
         def cmd(foo):
             return foo
 
-        assert cmd(test_mock) == test_mock
+        assert cmd("input") == "input"
 
     def test_decorator_equivalence(self, param_definition):
         @parameter(**param_definition)
@@ -331,11 +320,8 @@ class TestParameters(object):
         "args",
         [
             ["string"],  # bad type
-            [lambda x: x],  # decorator might be applied to wrong thing
-            [
-                [{"key": "foo"}],
-                lambda x: x,
-            ],  # decorator might be applied to wrong thing
+            [lambda x: x],  # test decorator target
+            [[{"key": "foo"}], lambda x: x],  # test decorator target
         ],
     )
     def test_bad_args(self, args):
@@ -409,7 +395,7 @@ class TestInitializeCommand(object):
 
         cmd = _initialize_command(cmd)
 
-        assert cmd.name == "_cmd"
+        assert cmd.name == "cmd"
         assert cmd.description == "Docstring"
         assert len(cmd.parameters) == 1
 
@@ -430,7 +416,7 @@ class TestInitializeCommand(object):
 
 class TestMethodName(object):
     def test_name(self, cmd):
-        assert _method_name(cmd) == "_cmd"
+        assert _method_name(cmd) == "cmd"
 
 
 class TestMethodDocstring(object):

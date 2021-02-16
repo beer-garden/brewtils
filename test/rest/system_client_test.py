@@ -199,7 +199,11 @@ class TestLoadBgSystem(object):
         brewtils.plugin.CONFIG.version = "1.0.0"
         brewtils.plugin.CONFIG.instance_name = "foo"
 
-        client = SystemClient(system_name="not foo", version_constraint= "2.0.0", default_instance="not foo")
+        client = SystemClient(
+            system_name="not foo",
+            version_constraint="2.0.0",
+            default_instance="not foo",
+        )
 
         assert client._system_name != brewtils.plugin.CONFIG.name
         assert client._version_constraint != brewtils.plugin.CONFIG.version

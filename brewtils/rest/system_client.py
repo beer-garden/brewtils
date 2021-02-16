@@ -203,7 +203,12 @@ class SystemClient(object):
             )
             kwargs.setdefault("system_name", args[2])
 
-        system_kwargs = "system_name", "version_constraint", "default_instance", "system_namespace"
+        system_kwargs = (
+            "system_name",
+            "version_constraint",
+            "default_instance",
+            "system_namespace",
+        )
         provided_system_kwargs = False
         for arg in system_kwargs:
             if kwargs.get(arg, None):
@@ -219,17 +224,15 @@ class SystemClient(object):
             )
         else:
             self._system_name = brewtils.plugin.CONFIG.name or None
-            self._version_constraint = brewtils.plugin.CONFIG.version or 'latest'
-            self._default_instance = brewtils.plugin.CONFIG.instance_name or 'default'
+            self._version_constraint = brewtils.plugin.CONFIG.version or "latest"
+            self._default_instance = brewtils.plugin.CONFIG.instance_name or "default"
             self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
-
 
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
         self._max_delay = kwargs.get("max_delay", 30)
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
-
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
         # in that version. This logic is what was added in Python 3.5

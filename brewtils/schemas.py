@@ -214,6 +214,7 @@ class SystemSchema(BaseSchema):
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     namespace = fields.Str(allow_none=True)
+    garden = fields.Str(allow_none=True)
     local = fields.Bool(allow_none=True)
 
 
@@ -276,6 +277,7 @@ class RequestTemplateSchema(BaseSchema):
     system_version = fields.Str(allow_none=True)
     instance_name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
+    garden = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
     command_type = fields.Str(allow_none=True)
     parameters = fields.Dict(allow_none=True)
@@ -389,8 +391,8 @@ class RoleSchema(BaseSchema):
 
 class PermissionSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
-    access = fields.Str(allow_none=True)
-    is_local = fields.Boolean(allow_none=True)
+    access = fields.Str(allow_none=False)
+    garden = fields.Str(allow_none=True)
 
 
 class RefreshTokenSchema(BaseSchema):

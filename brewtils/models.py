@@ -525,6 +525,7 @@ class RequestTemplate(BaseModel):
         "comment",
         "metadata",
         "output_type",
+        "garden",
     ]
 
     def __init__(
@@ -539,6 +540,7 @@ class RequestTemplate(BaseModel):
         comment=None,
         metadata=None,
         output_type=None,
+        garden=None,
     ):
         self.system = system
         self.system_version = system_version
@@ -550,6 +552,7 @@ class RequestTemplate(BaseModel):
         self.comment = comment
         self.metadata = metadata or {}
         self.output_type = output_type
+        self.garden=garden
 
     def __str__(self):
         return self.command
@@ -557,13 +560,14 @@ class RequestTemplate(BaseModel):
     def __repr__(self):
         return (
             "<RequestTemplate: command=%s, system=%s, system_version=%s, "
-            "instance_name=%s, namespace=%s>"
+            "instance_name=%s, namespace=%s, garden=%s>"
             % (
                 self.command,
                 self.system,
                 self.system_version,
                 self.instance_name,
                 self.namespace,
+                self.garden,
             )
         )
 
@@ -590,6 +594,7 @@ class Request(RequestTemplate):
         comment=None,
         output=None,
         output_type=None,
+        garden=None,
         status=None,
         command_type=None,
         created_at=None,
@@ -610,6 +615,7 @@ class Request(RequestTemplate):
             comment=comment,
             metadata=metadata,
             output_type=output_type,
+            garden=garden,
         )
         self.id = id
         self.parent = parent
@@ -642,7 +648,7 @@ class Request(RequestTemplate):
     def __repr__(self):
         return (
             "<Request: command=%s, status=%s, system=%s, system_version=%s, "
-            "instance_name=%s, namespace=%s>"
+            "instance_name=%s, namespace=%s, garden=%s>"
             % (
                 self.command,
                 self.status,
@@ -650,6 +656,7 @@ class Request(RequestTemplate):
                 self.system_version,
                 self.instance_name,
                 self.namespace,
+                self.garden,
             )
         )
 
@@ -687,6 +694,7 @@ class System(BaseModel):
         metadata=None,
         namespace=None,
         local=None,
+        garden=None,
     ):
         self.name = name
         self.description = description
@@ -700,15 +708,17 @@ class System(BaseModel):
         self.metadata = metadata or {}
         self.namespace = namespace
         self.local = local
+        self.garden = garden
 
     def __str__(self):
-        return "%s:%s-%s" % (self.namespace, self.name, self.version)
+        return "%s:%s:%s-%s" % (self.garden, self.namespace, self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s, namespace=%s>" % (
+        return "<System: name=%s, version=%s, namespace=%s, garden=%s>" % (
             self.name,
             self.version,
             self.namespace,
+            self.garden,
         )
 
     @property
@@ -1080,26 +1090,23 @@ class Permission(BaseModel):
 
     ACCESSES = ["READ", "OPERATOR", "ADMIN"]
 
-    def __init__(self, namespace=None, access=None, is_local=None):
+    def __init__(self, namespace=None, access=None, garden=None):
         self.namespace = namespace
         self.access = access
-        self.is_local = is_local
+        self.garden = garden
 
     def __str__(self):
-        if self.is_local:
-            return "LOCAL: %s" % self.access
-        else:
-            return "%s: %s" % (self.namespace, self.access)
+        return "(%s, %s): %s" % (self.namespace, self.garden, self.access)
 
     def __repr__(self):
-        return "<Permission: namespace=%s, access=%s, is_local=%s>" % (
+        return "<Permission: namespace=%s, garden=%s, access=%s>" % (
             self.namespace,
             self.access,
-            self.is_local,
+            self.garden,
         )
 
     def __hash__(self):
-        return hash((self.namespace, self.access, self.is_local))
+        return hash((self.namespace, self.access, self.garden))
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):
@@ -1107,7 +1114,7 @@ class Permission(BaseModel):
         return (
             self.namespace == other.namespace
             and self.access == other.access
-            and self.is_local == other.is_local
+            and self.garden == other.garden
         )
 
 

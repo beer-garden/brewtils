@@ -37,10 +37,9 @@ __all__ = [
 def system(cls=None, bg_name=None, bg_version=None):
     """Class decorator that marks a class as a beer-garden System
 
-    This doesn't really do anything anymore, and is now pretty much deprecated. This
-    should really be named "client," but after consideration it doesn't really need to
-    exist at all - the Client is whatever you tell the Plugin it is, no need for
-    a special decorator.
+    This should really be named "client," but that will be another PR. Also, as-is this
+    doesn't really need to exist at all - the Client is whatever you tell the Plugin it
+    is, no need for a special decorator.
 
     For historical purposes - the functionality of the ``parse_client`` function was
     previously in this decorator.
@@ -886,13 +885,20 @@ def _generate_nested_params(parameter_list):
     # type: (Iterable[Parameter, object]) -> List[Parameter]
     """Generate nested parameters from a list of Parameters or a Model object
 
-    This exists for backwards compatibility with the "old
+    This exists for backwards compatibility with the old way of specifying Models.
+    Previously, models were defined by creating a class with a ``parameters`` class
+    attribute. This required constructing each parameter manually, without using the
+    ``@parameter`` decorator.
 
-    This function will take a list of Parameters and will return a new list of "real"
-    Parameters.
+    This function takes either a list of Parameters or a class object with a
+    ``parameters`` attribute. It will return a list of initialized parameters. See the
+    ``_initialize_parameter`` function for information on what that entails.
 
-    The main thing this does is ensure the choices specification is correct for all
-    Parameters in the tree.
+    Args:
+        parameter_list: List of parameters or object with a ``parameters`` attritube
+
+    Returns:
+        List of initialized parameters
     """
     initialized_params = []
 

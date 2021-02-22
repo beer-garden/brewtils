@@ -34,7 +34,12 @@ __all__ = [
 ]
 
 
-def system(cls=None, bg_name=None, bg_version=None):
+def system(
+    cls=None,  # type: Type
+    bg_name=None,  # type: str
+    bg_version=None,  # type: str
+):
+    # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden System
 
     This should really be named "client," but that will be another PR. Also, as-is this
@@ -63,7 +68,7 @@ def system(cls=None, bg_name=None, bg_version=None):
 
     """
     if cls is None:
-        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
+        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)  # noqa
 
     # Assign these here so linters don't complain
     cls._bg_name = bg_name

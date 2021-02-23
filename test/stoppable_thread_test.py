@@ -23,6 +23,11 @@ class TestStoppableThread(object):
         t = StoppableThread(logger_name="fake")
         assert t.logger.name == "fake"
 
+    def test_init_logger_logger_and_name(self):
+        fake_logger = Mock()
+        t = StoppableThread(logger=fake_logger, logger_name="fake")
+        assert t.logger == fake_logger
+
     def test_stop(self, thread):
         thread.stop()
         assert thread._stop_event.isSet() is True

@@ -247,6 +247,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "display_name": "non-offensive",
         "metadata": {"some": "stuff"},
         "namespace": "ns",
+        "garden": "default",
         "local": True,
     }
 
@@ -337,6 +338,7 @@ def request_template_dict():
         "system_version": "1.0.0",
         "instance_name": "default",
         "namespace": "ns",
+        "garden": "default",
         "command": "speak",
         "command_type": "ACTION",
         "parameters": {"message": "hey!"},
@@ -360,6 +362,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "system_version": "1.0.0",
         "instance_name": "default",
         "namespace": "ns",
+        "garden": "default",
         "command": "speak",
         "id": "58542eb571afd47ead90d25e",
         "parent": parent_request_dict,

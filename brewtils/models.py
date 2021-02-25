@@ -711,7 +711,7 @@ class System(BaseModel):
         self.garden = garden
 
     def __str__(self):
-        return "%s:%s:%s-%s" % (self.garden, self.namespace, self.name, self.version)
+        return "%s:%s-%s" % (self.namespace, self.name, self.version)
 
     def __repr__(self):
         return "<System: name=%s, version=%s, namespace=%s, garden=%s>" % (
@@ -1101,8 +1101,8 @@ class Permission(BaseModel):
     def __repr__(self):
         return "<Permission: namespace=%s, garden=%s, access=%s>" % (
             self.namespace,
-            self.access,
             self.garden,
+            self.access,
         )
 
     def __hash__(self):

@@ -222,15 +222,10 @@ class TestLoadBgSystem(object):
         assert client._version_constraint == "latest"
         assert client._default_instance == "default"
 
-<<<<<<< HEAD
-    def test_system_name_kwargs_matching(self):
-        """Behavior should be the same regardless of whether the system name comes from the global config or kwarg"""
-
-=======
     def test_system_name_kwarg_matching(self):
         """Behavior should be the same regardless of whether the system name comes
         from the global config or a kwarg"""
->>>>>>> ce328953e9ab7634cd2392e73831811c462395aa
+
         brewtils.plugin.CONFIG.name = "foo"
         brewtils.plugin.CONFIG.version = "1.0.0"
         brewtils.plugin.CONFIG.instance_name = "instance"

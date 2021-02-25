@@ -214,19 +214,49 @@ class SystemClient(object):
             if kwargs.get(arg, None):
                 provided_system_kwargs = True
                 break
+        map_local = False
 
-        if provided_system_kwargs:
+        if not provided_system_kwargs:
+            map_local = True
+        else:
+            if kwargs.get("system_namespace") == brewtils.plugin.CONFIG.namespace:
+                if (
+                    kwargs.get("system_name") is None
+                    and kwargs.get("version_constraint") is None
+                    and kwargs.get("default_instance") is None
+                ):
+                    map_local = True
+            elif kwargs.get("system_name") == brewtils.plugin.CONFIG.name:
+                if (
+                    kwargs.get("version_constraint") is None
+                    and kwargs.get("default_instance") is None
+                    and (
+                        kwargs.get("system_namespace")
+                        == brewtils.plugin.CONFIG.namespace
+                        or kwargs.get("system_namespace") is None
+                    )
+                ):
+                    map_local = True
+            elif kwargs.get("version_constraint") == brewtils.plugin.CONFIG.version:
+                if (
+                    kwargs.get("system_namespace") == brewtils.plugin.CONFIG.namespace
+                    and kwargs.get("system_name") == brewtils.plugin.CONFIG.name
+                    and kwargs.get("default_instance") is None
+                ):
+                    map_local = True
+
+        if map_local:
+            self._system_name = brewtils.plugin.CONFIG.name or None
+            self._version_constraint = brewtils.plugin.CONFIG.version or None
+            self._default_instance = brewtils.plugin.CONFIG.instance_name or None
+            self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
+        else:
             self._system_name = kwargs.get("system_name")
             self._version_constraint = kwargs.get("version_constraint", "latest")
             self._default_instance = kwargs.get("default_instance", "default")
             self._system_namespace = kwargs.get(
                 "system_namespace", brewtils.plugin.CONFIG.namespace or ""
             )
-        else:
-            self._system_name = brewtils.plugin.CONFIG.name or None
-            self._version_constraint = brewtils.plugin.CONFIG.version or "latest"
-            self._default_instance = brewtils.plugin.CONFIG.instance_name or "default"
-            self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
 
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)

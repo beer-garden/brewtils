@@ -9,10 +9,20 @@ class StoppableThread(Thread):
     regularly for the stopped() condition."""
 
     def __init__(self, **kwargs):
-        self.logger = kwargs.pop("logger", logging.getLogger(__name__))
         self._stop_event = Event()
 
-        Thread.__init__(self, **kwargs)
+        if "logger" in kwargs:
+            self.logger = kwargs["logger"]
+        elif "logger_name" in kwargs:
+            self.logger = logging.getLogger(kwargs["logger_name"])
+        else:
+            self.logger = logging.getLogger(__name__)
+
+        filtered_kwargs = {
+            k: v for k, v in kwargs.items() if k not in ("logger", "logger_name")
+        }
+
+        Thread.__init__(self, **filtered_kwargs)
 
     def stop(self):
         """Sets the stop event"""

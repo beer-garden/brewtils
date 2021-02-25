@@ -415,11 +415,15 @@ class File(BaseModel):
         chunks=None,
         chunk_size=None,
         owner=None,
+        job=None,
+        request=None,
     ):
         self.id = id
         self.owner_id = owner_id
         self.owner_type = owner_type
         self.owner = owner
+        self.job = job
+        self.request = request
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
@@ -600,6 +604,7 @@ class Request(RequestTemplate):
         created_at=None,
         error_class=None,
         metadata=None,
+        hidden=None,
         updated_at=None,
         has_parent=None,
         requester=None,
@@ -622,6 +627,7 @@ class Request(RequestTemplate):
         self.children = children
         self.output = output
         self._status = status
+        self.hidden = hidden
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class

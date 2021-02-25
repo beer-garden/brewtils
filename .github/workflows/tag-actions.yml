@@ -74,11 +74,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Build Images
+      - name: Build and publish
         run: make publish-docker VERSION=${GITHUB_REF#refs/tags/}
 
-      - name: Run Dep Docs
-        run: make docs-deps
-
-      - name: Build Doc Images
-        run: make publish-docker-docs VERSION=${GITHUB_REF#refs/tags/}
+      - name: Build and publish docs
+        run: make docs-deps publish-docker-docs VERSION=${GITHUB_REF#refs/tags/}

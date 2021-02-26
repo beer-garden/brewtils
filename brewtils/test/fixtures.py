@@ -495,18 +495,6 @@ def bg_queue(queue_dict):
     return Queue(**queue_dict)
 
 
-# @pytest.fixture
-# def operation_dict(principal_dict):
-#     return {"operation_type": "REQUEST_READ", "principal": principal_dict}
-#
-#
-# @pytest.fixture
-# def bg_operation(bg_principal):
-#     dict_copy = copy.deepcopy(operation_dict)
-#     dict_copy["principal"] = bg_principal
-#     return Operation(**dict_copy)
-
-
 @pytest.fixture
 def principal_dict(role_dict, permission_dict):
     return {
@@ -738,7 +726,7 @@ def operation_dict(ts_epoch, request_dict, principal_dict):
         "target_garden_name": "child",
         "source_garden_name": "parent",
         "operation_type": "REQUEST_CREATE",
-        "principal": principal_dict
+        "principal": principal_dict,
     }
 
 

@@ -116,7 +116,7 @@ class TestParse(object):
             (
                 brewtils.models.Operation,
                 lazy_fixture("operation_dict"),
-                assert_principal_equal,
+                assert_operation_equal,
                 lazy_fixture("bg_operation"),
             ),
             (
@@ -182,6 +182,9 @@ class TestParse(object):
         ],
     )
     def test_single(self, model, data, assertion, expected):
+        if model == brewtils.models.Operation:
+            test = SchemaParser.parse(data, model, from_string=False)
+            print()
         assertion(SchemaParser.parse(data, model, from_string=False), expected)
 
     def test_single_from_string(self):

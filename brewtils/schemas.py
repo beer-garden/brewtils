@@ -486,6 +486,8 @@ class OperationSchema(BaseSchema):
     source_garden_name = fields.Str(allow_none=True)
     operation_type = fields.Str(allow_none=True)
 
+    principal = fields.Nested("PrincipalSchema", allow_none=True)
+
 
 class RunnerSchema(BaseSchema):
     id = fields.Str(allow_none=True)

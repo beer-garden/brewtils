@@ -305,7 +305,7 @@ def parent_request_dict(ts_epoch):
         "system_version": "1.0.0",
         "instance_name": "default",
         "namespace": "ns",
-        "garden" : "default",
+        "garden": "default",
         "command": "say",
         "id": "58542eb571afd47ead90d25d",
         "parent": None,

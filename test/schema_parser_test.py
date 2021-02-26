@@ -184,7 +184,7 @@ class TestParse(object):
     def test_single(self, model, data, assertion, expected):
         if model == brewtils.models.Operation:
             test = SchemaParser.parse(data, model, from_string=False)
-            print()
+            print ()
         assertion(SchemaParser.parse(data, model, from_string=False), expected)
 
     def test_single_from_string(self):

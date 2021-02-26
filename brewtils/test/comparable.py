@@ -343,7 +343,8 @@ def assert_operation_equal(obj1, obj2, do_raise=False):
         obj1,
         obj2,
         expected_type=Operation,
-        deep_fields={"model": partial(model_compare, do_raise=True)},
+        deep_fields={"model": partial(model_compare, do_raise=True),
+                     "principal": partial(model_compare, do_raise=True)},
         do_raise=do_raise,
     )
 

@@ -269,6 +269,7 @@ def child_request_dict(ts_epoch):
         "system_version": "1.0.0",
         "instance_name": "default",
         "namespace": "ns",
+        "garden": "default",
         "command": "say",
         "id": "58542eb571afd47ead90d25f",
         "parameters": {},
@@ -304,6 +305,7 @@ def parent_request_dict(ts_epoch):
         "system_version": "1.0.0",
         "instance_name": "default",
         "namespace": "ns",
+        "garden" : "default",
         "command": "say",
         "id": "58542eb571afd47ead90d25d",
         "parent": None,
@@ -493,16 +495,16 @@ def bg_queue(queue_dict):
     return Queue(**queue_dict)
 
 
-@pytest.fixture
-def operation_dict(principal_dict):
-    return {"operation_type": "REQUEST_READ", "principal": principal_dict}
-
-
-@pytest.fixture
-def bg_operation(bg_principal):
-    dict_copy = copy.deepcopy(operation_dict)
-    dict_copy["principal"] = bg_principal
-    return Operation(**dict_copy)
+# @pytest.fixture
+# def operation_dict(principal_dict):
+#     return {"operation_type": "REQUEST_READ", "principal": principal_dict}
+#
+#
+# @pytest.fixture
+# def bg_operation(bg_principal):
+#     dict_copy = copy.deepcopy(operation_dict)
+#     dict_copy["principal"] = bg_principal
+#     return Operation(**dict_copy)
 
 
 @pytest.fixture
@@ -527,7 +529,7 @@ def bg_principal(principal_dict, bg_role, bg_permission):
 
 @pytest.fixture
 def permission_dict():
-    return {"namespace": "default", "access": "ADMIN", "is_local": False}
+    return {"namespace": "default", "access": "ADMIN", "garden": "default"}
 
 
 @pytest.fixture
@@ -725,7 +727,7 @@ def bg_garden(garden_dict, bg_system):
 
 
 @pytest.fixture
-def operation_dict(ts_epoch, request_dict):
+def operation_dict(ts_epoch, request_dict, principal_dict):
     """An operation as a dictionary."""
 
     return {
@@ -736,14 +738,16 @@ def operation_dict(ts_epoch, request_dict):
         "target_garden_name": "child",
         "source_garden_name": "parent",
         "operation_type": "REQUEST_CREATE",
+        "principal": principal_dict
     }
 
 
 @pytest.fixture
-def bg_operation(operation_dict, bg_request):
+def bg_operation(operation_dict, bg_request, bg_principal):
     """An operation as a model."""
     dict_copy = copy.deepcopy(operation_dict)
     dict_copy["model"] = bg_request
+    dict_copy["principal"] = bg_principal
     return Operation(**dict_copy)
 
 

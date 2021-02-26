@@ -114,10 +114,10 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
-                    brewtils.models.Operation,
-                    lazy_fixture("operation_dict"),
-                    assert_principal_equal,
-                    lazy_fixture("bg_operation"),
+                brewtils.models.Operation,
+                lazy_fixture("operation_dict"),
+                assert_principal_equal,
+                lazy_fixture("bg_operation"),
             ),
             (
                 brewtils.models.Principal,

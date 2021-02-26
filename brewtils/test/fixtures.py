@@ -495,10 +495,7 @@ def bg_queue(queue_dict):
 
 @pytest.fixture
 def operation_dict(principal_dict):
-    return {
-        "operation_type": "REQUEST_READ",
-        "principal": principal_dict,
-    }
+    return {"operation_type": "REQUEST_READ", "principal": principal_dict}
 
 
 @pytest.fixture

@@ -556,7 +556,7 @@ class RequestTemplate(BaseModel):
         self.comment = comment
         self.metadata = metadata or {}
         self.output_type = output_type
-        self.garden=garden
+        self.garden = garden
 
     def __str__(self):
         return self.command

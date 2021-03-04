@@ -1047,9 +1047,13 @@ class Principal(BaseModel):
         self.id = id
         self.username = username
         self.roles = roles
+
         if permissions:
             self.permissions = permissions
         else:
+            self.permissions = list()
+
+        if self.roles:
             self.permissions = list()
             for role in self.roles:
                 self.permissions = self.permissions + role.permissions

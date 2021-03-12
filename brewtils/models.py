@@ -32,6 +32,7 @@ __all__ = [
     "CronTrigger",
     "IntervalTrigger",
     "FileTrigger",
+    "PrincipalMapping",
     "Garden",
     "Operation",
 ]
@@ -1334,6 +1335,36 @@ class FileTrigger(BaseModel):
         return kwargs
 
 
+class PrincipalMapping(BaseModel):
+    schema = "PrincipalMappingSchema"
+
+    def __init__(
+        self,
+        enabled: bool = False,
+        default_local_principal: str = None,
+        default_remote_principal: str = None,
+        principal_mappers: dict = None,
+    ):
+        self.enabled = enabled
+        self.default_local_principal = default_local_principal
+        self.default_remote_principal = default_remote_principal
+        self.principal_mappers = principal_mappers
+
+    def __str__(self):
+        return "%s:%s" % (self.default_local_principal, self.default_remote_principal)
+
+    def __repr__(self):
+        return (
+            "<PrincipalMapping: enabled=%s, default_local_principal=%s, default_remote_principal=%s, principal_mapping=%s>"
+            % (
+                self.enabled,
+                self.default_local_principal,
+                self.default_remote_principal,
+                self.principal_mappers,
+            )
+        )
+
+
 class Garden(BaseModel):
     schema = "GardenSchema"
 
@@ -1358,6 +1389,7 @@ class Garden(BaseModel):
         systems=None,
         connection_type=None,
         connection_params=None,
+        principal_mapping=None,
     ):
         self.id = id
         self.name = name
@@ -1368,6 +1400,7 @@ class Garden(BaseModel):
 
         self.connection_type = connection_type
         self.connection_params = connection_params
+        self.principal_mapping = principal_mapping
 
     def __str__(self):
         return "%s" % self.name

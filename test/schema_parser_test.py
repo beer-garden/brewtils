@@ -29,6 +29,7 @@ from brewtils.test.comparable import (
     assert_role_equal,
     assert_runner_equal,
     assert_system_equal,
+    assert_principal_mapping_equal,
 )
 
 
@@ -155,6 +156,12 @@ class TestParse(object):
                 lazy_fixture("bg_garden"),
             ),
             (
+                brewtils.models.PrincipalMapping,
+                lazy_fixture("principal_mapping_dict"),
+                assert_principal_mapping_equal,
+                lazy_fixture("bg_principal_mapping"),
+            ),
+            (
                 brewtils.models.Operation,
                 lazy_fixture("operation_dict"),
                 assert_operation_equal,
@@ -269,6 +276,12 @@ class TestParse(object):
                 lazy_fixture("garden_dict"),
                 assert_garden_equal,
                 lazy_fixture("bg_garden"),
+            ),
+            (
+                "parse_principal_mapping",
+                lazy_fixture("principal_mapping_dict"),
+                assert_principal_mapping_equal,
+                lazy_fixture("bg_principal_mapping"),
             ),
             (
                 "parse_operation",
@@ -386,6 +399,12 @@ class TestParse(object):
                 lazy_fixture("bg_garden"),
             ),
             (
+                brewtils.models.PrincipalMapping,
+                lazy_fixture("principal_mapping_dict"),
+                assert_principal_mapping_equal,
+                lazy_fixture("bg_principal_mapping"),
+            ),
+            (
                 brewtils.models.Operation,
                 lazy_fixture("operation_dict"),
                 assert_operation_equal,
@@ -494,6 +513,12 @@ class TestParse(object):
                 lazy_fixture("bg_garden"),
             ),
             (
+                "parse_principal_mapping",
+                lazy_fixture("principal_mapping_dict"),
+                assert_principal_mapping_equal,
+                lazy_fixture("bg_principal_mapping"),
+            ),
+            (
                 "parse_operation",
                 lazy_fixture("operation_dict"),
                 assert_operation_equal,
@@ -554,6 +579,10 @@ class TestSerialize(object):
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
             (lazy_fixture("bg_garden"), lazy_fixture("garden_dict")),
+            (
+                lazy_fixture("bg_principal_mapping"),
+                lazy_fixture("principal_mapping_dict"),
+            ),
             (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
             (lazy_fixture("bg_runner"), lazy_fixture("runner_dict")),
         ],
@@ -624,6 +653,11 @@ class TestSerialize(object):
                 lazy_fixture("garden_dict"),
             ),
             (
+                "serialize_principal_mapping",
+                lazy_fixture("bg_principal_mapping"),
+                lazy_fixture("principal_mapping_dict"),
+            ),
+            (
                 "serialize_operation",
                 lazy_fixture("bg_operation"),
                 lazy_fixture("operation_dict"),
@@ -657,6 +691,10 @@ class TestSerialize(object):
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
             (lazy_fixture("bg_garden"), lazy_fixture("garden_dict")),
+            (
+                lazy_fixture("bg_principal_mapping"),
+                lazy_fixture("principal_mapping_dict"),
+            ),
             (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
             (lazy_fixture("bg_runner"), lazy_fixture("runner_dict")),
         ],
@@ -732,6 +770,11 @@ class TestRoundTrip(object):
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_interval_job")),
             (brewtils.models.Garden, assert_garden_equal, lazy_fixture("bg_garden")),
             (
+                brewtils.models.PrincipalMapping,
+                assert_principal_mapping_equal,
+                lazy_fixture("bg_principal_mapping"),
+            ),
+            (
                 brewtils.models.Operation,
                 assert_operation_equal,
                 lazy_fixture("bg_operation"),
@@ -764,6 +807,7 @@ class TestRoundTrip(object):
             (brewtils.models.Job, lazy_fixture("cron_job_dict")),
             (brewtils.models.Job, lazy_fixture("interval_job_dict")),
             (brewtils.models.Garden, lazy_fixture("garden_dict")),
+            (brewtils.models.PrincipalMapping, lazy_fixture("principal_mapping_dict")),
             (brewtils.models.Operation, lazy_fixture("operation_dict")),
             (brewtils.models.Runner, lazy_fixture("runner_dict")),
         ],

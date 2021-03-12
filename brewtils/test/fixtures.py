@@ -28,6 +28,7 @@ from brewtils.models import (
     Role,
     Runner,
     System,
+    PrincipalMapping,
 )
 
 
@@ -672,7 +673,26 @@ def bg_request_file(request_file_dict):
 
 
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict):
+def principal_mapping_dict():
+    """ A Principal Mapping as a dictonary"""
+
+    return {
+        "enabled": True,
+        "default_local_principal": "local",
+        "default_remote_principal": "remote",
+        "principal_mappers": {"local1": "remote1"},
+    }
+
+
+@pytest.fixture
+def bg_principal_mapping(principal_mapping_dict):
+    """An operation as a model."""
+    dict_copy = copy.deepcopy(principal_mapping_dict)
+    return PrincipalMapping(**dict_copy)
+
+
+@pytest.fixture
+def garden_dict(ts_epoch, system_dict, principal_mapping_dict):
     """A garden as a dictionary."""
 
     return {
@@ -684,14 +704,16 @@ def garden_dict(ts_epoch, system_dict):
         "systems": [system_dict],
         "connection_type": "http",
         "connection_params": {},
+        "principal_mapping": principal_mapping_dict,
     }
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system):
+def bg_garden(garden_dict, bg_system, bg_principal_mapping):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
+    dict_copy["principal_mapping"] = bg_principal_mapping
     return Garden(**dict_copy)
 
 

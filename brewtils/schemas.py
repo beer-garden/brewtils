@@ -350,7 +350,6 @@ class LoggingConfigSchema(BaseSchema):
 
 
 class EventSchema(BaseSchema):
-
     name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     garden = fields.Str(allow_none=True)
@@ -438,6 +437,13 @@ class FileTriggerSchema(BaseSchema):
     callbacks = fields.Dict(fields.Bool(), allow_none=True)
 
 
+class PrincipalMappingSchema(BaseSchema):
+    enabled = fields.Bool(allow_none=True)
+    default_local_principal = fields.Str(allow_none=True)
+    default_remote_principal = fields.Str(allow_none=True)
+    principal_mappers = fields.Dict(allow_none=True)
+
+
 class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
@@ -447,6 +453,7 @@ class GardenSchema(BaseSchema):
     connection_params = fields.Dict(allow_none=True)
     namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
+    principal_mapping = fields.Nested("PrincipalMappingSchema", allow_none=True)
 
 
 class JobSchema(BaseSchema):
@@ -498,6 +505,7 @@ model_schema_map.update(
         "DateTrigger": DateTriggerSchema,
         "Event": EventSchema,
         "FileTrigger": FileTriggerSchema,
+        "PrincipalMapping": PrincipalMappingSchema,
         "Garden": GardenSchema,
         "Instance": InstanceSchema,
         "IntervalTrigger": IntervalTriggerSchema,

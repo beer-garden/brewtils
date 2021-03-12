@@ -34,6 +34,7 @@ from brewtils.models import (
     Role,
     Runner,
     System,
+    PrincipalMapping,
 )
 
 __all__ = [
@@ -55,6 +56,7 @@ __all__ = [
     "assert_request_file_equal",
     "assert_operation_equal",
     "assert_runner_equal",
+    "assert_principal_mapping_equal",
 ]
 
 
@@ -191,7 +193,6 @@ assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
-
     return _assert_wrapper(
         obj1,
         obj2,
@@ -215,7 +216,6 @@ def assert_parameter_equal(obj1, obj2, do_raise=False):
 
 
 def assert_event_equal(obj1, obj2, do_raise=False):
-
     _assert(obj1.payload_type == obj2.payload_type, "Payload types were not equal")
 
     comparison_func_name = "_assert_wrapper"
@@ -328,7 +328,6 @@ def assert_job_equal(obj1, obj2, do_raise=False):
 
 
 def assert_operation_equal(obj1, obj2, do_raise=False):
-
     _assert(obj1.model_type == obj2.model_type, "Model types were not equal")
 
     comparison_func_name = "_assert_wrapper"
@@ -351,6 +350,15 @@ def assert_garden_equal(obj1, obj2, do_raise=False):
         obj1,
         obj2,
         expected_type=Garden,
-        deep_fields={"systems": partial(assert_system_equal, do_raise=True)},
+        deep_fields={
+            "systems": partial(assert_system_equal, do_raise=True),
+            "principal_mapping": partial(assert_principal_mapping_equal, do_raise=True),
+        },
         do_raise=do_raise,
+    )
+
+
+def assert_principal_mapping_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1, obj2, expected_type=PrincipalMapping, do_raise=do_raise
     )

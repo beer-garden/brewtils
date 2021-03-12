@@ -27,6 +27,7 @@ class SchemaParser(object):
         "DateTriggerSchema": brewtils.models.DateTrigger,
         "EventSchema": brewtils.models.Event,
         "FileTriggerSchema": brewtils.models.FileTrigger,
+        "PrincipalMappingSchema": brewtils.models.PrincipalMapping,
         "GardenSchema": brewtils.models.Garden,
         "InstanceSchema": brewtils.models.Instance,
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
@@ -253,6 +254,22 @@ class SchemaParser(object):
 
         """
         return cls.parse(job, brewtils.models.Job, from_string=from_string, **kwargs)
+
+    @classmethod
+    def parse_principal_mapping(cls, PrincipalMapping, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a garden model object
+
+        :param PrincipalMapping: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Garden object
+        """
+        return cls.parse(
+            PrincipalMapping,
+            brewtils.models.PrincipalMapping,
+            from_string=from_string,
+            **kwargs
+        )
 
     @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):
@@ -555,6 +572,22 @@ class SchemaParser(object):
         """
         return cls.serialize(
             job, to_string=to_string, schema_name=brewtils.models.Job.schema, **kwargs
+        )
+
+    @classmethod
+    def serialize_principal_mapping(cls, principal_mapping, to_string=True, **kwargs):
+        """Convert an garden model into serialized form
+
+        :param principal_mapping: The instance object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation of garden
+        """
+        return cls.serialize(
+            principal_mapping,
+            to_string=to_string,
+            schema_name=brewtils.models.PrincipalMapping.schema,
+            **kwargs
         )
 
     @classmethod

@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ '2.7', '3.4.4', '3.5', '3.6', '3.7', '3.8']
+        python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8','3.9']
         pika-version: ['0.13.1', '1.1.0']
         os: ['ubuntu-latest']
         exclude:
@@ -47,7 +47,7 @@ jobs:
             pika-version: '0.13.1'
           - python-version: '3.5'
             pika-version: '0.13.1'
-          - python-version: '3.4.4'
+          - python-version: '3.4'
             pika-version: '0.13.1'
     name: PyTests OS ${{ matrix.os }} - Python ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
     steps:

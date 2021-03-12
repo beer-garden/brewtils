@@ -39,7 +39,7 @@ jobs:
       matrix:
         python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8','3.9']
         pika-version: ['0.13.1', '1.1.0']
-        os: ['ubuntu-latest']
+        os: ['ubuntu-16.04']
         exclude:
           - python-version: '3.7'
             pika-version: '0.13.1'

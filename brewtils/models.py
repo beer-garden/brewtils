@@ -1355,8 +1355,8 @@ class PrincipalMapping(BaseModel):
 
     def __repr__(self):
         return (
-            "<PrincipalMapping: enabled=%s, default_local_principal=%s, default_remote_principal=%s, "
-            "principal_mapping=%s> "
+            "<PrincipalMapping: enabled=%s, default_local_principal=%s, "
+            "default_remote_principal=%s, principal_mapping=%s>"
             % (
                 self.enabled,
                 self.default_local_principal,

@@ -124,11 +124,13 @@ class TestOverall(object):
 
         param_x = cmds[0].get_parameter_by_key("x")
         assert param_x.key == "x"
+        assert param_x.type == "Any"
         assert param_x.default is None
         assert param_x.optional is False
 
         param_y = cmds[0].get_parameter_by_key("y")
         assert param_y.key == "y"
+        assert param_y.type == "Any"
         assert param_y.default == "some_default"
         assert param_y.optional is True
 

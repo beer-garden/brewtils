@@ -5,12 +5,12 @@ import inspect
 import json
 import os
 import sys
-import types
 from io import open
+from types import MethodType
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import requests
 import six
-import wrapt
 
 try:
     from lark import ParseError
@@ -22,9 +22,9 @@ from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Choices
 
 if sys.version_info.major == 2:
-    from funcsigs import signature, Parameter as InspectParameter
+    from funcsigs import signature, Parameter as InspectParameter  # noqa
 else:
-    from inspect import signature, Parameter as InspectParameter
+    from inspect import signature, Parameter as InspectParameter  # noqa
 
 __all__ = [
     "command",
@@ -33,18 +33,26 @@ __all__ = [
     "system",
 ]
 
-# The wrapt module has a cool feature where you can disable wrapping a decorated function,
-# instead just using the original function. This is pretty much exactly what we want - we
-# aren't using decorators for their 'real' purpose of wrapping a function, we just want to add
-# some metadata to the function object. So we'll disable the wrapping normally, but we need to
-# test that enabling the wrapping would work.
-_wrap_functions = False
 
-
-def system(cls=None, bg_name=None, bg_version=None):
+def system(
+    cls=None,  # type: Type
+    bg_name=None,  # type: str
+    bg_version=None,  # type: str
+):
+    # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden System
 
-    Creates some properties on the class:
+    This should really be named "client," but that will be another PR. Also, as-is this
+    doesn't really need to exist at all - the Client is whatever you tell the Plugin it
+    is, no need for a special decorator.
+
+    For historical purposes - the functionality of the ``parse_client`` function was
+    previously in this decorator.
+
+    This does creates some attributes on the class for back-compatibility reasons (and
+    to stop linters from complaining). But these are just placeholders until the actual
+    values are determined when the Plugin client is set:
+
       * ``_bg_name``: an optional system name
       * ``_bg_version``: an optional system version
       * ``_bg_commands``: holds all registered commands
@@ -60,39 +68,30 @@ def system(cls=None, bg_name=None, bg_version=None):
 
     """
     if cls is None:
-        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)
+        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)  # noqa
 
-    import brewtils.plugin
-
-    commands = []
-    for method_name in dir(cls):
-        method = getattr(cls, method_name)
-        method_command = getattr(method, "_command", None)
-        if method_command:
-            commands.append(method_command)
-
+    # Assign these here so linters don't complain
     cls._bg_name = bg_name
     cls._bg_version = bg_version
-    cls._bg_commands = commands
-    cls._current_request = property(
-        lambda self: brewtils.plugin.request_context.current_request
-    )
+    cls._bg_commands = []
+    cls._current_request = None
 
     return cls
 
 
 def command(
-    _wrapped=None,
-    command_type="ACTION",
-    output_type="STRING",
-    hidden=False,
-    schema=None,
-    form=None,
-    template=None,
-    icon_name=None,
-    description=None,
+    _wrapped=None,  # type: Union[Callable, MethodType]
+    description=None,  # type: str
+    parameters=None,  # type: List[Parameter]
+    command_type="ACTION",  # type: str
+    output_type="STRING",  # type: str
+    schema=None,  # type: Union[dict, str]
+    form=None,  # type: Union[dict, list, str]
+    template=None,  # type: str
+    icon_name=None,  # type: str
+    hidden=False,  # type: bool
 ):
-    """Decorator that marks a function as a beer-garden command
+    """Decorator for specifying Command details
 
     For example:
 
@@ -105,14 +104,19 @@ def command(
     Args:
         _wrapped: The function to decorate. This is handled as a positional argument and
             shouldn't be explicitly set.
+        description: The command description. If not given the first line of the method
+            docstring will be used.
+        parameters: A list of Command parameters. It's recommended to use @parameter
+            decorators to declare Parameters instead of declaring them here, but it is
+            allowed. Any Parameters given here will be merged with Parameters sourced
+            from decorators and inferred from the method signature.
         command_type: The command type. Valid options are Command.COMMAND_TYPES.
         output_type: The output type. Valid options are Command.OUTPUT_TYPES.
         schema: A custom schema definition.
         form: A custom form definition.
         template: A custom template definition.
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
-        hidden: Status whether command is visible on the user interface.
-        description: The command description. Will override the function's docstring.
+        hidden: Flag controlling whether the command is visible on the user interface.
 
     Returns:
         The decorated function
@@ -120,66 +124,59 @@ def command(
     if _wrapped is None:
         return functools.partial(
             command,
+            description=description,
+            parameters=parameters,
             command_type=command_type,
             output_type=output_type,
             schema=schema,
             form=form,
-            hidden=hidden,
             template=template,
             icon_name=icon_name,
-            description=description,
+            hidden=hidden,
         )
 
-    generated_command = _generate_command_from_function(_wrapped)
-    generated_command.command_type = command_type
-    generated_command.output_type = output_type
-    generated_command.hidden = hidden
-    generated_command.icon_name = icon_name
-
-    if description:
-        generated_command.description = description
-
-    resolved_mod = _resolve_display_modifiers(
-        _wrapped, generated_command.name, schema=schema, form=form, template=template
+    new_command = Command(
+        description=description,
+        parameters=parameters,
+        command_type=command_type,
+        output_type=output_type,
+        schema=schema,
+        form=form,
+        template=template,
+        icon_name=icon_name,
+        hidden=hidden,
     )
-    generated_command.schema = resolved_mod["schema"]
-    generated_command.form = resolved_mod["form"]
-    generated_command.template = resolved_mod["template"]
 
-    func_command = getattr(_wrapped, "_command", None)
-    if func_command:
-        _update_func_command(func_command, generated_command)
+    # Python 2 compatibility
+    if hasattr(_wrapped, "__func__"):
+        _wrapped.__func__._command = new_command
     else:
-        _wrapped._command = generated_command
+        _wrapped._command = new_command
 
-    @wrapt.decorator(enabled=_wrap_functions)
-    def wrapper(_double_wrapped, _, _args, _kwargs):
-        return _double_wrapped(*_args, **_kwargs)
-
-    return wrapper(_wrapped)
+    return _wrapped
 
 
 def parameter(
-    _wrapped=None,
-    key=None,
-    type=None,
-    multi=None,
-    display_name=None,
-    optional=None,
-    default=None,
-    description=None,
-    choices=None,
-    nullable=None,
-    maximum=None,
-    minimum=None,
-    regex=None,
-    is_kwarg=None,
-    model=None,
-    form_input_type=None,
+    _wrapped=None,  # type: Union[Callable, MethodType, Type]
+    key=None,  # type: str
+    type=None,  # type: str
+    multi=None,  # type: bool
+    display_name=None,  # type: str
+    optional=None,  # type: bool
+    default=None,  # type: Any
+    description=None,  # type: str
+    choices=None,  # type: Union[Dict, Iterable, str]
+    parameters=None,  # type: List[Parameter]
+    nullable=None,  # type: bool
+    maximum=None,  # type: int
+    minimum=None,  # type: int
+    regex=None,  # type: str
+    form_input_type=None,  # type: str
+    type_info=None,  # type: dict
+    is_kwarg=None,  # type: bool
+    model=None,  # type: Type
 ):
-    """Decorator that enables Parameter specifications for a beer-garden Command
-
-    This is intended to be used when more specification is desired for a Parameter.
+    """Decorator for specifying Parameter details
 
     For example::
 
@@ -196,8 +193,8 @@ def parameter(
     Args:
         _wrapped: The function to decorate. This is handled as a positional argument and
             shouldn't be explicitly set.
-        key: String specifying the parameter identifier. Must match an argument name of
-            the decorated function.
+        key: String specifying the parameter identifier. If the decorated object is a
+            method the key must match an argument name.
         type: String indicating the type to use for this parameter.
         multi: Boolean indicating if this parameter is a multi. See documentation for
             discussion of what this means.
@@ -208,19 +205,23 @@ def parameter(
         description: An additional string that will be displayed in the user interface.
         choices: List or dictionary specifying allowed values. See documentation for
             more information.
+        parameters: Any nested parameters. See also: the 'model' argument.
         nullable: Boolean indicating if this parameter is allowed to be null.
         maximum: Integer indicating the maximum value of the parameter.
         minimum: Integer indicating the minimum value of the parameter.
         regex: String describing a regular expression constraint on the parameter.
+        form_input_type: Specify the form input field type (e.g. textarea). Only used
+            for string fields.
+        type_info: Type-specific information. Mostly reserved for future use.
         is_kwarg: Boolean indicating if this parameter is meant to be part of the
-            decorated function's kwargs.
+            decorated function's kwargs. Only applies when the decorated object is a
+            method.
         model: Class to be used as a model for this parameter. Must be a Python type
             object, not an instance.
-        form_input_type: Only used for string fields. Changes the form input field
-            (e.g. textarea)
 
     Returns:
         The decorated function
+
     """
     if _wrapped is None:
         return functools.partial(
@@ -233,107 +234,50 @@ def parameter(
             default=default,
             description=description,
             choices=choices,
+            parameters=parameters,
             nullable=nullable,
             maximum=maximum,
             minimum=minimum,
             regex=regex,
+            form_input_type=form_input_type,
+            type_info=type_info,
             is_kwarg=is_kwarg,
             model=model,
-            form_input_type=form_input_type,
         )
 
-    # Create a command object if one isn't already associated
-    cmd = getattr(_wrapped, "_command", None)
-    if not cmd:
-        cmd = _generate_command_from_function(_wrapped)
-        _wrapped._command = cmd
-
-    # Every parameter needs a key, so stop that right here
-    if key is None:
-        raise PluginParamError(
-            "Found a parameter definition without a key for command '%s'" % cmd.name
-        )
-
-    # If the command doesn't already have a parameter with this key then the
-    # method doesn't have an explicit keyword argument with <key> as the name.
-    # That's only OK if this parameter is meant to be part of the **kwargs.
-    param = cmd.get_parameter_by_key(key)
-    if param is None:
-        if is_kwarg:
-            param = Parameter(key=key, optional=False)
-            cmd.parameters.append(param)
-        else:
-            raise PluginParamError(
-                "Parameter '%s' was not an explicit keyword argument for "
-                "command '%s' and was not marked as part of kwargs (should "
-                "is_kwarg be True?)" % (key, cmd.name)
-            )
-
-    # Next, fail if the param is_kwarg=True and the method doesn't have a **kwargs
-    if is_kwarg:
-        kwarg_declared = False
-        for p in signature(_wrapped).parameters.values():
-            if p.kind == InspectParameter.VAR_KEYWORD:
-                kwarg_declared = True
-                break
-
-        if not kwarg_declared:
-            raise PluginParamError(
-                "Parameter '%s' of command '%s' was declared as a kwarg argument "
-                "(is_kwarg=True) but the command method does not declare a **kwargs "
-                "argument" % (key, cmd.name)
-            )
-
-    # Update parameter definition with the plugin_param arguments
-    param.type = _format_type(param.type if type is None else type)
-    param.multi = param.multi if multi is None else multi
-    param.display_name = param.display_name if display_name is None else display_name
-    param.optional = param.optional if optional is None else optional
-    param.default = param.default if default is None else default
-    param.description = param.description if description is None else description
-    param.choices = param.choices if choices is None else choices
-    param.nullable = param.nullable if nullable is None else nullable
-    param.maximum = param.maximum if maximum is None else maximum
-    param.minimum = param.minimum if minimum is None else minimum
-    param.regex = param.regex if regex is None else regex
-    param.form_input_type = (
-        param.form_input_type if form_input_type is None else form_input_type
+    new_parameter = Parameter(
+        key=key,
+        type=type,
+        multi=multi,
+        display_name=display_name,
+        optional=optional,
+        default=default,
+        description=description,
+        choices=choices,
+        parameters=parameters,
+        nullable=nullable,
+        maximum=maximum,
+        minimum=minimum,
+        regex=regex,
+        form_input_type=form_input_type,
+        type_info=type_info,
+        is_kwarg=is_kwarg,
+        model=model,
     )
 
-    param.choices = _format_choices(param.choices)
+    # Python 2 compatibility
+    if hasattr(_wrapped, "__func__"):
+        _wrapped.__func__.parameters = getattr(_wrapped, "parameters", [])
+        _wrapped.__func__.parameters.append(new_parameter)
+    else:
+        _wrapped.parameters = getattr(_wrapped, "parameters", [])
+        _wrapped.parameters.append(new_parameter)
 
-    # Type info is where type specific information goes. For now, this is specific
-    # to file types. See #289 for more details.
-    param.type_info = {}
-    if param.type == "Bytes":
-        param.type_info = {"storage": "gridfs"}
-
-    # Model is another special case - it requires its own handling
-    if model is not None:
-        param.type = "Dictionary"
-        param.parameters = _generate_nested_params(model.parameters)
-
-        # If the model is not nullable and does not have a default we will try
-        # to generate a one using the defaults defined on the model parameters
-        if not param.nullable and not param.default:
-            param.default = {}
-            for nested_param in param.parameters:
-                if nested_param.default:
-                    param.default[nested_param.key] = nested_param.default
-
-    if param.type == "Base64":
-        # Nullifying default file parameters for safety
-        param.default = None
-
-    @wrapt.decorator(enabled=_wrap_functions)
-    def wrapper(_double_wrapped, _, _args, _kwargs):
-        return _double_wrapped(*_args, **_kwargs)
-
-    return wrapper(_wrapped)
+    return _wrapped
 
 
-def parameters(*args):
-    """Specify multiple Parameter definitions at once
+def parameters(*args, **kwargs):
+    """Decorator for specifying multiple Parameter definitions at once
 
     This can be useful for commands which have a large number of complicated
     parameters but aren't good candidates for a Model.
@@ -358,154 +302,239 @@ def parameters(*args):
         *args (iterable): Positional arguments
             The first (and only) positional argument must be a list containing
             dictionaries that describe parameters.
+        **kwargs: Used for bookkeeping. Don't set any of these yourself!
 
     Returns:
         func: The decorated function
     """
-    if len(args) == 1:
-        return functools.partial(parameters, args[0])
-    elif len(args) != 2:
+    # This is the first invocation
+    if not kwargs.get("_partial"):
+        # Need the callable check to prevent applying the decorator with no parenthesis
+        if len(args) == 1 and not callable(args[0]):
+            return functools.partial(parameters, args[0], _partial=True)
+
         raise PluginParamError("@parameters takes a single argument")
 
-    if not isinstance(args[1], types.FunctionType):
-        raise PluginParamError("@parameters must be applied to a function")
+    # This is the second invocation
+    else:
+        if len(args) != 2:
+            raise PluginParamError(
+                "Incorrect number of arguments for parameters partial call. Did you "
+                "set _partial=True? If so, please don't do that. If not, please let "
+                "the Beergarden team know how you got here!"
+            )
+
+    params = args[0]
+    _wrapped = args[1]
+
+    if not callable(_wrapped):
+        raise PluginParamError("@parameters must be applied to a callable")
 
     try:
-        for param in args[0]:
-            parameter(args[1], **param)
+        for param in params:
+            parameter(_wrapped, **param)
     except TypeError:
         raise PluginParamError("@parameters arg must be an iterable of dictionaries")
 
-    @wrapt.decorator(enabled=_wrap_functions)
-    def wrapper(_double_wrapped, _, _args, _kwargs):
-        return _double_wrapped(*_args, **_kwargs)
-
-    return wrapper(args[1])
+    return _wrapped
 
 
-def _update_func_command(func_command, generated_command):
-    """Update the current function's Command"""
-    func_command.name = generated_command.name
-    func_command.description = generated_command.description
-    func_command.command_type = generated_command.command_type
-    func_command.output_type = generated_command.output_type
-    func_command.hidden = generated_command.hidden
-    func_command.schema = generated_command.schema
-    func_command.form = generated_command.form
-    func_command.template = generated_command.template
-    func_command.icon_name = generated_command.icon_name
+def _parse_client(client):
+    # type: (object) -> List[Command]
+    """Get a list of Beergarden Commands from a client object
 
+    This will iterate over everything returned from dir, looking for metadata added
+    by the decorators.
 
-def _generate_command_from_function(func):
-    """Generate a Command from a function
-
-    Will use the first line of the function's docstring as the description.
     """
-    # Required for Python 2/3 compatibility
-    if hasattr(func, "func_name"):
-        command_name = func.func_name
-    else:
-        command_name = func.__name__
+    bg_commands = []
 
-    # Required for Python 2/3 compatibility
-    if hasattr(func, "func_doc"):
-        docstring = func.func_doc
-    else:
-        docstring = func.__doc__
+    for attr in dir(client):
+        method = getattr(client, attr)
 
-    return Command(
-        name=command_name,
-        description=docstring.split("\n")[0] if docstring else None,
-        parameters=_generate_params_from_function(func),
+        method_command = _parse_method(method)
+
+        if method_command:
+            bg_commands.append(method_command)
+
+    return bg_commands
+
+
+def _parse_method(method):
+    # type: (MethodType) -> Optional[Command]
+    """Parse a method object as a Beer-garden command target
+
+    If the method looks like a valid command target (based on the presence of certain
+    attributes) then this method will initialize things:
+
+    - The command will be initialized.
+    - Every parameter will be initialized. Initializing a parameter is recursive - each
+      nested parameter will also be initialized.
+    - Top-level parameters are validated to ensure they match the method signature.
+
+    Args:
+        method: Method to parse
+
+    Returns:
+        Beergarden Command targeting the given method
+    """
+    if (inspect.ismethod(method) or inspect.isfunction(method)) and (
+        hasattr(method, "_command") or hasattr(method, "parameters")
+    ):
+        method_command = _initialize_command(method)
+
+        for param in method_command.parameters:
+            _initialize_parameter(param=param)
+            _validate_signature(param=param, method=method)
+
+        return method_command
+
+
+def _initialize_command(method):
+    # type: (MethodType) -> Command
+    """Initialize a Command
+
+    This takes care of ensuring a Command object is in the correct form. Things like:
+
+    - Assigning the name from the method name
+    - Pulling the description from the method docstring, if necessary
+    - Resolving display modifiers (schema, form, template)
+
+    It will also add / modify the Command's parameter list:
+
+    - Any arguments in the method signature that were not already known Parameters will
+      be added
+    - Any arguments that WERE already known (most likely from a @parameter decorator)
+      will potentially have their default and optional values updated:
+
+      - If either attribute is already defined (specified in the decorator) then that
+        value will be used. Explicit values will NOT be overridden.
+      - If the default attribute is not already defined then it will be set to the value
+        of the default parameter from the method signature, if any.
+      - If the optional attribute is not already defined then it will be set to True if
+        a default value exists in the method signature, otherwise it will be set to
+        False.
+
+    The parameter modification is confusing - see the _sig_info docstring for examples.
+
+    A final note - I'm not super happy about this. It makes sense - positional arguments
+    are "required", so mark them as non-optional. It's not *wrong*, but it's unexpected.
+    A @parameter that doesn't specify "optional=" will have a different optionality
+    based on the function signature.
+
+    Regardless, we went with this originally. If we want to change it we need to go
+    though a deprecation cycle and *loudly* publicize it since things wouldn't break
+    loudly for plugin developers, their plugins would just be subtly (but importantly)
+    different.
+
+    Args:
+        method: The method with the Command to initialize
+
+    Returns:
+        The initialized Command
+
+    """
+    cmd = getattr(method, "_command", Command())
+
+    cmd.name = _method_name(method)
+    cmd.description = cmd.description or _method_docstring(method)
+
+    resolved_mod = _resolve_display_modifiers(
+        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
     )
+    cmd.schema = resolved_mod["schema"]
+    cmd.form = resolved_mod["form"]
+    cmd.template = resolved_mod["template"]
 
+    # Now we need to deal with parameters. Start with ones from @parameter decorators.
+    cmd.parameters += getattr(method, "parameters", [])
 
-def _generate_params_from_function(func):
-    """Generate Parameters from function arguments.
+    # Now we need to reconcile the parameters with the method signature
+    for index, arg in enumerate(signature(method).parameters.values()):
 
-    Will set the Parameter key, default value, and optional value.
-    """
-    parameters_to_return = []
-
-    code = six.get_function_code(func)
-    function_arguments = list(code.co_varnames or [])[: code.co_argcount]
-    function_defaults = list(six.get_function_defaults(func) or [])
-
-    while len(function_defaults) != len(function_arguments):
-        function_defaults.insert(0, None)
-
-    for index, param_name in enumerate(function_arguments):
-        # Skip Self or Class reference
-        if index == 0 and isinstance(func, types.FunctionType):
+        # Don't want to include special parameters
+        if index == 0 and arg.name in ("self", "cls"):
             continue
 
-        default = function_defaults[index]
-        optional = False if default is None else True
+        # Grab default and optionality according to the signature. We'll need it later.
+        sig_default, sig_optional = _sig_info(arg)
 
-        parameters_to_return.append(
-            Parameter(key=param_name, default=default, optional=optional)
-        )
-
-    return parameters_to_return
-
-
-def _generate_nested_params(parameter_list):
-    """Generate nested parameters from a list of Parameters
-
-    This function will take a list of Parameters and will return a new list of "real"
-    Parameters.
-
-    The main thing this does is ensure the choices specification is correct for all
-    Parameters in the tree.
-    """
-    parameters_to_return = []
-
-    for param in parameter_list:
-
-        # This is already a Parameter. Only really need to interpret the choices
-        # definition and recurse down into nested Parameters
-        if isinstance(param, Parameter):
-            new_param = Parameter(
-                key=param.key,
-                type=param.type,
-                multi=param.multi,
-                display_name=param.display_name,
-                optional=param.optional,
-                default=param.default,
-                description=param.description,
-                choices=_format_choices(param.choices),
-                nullable=param.nullable,
-                maximum=param.maximum,
-                minimum=param.minimum,
-                regex=param.regex,
-                type_info=param.type_info,
+        # Here the parameter was not previously defined so just add it to the list
+        if arg.name not in cmd.parameter_keys():
+            cmd.parameters.append(
+                Parameter(key=arg.name, default=sig_default, optional=sig_optional)
             )
 
-            if param.parameters:
-                new_param.type = "Dictionary"
-                new_param.parameters = _generate_nested_params(param.parameters)
-
-            parameters_to_return.append(new_param)
-
-        # This is a model class object. Needed for backwards compatibility
-        # See https://github.com/beer-garden/beer-garden/issues/354
-        elif hasattr(param, "parameters"):
-            _deprecate(
-                "Constructing a nested Parameters list using model class objects "
-                "is deprecated. Please pass the model's parameter list directly."
-            )
-            parameters_to_return += _generate_nested_params(param.parameters)
-
-        # No clue!
+        # Here the parameter WAS previously defined. So we potentially need to update
+        # the default and optional values (if they weren't explicitly set).
         else:
-            raise PluginParamError("Unable to generate parameter from '%s'" % param)
+            param = cmd.get_parameter_by_key(arg.name)
 
-    return parameters_to_return
+            if param.default is None:
+                param.default = sig_default
+
+            if param.optional is None:
+                param.optional = sig_optional
+
+    return cmd
+
+
+def _method_name(method):
+    # type: (MethodType) -> str
+    """Get the name of a method
+
+    This is needed for Python 2 / 3 compatibility
+
+    Args:
+        method: Method to inspect
+
+    Returns:
+        Method name
+
+    """
+    if hasattr(method, "func_name"):
+        command_name = method.func_name
+    else:
+        command_name = method.__name__
+
+    return command_name
+
+
+def _method_docstring(method):
+    # type: (MethodType) -> str
+    """Parse out the first line of the docstring from a method
+
+    This is needed for Python 2 / 3 compatibility
+
+    Args:
+        method: Method to inspect
+
+    Returns:
+        First line of docstring
+
+    """
+    if hasattr(method, "func_doc"):
+        docstring = method.func_doc
+    else:
+        docstring = method.__doc__
+
+    return docstring.split("\n")[0] if docstring else None
 
 
 def _resolve_display_modifiers(
-    wrapped, command_name, schema=None, form=None, template=None
+    wrapped,  # type: MethodType
+    command_name,  # type: str
+    schema=None,  # type: Union[dict, str]
+    form=None,  # type: Union[dict, list, str]
+    template=None,  # type: str
 ):
+    # type: (...) -> dict
+    """Parse display modifier parameter attributes
+
+    Returns:
+        Dictionary that fully describes a display specification
+    """
+
     def _load_from_url(url):
         response = requests.get(url)
         if response.headers.get("content-type", "").lower() == "application/json":
@@ -563,7 +592,154 @@ def _resolve_display_modifiers(
     return resolved
 
 
+def _sig_info(arg):
+    # type: (InspectParameter) -> Tuple[Any, bool]
+    """Get the default and optionality of a method argument
+
+    This will return the "default" according to the method signature. For example, the
+    following would return "foo" as the default for Parameter param:
+
+    .. code-block:: python
+
+        def my_command(self, param="foo"):
+            ...
+
+    The "optional" value returned will be a boolean indicating the presence of a default
+    argument. In the example above the "optional" value will be True. However, in the
+    following example the value would be False (and the "default" value will be None):
+
+    .. code-block:: python
+
+        def my_command(self, param):
+            ...
+
+    A separate optional return is needed to indicate when a default is provided in the
+    signature, but the default is None. In the following, the default will still be
+    None, but the optional value will be True:
+
+    .. code-block:: python
+
+        def my_command(self, param=None):
+            ...
+
+    Args:
+        arg: The method argument
+
+    Returns:
+        Tuple of (signature default, optionality)
+    """
+    if arg.default != InspectParameter.empty:
+        return arg.default, True
+    return None, False
+
+
+def _initialize_parameter(
+    param=None,
+    key=None,
+    type=None,
+    multi=None,
+    display_name=None,
+    optional=None,
+    default=None,
+    description=None,
+    choices=None,
+    parameters=None,
+    nullable=None,
+    maximum=None,
+    minimum=None,
+    regex=None,
+    form_input_type=None,
+    type_info=None,
+    is_kwarg=None,
+    model=None,
+):
+    # type: (...) -> Parameter
+    """Initialize a Parameter
+
+    This exists to move logic out of the @parameter decorator. Previously there was a
+    fair amount of logic in the decorator, which meant that it wasn't feasible to create
+    a Parameter without using it. This made things like nested models difficult to do
+    correctly.
+
+    There are also some checks and translation that need to happen for every Parameter,
+    most notably the "choices" attribute.
+
+    This method also ensures that these checks and translations occur for child
+    Parameters.
+
+    Args:
+        param: An already-created Parameter. If this is given all the other
+        Parameter-creation kwargs will be ignored
+
+    Keyword Args:
+        Will be used to construct a new Parameter
+    """
+    param = param or Parameter(
+        key=key,
+        type=type,
+        multi=multi,
+        display_name=display_name,
+        optional=optional,
+        default=default,
+        description=description,
+        choices=choices,
+        parameters=parameters,
+        nullable=nullable,
+        maximum=maximum,
+        minimum=minimum,
+        regex=regex,
+        form_input_type=form_input_type,
+        type_info=type_info,
+        is_kwarg=is_kwarg,
+        model=model,
+    )
+
+    # Every parameter needs a key, so stop that right here
+    if param.key is None:
+        raise PluginParamError("Attempted to create a parameter without a key")
+
+    param.type = _format_type(param.type)
+    param.choices = _format_choices(param.choices)
+
+    # Type info is where type specific information goes. For now, this is specific
+    # to file types. See #289 for more details.
+    if param.type == "Bytes":
+        param.type_info = {"storage": "gridfs"}
+
+    # Nullifying default file parameters for safety
+    if param.type == "Base64":
+        param.default = None
+
+    # Now deal with nested parameters
+    if param.parameters:
+        param.type = "Dictionary"
+        param.parameters = _generate_nested_params(param.parameters)
+
+    elif param.model is not None:
+        param.type = "Dictionary"
+        param.parameters = _generate_nested_params(param.model.parameters)
+
+        # If the model is not nullable and does not have a default we will try
+        # to generate a one using the defaults defined on the model parameters
+        if not param.nullable and not param.default:
+            param.default = {}
+            for nested_param in param.parameters:
+                if nested_param.default:
+                    param.default[nested_param.key] = nested_param.default
+
+    return param
+
+
 def _format_type(param_type):
+    # type: (Any) -> str
+    """Parse Parameter type
+
+    Args:
+        param_type: Raw Parameter type, usually from a decorator
+
+    Returns:
+        Properly formatted string describing the parameter type
+    """
     if param_type == str:
         return "String"
     elif param_type == int:
@@ -585,6 +761,16 @@ def _format_type(param_type):
 
 
 def _format_choices(choices):
+    # type: (Union[dict, str, Iterable]) -> Optional[Choices]
+    """Parse choices definition
+
+    Args:
+        choices: Raw choices definition, usually from a decorator
+
+    Returns:
+        Choices: Dictionary that fully describes a choices specification
+    """
+
     def determine_display(display_value):
         if isinstance(display_value, six.string_types):
             return "typeahead"
@@ -698,6 +884,110 @@ def _format_choices(choices):
     return Choices(
         type=choice_type, display=display, value=value, strict=strict, details=details
     )
+
+
+def _generate_nested_params(parameter_list):
+    # type: (Iterable[Parameter, object]) -> List[Parameter]
+    """Generate nested parameters from a list of Parameters or a Model object
+
+    This exists for backwards compatibility with the old way of specifying Models.
+    Previously, models were defined by creating a class with a ``parameters`` class
+    attribute. This required constructing each parameter manually, without using the
+    ``@parameter`` decorator.
+
+    This function takes either a list of Parameters or a class object with a
+    ``parameters`` attribute. It will return a list of initialized parameters. See the
+    ``_initialize_parameter`` function for information on what that entails.
+
+    Args:
+        parameter_list: List of parameters or object with a ``parameters`` attritube
+
+    Returns:
+        List of initialized parameters
+    """
+    initialized_params = []
+
+    for param in parameter_list:
+
+        # This is already a Parameter. Only really need to interpret the choices
+        # definition and recurse down into nested Parameters
+        if isinstance(param, Parameter):
+            initialized_params.append(_initialize_parameter(param=param))
+
+        # This is a model class object. Needed for backwards compatibility
+        # See https://github.com/beer-garden/beer-garden/issues/354
+        elif hasattr(param, "parameters"):
+            _deprecate(
+                "Constructing a nested Parameters list using model class objects "
+                "is deprecated. Please pass the model's parameter list directly."
+            )
+            initialized_params += _generate_nested_params(param.parameters)
+
+        # No clue!
+        else:
+            raise PluginParamError("Unable to generate parameter from '%s'" % param)
+
+    return initialized_params
+
+
+def _validate_signature(param, method):
+    # type: (Parameter, MethodType) -> None
+    """Ensure that a Parameter conforms to the method signature
+
+    This will do some validation and will raise a PluginParamError if there are any
+    issues.
+
+    It's expected that this will only be called for Parameters where this makes sense
+    (aka top-level Parameters). It doesn't make sense to call this for model Parameters,
+    so you shouldn't do that.
+
+    Args:
+        param: Parameter definition
+        method: Target method object
+
+    Returns:
+        None
+
+    Raises:
+        PluginParamError: There was a validation problem
+    """
+    sig_param = None
+    has_kwargs = False
+
+    for p in signature(method).parameters.values():
+        if p.name == param.key:
+            sig_param = p
+        if p.kind == InspectParameter.VAR_KEYWORD:
+            has_kwargs = True
+
+    # Couldn't find the parameter. That's OK if this parameter is meant to be part of
+    # the **kwargs AND the function has a **kwargs parameter.
+    if sig_param is None:
+        if not param.is_kwarg:
+            raise PluginParamError(
+                "Parameter was not not marked as part of kwargs and wasn't found in "
+                "the method signature (should is_kwarg be True?)"
+            )
+        elif not has_kwargs:
+            raise PluginParamError(
+                "Parameter was declared as a kwarg (is_kwarg=True) but the method "
+                "signature does not declare a **kwargs parameter"
+            )
+
+    # Cool, found the parameter. Just verify that it's not pure positional and that it's
+    # not marked as part of kwargs.
+    else:
+        if param.is_kwarg:
+            raise PluginParamError(
+                "Parameter was marked as part of kwargs but was found in the method "
+                "signature (should is_kwarg be False?)"
+            )
+
+        # I don't think this is even possible in Python < 3.8
+        if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
+            raise PluginParamError(
+                "Sorry, positional-only type parameters are not supported"
+            )
 
 
 # Alias the old names for compatibility

@@ -203,49 +203,29 @@ class SystemClient(object):
             )
             kwargs.setdefault("system_name", args[2])
 
-        system_kwargs = (
-            "system_name",
-            "version_constraint",
-            "default_instance",
-            "system_namespace",
-        )
-        provided_system_kwargs = False
-        for arg in system_kwargs:
-            if kwargs.get(arg, None):
-                provided_system_kwargs = True
+        system_kwargs = {
+            "system_name": "name",
+            "version_constraint": "version",
+            "default_instance": "instance_name",
+            "system_namespace": "namespace",
+        }
+
+        # brewtils.plugin.CONFIG is already populated
+        # Start by assuming that the system client is targeting self:
+        target_self = True
+
+        # Now we need to figure out if any of the provided kwargs don't match
+        # some sort of loop that checks the value of system kwargs against the CONFIG
+        # If they are different, target_self = False and break
+        for key in system_kwargs.keys():
+            if kwargs.get(key) is None:
+                continue
+            if kwargs.get(key) != brewtils.plugin.CONFIG[system_kwargs[key]]:
+                target_self = False
                 break
-        map_local = False
 
-        if not provided_system_kwargs:
-            map_local = True
-        else:
-            if kwargs.get("system_namespace") == brewtils.plugin.CONFIG.namespace:
-                if (
-                    kwargs.get("system_name") is None
-                    and kwargs.get("version_constraint") is None
-                    and kwargs.get("default_instance") is None
-                ):
-                    map_local = True
-            elif kwargs.get("system_name") == brewtils.plugin.CONFIG.name:
-                if (
-                    kwargs.get("version_constraint") is None
-                    and kwargs.get("default_instance") is None
-                    and (
-                        kwargs.get("system_namespace")
-                        == brewtils.plugin.CONFIG.namespace
-                        or kwargs.get("system_namespace") is None
-                    )
-                ):
-                    map_local = True
-            elif kwargs.get("version_constraint") == brewtils.plugin.CONFIG.version:
-                if (
-                    kwargs.get("system_namespace") == brewtils.plugin.CONFIG.namespace
-                    and kwargs.get("system_name") == brewtils.plugin.CONFIG.name
-                    and kwargs.get("default_instance") is None
-                ):
-                    map_local = True
-
-        if map_local:
+        # Now assign self._system_name, etc based on the value of target_self
+        if target_self:
             self._system_name = brewtils.plugin.CONFIG.name or None
             self._version_constraint = brewtils.plugin.CONFIG.version or None
             self._default_instance = brewtils.plugin.CONFIG.instance_name or None

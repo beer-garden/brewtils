@@ -27,6 +27,7 @@ else:
     from inspect import signature, Parameter as InspectParameter  # noqa
 
 __all__ = [
+    "client",
     "command",
     "parameter",
     "parameters",
@@ -34,24 +35,24 @@ __all__ = [
 ]
 
 
-def system(
+def client(
     cls=None,  # type: Type
     bg_name=None,  # type: str
     bg_version=None,  # type: str
 ):
     # type: (...) -> Type
-    """Class decorator that marks a class as a beer-garden System
+    """Class decorator that marks a class as a beer-garden Client
 
-    This should really be named "client," but that will be another PR. Also, as-is this
-    doesn't really need to exist at all - the Client is whatever you tell the Plugin it
-    is, no need for a special decorator.
+    Using this decorator is no longer strictly necessary. It was previously required in
+    order to mark a class as being a Beer-garden Client, and contained most of the logic
+    that currently resides in the ``parse_client`` function. However, that's no longer
+    the case and this currently exists mainly for back-compatibility reasons.
 
-    For historical purposes - the functionality of the ``parse_client`` function was
-    previously in this decorator.
+    Applying this decorator to a client class does have the nice effect of preventing
+    linters from complaining if any special attributes are used. So that's something.
 
-    This does creates some attributes on the class for back-compatibility reasons (and
-    to stop linters from complaining). But these are just placeholders until the actual
-    values are determined when the Plugin client is set:
+    Those special attributes are below. Note that these are just placeholders until the
+    actual values are populated when the client instance is assigned to a Plugin:
 
       * ``_bg_name``: an optional system name
       * ``_bg_version``: an optional system version
@@ -991,6 +992,10 @@ def _validate_signature(param, method):
 
 
 # Alias the old names for compatibility
+# This isn't deprecated, see https://github.com/beer-garden/beer-garden/issues/927
+system = client
+
+
 def command_registrar(*args, **kwargs):
     _deprecate(
         "Looks like you're using the '@command_registrar' decorator. Heads up - this "

@@ -58,7 +58,7 @@ def cmd_kwargs():
 
 
 @pytest.fixture
-def param_definition():
+def basic_param():
     return {
         "key": "foo",
         "type": "String",
@@ -71,8 +71,8 @@ def param_definition():
 
 
 @pytest.fixture
-def param(param_definition):
-    return Parameter(**param_definition)
+def param(basic_param):
+    return Parameter(**basic_param)
 
 
 @pytest.fixture
@@ -135,9 +135,9 @@ class TestOverall(object):
         assert param_y.optional is True
 
     class TestDecoratorCombinations(object):
-        def test_command_then_parameter(self, param_definition):
+        def test_command_then_parameter(self, basic_param):
             class Unused(object):
-                @parameter(**param_definition)
+                @parameter(**basic_param)
                 @command(command_type="INFO", output_type="JSON")
                 def cmd(self, foo):
                     return foo
@@ -150,12 +150,12 @@ class TestOverall(object):
             assert c.output_type == "JSON"
             assert len(c.parameters) == 1
 
-            assert_parameter_equal(c.parameters[0], Parameter(**param_definition))
+            assert_parameter_equal(c.parameters[0], Parameter(**basic_param))
 
-        def test_parameter_then_command(self, param_definition):
+        def test_parameter_then_command(self, basic_param):
             class Unused(object):
                 @command(command_type="INFO", output_type="JSON")
-                @parameter(**param_definition)
+                @parameter(**basic_param)
                 def cmd(self, foo):
                     return foo
 
@@ -167,7 +167,7 @@ class TestOverall(object):
             assert c.output_type == "JSON"
             assert len(c.parameters) == 1
 
-            assert_parameter_equal(c.parameters[0], Parameter(**param_definition))
+            assert_parameter_equal(c.parameters[0], Parameter(**basic_param))
 
 
 class TestSystem(object):
@@ -246,8 +246,8 @@ class TestParameter(object):
 
     """
 
-    def test_basic(self, param_definition, param):
-        @parameter(**param_definition)
+    def test_basic(self, basic_param, param):
+        @parameter(**basic_param)
         def cmd(foo):
             return foo
 
@@ -255,10 +255,10 @@ class TestParameter(object):
         assert len(cmd.parameters) == 1
         assert_parameter_equal(cmd.parameters[0], param)
 
-    def test_function(self, param_definition):
+    def test_function(self, basic_param):
         """Ensure the wrapped function still works as expected"""
 
-        @parameter(**param_definition)
+        @parameter(**basic_param)
         def cmd(foo):
             return foo
 
@@ -266,26 +266,26 @@ class TestParameter(object):
 
 
 class TestParameters(object):
-    def test_function(self, param_definition):
-        @parameters([param_definition])
+    def test_function(self, basic_param):
+        @parameters([basic_param])
         def cmd(foo):
             return foo
 
         assert cmd("input") == "input"
 
-    def test_decorator_equivalence(self, param_definition):
-        @parameter(**param_definition)
+    def test_decorator_equivalence(self, basic_param):
+        @parameter(**basic_param)
         def func1(_, foo):
             return foo
 
-        @parameters([param_definition])
+        @parameters([basic_param])
         def func2(_, foo):
             return foo
 
         assert_parameter_equal(func1.parameters[0], func2.parameters[0])
 
-    def test_dict_values(self, param_definition):
-        param_spec = {"foo": param_definition}
+    def test_dict_values(self, basic_param):
+        param_spec = {"foo": basic_param}
 
         @parameters(param_spec.values())
         def func(foo):
@@ -348,11 +348,11 @@ class TestParameters(object):
             partial = parameters([{"key": "foo"}])
             partial("not a callable")
 
-    def test_bad_partial_call(self, param_definition):
+    def test_bad_partial_call(self, basic_param):
         """Again, I don't even know how you would do this if you follow directions."""
         with pytest.raises(PluginParamError, match=r"partial call"):
 
-            @parameters([param_definition], _partial=True)
+            @parameters([basic_param], _partial=True)
             def func(foo):
                 return foo
 
@@ -756,10 +756,10 @@ class TestInitializeParameter(object):
             "storage": "gridfs"
         }
 
-    def test_values(self, cmd, param_definition):
+    def test_values(self, cmd, basic_param):
         """This seems like a weird test"""
-        p = _initialize_parameter(**param_definition)
-        assert_parameter_equal(p, Parameter(**param_definition))
+        p = _initialize_parameter(**basic_param)
+        assert_parameter_equal(p, Parameter(**basic_param))
 
     @pytest.mark.parametrize(
         "default", [None, 1, "bar", [], ["bar"], {}, {"bar"}, {"foo": "bar"}]
@@ -1186,11 +1186,11 @@ class TestDeprecations(object):
 
             assert hasattr(cmd, "_command")
 
-    def test_plugin_param(self, cmd, param_definition):
+    def test_plugin_param(self, cmd, basic_param):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            plugin_param(cmd, **param_definition)
+            plugin_param(cmd, **basic_param)
 
             assert issubclass(w[0].category, DeprecationWarning)
             assert "plugin_param" in str(w[0].message)
@@ -1198,4 +1198,4 @@ class TestDeprecations(object):
             assert hasattr(cmd, "parameters")
             assert len(cmd.parameters) == 1
 
-            assert_parameter_equal(cmd.parameters[0], Parameter(**param_definition))
+            assert_parameter_equal(cmd.parameters[0], Parameter(**basic_param))

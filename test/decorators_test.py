@@ -1195,11 +1195,11 @@ class TestDeprecations(object):
 
             assert hasattr(cmd, "_command")
 
-    def test_plugin_param(self, cmd, basic_param):
+    def test_plugin_param(self, cmd, parameter_dict):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            plugin_param(cmd, **basic_param)
+            plugin_param(cmd, **parameter_dict)
 
             assert issubclass(w[0].category, DeprecationWarning)
             assert "plugin_param" in str(w[0].message)
@@ -1207,4 +1207,7 @@ class TestDeprecations(object):
             assert hasattr(cmd, "parameters")
             assert len(cmd.parameters) == 1
 
-            assert_parameter_equal(cmd.parameters[0], Parameter(**basic_param))
+            assert_parameter_equal(
+                _initialize_parameter(cmd.parameters[0]),
+                _initialize_parameter(**parameter_dict),
+            )

@@ -1101,6 +1101,13 @@ class TestGenerateNestedParameters(object):
             assert issubclass(w[0].category, DeprecationWarning)
             assert "model class objects" in str(w[0].message)
 
+    def test_dict(self, init_mock, basic_param):
+        res = _generate_nested_params([basic_param])
+
+        assert len(res) == 1
+        assert res[0] == init_mock.return_value
+        init_mock.assert_called_once_with(**basic_param)
+
     def test_unknown_type(self):
         with pytest.raises(PluginParamError):
             _generate_nested_params(["This isn't a parameter!"])  # noqa

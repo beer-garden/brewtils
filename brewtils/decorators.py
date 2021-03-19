@@ -923,6 +923,10 @@ def _generate_nested_params(parameter_list):
             )
             initialized_params += _generate_nested_params(param.parameters)
 
+        # This is a dict of Parameter kwargs
+        elif isinstance(param, dict):
+            initialized_params.append(_initialize_parameter(**param))
+
         # No clue!
         else:
             raise PluginParamError("Unable to generate parameter from '%s'" % param)

@@ -756,10 +756,12 @@ class TestInitializeParameter(object):
             "storage": "gridfs"
         }
 
-    def test_values(self, cmd, basic_param):
-        """This seems like a weird test"""
-        p = _initialize_parameter(**basic_param)
-        assert_parameter_equal(p, Parameter(**basic_param))
+    def test_reinitialize(self, parameter_dict):
+        """Parameter objects can be initialized twice, so make sure that works"""
+        p1 = _initialize_parameter(**parameter_dict)
+        p2 = _initialize_parameter(p1)
+
+        assert_parameter_equal(p1, p2)
 
     @pytest.mark.parametrize(
         "default", [None, 1, "bar", [], ["bar"], {}, {"bar"}, {"foo": "bar"}]

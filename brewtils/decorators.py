@@ -783,8 +783,8 @@ def _format_choices(choices):
 
         return "static"
 
-    if not choices:
-        return None
+    if choices is None or isinstance(choices, Choices):
+        return choices
 
     if isinstance(choices, dict):
         if not choices.get("value"):

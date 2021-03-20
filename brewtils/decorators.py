@@ -69,7 +69,7 @@ def client(
 
     """
     if cls is None:
-        return functools.partial(system, bg_name=bg_name, bg_version=bg_version)  # noqa
+        return functools.partial(client, bg_name=bg_name, bg_version=bg_version)  # noqa
 
     # Assign these here so linters don't complain
     cls._bg_name = bg_name

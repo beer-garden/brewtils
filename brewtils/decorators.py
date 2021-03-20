@@ -432,77 +432,6 @@ def _initialize_command(method):
     return cmd
 
 
-def _signature_parameters(cmd, method):
-    # type: (Command, MethodType) -> Command
-    """Add and/or modify a Command's parameters based on the method signature
-
-    This will add / modify the Command's parameter list:
-
-    - Any arguments in the method signature that were not already known Parameters will
-      be added
-    - Any arguments that WERE already known (most likely from a @parameter decorator)
-      will potentially have their default and optional values updated:
-
-      - If either attribute is already defined (specified in the decorator) then that
-        value will be used. Explicit values will NOT be overridden.
-      - If the default attribute is not already defined then it will be set to the value
-        of the default parameter from the method signature, if any.
-      - If the optional attribute is not already defined then it will be set to True if
-        a default value exists in the method signature, otherwise it will be set to
-        False.
-
-    The parameter modification is confusing - see the _sig_info docstring for examples.
-
-    A final note - I'm not super happy about this. It makes sense - positional arguments
-    are "required", so mark them as non-optional. It's not *wrong*, but it's unexpected.
-    A @parameter that doesn't specify "optional=" will have a different optionality
-    based on the function signature.
-
-    Regardless, we went with this originally. If we want to change it we need to go
-    though a deprecation cycle and *loudly* publicize it since things wouldn't break
-    loudly for plugin developers, their plugins would just be subtly (but importantly)
-    different.
-
-    Args:
-        cmd: The Command to modify
-        method: Method to parse
-
-    Returns:
-        Command with modified parameter list
-
-    """
-    # Now we need to reconcile the parameters with the method signature
-    for index, arg in enumerate(signature(method).parameters.values()):
-
-        # Don't want to include special parameters
-        if index == 0 and arg.name in ("self", "cls"):
-            continue
-
-        # Grab default and optionality according to the signature. We'll need it later.
-        sig_default, sig_optional = _sig_info(arg)
-
-        # Here the parameter was not previously defined so just add it to the list
-        if arg.name not in cmd.parameter_keys():
-            cmd.parameters.append(
-                _initialize_parameter(
-                    key=arg.name, default=sig_default, optional=sig_optional
-                )
-            )
-
-        # Here the parameter WAS previously defined. So we potentially need to update
-        # the default and optional values (if they weren't explicitly set).
-        else:
-            param = cmd.get_parameter_by_key(arg.name)
-
-            if param.default is None:
-                param.default = sig_default
-
-            if param.optional is None:
-                param.optional = sig_optional
-
-    return cmd
-
-
 def _method_name(method):
     # type: (MethodType) -> str
     """Get the name of a method
@@ -956,6 +885,77 @@ def _generate_nested_params(parameter_list):
             raise PluginParamError("Unable to generate parameter from '%s'" % param)
 
     return initialized_params
+
+
+def _signature_parameters(cmd, method):
+    # type: (Command, MethodType) -> Command
+    """Add and/or modify a Command's parameters based on the method signature
+
+    This will add / modify the Command's parameter list:
+
+    - Any arguments in the method signature that were not already known Parameters will
+      be added
+    - Any arguments that WERE already known (most likely from a @parameter decorator)
+      will potentially have their default and optional values updated:
+
+      - If either attribute is already defined (specified in the decorator) then that
+        value will be used. Explicit values will NOT be overridden.
+      - If the default attribute is not already defined then it will be set to the value
+        of the default parameter from the method signature, if any.
+      - If the optional attribute is not already defined then it will be set to True if
+        a default value exists in the method signature, otherwise it will be set to
+        False.
+
+    The parameter modification is confusing - see the _sig_info docstring for examples.
+
+    A final note - I'm not super happy about this. It makes sense - positional arguments
+    are "required", so mark them as non-optional. It's not *wrong*, but it's unexpected.
+    A @parameter that doesn't specify "optional=" will have a different optionality
+    based on the function signature.
+
+    Regardless, we went with this originally. If we want to change it we need to go
+    though a deprecation cycle and *loudly* publicize it since things wouldn't break
+    loudly for plugin developers, their plugins would just be subtly (but importantly)
+    different.
+
+    Args:
+        cmd: The Command to modify
+        method: Method to parse
+
+    Returns:
+        Command with modified parameter list
+
+    """
+    # Now we need to reconcile the parameters with the method signature
+    for index, arg in enumerate(signature(method).parameters.values()):
+
+        # Don't want to include special parameters
+        if index == 0 and arg.name in ("self", "cls"):
+            continue
+
+        # Grab default and optionality according to the signature. We'll need it later.
+        sig_default, sig_optional = _sig_info(arg)
+
+        # Here the parameter was not previously defined so just add it to the list
+        if arg.name not in cmd.parameter_keys():
+            cmd.parameters.append(
+                _initialize_parameter(
+                    key=arg.name, default=sig_default, optional=sig_optional
+                )
+            )
+
+        # Here the parameter WAS previously defined. So we potentially need to update
+        # the default and optional values (if they weren't explicitly set).
+        else:
+            param = cmd.get_parameter_by_key(arg.name)
+
+            if param.default is None:
+                param.default = sig_default
+
+            if param.optional is None:
+                param.optional = sig_optional
+
+    return cmd
 
 
 def _validate_signature(param, method):

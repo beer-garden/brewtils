@@ -394,8 +394,7 @@ def _parse_method(method):
         _signature_parameters(method_command, method)
 
         # Verify that all parameters conform to the method signature
-        for param in method_command.parameters:
-            _signature_validate(param=param, method=method)
+        _signature_validate(method_command, method)
 
         return method_command
 
@@ -962,9 +961,9 @@ def _signature_parameters(cmd, method):
     return cmd
 
 
-def _signature_validate(param, method):
-    # type: (Parameter, MethodType) -> None
-    """Ensure that a Parameter conforms to the method signature
+def _signature_validate(cmd, method):
+    # type: (Command, MethodType) -> None
+    """Ensure that a Command conforms to the method signature
 
     This will do some validation and will raise a PluginParamError if there are any
     issues.
@@ -974,7 +973,7 @@ def _signature_validate(param, method):
     so you shouldn't do that.
 
     Args:
-        param: Parameter definition
+        param: Command to validate
         method: Target method object
 
     Returns:
@@ -983,43 +982,44 @@ def _signature_validate(param, method):
     Raises:
         PluginParamError: There was a validation problem
     """
-    sig_param = None
-    has_kwargs = False
+    for param in cmd.parameters:
+        sig_param = None
+        has_kwargs = False
 
-    for p in signature(method).parameters.values():
-        if p.name == param.key:
-            sig_param = p
-        if p.kind == InspectParameter.VAR_KEYWORD:
-            has_kwargs = True
+        for p in signature(method).parameters.values():
+            if p.name == param.key:
+                sig_param = p
+            if p.kind == InspectParameter.VAR_KEYWORD:
+                has_kwargs = True
 
-    # Couldn't find the parameter. That's OK if this parameter is meant to be part of
-    # the **kwargs AND the function has a **kwargs parameter.
-    if sig_param is None:
-        if not param.is_kwarg:
-            raise PluginParamError(
-                "Parameter was not not marked as part of kwargs and wasn't found in "
-                "the method signature (should is_kwarg be True?)"
-            )
-        elif not has_kwargs:
-            raise PluginParamError(
-                "Parameter was declared as a kwarg (is_kwarg=True) but the method "
-                "signature does not declare a **kwargs parameter"
-            )
+        # Couldn't find the parameter. That's OK if this parameter is meant to be part
+        # of the **kwargs AND the function has a **kwargs parameter.
+        if sig_param is None:
+            if not param.is_kwarg:
+                raise PluginParamError(
+                    "Parameter was not not marked as part of kwargs and wasn't found "
+                    "in the method signature (should is_kwarg be True?)"
+                )
+            elif not has_kwargs:
+                raise PluginParamError(
+                    "Parameter was declared as a kwarg (is_kwarg=True) but the method "
+                    "signature does not declare a **kwargs parameter"
+                )
 
-    # Cool, found the parameter. Just verify that it's not pure positional and that it's
-    # not marked as part of kwargs.
-    else:
-        if param.is_kwarg:
-            raise PluginParamError(
-                "Parameter was marked as part of kwargs but was found in the method "
-                "signature (should is_kwarg be False?)"
-            )
+        # Cool, found the parameter. Just verify that it's not pure positional and that
+        # it's not marked as part of kwargs.
+        else:
+            if param.is_kwarg:
+                raise PluginParamError(
+                    "Parameter was marked as part of kwargs but was found in the "
+                    "method signature (should is_kwarg be False?)"
+                )
 
-        # I don't think this is even possible in Python < 3.8
-        if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
-            raise PluginParamError(
-                "Sorry, positional-only type parameters are not supported"
-            )
+            # I don't think this is even possible in Python < 3.8
+            if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
+                raise PluginParamError(
+                    "Sorry, positional-only type parameters are not supported"
+                )
 
 
 # Alias the old names for compatibility

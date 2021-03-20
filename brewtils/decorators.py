@@ -381,10 +381,20 @@ def _parse_method(method):
     if (inspect.ismethod(method) or inspect.isfunction(method)) and (
         hasattr(method, "_command") or hasattr(method, "parameters")
     ):
+        # Create a command object if there isn't one already
         method_command = _initialize_command(method)
 
+        # Need to initialize existing parameters before attempting to add parameters
+        # pulled from the method signature.
+        method_command.parameters = _generate_nested_params(
+            method_command.parameters + getattr(method, "parameters", [])
+        )
+
+        # Add and update parameters based on the method signature
+        _signature_parameters(method_command, method)
+
+        # Verify that all parameters conform to the method signature
         for param in method_command.parameters:
-            _initialize_parameter(param=param)
             _validate_signature(param=param, method=method)
 
         return method_command
@@ -400,7 +410,33 @@ def _initialize_command(method):
     - Pulling the description from the method docstring, if necessary
     - Resolving display modifiers (schema, form, template)
 
-    It will also add / modify the Command's parameter list:
+    Args:
+        method: The method with the Command to initialize
+
+    Returns:
+        The initialized Command
+
+    """
+    cmd = getattr(method, "_command", Command())
+
+    cmd.name = _method_name(method)
+    cmd.description = cmd.description or _method_docstring(method)
+
+    resolved_mod = _resolve_display_modifiers(
+        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
+    )
+    cmd.schema = resolved_mod["schema"]
+    cmd.form = resolved_mod["form"]
+    cmd.template = resolved_mod["template"]
+
+    return cmd
+
+
+def _signature_parameters(cmd, method):
+    # type: (Command, MethodType) -> Command
+    """Add and/or modify a Command's parameters based on the method signature
+
+    This will add / modify the Command's parameter list:
 
     - Any arguments in the method signature that were not already known Parameters will
       be added
@@ -428,27 +464,13 @@ def _initialize_command(method):
     different.
 
     Args:
-        method: The method with the Command to initialize
+        cmd: The Command to modify
+        method: Method to parse
 
     Returns:
-        The initialized Command
+        Command with modified parameter list
 
     """
-    cmd = getattr(method, "_command", Command())
-
-    cmd.name = _method_name(method)
-    cmd.description = cmd.description or _method_docstring(method)
-
-    resolved_mod = _resolve_display_modifiers(
-        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
-    )
-    cmd.schema = resolved_mod["schema"]
-    cmd.form = resolved_mod["form"]
-    cmd.template = resolved_mod["template"]
-
-    # Now we need to deal with parameters. Start with ones from @parameter decorators.
-    cmd.parameters += getattr(method, "parameters", [])
-
     # Now we need to reconcile the parameters with the method signature
     for index, arg in enumerate(signature(method).parameters.values()):
 
@@ -462,7 +484,9 @@ def _initialize_command(method):
         # Here the parameter was not previously defined so just add it to the list
         if arg.name not in cmd.parameter_keys():
             cmd.parameters.append(
-                Parameter(key=arg.name, default=sig_default, optional=sig_optional)
+                _initialize_parameter(
+                    key=arg.name, default=sig_default, optional=sig_optional
+                )
             )
 
         # Here the parameter WAS previously defined. So we potentially need to update

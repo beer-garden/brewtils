@@ -395,7 +395,7 @@ def _parse_method(method):
 
         # Verify that all parameters conform to the method signature
         for param in method_command.parameters:
-            _validate_signature(param=param, method=method)
+            _signature_validate(param=param, method=method)
 
         return method_command
 
@@ -958,7 +958,7 @@ def _signature_parameters(cmd, method):
     return cmd
 
 
-def _validate_signature(param, method):
+def _signature_validate(param, method):
     # type: (Parameter, MethodType) -> None
     """Ensure that a Parameter conforms to the method signature
 

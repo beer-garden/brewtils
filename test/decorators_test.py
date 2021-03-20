@@ -18,7 +18,7 @@ from brewtils.decorators import (
     _parse_method,
     _resolve_display_modifiers,
     _sig_info,
-    _validate_signature,
+    _signature_validate,
     command,
     command_registrar,
     parameter,
@@ -1143,26 +1143,26 @@ class TestGenerateNestedParameters(object):
             _generate_nested_params(["This isn't a parameter!"])  # noqa
 
 
-class TestValidateSignature(object):
+class TestSignatureValidate(object):
     class TestSuccess(object):
         def test_positional(self, cmd):
-            _validate_signature(Parameter(key="foo"), cmd)
+            _signature_validate(Parameter(key="foo"), cmd)
 
         def test_kwarg(self, cmd_kwargs):
-            _validate_signature(Parameter(key="foo", is_kwarg=True), cmd_kwargs)
+            _signature_validate(Parameter(key="foo", is_kwarg=True), cmd_kwargs)
 
     class TestFailure(object):
         def test_mismatch_is_kwarg_true(self, cmd):
             with pytest.raises(PluginParamError):
-                _validate_signature(Parameter(key="foo", is_kwarg=True), cmd)
+                _signature_validate(Parameter(key="foo", is_kwarg=True), cmd)
 
         def test_mismatch_is_kwarg_false(self, cmd_kwargs):
             with pytest.raises(PluginParamError):
-                _validate_signature(Parameter(key="foo", is_kwarg=False), cmd_kwargs)
+                _signature_validate(Parameter(key="foo", is_kwarg=False), cmd_kwargs)
 
         def test_no_kwargs_in_signature(self, cmd):
             with pytest.raises(PluginParamError):
-                _validate_signature(Parameter(key="extra", is_kwarg=True), cmd)
+                _signature_validate(Parameter(key="extra", is_kwarg=True), cmd)
 
         # This is not valid syntax in Python < 3.8, so punting on this (it does work
         # for me right now :)

@@ -233,6 +233,20 @@ class TestCommand(object):
         assert cmd._command.description == "desc2"
         assert cmd._command.output_type == "STRING"  # This is the default
 
+    def test_parameter_equivalence(self, basic_param):
+        @command(parameters=[basic_param])
+        def func1(_, foo):
+            return foo
+
+        @parameter(**basic_param)
+        def func2(_, foo):
+            return foo
+
+        cmd1 = _parse_method(func1)
+        cmd2 = _parse_method(func2)
+
+        assert_parameter_equal(cmd1.parameters[0], cmd2.parameters[0])
+
 
 class TestParameter(object):
     """Test parameter decorator
@@ -273,16 +287,30 @@ class TestParameters(object):
 
         assert cmd("input") == "input"
 
-    def test_decorator_equivalence(self, basic_param):
-        @parameter(**basic_param)
+    def test_parameter_equivalence(self, basic_param):
+        @parameters([basic_param])
         def func1(_, foo):
             return foo
 
-        @parameters([basic_param])
+        @parameter(**basic_param)
         def func2(_, foo):
             return foo
 
         assert_parameter_equal(func1.parameters[0], func2.parameters[0])
+
+    def test_command_equivalence(self, basic_param):
+        @parameters([basic_param])
+        def func1(_, foo):
+            return foo
+
+        @command(parameters=[basic_param])
+        def func2(_, foo):
+            return foo
+
+        cmd1 = _parse_method(func1)
+        cmd2 = _parse_method(func2)
+
+        assert_parameter_equal(cmd1.parameters[0], cmd2.parameters[0])
 
     def test_dict_values(self, basic_param):
         param_spec = {"foo": basic_param}

@@ -36,7 +36,7 @@ __all__ = [
 
 
 def client(
-    cls=None,  # type: Type
+    _wrapped=None,  # type: Type
     bg_name=None,  # type: Optional[str]
     bg_version=None,  # type: Optional[str]
 ):
@@ -60,7 +60,8 @@ def client(
       * ``_current_request``: Reference to the currently executing request
 
     Args:
-        cls: The class to decorated
+        _wrapped: The class to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
         bg_name: Optional plugin name
         bg_version: Optional plugin version
 
@@ -68,16 +69,16 @@ def client(
         The decorated class
 
     """
-    if cls is None:
+    if _wrapped is None:
         return functools.partial(client, bg_name=bg_name, bg_version=bg_version)  # noqa
 
     # Assign these here so linters don't complain
-    cls._bg_name = bg_name
-    cls._bg_version = bg_version
-    cls._bg_commands = []
-    cls._current_request = None
+    _wrapped._bg_name = bg_name
+    _wrapped._bg_version = bg_version
+    _wrapped._bg_commands = []
+    _wrapped._current_request = None
 
-    return cls
+    return _wrapped
 
 
 def command(

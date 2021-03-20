@@ -37,8 +37,8 @@ __all__ = [
 
 def client(
     cls=None,  # type: Type
-    bg_name=None,  # type: str
-    bg_version=None,  # type: str
+    bg_name=None,  # type: Optional[str]
+    bg_version=None,  # type: Optional[str]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -82,15 +82,15 @@ def client(
 
 def command(
     _wrapped=None,  # type: Union[Callable, MethodType]
-    description=None,  # type: str
-    parameters=None,  # type: List[Parameter]
+    description=None,  # type: Optional[str]
+    parameters=None,  # type: Optional[List[Parameter]]
     command_type="ACTION",  # type: str
     output_type="STRING",  # type: str
-    schema=None,  # type: Union[dict, str]
-    form=None,  # type: Union[dict, list, str]
-    template=None,  # type: str
-    icon_name=None,  # type: str
-    hidden=False,  # type: bool
+    schema=None,  # type: Optional[Union[dict, str]]
+    form=None,  # type: Optional[Union[dict, list, str]]
+    template=None,  # type: Optional[str]
+    icon_name=None,  # type: Optional[str]
+    hidden=False,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
 
@@ -160,22 +160,22 @@ def command(
 def parameter(
     _wrapped=None,  # type: Union[Callable, MethodType, Type]
     key=None,  # type: str
-    type=None,  # type: str
-    multi=None,  # type: bool
-    display_name=None,  # type: str
-    optional=None,  # type: bool
-    default=None,  # type: Any
-    description=None,  # type: str
-    choices=None,  # type: Union[Dict, Iterable, str]
-    parameters=None,  # type: List[Parameter]
-    nullable=None,  # type: bool
-    maximum=None,  # type: int
-    minimum=None,  # type: int
-    regex=None,  # type: str
-    form_input_type=None,  # type: str
-    type_info=None,  # type: dict
-    is_kwarg=None,  # type: bool
-    model=None,  # type: Type
+    type=None,  # type: Optional[str]
+    multi=None,  # type: Optional[bool]
+    display_name=None,  # type: Optional[str]
+    optional=None,  # type: Optional[bool]
+    default=None,  # type: Optional[Any]
+    description=None,  # type: Optional[str]
+    choices=None,  # type: Optional[Union[Dict, Iterable, str]]
+    parameters=None,  # type: Optional[List[Parameter]]
+    nullable=None,  # type: Optional[bool]
+    maximum=None,  # type: Optional[int]
+    minimum=None,  # type: Optional[int]
+    regex=None,  # type: Optional[str]
+    form_input_type=None,  # type: Optional[str]
+    type_info=None,  # type: Optional[dict]
+    is_kwarg=None,  # type: Optional[bool]
+    model=None,  # type: Optional[Type]
 ):
     """Decorator for specifying Parameter details
 

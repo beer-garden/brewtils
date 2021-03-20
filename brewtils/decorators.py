@@ -386,7 +386,7 @@ def _parse_method(method):
 
         # Need to initialize existing parameters before attempting to add parameters
         # pulled from the method signature.
-        method_command.parameters = _generate_nested_params(
+        method_command.parameters = _initialize_parameters(
             method_command.parameters + getattr(method, "parameters", [])
         )
 
@@ -666,11 +666,11 @@ def _initialize_parameter(
     # Now deal with nested parameters
     if param.parameters:
         param.type = "Dictionary"
-        param.parameters = _generate_nested_params(param.parameters)
+        param.parameters = _initialize_parameters(param.parameters)
 
     elif param.model is not None:
         param.type = "Dictionary"
-        param.parameters = _generate_nested_params(param.model.parameters)
+        param.parameters = _initialize_parameters(param.model.parameters)
 
         # If the model is not nullable and does not have a default we will try
         # to generate a one using the defaults defined on the model parameters
@@ -839,7 +839,7 @@ def _format_choices(choices):
     )
 
 
-def _generate_nested_params(parameter_list):
+def _initialize_parameters(parameter_list):
     # type: (Iterable[Parameter, object]) -> List[Parameter]
     """Generate nested parameters from a list of Parameters or a Model object
 
@@ -874,7 +874,7 @@ def _generate_nested_params(parameter_list):
                 "Constructing a nested Parameters list using model class objects "
                 "is deprecated. Please pass the model's parameter list directly."
             )
-            initialized_params += _generate_nested_params(param.parameters)
+            initialized_params += _initialize_parameters(param.parameters)
 
         # This is a dict of Parameter kwargs
         elif isinstance(param, dict):

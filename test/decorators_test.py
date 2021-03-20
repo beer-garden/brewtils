@@ -9,9 +9,9 @@ import brewtils.decorators
 from brewtils.decorators import (
     _format_choices,
     _format_type,
-    _generate_nested_params,
     _initialize_command,
     _initialize_parameter,
+    _initialize_parameters,
     _method_docstring,
     _method_name,
     _parse_client,
@@ -1099,7 +1099,7 @@ class TestFormatChoices(object):
             _format_choices(choices)
 
 
-class TestGenerateNestedParameters(object):
+class TestInitializeParameters(object):
     @pytest.fixture(autouse=True)
     def init_mock(self, monkeypatch):
         """Mock out _initialize_parameter functionality
@@ -1112,7 +1112,7 @@ class TestGenerateNestedParameters(object):
         return m
 
     def test_parameter(self, init_mock, param):
-        res = _generate_nested_params([param])
+        res = _initialize_parameters([param])
 
         assert len(res) == 1
         assert res[0] == init_mock.return_value
@@ -1122,7 +1122,7 @@ class TestGenerateNestedParameters(object):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            res = _generate_nested_params([nested_1])
+            res = _initialize_parameters([nested_1])
 
             assert len(res) == 1
             assert res[0] == init_mock.return_value
@@ -1132,7 +1132,7 @@ class TestGenerateNestedParameters(object):
             assert "model class objects" in str(w[0].message)
 
     def test_dict(self, init_mock, basic_param):
-        res = _generate_nested_params([basic_param])
+        res = _initialize_parameters([basic_param])
 
         assert len(res) == 1
         assert res[0] == init_mock.return_value
@@ -1140,7 +1140,7 @@ class TestGenerateNestedParameters(object):
 
     def test_unknown_type(self):
         with pytest.raises(PluginParamError):
-            _generate_nested_params(["This isn't a parameter!"])  # noqa
+            _initialize_parameters(["This isn't a parameter!"])  # noqa
 
 
 class TestSignatureValidate(object):

@@ -840,20 +840,24 @@ def _format_choices(choices):
 
 
 def _initialize_parameters(parameter_list):
-    # type: (Iterable[Parameter, object]) -> List[Parameter]
-    """Generate nested parameters from a list of Parameters or a Model object
+    # type: (Iterable[Parameter, object, dict]) -> List[Parameter]
+    """Initialize Parameters from a list of parameter definitions
 
     This exists for backwards compatibility with the old way of specifying Models.
     Previously, models were defined by creating a class with a ``parameters`` class
     attribute. This required constructing each parameter manually, without using the
     ``@parameter`` decorator.
 
-    This function takes either a list of Parameters or a class object with a
-    ``parameters`` attribute. It will return a list of initialized parameters. See the
-    ``_initialize_parameter`` function for information on what that entails.
+    This function takes a list where members can be any of the following:
+    - A Parameter object
+    - A class object with a ``parameters`` attribute
+    - A dict containing kwargs for constructing a Parameter
+
+    The Parameters in the returned list will be initialized. See the function
+    ``_initialize_parameter`` for information on what that entails.
 
     Args:
-        parameter_list: List of parameters or object with a ``parameters`` attritube
+        parameter_list: List of parameter precursors
 
     Returns:
         List of initialized parameters

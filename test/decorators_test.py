@@ -418,27 +418,6 @@ class TestParseMethod(object):
         with pytest.raises(PluginParamError):
             _parse_method(parameter(cmd))
 
-
-class TestInitializeCommand(object):
-    def test_generate_command(self, cmd):
-        assert not hasattr(cmd, "_command")
-
-        cmd = _initialize_command(cmd)
-
-        assert cmd.name == "cmd"
-        assert cmd.description == "Docstring"
-        assert len(cmd.parameters) == 1
-
-    def test_overwrite_docstring(self):
-        new_description = "So descriptive"
-
-        @command(description=new_description)
-        def _cmd(_):
-            """This is a doc"""
-            pass
-
-        assert _initialize_command(_cmd).description == new_description
-
     class TestParameterReconciliation(object):
         """Test that the parameters line up correctly"""
 
@@ -450,7 +429,7 @@ class TestInitializeCommand(object):
                 def cmd(foo):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -465,7 +444,7 @@ class TestInitializeCommand(object):
                 def cmd(foo):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -480,7 +459,7 @@ class TestInitializeCommand(object):
                 def cmd(foo):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -495,7 +474,7 @@ class TestInitializeCommand(object):
                 def cmd(foo=None):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -510,7 +489,7 @@ class TestInitializeCommand(object):
                 def cmd(foo=None):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -525,7 +504,7 @@ class TestInitializeCommand(object):
                 def cmd(foo=None):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -540,7 +519,7 @@ class TestInitializeCommand(object):
                 def cmd(foo="hi"):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -555,7 +534,7 @@ class TestInitializeCommand(object):
                 def cmd(foo="hi"):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -591,7 +570,7 @@ class TestInitializeCommand(object):
                 def cmd(foo="hi"):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -599,6 +578,26 @@ class TestInitializeCommand(object):
 
                 # AGAIN, THIS ONE IS DIFFERENT!!!!
                 assert bg_cmd.parameters[0].default == "hi"
+
+
+class TestInitializeCommand(object):
+    def test_generate_command(self, cmd):
+        assert not hasattr(cmd, "_command")
+
+        cmd = _initialize_command(cmd)
+
+        assert cmd.name == "cmd"
+        assert cmd.description == "Docstring"
+
+    def test_overwrite_docstring(self):
+        new_description = "So descriptive"
+
+        @command(description=new_description)
+        def _cmd(_):
+            """This is a doc"""
+            pass
+
+        assert _initialize_command(_cmd).description == new_description
 
 
 class TestMethodName(object):

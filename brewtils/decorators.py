@@ -973,7 +973,7 @@ def _signature_validate(cmd, method):
     so you shouldn't do that.
 
     Args:
-        param: Command to validate
+        cmd: Command to validate
         method: Target method object
 
     Returns:

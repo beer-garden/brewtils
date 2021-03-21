@@ -1172,15 +1172,30 @@ class TestSignatureValidate(object):
                     Command(parameters=[Parameter(key="extra", is_kwarg=True)]), cmd
                 )
 
-        # This is not valid syntax in Python < 3.8, so punting on this (it does work
-        # for me right now :)
-        # def test_positional_only(self):
-        #     class Tester(object):
-        #         def c(self, foo, /):
-        #             pass
-        #
-        #     with pytest.raises(PluginParamError):
-        #         _validate_signature(Parameter(key="foo"), Tester.c)  # noqa
+        @pytest.mark.skipif(sys.version_info < (3, 8), reason="Requires Python 3.8")
+        def test_positional_only(self):
+            """This is invalid syntax on Python < 3.8 so we have to wrap it in exec"""
+            import textwrap
+
+            exec_locals = {}
+            class_dec = textwrap.dedent(
+                """
+                class Tester(object):
+                    def c(self, foo, /):
+                        pass
+                """
+            )
+
+            # Black doesn't handle this well - because we run in 2.7 mode it wants to
+            # put a space after exec, but then it complains about the space after exec.
+            # fmt: off
+            exec(class_dec, globals(), exec_locals)
+            # fmt: on
+
+            with pytest.raises(PluginParamError):
+                _signature_validate(
+                    Command(parameters=[Parameter(key="foo")]), exec_locals["Tester"].c
+                )  # noqa
 
 
 class TestDeprecations(object):

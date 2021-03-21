@@ -233,19 +233,25 @@ class TestCommand(object):
         assert cmd._command.description == "desc2"
         assert cmd._command.output_type == "STRING"  # This is the default
 
-    def test_parameter_equivalence(self, basic_param):
-        @command(parameters=[basic_param])
-        def func1(_, foo):
-            return foo
-
+    def test_parameter_equivalence(self, basic_param, param):
         @parameter(**basic_param)
-        def func2(_, foo):
+        def expected_method(foo):
             return foo
 
-        cmd1 = _parse_method(func1)
-        cmd2 = _parse_method(func2)
+        @command(parameters=[basic_param])
+        def dict_method(foo):
+            return foo
 
-        assert_parameter_equal(cmd1.parameters[0], cmd2.parameters[0])
+        @command(parameters=[param])
+        def param_method(foo):
+            return foo
+
+        expected = _parse_method(expected_method)
+        dict_cmd = _parse_method(dict_method)
+        param_cmd = _parse_method(param_method)
+
+        assert_parameter_equal(dict_cmd.parameters[0], expected.parameters[0])
+        assert_parameter_equal(param_cmd.parameters[0], expected.parameters[0])
 
 
 class TestParameter(object):
@@ -289,22 +295,22 @@ class TestParameters(object):
 
     def test_parameter_equivalence(self, basic_param):
         @parameters([basic_param])
-        def func1(_, foo):
+        def func1(foo):
             return foo
 
         @parameter(**basic_param)
-        def func2(_, foo):
+        def func2(foo):
             return foo
 
         assert_parameter_equal(func1.parameters[0], func2.parameters[0])
 
     def test_command_equivalence(self, basic_param):
         @parameters([basic_param])
-        def func1(_, foo):
+        def func1(foo):
             return foo
 
         @command(parameters=[basic_param])
-        def func2(_, foo):
+        def func2(foo):
             return foo
 
         cmd1 = _parse_method(func1)

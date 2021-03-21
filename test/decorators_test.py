@@ -286,6 +286,11 @@ class TestParameter(object):
 
 
 class TestParameters(object):
+    @pytest.fixture(autouse=True)
+    def catch_warnings(self):
+        with warnings.catch_warnings(record=True):
+            yield
+
     def test_function(self, basic_param):
         @parameters([basic_param])
         def cmd(foo):
@@ -411,8 +416,9 @@ class TestParseMethod(object):
         assert _parse_method(cmd_kwargs) is not None
 
     def test_parameters(self, cmd):
-        partial = parameters([{"key": "foo"}])
-        cmd = partial(cmd)
+        with warnings.catch_warnings(record=True):
+            partial = parameters([{"key": "foo"}])
+            cmd = partial(cmd)
         assert _parse_method(cmd) is not None
 
     def test_cmd_parameter(self, cmd):

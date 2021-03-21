@@ -324,6 +324,12 @@ def parameters(*args, **kwargs):
                 "the Beergarden team know how you got here!"
             )
 
+    _deprecate(
+        "Looks like you're using the '@parameters' decorator. This is now deprecated - "
+        "for passing bulk parameter definitions it's recommended to use the @command "
+        "decorator parameters kwarg, like this: @command(parameters=[...])"
+    )
+
     params = args[0]
     _wrapped = args[1]
 

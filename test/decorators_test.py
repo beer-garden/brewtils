@@ -19,6 +19,7 @@ from brewtils.decorators import (
     _resolve_display_modifiers,
     _sig_info,
     _signature_validate,
+    client,
     command,
     command_registrar,
     parameter,
@@ -170,33 +171,33 @@ class TestOverall(object):
             assert_parameter_equal(c.parameters[0], Parameter(**basic_param))
 
 
-class TestSystem(object):
+class TestClient(object):
     def test_basic(self):
-        @system
-        class SystemClass(object):
+        @client
+        class ClientClass(object):
             @command
             def foo(self):
                 pass
 
-        assert hasattr(SystemClass, "_bg_name")
-        assert hasattr(SystemClass, "_bg_version")
-        assert hasattr(SystemClass, "_bg_commands")
-        assert hasattr(SystemClass, "_current_request")
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
 
     def test_with_args(self):
-        @system(bg_name="sys", bg_version="1.0.0")
-        class SystemClass(object):
+        @client(bg_name="sys", bg_version="1.0.0")
+        class ClientClass(object):
             @command
             def foo(self):
                 pass
 
-        assert hasattr(SystemClass, "_bg_name")
-        assert hasattr(SystemClass, "_bg_version")
-        assert hasattr(SystemClass, "_bg_commands")
-        assert hasattr(SystemClass, "_current_request")
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
 
-        assert SystemClass._bg_name == "sys"
-        assert SystemClass._bg_version == "1.0.0"
+        assert ClientClass._bg_name == "sys"
+        assert ClientClass._bg_version == "1.0.0"
 
 
 class TestCommand(object):
@@ -1211,6 +1212,20 @@ class TestSignatureValidate(object):
 
 
 class TestDeprecations(object):
+    def test_system_decorator(self):
+        """This isn't really deprecated, but close enough"""
+
+        @system
+        class ClientClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
+
     class TestCommandRegistrar(object):
         def test_basic(self):
             with warnings.catch_warnings(record=True) as w:

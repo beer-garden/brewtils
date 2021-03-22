@@ -783,8 +783,8 @@ def _format_choices(choices):
 
         return "static"
 
-    if not choices:
-        return None
+    if choices is None or isinstance(choices, Choices):
+        return choices
 
     if isinstance(choices, dict):
         if not choices.get("value"):
@@ -922,6 +922,10 @@ def _generate_nested_params(parameter_list):
                 "is deprecated. Please pass the model's parameter list directly."
             )
             initialized_params += _generate_nested_params(param.parameters)
+
+        # This is a dict of Parameter kwargs
+        elif isinstance(param, dict):
+            initialized_params.append(_initialize_parameter(**param))
 
         # No clue!
         else:

@@ -941,7 +941,10 @@ def _signature_parameters(cmd, method):
     for index, arg in enumerate(signature(method).parameters.values()):
 
         # Don't want to include special parameters
-        if index == 0 and arg.name in ("self", "cls"):
+        if (index == 0 and arg.name in ("self", "cls")) or arg.kind in (
+            InspectParameter.VAR_KEYWORD,
+            InspectParameter.VAR_POSITIONAL,
+        ):
             continue
 
         # Grab default and optionality according to the signature. We'll need it later.

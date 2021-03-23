@@ -9,16 +9,16 @@ import brewtils.decorators
 from brewtils.decorators import (
     _format_choices,
     _format_type,
-    _generate_nested_params,
     _initialize_command,
     _initialize_parameter,
+    _initialize_parameters,
     _method_docstring,
     _method_name,
     _parse_client,
     _parse_method,
     _resolve_display_modifiers,
     _sig_info,
-    _validate_signature,
+    _signature_validate,
     client,
     command,
     command_registrar,
@@ -29,7 +29,7 @@ from brewtils.decorators import (
     system,
 )
 from brewtils.errors import PluginParamError
-from brewtils.models import Parameter
+from brewtils.models import Command, Parameter
 from brewtils.test.comparable import assert_command_equal, assert_parameter_equal
 
 if sys.version_info.major == 2:
@@ -234,6 +234,26 @@ class TestCommand(object):
         assert cmd._command.description == "desc2"
         assert cmd._command.output_type == "STRING"  # This is the default
 
+    def test_parameter_equivalence(self, basic_param, param):
+        @parameter(**basic_param)
+        def expected_method(foo):
+            return foo
+
+        @command(parameters=[basic_param])
+        def dict_method(foo):
+            return foo
+
+        @command(parameters=[param])
+        def param_method(foo):
+            return foo
+
+        expected = _parse_method(expected_method)
+        dict_cmd = _parse_method(dict_method)
+        param_cmd = _parse_method(param_method)
+
+        assert_parameter_equal(dict_cmd.parameters[0], expected.parameters[0])
+        assert_parameter_equal(param_cmd.parameters[0], expected.parameters[0])
+
 
 class TestParameter(object):
     """Test parameter decorator
@@ -267,6 +287,11 @@ class TestParameter(object):
 
 
 class TestParameters(object):
+    @pytest.fixture(autouse=True)
+    def catch_warnings(self):
+        with warnings.catch_warnings(record=True):
+            yield
+
     def test_function(self, basic_param):
         @parameters([basic_param])
         def cmd(foo):
@@ -274,16 +299,30 @@ class TestParameters(object):
 
         assert cmd("input") == "input"
 
-    def test_decorator_equivalence(self, basic_param):
-        @parameter(**basic_param)
-        def func1(_, foo):
+    def test_parameter_equivalence(self, basic_param):
+        @parameters([basic_param])
+        def func1(foo):
             return foo
 
-        @parameters([basic_param])
-        def func2(_, foo):
+        @parameter(**basic_param)
+        def func2(foo):
             return foo
 
         assert_parameter_equal(func1.parameters[0], func2.parameters[0])
+
+    def test_command_equivalence(self, basic_param):
+        @parameters([basic_param])
+        def func1(foo):
+            return foo
+
+        @command(parameters=[basic_param])
+        def func2(foo):
+            return foo
+
+        cmd1 = _parse_method(func1)
+        cmd2 = _parse_method(func2)
+
+        assert_parameter_equal(cmd1.parameters[0], cmd2.parameters[0])
 
     def test_dict_values(self, basic_param):
         param_spec = {"foo": basic_param}
@@ -378,8 +417,9 @@ class TestParseMethod(object):
         assert _parse_method(cmd_kwargs) is not None
 
     def test_parameters(self, cmd):
-        partial = parameters([{"key": "foo"}])
-        cmd = partial(cmd)
+        with warnings.catch_warnings(record=True):
+            partial = parameters([{"key": "foo"}])
+            cmd = partial(cmd)
         assert _parse_method(cmd) is not None
 
     def test_cmd_parameter(self, cmd):
@@ -390,27 +430,6 @@ class TestParseMethod(object):
     def test_no_key(self, cmd):
         with pytest.raises(PluginParamError):
             _parse_method(parameter(cmd))
-
-
-class TestInitializeCommand(object):
-    def test_generate_command(self, cmd):
-        assert not hasattr(cmd, "_command")
-
-        cmd = _initialize_command(cmd)
-
-        assert cmd.name == "cmd"
-        assert cmd.description == "Docstring"
-        assert len(cmd.parameters) == 1
-
-    def test_overwrite_docstring(self):
-        new_description = "So descriptive"
-
-        @command(description=new_description)
-        def _cmd(_):
-            """This is a doc"""
-            pass
-
-        assert _initialize_command(_cmd).description == new_description
 
     class TestParameterReconciliation(object):
         """Test that the parameters line up correctly"""
@@ -423,7 +442,7 @@ class TestInitializeCommand(object):
                 def cmd(foo):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -438,7 +457,7 @@ class TestInitializeCommand(object):
                 def cmd(foo):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -453,7 +472,7 @@ class TestInitializeCommand(object):
                 def cmd(foo):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -468,7 +487,7 @@ class TestInitializeCommand(object):
                 def cmd(foo=None):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -483,7 +502,7 @@ class TestInitializeCommand(object):
                 def cmd(foo=None):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -498,7 +517,7 @@ class TestInitializeCommand(object):
                 def cmd(foo=None):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -513,7 +532,7 @@ class TestInitializeCommand(object):
                 def cmd(foo="hi"):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -528,7 +547,7 @@ class TestInitializeCommand(object):
                 def cmd(foo="hi"):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -564,7 +583,7 @@ class TestInitializeCommand(object):
                 def cmd(foo="hi"):
                     return foo
 
-                bg_cmd = _initialize_command(cmd)
+                bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
@@ -572,6 +591,26 @@ class TestInitializeCommand(object):
 
                 # AGAIN, THIS ONE IS DIFFERENT!!!!
                 assert bg_cmd.parameters[0].default == "hi"
+
+
+class TestInitializeCommand(object):
+    def test_generate_command(self, cmd):
+        assert not hasattr(cmd, "_command")
+
+        cmd = _initialize_command(cmd)
+
+        assert cmd.name == "cmd"
+        assert cmd.description == "Docstring"
+
+    def test_overwrite_docstring(self):
+        new_description = "So descriptive"
+
+        @command(description=new_description)
+        def _cmd(_):
+            """This is a doc"""
+            pass
+
+        assert _initialize_command(_cmd).description == new_description
 
 
 class TestMethodName(object):
@@ -1072,7 +1111,7 @@ class TestFormatChoices(object):
             _format_choices(choices)
 
 
-class TestGenerateNestedParameters(object):
+class TestInitializeParameters(object):
     @pytest.fixture(autouse=True)
     def init_mock(self, monkeypatch):
         """Mock out _initialize_parameter functionality
@@ -1085,7 +1124,7 @@ class TestGenerateNestedParameters(object):
         return m
 
     def test_parameter(self, init_mock, param):
-        res = _generate_nested_params([param])
+        res = _initialize_parameters([param])
 
         assert len(res) == 1
         assert res[0] == init_mock.return_value
@@ -1095,7 +1134,7 @@ class TestGenerateNestedParameters(object):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            res = _generate_nested_params([nested_1])
+            res = _initialize_parameters([nested_1])
 
             assert len(res) == 1
             assert res[0] == init_mock.return_value
@@ -1105,7 +1144,7 @@ class TestGenerateNestedParameters(object):
             assert "model class objects" in str(w[0].message)
 
     def test_dict(self, init_mock, basic_param):
-        res = _generate_nested_params([basic_param])
+        res = _initialize_parameters([basic_param])
 
         assert len(res) == 1
         assert res[0] == init_mock.return_value
@@ -1113,39 +1152,63 @@ class TestGenerateNestedParameters(object):
 
     def test_unknown_type(self):
         with pytest.raises(PluginParamError):
-            _generate_nested_params(["This isn't a parameter!"])  # noqa
+            _initialize_parameters(["This isn't a parameter!"])  # noqa
 
 
-class TestValidateSignature(object):
+class TestSignatureValidate(object):
     class TestSuccess(object):
         def test_positional(self, cmd):
-            _validate_signature(Parameter(key="foo"), cmd)
+            _signature_validate(Command(parameters=[Parameter(key="foo")]), cmd)
 
         def test_kwarg(self, cmd_kwargs):
-            _validate_signature(Parameter(key="foo", is_kwarg=True), cmd_kwargs)
+            _signature_validate(
+                Command(parameters=[Parameter(key="foo", is_kwarg=True)]), cmd_kwargs
+            )
 
     class TestFailure(object):
         def test_mismatch_is_kwarg_true(self, cmd):
             with pytest.raises(PluginParamError):
-                _validate_signature(Parameter(key="foo", is_kwarg=True), cmd)
+                _signature_validate(
+                    Command(parameters=[Parameter(key="foo", is_kwarg=True)]), cmd
+                )
 
         def test_mismatch_is_kwarg_false(self, cmd_kwargs):
             with pytest.raises(PluginParamError):
-                _validate_signature(Parameter(key="foo", is_kwarg=False), cmd_kwargs)
+                _signature_validate(
+                    Command(parameters=[Parameter(key="foo", is_kwarg=False)]),
+                    cmd_kwargs,
+                )
 
         def test_no_kwargs_in_signature(self, cmd):
             with pytest.raises(PluginParamError):
-                _validate_signature(Parameter(key="extra", is_kwarg=True), cmd)
+                _signature_validate(
+                    Command(parameters=[Parameter(key="extra", is_kwarg=True)]), cmd
+                )
 
-        # This is not valid syntax in Python < 3.8, so punting on this (it does work
-        # for me right now :)
-        # def test_positional_only(self):
-        #     class Tester(object):
-        #         def c(self, foo, /):
-        #             pass
-        #
-        #     with pytest.raises(PluginParamError):
-        #         _validate_signature(Parameter(key="foo"), Tester.c)  # noqa
+        @pytest.mark.skipif(sys.version_info < (3, 8), reason="Requires Python 3.8")
+        def test_positional_only(self):
+            """This is invalid syntax on Python < 3.8 so we have to wrap it in exec"""
+            import textwrap
+
+            exec_locals = {}
+            class_dec = textwrap.dedent(
+                """
+                class Tester(object):
+                    def c(self, foo, /):
+                        pass
+                """
+            )
+
+            # Black doesn't handle this well - because we run in 2.7 mode it wants to
+            # put a space after exec, but then it complains about the space after exec.
+            # fmt: off
+            exec(class_dec, globals(), exec_locals)
+            # fmt: on
+
+            with pytest.raises(PluginParamError):
+                _signature_validate(
+                    Command(parameters=[Parameter(key="foo")]), exec_locals["Tester"].c
+                )  # noqa
 
 
 class TestDeprecations(object):

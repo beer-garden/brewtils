@@ -326,6 +326,12 @@ def parameters(*args, **kwargs):
                 "the Beergarden team know how you got here!"
             )
 
+    _deprecate(
+        "Looks like you're using the '@parameters' decorator. This is now deprecated - "
+        "for passing bulk parameter definitions it's recommended to use the @command "
+        "decorator parameters kwarg, like this: @command(parameters=[...])"
+    )
+
     params = args[0]
     _wrapped = args[1]
 
@@ -383,11 +389,20 @@ def _parse_method(method):
     if (inspect.ismethod(method) or inspect.isfunction(method)) and (
         hasattr(method, "_command") or hasattr(method, "parameters")
     ):
+        # Create a command object if there isn't one already
         method_command = _initialize_command(method)
 
-        for param in method_command.parameters:
-            _initialize_parameter(param=param)
-            _validate_signature(param=param, method=method)
+        # Need to initialize existing parameters before attempting to add parameters
+        # pulled from the method signature.
+        method_command.parameters = _initialize_parameters(
+            method_command.parameters + getattr(method, "parameters", [])
+        )
+
+        # Add and update parameters based on the method signature
+        _signature_parameters(method_command, method)
+
+        # Verify that all parameters conform to the method signature
+        _signature_validate(method_command, method)
 
         return method_command
 
@@ -401,33 +416,6 @@ def _initialize_command(method):
     - Assigning the name from the method name
     - Pulling the description from the method docstring, if necessary
     - Resolving display modifiers (schema, form, template)
-
-    It will also add / modify the Command's parameter list:
-
-    - Any arguments in the method signature that were not already known Parameters will
-      be added
-    - Any arguments that WERE already known (most likely from a @parameter decorator)
-      will potentially have their default and optional values updated:
-
-      - If either attribute is already defined (specified in the decorator) then that
-        value will be used. Explicit values will NOT be overridden.
-      - If the default attribute is not already defined then it will be set to the value
-        of the default parameter from the method signature, if any.
-      - If the optional attribute is not already defined then it will be set to True if
-        a default value exists in the method signature, otherwise it will be set to
-        False.
-
-    The parameter modification is confusing - see the _sig_info docstring for examples.
-
-    A final note - I'm not super happy about this. It makes sense - positional arguments
-    are "required", so mark them as non-optional. It's not *wrong*, but it's unexpected.
-    A @parameter that doesn't specify "optional=" will have a different optionality
-    based on the function signature.
-
-    Regardless, we went with this originally. If we want to change it we need to go
-    though a deprecation cycle and *loudly* publicize it since things wouldn't break
-    loudly for plugin developers, their plugins would just be subtly (but importantly)
-    different.
 
     Args:
         method: The method with the Command to initialize
@@ -447,36 +435,6 @@ def _initialize_command(method):
     cmd.schema = resolved_mod["schema"]
     cmd.form = resolved_mod["form"]
     cmd.template = resolved_mod["template"]
-
-    # Now we need to deal with parameters. Start with ones from @parameter decorators.
-    cmd.parameters += getattr(method, "parameters", [])
-
-    # Now we need to reconcile the parameters with the method signature
-    for index, arg in enumerate(signature(method).parameters.values()):
-
-        # Don't want to include special parameters
-        if index == 0 and arg.name in ("self", "cls"):
-            continue
-
-        # Grab default and optionality according to the signature. We'll need it later.
-        sig_default, sig_optional = _sig_info(arg)
-
-        # Here the parameter was not previously defined so just add it to the list
-        if arg.name not in cmd.parameter_keys():
-            cmd.parameters.append(
-                Parameter(key=arg.name, default=sig_default, optional=sig_optional)
-            )
-
-        # Here the parameter WAS previously defined. So we potentially need to update
-        # the default and optional values (if they weren't explicitly set).
-        else:
-            param = cmd.get_parameter_by_key(arg.name)
-
-            if param.default is None:
-                param.default = sig_default
-
-            if param.optional is None:
-                param.optional = sig_optional
 
     return cmd
 
@@ -715,11 +673,11 @@ def _initialize_parameter(
     # Now deal with nested parameters
     if param.parameters:
         param.type = "Dictionary"
-        param.parameters = _generate_nested_params(param.parameters)
+        param.parameters = _initialize_parameters(param.parameters)
 
     elif param.model is not None:
         param.type = "Dictionary"
-        param.parameters = _generate_nested_params(param.model.parameters)
+        param.parameters = _initialize_parameters(param.model.parameters)
 
         # If the model is not nullable and does not have a default we will try
         # to generate a one using the defaults defined on the model parameters
@@ -888,21 +846,25 @@ def _format_choices(choices):
     )
 
 
-def _generate_nested_params(parameter_list):
-    # type: (Iterable[Parameter, object]) -> List[Parameter]
-    """Generate nested parameters from a list of Parameters or a Model object
+def _initialize_parameters(parameter_list):
+    # type: (Iterable[Parameter, object, dict]) -> List[Parameter]
+    """Initialize Parameters from a list of parameter definitions
 
     This exists for backwards compatibility with the old way of specifying Models.
     Previously, models were defined by creating a class with a ``parameters`` class
     attribute. This required constructing each parameter manually, without using the
     ``@parameter`` decorator.
 
-    This function takes either a list of Parameters or a class object with a
-    ``parameters`` attribute. It will return a list of initialized parameters. See the
-    ``_initialize_parameter`` function for information on what that entails.
+    This function takes a list where members can be any of the following:
+    - A Parameter object
+    - A class object with a ``parameters`` attribute
+    - A dict containing kwargs for constructing a Parameter
+
+    The Parameters in the returned list will be initialized. See the function
+    ``_initialize_parameter`` for information on what that entails.
 
     Args:
-        parameter_list: List of parameters or object with a ``parameters`` attritube
+        parameter_list: List of parameter precursors
 
     Returns:
         List of initialized parameters
@@ -923,7 +885,7 @@ def _generate_nested_params(parameter_list):
                 "Constructing a nested Parameters list using model class objects "
                 "is deprecated. Please pass the model's parameter list directly."
             )
-            initialized_params += _generate_nested_params(param.parameters)
+            initialized_params += _initialize_parameters(param.parameters)
 
         # This is a dict of Parameter kwargs
         elif isinstance(param, dict):
@@ -936,9 +898,80 @@ def _generate_nested_params(parameter_list):
     return initialized_params
 
 
-def _validate_signature(param, method):
-    # type: (Parameter, MethodType) -> None
-    """Ensure that a Parameter conforms to the method signature
+def _signature_parameters(cmd, method):
+    # type: (Command, MethodType) -> Command
+    """Add and/or modify a Command's parameters based on the method signature
+
+    This will add / modify the Command's parameter list:
+
+    - Any arguments in the method signature that were not already known Parameters will
+      be added
+    - Any arguments that WERE already known (most likely from a @parameter decorator)
+      will potentially have their default and optional values updated:
+
+      - If either attribute is already defined (specified in the decorator) then that
+        value will be used. Explicit values will NOT be overridden.
+      - If the default attribute is not already defined then it will be set to the value
+        of the default parameter from the method signature, if any.
+      - If the optional attribute is not already defined then it will be set to True if
+        a default value exists in the method signature, otherwise it will be set to
+        False.
+
+    The parameter modification is confusing - see the _sig_info docstring for examples.
+
+    A final note - I'm not super happy about this. It makes sense - positional arguments
+    are "required", so mark them as non-optional. It's not *wrong*, but it's unexpected.
+    A @parameter that doesn't specify "optional=" will have a different optionality
+    based on the function signature.
+
+    Regardless, we went with this originally. If we want to change it we need to go
+    though a deprecation cycle and *loudly* publicize it since things wouldn't break
+    loudly for plugin developers, their plugins would just be subtly (but importantly)
+    different.
+
+    Args:
+        cmd: The Command to modify
+        method: Method to parse
+
+    Returns:
+        Command with modified parameter list
+
+    """
+    # Now we need to reconcile the parameters with the method signature
+    for index, arg in enumerate(signature(method).parameters.values()):
+
+        # Don't want to include special parameters
+        if index == 0 and arg.name in ("self", "cls"):
+            continue
+
+        # Grab default and optionality according to the signature. We'll need it later.
+        sig_default, sig_optional = _sig_info(arg)
+
+        # Here the parameter was not previously defined so just add it to the list
+        if arg.name not in cmd.parameter_keys():
+            cmd.parameters.append(
+                _initialize_parameter(
+                    key=arg.name, default=sig_default, optional=sig_optional
+                )
+            )
+
+        # Here the parameter WAS previously defined. So we potentially need to update
+        # the default and optional values (if they weren't explicitly set).
+        else:
+            param = cmd.get_parameter_by_key(arg.name)
+
+            if param.default is None:
+                param.default = sig_default
+
+            if param.optional is None:
+                param.optional = sig_optional
+
+    return cmd
+
+
+def _signature_validate(cmd, method):
+    # type: (Command, MethodType) -> None
+    """Ensure that a Command conforms to the method signature
 
     This will do some validation and will raise a PluginParamError if there are any
     issues.
@@ -948,7 +981,7 @@ def _validate_signature(param, method):
     so you shouldn't do that.
 
     Args:
-        param: Parameter definition
+        cmd: Command to validate
         method: Target method object
 
     Returns:
@@ -957,43 +990,44 @@ def _validate_signature(param, method):
     Raises:
         PluginParamError: There was a validation problem
     """
-    sig_param = None
-    has_kwargs = False
+    for param in cmd.parameters:
+        sig_param = None
+        has_kwargs = False
 
-    for p in signature(method).parameters.values():
-        if p.name == param.key:
-            sig_param = p
-        if p.kind == InspectParameter.VAR_KEYWORD:
-            has_kwargs = True
+        for p in signature(method).parameters.values():
+            if p.name == param.key:
+                sig_param = p
+            if p.kind == InspectParameter.VAR_KEYWORD:
+                has_kwargs = True
 
-    # Couldn't find the parameter. That's OK if this parameter is meant to be part of
-    # the **kwargs AND the function has a **kwargs parameter.
-    if sig_param is None:
-        if not param.is_kwarg:
-            raise PluginParamError(
-                "Parameter was not not marked as part of kwargs and wasn't found in "
-                "the method signature (should is_kwarg be True?)"
-            )
-        elif not has_kwargs:
-            raise PluginParamError(
-                "Parameter was declared as a kwarg (is_kwarg=True) but the method "
-                "signature does not declare a **kwargs parameter"
-            )
+        # Couldn't find the parameter. That's OK if this parameter is meant to be part
+        # of the **kwargs AND the function has a **kwargs parameter.
+        if sig_param is None:
+            if not param.is_kwarg:
+                raise PluginParamError(
+                    "Parameter was not not marked as part of kwargs and wasn't found "
+                    "in the method signature (should is_kwarg be True?)"
+                )
+            elif not has_kwargs:
+                raise PluginParamError(
+                    "Parameter was declared as a kwarg (is_kwarg=True) but the method "
+                    "signature does not declare a **kwargs parameter"
+                )
 
-    # Cool, found the parameter. Just verify that it's not pure positional and that it's
-    # not marked as part of kwargs.
-    else:
-        if param.is_kwarg:
-            raise PluginParamError(
-                "Parameter was marked as part of kwargs but was found in the method "
-                "signature (should is_kwarg be False?)"
-            )
+        # Cool, found the parameter. Just verify that it's not pure positional and that
+        # it's not marked as part of kwargs.
+        else:
+            if param.is_kwarg:
+                raise PluginParamError(
+                    "Parameter was marked as part of kwargs but was found in the "
+                    "method signature (should is_kwarg be False?)"
+                )
 
-        # I don't think this is even possible in Python < 3.8
-        if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
-            raise PluginParamError(
-                "Sorry, positional-only type parameters are not supported"
-            )
+            # I don't think this is even possible in Python < 3.8
+            if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
+                raise PluginParamError(
+                    "Sorry, positional-only type parameters are not supported"
+                )
 
 
 # Alias the old names for compatibility

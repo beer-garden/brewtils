@@ -203,7 +203,7 @@ class SystemClient(object):
             )
             kwargs.setdefault("system_name", args[2])
 
-        system_kwargs = {
+        config_map = {
             "system_name": "name",
             "version_constraint": "version",
             "default_instance": "instance_name",
@@ -217,18 +217,20 @@ class SystemClient(object):
         # Now we need to figure out if any of the provided kwargs don't match
         # some sort of loop that checks the value of system kwargs against the CONFIG
         # If they are different, target_self = False and break
-        for key in system_kwargs.keys():
-            if kwargs.get(key) is None:
-                continue
-            if kwargs.get(key) != brewtils.plugin.CONFIG[system_kwargs[key]]:
+
+        for key, value in config_map.items():
+            if (
+                kwargs.get(key) is not None
+                and kwargs.get(key) != brewtils.plugin.CONFIG[value]
+            ):
                 target_self = False
                 break
 
         # Now assign self._system_name, etc based on the value of target_self
         if target_self:
-            self._system_name = brewtils.plugin.CONFIG.name or None
-            self._version_constraint = brewtils.plugin.CONFIG.version or None
-            self._default_instance = brewtils.plugin.CONFIG.instance_name or None
+            self._system_name = brewtils.plugin.CONFIG.name
+            self._version_constraint = brewtils.plugin.CONFIG.version
+            self._default_instance = brewtils.plugin.CONFIG.instance_name
             self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
         else:
             self._system_name = kwargs.get("system_name")

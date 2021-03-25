@@ -861,6 +861,18 @@ class EasyClient(object):
                 % default_file_params["file_name"]
             )
 
+    def forward(self, operation):
+        """Forwards an Operation
+
+        Args:
+            operation: The Operation to be forwarded
+
+        Returns:
+            The API response
+
+        """
+        return self.client.post_forward(SchemaParser.serialize_operation(operation))
+
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError
     )

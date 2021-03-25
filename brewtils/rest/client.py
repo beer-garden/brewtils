@@ -164,6 +164,7 @@ class RestClient(object):
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
             self.admin_url = self.base_url + "api/v1/admin/"
+            self.forward_url = self.base_url + "api/v1/forward"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
@@ -690,6 +691,21 @@ class RestClient(object):
             raise RuntimeError("Could not request file ID for file %s" % fd.name)
 
         return result
+
+    @enable_auth
+    def post_forward(self, payload):
+        # type: (str) -> Response
+        """Performs a POST on the Forward URL
+
+        Args:
+            payload: The operation to be executed
+
+        Returns:
+            The API response
+        """
+        return self.session.post(
+            self.forward_url, data=payload, headers=self.JSON_HEADERS
+        )
 
     @enable_auth
     def get_user(self, user_identifier):

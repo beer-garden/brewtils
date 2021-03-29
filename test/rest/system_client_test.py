@@ -179,6 +179,63 @@ class TestLoadBgSystem(object):
             name=system_1.name, namespace="foo"
         )
 
+    def test_no_system_kwargs(self):
+
+        brewtils.plugin.CONFIG.namespace = "foo"
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "foo"
+
+        client = SystemClient()
+
+        assert client._system_namespace == brewtils.plugin.CONFIG.namespace
+        assert client._system_name == brewtils.plugin.CONFIG.name
+        assert client._version_constraint == brewtils.plugin.CONFIG.version
+        assert client._default_instance == brewtils.plugin.CONFIG.instance_name
+
+    def test_all_system_kwargs(self):
+
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "foo"
+
+        client = SystemClient(
+            system_name="not foo",
+            version_constraint="2.0.0",
+            default_instance="not foo",
+        )
+
+        assert client._system_name != brewtils.plugin.CONFIG.name
+        assert client._version_constraint != brewtils.plugin.CONFIG.version
+        assert client._default_instance != brewtils.plugin.CONFIG.instance_name
+
+    def test_different_system_name(self):
+        """Using a system name that's NOT the current running system"""
+
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "instance"
+
+        client = SystemClient(system_name="not foo")
+
+        assert client._system_name == "not foo"
+        assert client._version_constraint == "latest"
+        assert client._default_instance == "default"
+
+    def test_system_name_kwarg_matching(self):
+        """Behavior should be the same regardless of whether the system name comes
+        from the global config or a kwarg"""
+
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "instance"
+
+        client = SystemClient(system_name="foo")
+
+        assert client._system_name == "foo"
+        assert client._version_constraint == "1.0.0"
+        assert client._default_instance == "instance"
+
 
 class TestCreateRequest(object):
     @pytest.mark.parametrize("context", [None, Mock(current_request=None)])

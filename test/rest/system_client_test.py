@@ -236,6 +236,15 @@ class TestLoadBgSystem(object):
         assert client._version_constraint == "1.0.0"
         assert client._default_instance == "instance"
 
+    def test_non_plugin(self):
+        """Ensure things default correctly when running outside of a Plugin"""
+        client = SystemClient()
+
+        assert client._system_name is None
+        assert client._version_constraint == "latest"
+        assert client._default_instance == "default"
+        assert client._system_namespace == ""
+
 
 class TestCreateRequest(object):
     @pytest.mark.parametrize("context", [None, Mock(current_request=None)])

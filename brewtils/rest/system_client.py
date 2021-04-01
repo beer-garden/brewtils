@@ -203,21 +203,18 @@ class SystemClient(object):
             )
             kwargs.setdefault("system_name", args[2])
 
+        # Now need to determine if the intended target is the current running plugin.
+        # Start by ensuring there's a valid Plugin context active
+        target_self = bool(brewtils.plugin.CONFIG)
+
+        # If ANY of the target specification arguments don't match the current plugin
+        # then the target is different
         config_map = {
             "system_name": "name",
             "version_constraint": "version",
             "default_instance": "instance_name",
             "system_namespace": "namespace",
         }
-
-        # brewtils.plugin.CONFIG is already populated
-        # Start by assuming that the system client is targeting self:
-        target_self = True
-
-        # Now we need to figure out if any of the provided kwargs don't match
-        # some sort of loop that checks the value of system kwargs against the CONFIG
-        # If they are different, target_self = False and break
-
         for key, value in config_map.items():
             if (
                 kwargs.get(key) is not None

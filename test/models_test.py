@@ -19,7 +19,7 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Role,
-)
+    Permission)
 from pytest_lazyfixture import lazy_fixture
 
 
@@ -532,7 +532,7 @@ class TestQueue(object):
 class TestPrincipal(object):
     @pytest.fixture
     def principal(self):
-        return Principal(username="admin", roles=["bg-admin"], permissions=["bg-all"])
+        return Principal(username="admin", roles=[], permissions=[])
 
     def test_str(self, principal):
         assert str(principal) == "admin"
@@ -540,20 +540,20 @@ class TestPrincipal(object):
     def test_repr(self, principal):
         assert (
             repr(principal)
-            == "<Principal: username=admin, roles=['bg-admin'], permissions=['bg-all']>"
+            == "<Principal: username=admin, roles=[], permissions=[]>"
         )
 
 
 class TestRole(object):
     @pytest.fixture
     def role(self):
-        return Role(name="bg-admin", permissions=["bg-all"])
+        return Role(name="bg-admin", permissions=[Permission(access='ADMIN', garden='default')])
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
-        assert repr(role) == "<Role: name=bg-admin, permissions=['bg-all']>"
+        assert repr(role) == "<Role: name=bg-admin, permissions=[<Permission: namespace=None, garden=default, access=ADMIN>]>"
 
 
 class TestDateTrigger(object):

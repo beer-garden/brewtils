@@ -14,6 +14,7 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.config import load_config
+from brewtils.decorators import _parse_client
 from brewtils.errors import (
     ConflictError,
     DiscardMessageException,
@@ -262,8 +263,30 @@ class Plugin(object):
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
 
-        # And commands always do
-        self._system.commands = getattr(new_client, "_bg_commands", [])
+        # Now roll up / interpret all metadata to get the Commands
+        self._system.commands = _parse_client(new_client)
+
+        try:
+            # Put some attributes on the Client class
+            client_clazz = type(new_client)
+            client_clazz.current_request = property(
+                lambda _: request_context.current_request
+            )
+
+            # Add for back-compatibility
+            client_clazz._bg_name = self._system.name
+            client_clazz._bg_version = self._system.version
+            client_clazz._bg_commands = self._system.commands
+            client_clazz._current_request = client_clazz.current_request
+        except TypeError:
+            if sys.version_info.major != 2:
+                raise
+
+            self._logger.warning(
+                "Unable to assign attributes to Client class - current_request will "
+                "not be available. If you're using an old-style class declaration "
+                "it's recommended to switch to new-style if possible."
+            )
 
         self._client = new_client
 

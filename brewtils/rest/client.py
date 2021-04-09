@@ -164,14 +164,13 @@ class RestClient(object):
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
             self.admin_url = self.base_url + "api/v1/admin/"
+            self.forward_url = self.base_url + "api/v1/forward"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
 
             self.event_url = self.base_url + "api/vbeta/events/"
             self.file_url = self.base_url + "api/v1/files/"
-
-            self.forward_url = self.base_url + "api/v1/forward"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -695,7 +694,8 @@ class RestClient(object):
 
     @enable_auth
     def post_forward(self, payload):
-        """Forwards an Operation to the Beer Garden server.
+        # type: (str) -> Response
+        """Performs a POST on the Forward URL
 
         Args:
             payload: The operation to be executed

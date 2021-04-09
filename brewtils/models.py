@@ -288,6 +288,8 @@ class Parameter(BaseModel):
         regex=None,
         form_input_type=None,
         type_info=None,
+        is_kwarg=None,
+        model=None,
     ):
         self.key = key
         self.type = type
@@ -304,6 +306,12 @@ class Parameter(BaseModel):
         self.regex = regex
         self.form_input_type = form_input_type
         self.type_info = type_info or {}
+
+        # These are special - they aren't part of the Parameter "API" (they aren't in
+        # the serialization schema) but we still need them on this model for consistency
+        # when creating Clients - https://github.com/beer-garden/beer-garden/issues/777
+        self.is_kwarg = is_kwarg
+        self.model = model
 
     def __str__(self):
         return self.key

@@ -203,17 +203,45 @@ class SystemClient(object):
             )
             kwargs.setdefault("system_name", args[2])
 
-        self._system_name = kwargs.get("system_name")
-        self._version_constraint = kwargs.get("version_constraint", "latest")
-        self._default_instance = kwargs.get("default_instance", "default")
+        # Now need to determine if the intended target is the current running plugin.
+        # Start by ensuring there's a valid Plugin context active
+        target_self = bool(brewtils.plugin.CONFIG)
+
+        # If ANY of the target specification arguments don't match the current plugin
+        # then the target is different
+        config_map = {
+            "system_name": "name",
+            "version_constraint": "version",
+            "default_instance": "instance_name",
+            "system_namespace": "namespace",
+        }
+        for key, value in config_map.items():
+            if (
+                kwargs.get(key) is not None
+                and kwargs.get(key) != brewtils.plugin.CONFIG[value]
+            ):
+                target_self = False
+                break
+
+        # Now assign self._system_name, etc based on the value of target_self
+        if target_self:
+            self._system_name = brewtils.plugin.CONFIG.name
+            self._version_constraint = brewtils.plugin.CONFIG.version
+            self._default_instance = brewtils.plugin.CONFIG.instance_name
+            self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
+        else:
+            self._system_name = kwargs.get("system_name")
+            self._version_constraint = kwargs.get("version_constraint", "latest")
+            self._default_instance = kwargs.get("default_instance", "default")
+            self._system_namespace = kwargs.get(
+                "system_namespace", brewtils.plugin.CONFIG.namespace or ""
+            )
+
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
         self._max_delay = kwargs.get("max_delay", 30)
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
-        self._system_namespace = kwargs.get(
-            "system_namespace", brewtils.plugin.CONFIG.namespace or ""
-        )
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
         # in that version. This logic is what was added in Python 3.5

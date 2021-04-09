@@ -1,6 +1,22 @@
 Brewtils Changelog
 ==================
 
+3.2.0
+-----
+4/1/21
+
+New Features
+^^^^^^^^^^^^
+- SystemClient with no parameters will default to the current plugin (Issue #780 / PR #293)
+- Added methods to RestClient and EasyClient for using the /api/v1/forward API (PR #301)
+- New and improved decorators module (Issue #777 / PR #290)
+
+Other Changes
+^^^^^^^^^^^^^
+- The @system decorator has been renamed to @client (Issue #927 / PR #297)
+- @parameters (plural, with an "s") is now deprecated (Issue #924, PR #299)
+- Easier to specify logger name when creating a StoppableThread (Issue #874 / PR #291)
+
 3.1.0
 -----
 2/5/21

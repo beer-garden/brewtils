@@ -155,7 +155,9 @@ class EasyClient(object):
         refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    _default_file_params = {"chunk_size": 255 * 1024}
+    _default_file_params = {
+        "chunk_size": 255 * 1024,
+    }
 
     def __init__(self, *args, **kwargs):
         # This points DeprecationWarnings at the right line
@@ -859,14 +861,15 @@ class EasyClient(object):
                 % default_file_params["file_name"]
             )
 
-    def post_forward(self, operation):
-        """Forwards an Operation to the Beer Garden server.
+    def forward(self, operation):
+        """Forwards an Operation
 
         Args:
-            operation: The operation to be executed
+            operation: The Operation to be forwarded
 
         Returns:
             The API response
+
         """
         return self.client.post_forward(SchemaParser.serialize_operation(operation))
 

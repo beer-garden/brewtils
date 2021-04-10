@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
+from base64 import b64decode
+from io import BytesIO
+from typing import Any, Callable, List, NoReturn, Optional, Type, Union
 
 import six
 import wrapt
-from io import BytesIO
-from base64 import b64decode
-
 from brewtils.config import get_connection_info
 from brewtils.errors import (
+    BrewtilsException,
     ConflictError,
     DeleteError,
     FetchError,
@@ -19,12 +20,14 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import Event, PatchOperation
+from brewtils.models import BaseModel, Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
+from requests import Response
 
 
 def get_easy_client(**kwargs):
+    # type: (**Any) -> EasyClient
     """Easy way to get an EasyClient
 
     The benefit to this method over creating an EasyClient directly is that
@@ -41,6 +44,7 @@ def get_easy_client(**kwargs):
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
+    # type: (Response, Type[BrewtilsException], bool) -> NoReturn
     """Deal with a response with non-2xx status code
 
     Args:
@@ -81,12 +85,13 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
 
 
 def wrap_response(
-    return_boolean=False,
-    parse_method=None,
-    parse_many=False,
-    default_exc=RestError,
-    raise_404=True,
+    return_boolean=False,  # type: bool
+    parse_method=None,  # type: Optional[str]
+    parse_many=False,  # type: bool
+    default_exc=RestError,  # type: Type[BrewtilsException]
+    raise_404=True,  # type: bool
 ):
+    # type: (...) -> Callable[..., Union[bool, Response, BaseModel, List[BaseModel]]]
     """Decorator to consolidate response parsing and error handling
 
     Args:
@@ -109,7 +114,7 @@ def wrap_response(
     """
 
     @wrapt.decorator
-    def wrapper(wrapped, instance, args, kwargs):
+    def wrapper(wrapped, _instance, args, kwargs):
         response = wrapped(*args, **kwargs)
 
         if response.ok:
@@ -166,6 +171,7 @@ class EasyClient(object):
         self.client = RestClient(*args, **kwargs)
 
     def can_connect(self, **kwargs):
+        # type: (**Any) -> bool
         """Determine if the Beergarden server is responding.
 
         Kwargs:

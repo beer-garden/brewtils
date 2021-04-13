@@ -4,8 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
-
-from packaging.version import parse
+from typing import Any, Iterable, List, Optional
 
 import brewtils.plugin
 from brewtils.errors import (
@@ -16,9 +15,10 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.models import Request
+from brewtils.models import Command, Parameter, Request, System
 from brewtils.resolvers import UploadResolver, build_resolver_map
 from brewtils.rest.easy_client import EasyClient
+from packaging.version import parse
 
 
 class SystemClient(object):
@@ -255,10 +255,12 @@ class SystemClient(object):
         self._resolvers = build_resolver_map(self._easy_client)
 
     def __getattr__(self, item):
+        # type: (str) -> partial
         """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)
 
     def create_bg_request(self, command_name, **kwargs):
+        # type: (str, **Any) -> partial
         """Create a callable that will execute a Beer-garden request when called.
 
         Normally you interact with the SystemClient by accessing attributes, but there
@@ -377,6 +379,7 @@ class SystemClient(object):
         return self._wait_for_request(request, raise_on_error, timeout)
 
     def load_bg_system(self):
+        # type: () -> None
         """Query beer-garden for a System definition
 
         This method will make the query to beer-garden for a System matching the name
@@ -422,6 +425,7 @@ class SystemClient(object):
         self._loaded = True
 
     def _wait_for_request(self, request, raise_on_error, timeout):
+        # type: (Request, bool, int) -> Request
         """Poll the server until the request is completed or errors"""
 
         delay_time = 0.5
@@ -445,6 +449,7 @@ class SystemClient(object):
         return request
 
     def _get_parent_for_request(self):
+        # type: () -> Optional[Request]
         parent = getattr(brewtils.plugin.request_context, "current_request", None)
         if parent is None:
             return None
@@ -465,6 +470,7 @@ class SystemClient(object):
         return Request(id=str(parent.id))
 
     def _construct_bg_request(self, **kwargs):
+        # type: (**Any) -> Request
         """Create a request that can be used with EasyClient.create_request"""
 
         command = kwargs.pop("_command", None)
@@ -509,6 +515,7 @@ class SystemClient(object):
         return request
 
     def _resolve_parameters(self, command, request):
+        # type: (Command, Request) -> List[Parameter]
         """Attempt to upload any necessary file parameters
 
         This will inspect the Command model for the given command, looking for file
@@ -531,6 +538,7 @@ class SystemClient(object):
 
     @staticmethod
     def _determine_latest(systems):
+        # type: (Iterable[System]) -> Optional[System]
         return (
             sorted(systems, key=lambda x: parse(x.version), reverse=True)[0]
             if systems

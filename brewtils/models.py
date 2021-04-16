@@ -1296,7 +1296,7 @@ class CronTrigger(BaseModel):
             {
                 "timezone": tz,
                 "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.start_date) if self.start_date else None,
+                "end_date": tz.localize(self.end_date) if self.end_date else None,
             }
         )
 

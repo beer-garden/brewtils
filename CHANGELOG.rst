@@ -1,6 +1,20 @@
 Brewtils Changelog
 ==================
 
+3.2.1
+-----
+4/16/21
+
+Bug Fixes
+^^^^^^^^^
+- Nullable multi parameters with a model no longer set a problematic default (Issue #769, #983 / PR #305)
+- End date is now set correctly for cron-type jobs  (Issue #963 / PR #306)
+- Order of parameters in the UI now matches the order of decorators (Issue #267, #981 / PR #304)
+
+Other Changes
+^^^^^^^^^^^^^
+- More type hints for SystemClient and EasyClient methods (Issue #957 / PR #303)
+
 3.2.0
 -----
 4/1/21

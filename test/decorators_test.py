@@ -859,24 +859,46 @@ class TestInitializeParameter(object):
         """File parameter defaults should be cleared for safety"""
         assert _initialize_parameter(Parameter(key="f", type="Base64")).default is None
 
-    @pytest.mark.parametrize(
-        "default,expected",
-        [(None, {"key1": 1, "key2": "100"}), ({"key1", 123}, {"key1", 123})],
-    )
-    def test_model(self, my_model, param_1, param_2, default, expected):
-        model_param = _initialize_parameter(
-            Parameter(key="foo", model=my_model, default=default)
-        )
-
-        assert model_param.key == "foo"
-        assert model_param.type == "Dictionary"
-        assert len(model_param.parameters) == 2
-        assert model_param.default == expected
-
-        assert_parameter_equal(model_param.parameters[0], param_1)
-        assert_parameter_equal(model_param.parameters[1], param_2)
-
     class TestNesting(object):
+        @pytest.fixture
+        def inner(self):
+            class Inner(object):
+                parameters = [Parameter(key="inner", type="String")]
+
+            return Inner
+
+        @pytest.fixture
+        def outer(self, inner):
+            class Outer(object):
+                parameters = [Parameter(key="outer", model=inner)]
+
+            return Outer
+
+        def test_nested_model(self, outer):
+            p = _initialize_parameter(Parameter(key="p", model=outer))
+
+            assert p.key == "p"
+            assert p.type == "Dictionary"
+            assert p.default is None
+            assert len(p.parameters) == 1
+
+            outer = p.parameters[0]
+            assert outer.key == "outer"
+            assert outer.type == "Dictionary"
+            assert outer.default is None
+            assert len(outer.parameters) == 1
+
+            inner = outer.parameters[0]
+            assert inner.key == "inner"
+
+        def test_model_and_parameters(self, outer, inner):
+            """This is not allowed"""
+            with pytest.raises(PluginParamError):
+                _initialize_parameter(
+                    Parameter(key="nested", model=outer, parameters=inner.parameters)
+                )
+
+    class TestParameterLists(object):
         """Tests nested model Parameter construction
 
         This tests both the new, "correct" way to nest parameters (where the given

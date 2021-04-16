@@ -671,21 +671,19 @@ def _initialize_parameter(
         param.default = None
 
     # Now deal with nested parameters
-    if param.parameters:
+    if param.parameters or param.model:
+        if param.model:
+            # Can't specify a model and parameters - which should win?
+            if param.parameters:
+                raise PluginParamError(
+                    "Specifying a model and nested parameters for a single parameter "
+                    "is not allowed"
+                )
+
+            param.parameters = param.model.parameters
+
         param.type = "Dictionary"
         param.parameters = _initialize_parameters(param.parameters)
-
-    elif param.model is not None:
-        param.type = "Dictionary"
-        param.parameters = _initialize_parameters(param.model.parameters)
-
-        # If the model is not nullable and does not have a default we will try
-        # to generate a one using the defaults defined on the model parameters
-        if not param.nullable and not param.default:
-            param.default = {}
-            for nested_param in param.parameters:
-                if nested_param.default:
-                    param.default[nested_param.key] = nested_param.default
 
     return param
 

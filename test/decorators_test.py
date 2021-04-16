@@ -135,6 +135,17 @@ class TestOverall(object):
         assert param_y.default == "some_default"
         assert param_y.optional is True
 
+    def test_order(self):
+        @parameter(key="a")
+        @parameter(key="b")
+        @parameter(key="c")
+        def cmd(a, b, c, d, e):
+            return a + b + c + d + e
+
+        bg_cmd = _parse_method(cmd)
+
+        assert [p.key for p in bg_cmd.parameters] == ["a", "b", "c", "d", "e"]
+
     class TestDecoratorCombinations(object):
         def test_command_then_parameter(self, basic_param):
             class Unused(object):

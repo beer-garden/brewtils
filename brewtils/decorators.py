@@ -270,10 +270,10 @@ def parameter(
     # Python 2 compatibility
     if hasattr(_wrapped, "__func__"):
         _wrapped.__func__.parameters = getattr(_wrapped, "parameters", [])
-        _wrapped.__func__.parameters.append(new_parameter)
+        _wrapped.__func__.parameters.insert(0, new_parameter)
     else:
         _wrapped.parameters = getattr(_wrapped, "parameters", [])
-        _wrapped.parameters.append(new_parameter)
+        _wrapped.parameters.insert(0, new_parameter)
 
     return _wrapped
 

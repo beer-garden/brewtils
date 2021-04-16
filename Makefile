@@ -126,7 +126,7 @@ docker-build:
 
 
 # Documentation
-docs-deps: ## install dependencies for documentation
+docs-deps: deps ## install dependencies for documentation
 	pip install -c requirements.txt sphinx sphinx_rtd_theme
 
 docs: ## generate Sphinx HTML documentation, including API docs

@@ -71,7 +71,7 @@ class Events(Enum):
     GARDEN_SYNC = 30
     ENTRY_STARTED = 31
     ENTRY_STOPPED = 32
-    JOB_CREATED = 33   
+    JOB_CREATED = 33
     JOB_DELETED = 34
     JOB_PAUSED = 35
     JOB_RESUMED = 36

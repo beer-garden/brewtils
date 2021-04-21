@@ -392,17 +392,27 @@ def _parse_method(method):
         # Create a command object if there isn't one already
         method_command = _initialize_command(method)
 
-        # Need to initialize existing parameters before attempting to add parameters
-        # pulled from the method signature.
-        method_command.parameters = _initialize_parameters(
-            method_command.parameters + getattr(method, "parameters", [])
-        )
+        try:
+            # Need to initialize existing parameters before attempting to add parameters
+            # pulled from the method signature.
+            method_command.parameters = _initialize_parameters(
+                method_command.parameters + getattr(method, "parameters", [])
+            )
 
-        # Add and update parameters based on the method signature
-        _signature_parameters(method_command, method)
+            # Add and update parameters based on the method signature
+            _signature_parameters(method_command, method)
 
-        # Verify that all parameters conform to the method signature
-        _signature_validate(method_command, method)
+            # Verify that all parameters conform to the method signature
+            _signature_validate(method_command, method)
+
+        except PluginParamError as ex:
+            six.raise_from(
+                PluginParamError(
+                    "Error initializing parameters for command '%s': %s"
+                    % (method_command.name, ex)
+                ),
+                ex,
+            )
 
         return method_command
 
@@ -676,8 +686,8 @@ def _initialize_parameter(
             # Can't specify a model and parameters - which should win?
             if param.parameters:
                 raise PluginParamError(
-                    "Specifying a model and nested parameters for a single parameter "
-                    "is not allowed"
+                    "Error initializing parameter '%s': A parameter with both a model "
+                    "and nested parameters is not allowed" % param.key
                 )
 
             param.parameters = param.model.parameters

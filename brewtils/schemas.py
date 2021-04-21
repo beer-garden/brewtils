@@ -227,8 +227,8 @@ class FileSchema(BaseSchema):
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
     owner = fields.Raw(allow_none=True)
-    job = fields.Raw(allow_none=True)
-    request = fields.Raw(allow_none=True)
+    job = fields.Nested("JobSchema", allow_none=True)
+    request = fields.Nested("RequestSchema", allow_none=True)
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
@@ -239,9 +239,9 @@ class FileSchema(BaseSchema):
 class FileChunkSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     file_id = fields.Str(allow_none=False)
-    owner = fields.Raw(allow_none=True)
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
+    owner = fields.Nested("FileSchema", allow_none=True)
 
 
 class FileStatusSchema(BaseSchema):

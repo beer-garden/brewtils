@@ -226,6 +226,21 @@ class SystemClient(object):
         self._easy_client = EasyClient(*args, **kwargs)
         self._resolvers = build_resolver_map(self._easy_client)
 
+        # TODO update/check to see if SC has any dependencies
+        check_dependency = False
+        """if brewtils.plugin.CONFIG._system_name != self._system_name:
+            _easy_client.add_dependency()
+            EasyClient.add_dependency()
+            check_dependency = True"""
+        """if SystemClient() != SystemClient(self):
+            _easy_client.add_dependency()
+            EasyClient.add_dependency()
+            check_dependency = True"""
+        if SystemClient() != self.SystemClient():
+            _easy_client.add_dependency()
+            EasyClient.add_dependency()
+            check_dependency = True
+
     def __getattr__(self, item):
         """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)

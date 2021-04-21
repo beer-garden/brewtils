@@ -676,8 +676,8 @@ def _initialize_parameter(
             # Can't specify a model and parameters - which should win?
             if param.parameters:
                 raise PluginParamError(
-                    "Specifying a model and nested parameters for a single parameter "
-                    "is not allowed"
+                    "Error initializing parameter '%s': A parameter with both a model "
+                    "and nested parameters is not allowed" % param.key
                 )
 
             param.parameters = param.model.parameters

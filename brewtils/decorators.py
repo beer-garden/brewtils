@@ -691,6 +691,7 @@ def _initialize_parameter(
                 )
 
             param.parameters = param.model.parameters
+            param.model = None
 
         param.type = "Dictionary"
         param.parameters = _initialize_parameters(param.parameters)

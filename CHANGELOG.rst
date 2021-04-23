@@ -1,6 +1,19 @@
 Brewtils Changelog
 ==================
 
+3.3.0
+-----
+4/23/21
+
+Bug Fixes
+^^^^^^^^^
+- Better error messages for incorrect parameter definitions (Issue #986 / PR #309)
+- Fixed a case where reusing a parameter model could break (Issue #987 / PR #310)
+
+New Features
+^^^^^^^^^^^^
+- Support for scheduled job modification (Issue #294 / PR #308)
+
 3.2.1
 -----
 4/16/21

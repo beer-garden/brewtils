@@ -4,6 +4,7 @@ import six
 from brewtils.errors import ValidationError
 
 UI_FILE_ID_PREFIX = "BGFileID:"
+BYTES_PREFIX = "BGBytesID:"
 
 
 class ParameterResolver(object):

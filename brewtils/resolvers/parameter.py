@@ -88,9 +88,12 @@ class ParameterResolver(object):
             return -1
 
     def _get_resolver(self, value):
-        storage_type = "file"
         if isinstance(value, dict):
-            storage_type = value.get("storage_type", storage_type)
+            storage_type = value.get("storage_type")
+        elif isinstance(value, bytes) or BYTES_PREFIX in value:
+            storage_type = "bytes"
+        else:
+            storage_type = "file"
 
         if storage_type not in self.resolvers:
             raise ValidationError("No resolver found for %s" % storage_type)
@@ -120,6 +123,12 @@ class DownloadResolver(ParameterResolver):
         """
         if isinstance(parameter, six.string_types):
             if UI_FILE_ID_PREFIX in parameter:
+                try:
+                    parameter = self.simple_resolve(parameter)
+                except (IndexError, ValueError):
+                    pass
+
+            elif BYTES_PREFIX in parameter:
                 try:
                     parameter = self.simple_resolve(parameter)
                 except (IndexError, ValueError):

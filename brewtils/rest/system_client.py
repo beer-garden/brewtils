@@ -530,11 +530,21 @@ class SystemClient(object):
         if command not in self._commands:
             return request.parameters
 
-        b64_params = self._commands[command].parameter_keys_by_type("Base64")
-        if not b64_params:
-            return request.parameters
+        parameters = request.parameters
 
-        return UploadResolver(request, b64_params, self._resolvers).resolve_parameters()
+        bytes_params = self._commands[command].parameter_keys_by_type("Bytes")
+        if bytes_params:
+            parameters = UploadResolver(
+                request, bytes_params, self._resolvers
+            ).resolve_parameters()
+
+        b64_params = self._commands[command].parameter_keys_by_type("Base64")
+        if b64_params:
+            parameters = UploadResolver(
+                request, b64_params, self._resolvers
+            ).resolve_parameters()
+
+        return parameters
 
     @staticmethod
     def _determine_latest(systems):

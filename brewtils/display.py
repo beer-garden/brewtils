@@ -15,7 +15,6 @@ from brewtils.errors import PluginParamError
 
 def resolve_display_modifiers(
     wrapped,  # type: MethodType
-    command_name,  # type: str
     schema=None,  # type: Union[dict, str]
     form=None,  # type: Union[dict, list, str]
     template=None,  # type: str
@@ -47,13 +46,11 @@ def resolve_display_modifiers(
 
                 else:
                     raise PluginParamError(
-                        "%s specified for command '%s' was not a "
-                        "definition, file path, or URL" % (key, command_name)
+                        "%s was not a definition, file path, or URL" % key
                     )
             except Exception as ex:
                 raise PluginParamError(
-                    "Error reading %s definition from '%s' for command "
-                    "'%s': %s" % (key, value, command_name, ex)
+                    "Error reading %s definition from '%s': %s" % (key, value, ex)
                 )
 
         elif value is None or (key in ["schema", "form"] and isinstance(value, dict)):
@@ -64,8 +61,7 @@ def resolve_display_modifiers(
 
         else:
             raise PluginParamError(
-                "%s specified for command '%s' was not a definition, "
-                "file path, or URL" % (key, command_name)
+                "%s specified was not a definition, file path, or URL" % key
             )
 
     return resolved

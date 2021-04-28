@@ -442,7 +442,7 @@ def _initialize_command(method):
 
     try:
         resolved_mod = resolve_display_modifiers(
-            method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
+            method, schema=cmd.schema, form=cmd.form, template=cmd.template
         )
         cmd.schema = resolved_mod["schema"]
         cmd.form = resolved_mod["form"]

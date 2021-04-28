@@ -168,6 +168,7 @@ def command_dict(parameter_dict, system_id):
         "form": {},
         "template": "<html></html>",
         "icon_name": "icon!",
+        "metadata": {"meta": "data"},
     }
 
 
@@ -219,7 +220,7 @@ def instance_dict(ts_epoch):
             "url": "amqp://guest:guest@localhost:5672",
         },
         "status_info": {"heartbeat": ts_epoch},
-        "metadata": {},
+        "metadata": {"meta": "data"},
     }
 
 

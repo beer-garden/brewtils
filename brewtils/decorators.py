@@ -92,6 +92,7 @@ def command(
     template=None,  # type: Optional[str]
     icon_name=None,  # type: Optional[str]
     hidden=False,  # type: Optional[bool]
+    metadata=None,  # type: Optional[Dict]
 ):
     """Decorator for specifying Command details
 
@@ -119,6 +120,7 @@ def command(
         template: A custom template definition.
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
+        metadata: Free-form dictionary
 
     Returns:
         The decorated function
@@ -135,6 +137,7 @@ def command(
             template=template,
             icon_name=icon_name,
             hidden=hidden,
+            metadata=metadata,
         )
 
     new_command = Command(
@@ -147,6 +150,7 @@ def command(
         template=template,
         icon_name=icon_name,
         hidden=hidden,
+        metadata=metadata,
     )
 
     # Python 2 compatibility

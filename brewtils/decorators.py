@@ -14,7 +14,7 @@ except ImportError:
     from lark.common import ParseError
 
 from brewtils.choices import parse
-from brewtils.display import resolve_display_modifiers
+from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Choices
 
@@ -441,12 +441,9 @@ def _initialize_command(method):
     cmd.description = cmd.description or _method_docstring(method)
 
     try:
-        resolved_mod = resolve_display_modifiers(
-            method, schema=cmd.schema, form=cmd.form, template=cmd.template
-        )
-        cmd.schema = resolved_mod["schema"]
-        cmd.form = resolved_mod["form"]
-        cmd.template = resolved_mod["template"]
+        cmd.schema = resolve_schema(method, cmd.schema)
+        cmd.form = resolve_form(method, cmd.form)
+        cmd.template = resolve_template(method, cmd.template)
     except PluginParamError as ex:
         six.raise_from(
             PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)),

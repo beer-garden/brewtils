@@ -49,8 +49,11 @@ def resolve_display_modifiers(
                         "%s was not a definition, file path, or URL" % key
                     )
             except Exception as ex:
-                raise PluginParamError(
-                    "Error reading %s definition from '%s': %s" % (key, value, ex)
+                six.raise_from(
+                    PluginParamError(
+                        "Error reading %s definition from '%s': %s" % (key, value, ex)
+                    ),
+                    ex,
                 )
 
         elif value is None or (key in ["schema", "form"] and isinstance(value, dict)):

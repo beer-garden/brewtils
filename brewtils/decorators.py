@@ -440,12 +440,18 @@ def _initialize_command(method):
     cmd.name = _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
 
-    resolved_mod = resolve_display_modifiers(
-        method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
-    )
-    cmd.schema = resolved_mod["schema"]
-    cmd.form = resolved_mod["form"]
-    cmd.template = resolved_mod["template"]
+    try:
+        resolved_mod = resolve_display_modifiers(
+            method, cmd.name, schema=cmd.schema, form=cmd.form, template=cmd.template
+        )
+        cmd.schema = resolved_mod["schema"]
+        cmd.form = resolved_mod["form"]
+        cmd.template = resolved_mod["template"]
+    except PluginParamError as ex:
+        six.raise_from(
+            PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)),
+            ex,
+        )
 
     return cmd
 

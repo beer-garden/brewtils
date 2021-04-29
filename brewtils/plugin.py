@@ -761,6 +761,7 @@ class Plugin(object):
             "max_instances",
             "metadata",
             "namespace",
+            "template",
         }
 
         if system:
@@ -792,6 +793,7 @@ class Plugin(object):
                 max_instances=self._config.max_instances,
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
+                template=self._config.template,
             )
 
         return system

@@ -133,6 +133,13 @@ _SYSTEM_SPEC = {
         "description": "The namespace this system will be created in",
         "required": False,
     },
+    "template": {
+        "type": "str",
+        "description": "Custom system page definition",
+        "required": False,
+        "long_description": "Follows the same rules as @command templates - can be "
+        "a URL, path string to a template file, or an actual html string",
+    },
 }
 
 _PLUGIN_SPEC = {

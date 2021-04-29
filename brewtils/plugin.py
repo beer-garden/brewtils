@@ -15,6 +15,7 @@ from requests import ConnectionError as RequestsConnectionError
 import brewtils
 from brewtils.config import load_config
 from brewtils.decorators import _parse_client
+from brewtils.display import resolve_template
 from brewtils.errors import (
     ConflictError,
     DiscardMessageException,
@@ -494,6 +495,7 @@ class Plugin(object):
             "description": self._system.description,
             "display_name": self._system.display_name,
             "icon_name": self._system.icon_name,
+            "template": self._system.template,
         }
 
         # And if this particular instance doesn't exist we want to add it
@@ -793,7 +795,7 @@ class Plugin(object):
                 max_instances=self._config.max_instances,
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
-                template=self._config.template,
+                template=resolve_template(self._config.template),
             )
 
         return system

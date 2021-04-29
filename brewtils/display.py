@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import inspect
 import json
 import os
 from io import open
@@ -13,8 +12,8 @@ import six
 from brewtils.errors import PluginParamError
 
 
-def resolve_schema(wrapped, schema=None):
-    # type: (MethodType, Union[dict, str]) -> Optional[dict]
+def resolve_schema(schema=None, base_dir=None):
+    # type: (Union[dict, str], str) -> Optional[dict]
     """Resolve a schema attribute
 
     Returns:
@@ -27,7 +26,7 @@ def resolve_schema(wrapped, schema=None):
             if schema.startswith("http"):
                 return _load_from_url(schema)
             elif schema.startswith("/") or schema.startswith("."):
-                return json.loads(_load_from_path(wrapped, schema))
+                return json.loads(_load_from_path(schema, base_dir=base_dir))
             else:
                 raise PluginParamError("Schema was not a definition, file path, or URL")
         except Exception as ex:
@@ -38,8 +37,8 @@ def resolve_schema(wrapped, schema=None):
         )
 
 
-def resolve_form(wrapped, form=None):
-    # type: (MethodType, Union[None, dict, list, str]) -> Optional[dict]
+def resolve_form(form=None, base_dir=None):
+    # type: (Union[None, dict, list, str], str) -> Optional[dict]
     """Resolve a form attribute
 
     Returns:
@@ -54,7 +53,7 @@ def resolve_form(wrapped, form=None):
             if form.startswith("http"):
                 return _load_from_url(form)
             elif form.startswith("/") or form.startswith("."):
-                return json.loads(_load_from_path(wrapped, form))
+                return json.loads(_load_from_path(form, base_dir=base_dir))
             else:
                 raise PluginParamError("Form was not a definition, file path, or URL")
         except Exception as ex:
@@ -63,8 +62,8 @@ def resolve_form(wrapped, form=None):
         raise PluginParamError("Schema was not a definition, file path, or URL")
 
 
-def resolve_template(wrapped, template=None):
-    # type: (MethodType, str) -> Optional[str]
+def resolve_template(template=None, base_dir=None):
+    # type: (str, str) -> Optional[str]
     """Resolve a template attribute
 
     Returns:
@@ -77,7 +76,7 @@ def resolve_template(wrapped, template=None):
             if template.startswith("http"):
                 return _load_from_url(template)
             elif template.startswith("/") or template.startswith("."):
-                return _load_from_path(wrapped, template)
+                return _load_from_path(template, base_dir=base_dir)
             else:
                 return template
 
@@ -117,10 +116,11 @@ def _load_from_url(url):
     return response.text
 
 
-def _load_from_path(wrapped, path):
-    # type: (MethodType, str) -> str
-    current_dir = os.path.dirname(inspect.getfile(wrapped))
-    file_path = os.path.abspath(os.path.join(current_dir, path))
+def _load_from_path(path, base_dir=None):
+    # type: (str, str) -> str
+    if not base_dir:
+        base_dir = os.getcwd()
+    file_path = os.path.abspath(os.path.join(base_dir, path))
 
     with open(file_path, "r") as definition_file:
         return definition_file.read()

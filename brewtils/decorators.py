@@ -2,6 +2,7 @@
 
 import functools
 import inspect
+import os
 import sys
 from types import MethodType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
@@ -441,9 +442,11 @@ def _initialize_command(method):
     cmd.description = cmd.description or _method_docstring(method)
 
     try:
-        cmd.schema = resolve_schema(method, cmd.schema)
-        cmd.form = resolve_form(method, cmd.form)
-        cmd.template = resolve_template(method, cmd.template)
+        base_dir = os.path.dirname(inspect.getfile(method))
+
+        cmd.schema = resolve_schema(cmd.schema, base_dir=base_dir)
+        cmd.form = resolve_form(cmd.form, base_dir=base_dir)
+        cmd.template = resolve_template(cmd.template, base_dir=base_dir)
     except PluginParamError as ex:
         six.raise_from(
             PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)),

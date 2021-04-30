@@ -317,7 +317,8 @@ class EasyClient(object):
             metadata (dict): New System metadata
             description (str): New System description
             display_name (str): New System display name
-            icon_name (str) The: New System icon name
+            icon_name (str): New System icon name
+            template (str): New System template
 
         Returns:
             System: The updated system

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+import abc
 import logging
 import six
 
@@ -5,6 +8,23 @@ from brewtils.errors import ValidationError
 
 UI_FILE_ID_PREFIX = "BGFileID:"
 BYTES_PREFIX = "BGBytesID:"
+
+
+@six.add_metaclass(abc.ABCMeta)
+class ResolverBase(object):
+    """Base for all Resolver implementations"""
+
+    def should_upload(self, value):
+        pass
+
+    def should_download(self, value):
+        pass
+
+    def upload(self, value):
+        pass
+
+    def download(self, value):
+        pass
 
 
 class ParameterResolver(object):

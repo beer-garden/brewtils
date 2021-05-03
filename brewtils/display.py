@@ -3,7 +3,6 @@
 import json
 import os
 from io import open
-from types import MethodType
 from typing import Optional, Union
 
 import requests
@@ -86,26 +85,6 @@ def resolve_template(template=None, base_dir=None):
         raise PluginParamError(
             "Template specified was not a definition, file path, or URL"
         )
-
-
-def resolve_display_modifiers(
-    wrapped,  # type: MethodType
-    schema=None,  # type: Union[dict, str]
-    form=None,  # type: Union[dict, list, str]
-    template=None,  # type: str
-):
-    # type: (...) -> dict
-    """Parse display modifier parameter attributes
-
-    Returns:
-        Dictionary that fully describes a display specification
-    """
-
-    return {
-        "schema": resolve_schema(wrapped, schema),
-        "form": resolve_form(wrapped, form),
-        "template": resolve_template(wrapped, template),
-    }
 
 
 def _load_from_url(url):

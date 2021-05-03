@@ -32,7 +32,7 @@ from brewtils.request_handling import (
     RequestConsumer,
     RequestProcessor,
 )
-from brewtils.resolvers import build_resolver_map
+from brewtils.resolvers.parameter import ParameterResolver
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
 
@@ -568,7 +568,7 @@ class Plugin(object):
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
             working_directory=self._config.working_directory,
-            resolvers=build_resolver_map(self._ez_client),
+            resolver=ParameterResolver(easy_client=self._ez_client),
         )
 
         return admin_processor, request_processor

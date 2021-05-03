@@ -21,7 +21,6 @@ from brewtils.errors import (
     parse_exception_as_json,
 )
 from brewtils.models import Request
-from brewtils.resolvers import DownloadResolver
 from brewtils.schema_parser import SchemaParser
 
 
@@ -53,7 +52,7 @@ class RequestProcessor(object):
         logger=None,
         plugin_name=None,
         max_workers=None,
-        resolvers=None,
+        resolver=None,
         working_directory=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
@@ -67,7 +66,7 @@ class RequestProcessor(object):
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-        self._resolvers = resolvers
+        self._resolver = resolver
         self._working_directory = working_directory
 
     def on_message_received(self, message, headers):
@@ -210,13 +209,12 @@ class RequestProcessor(object):
                 "Could not find an implementation of command '%s'" % request.command
             )
 
-        if self._resolvers:
-            with DownloadResolver(
-                request, [], self._resolvers, self._working_directory
-            ) as resolved_params:
-                output = getattr(target, request.command)(**resolved_params)
-        else:
+        if request.is_ephemeral:
             parameters = request.parameters or {}
+            output = getattr(target, request.command)(**parameters)
+        else:
+            # TODO - Is it worth figuring out definitions here?
+            parameters = self._resolver.resolve(request.parameters, upload=False)
             output = getattr(target, request.command)(**parameters)
 
         return output

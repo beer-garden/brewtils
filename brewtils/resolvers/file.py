@@ -4,18 +4,17 @@ import sys
 import six
 
 from brewtils.errors import ValidationError
+from brewtils.resolvers.parameter import ResolverBase, UI_FILE_ID_PREFIX
 
 
-class FileResolver(object):
-    """
-    Resolvers are meant to be written for specific storage types.
-    In this case, we are uploading and downloading file chunks.
+class FileResolver(ResolverBase):
+    """Uses the BG chunk API
+
+    Resolvers are meant to be written for specific storage types. In this case, we are
+    uploading and downloading file chunks.
 
     This class is meant to be used transparently to Plugin developers.
     Resolvers respond to two methods:
-
-    * `upload(value)`
-    * `download(bytes_parameter, writer)`
 
     Attributes:
         client: A `brewtils.EasyClient`
@@ -24,15 +23,10 @@ class FileResolver(object):
     def __init__(self, client):
         self.client = client
 
-    def download(self, file_id, *args):
-        """Download the given bytes parameter.
+    def should_upload(self, value, definition=None):
+        return definition and definition.type == "Base64"
 
-        Args:
-            file_id: A BG generated file ID
-        """
-        return self.client.download_file(file_id)
-
-    def upload(self, value, **kwargs):
+    def upload(self, value, definition=None, **kwargs):
         """Upload the given value to the server if necessary.
 
         The value can be one of the following:
@@ -42,6 +36,7 @@ class FileResolver(object):
 
         Args:
             value: Value to upload.
+            definition: Parameter definition
 
         Returns:
             A valid beer garden assigned ID
@@ -56,3 +51,16 @@ class FileResolver(object):
             raise ValidationError(
                 "Do not know how to upload value of type %s" % type(value)
             )
+
+    def should_download(self, value, **_):
+        if isinstance(value, six.string_types) and UI_FILE_ID_PREFIX in value:
+            return True
+        return False
+
+    def download(self, file_id, **_):
+        """Download the given bytes parameter.
+
+        Args:
+            file_id: A BG generated file ID
+        """
+        return self.client.download_file(file_id)

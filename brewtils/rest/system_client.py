@@ -4,7 +4,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, Optional
+
+from packaging.version import parse
 
 import brewtils.plugin
 from brewtils.errors import (
@@ -15,10 +17,9 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.models import Command, Parameter, Request, System
-from brewtils.resolvers import UploadResolver, build_resolver_map
+from brewtils.models import Request, System
+from brewtils.resolvers.parameter import ParameterResolver
 from brewtils.rest.easy_client import EasyClient
-from packaging.version import parse
 
 
 class SystemClient(object):
@@ -252,7 +253,7 @@ class SystemClient(object):
         kwargs.setdefault("stacklevel", 5)
 
         self._easy_client = EasyClient(*args, **kwargs)
-        self._resolvers = build_resolver_map(self._easy_client)
+        self._resolver = ParameterResolver(easy_client=self._easy_client)
 
     def __getattr__(self, item):
         # type: (str) -> partial
@@ -515,7 +516,7 @@ class SystemClient(object):
         return request
 
     def _resolve_parameters(self, command, request):
-        # type: (Command, Request) -> List[Parameter]
+        # type: (str, Request) -> Dict[str, Any]
         """Attempt to upload any necessary file parameters
 
         This will inspect the Command model for the given command, looking for file
@@ -530,21 +531,9 @@ class SystemClient(object):
         if command not in self._commands:
             return request.parameters
 
-        parameters = request.parameters
-
-        bytes_params = self._commands[command].parameter_keys_by_type("Bytes")
-        if bytes_params:
-            parameters = UploadResolver(
-                request, bytes_params, self._resolvers
-            ).resolve_parameters()
-
-        b64_params = self._commands[command].parameter_keys_by_type("Base64")
-        if b64_params:
-            parameters = UploadResolver(
-                request, b64_params, self._resolvers
-            ).resolve_parameters()
-
-        return parameters
+        return self._resolver.resolve(
+            request.parameters, self._commands[command].parameters, upload=True
+        )
 
     @staticmethod
     def _determine_latest(systems):

@@ -742,6 +742,30 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
+    def upload_file(self, data):
+        # type: (bytes) -> str
+        """Upload a file
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return self.client.put_file(data).text
+
+    def download_file(self, file_id):
+        # type: (str) -> bytes
+        """Download a file
+
+        Args:
+            file_id: Id of file to download
+
+        Returns:
+            The file data
+        """
+        return self.client.get_file(file_id).content
+
     def _check_chunked_file_validity(self, file_id):
         """Verify a chunked file
 

@@ -172,6 +172,7 @@ class RestClient(object):
             # Beta
             self.event_url = self.base_url + "api/vbeta/events/"
             self.chunk_url = self.base_url + "api/vbeta/chunks/"
+            self.file_url = self.base_url + "api/vbeta/file/"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -609,6 +610,46 @@ class RestClient(object):
             Requests Response object
         """
         return self.session.delete(self.job_url + job_id)
+
+    @enable_auth
+    def get_file(self, file_id, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a GET on the specific File URL
+
+        Args:
+            file_id: File ID
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.get(self.file_url + file_id, **kwargs)
+
+    @enable_auth
+    def put_file(self, data):
+        # type: (bytes) -> Response
+        """Performs a PUT on the file URL
+
+        Args:
+            data: Data bytes
+
+        Returns:
+            A Requests Response object
+        """
+        return self.session.put(self.file_url, data=data)
+
+    @enable_auth
+    def delete_file(self, file_id):
+        # type: (str) -> Response
+        """Performs a DELETE on the specific File URL
+
+        Args:
+            file_id: File ID
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.delete(self.file_url + file_id)
 
     @enable_auth
     def get_chunked_file(self, file_id, **kwargs):

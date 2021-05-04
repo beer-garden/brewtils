@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import requests
 import six
 
 from brewtils.resolvers import ResolverBase
@@ -26,11 +25,7 @@ class BytesResolver(ResolverBase):
         Returns:
             A valid beer garden assigned ID
         """
-        response = requests.put(
-            url=self.easy_client.client.base_url + "api/vbeta/file", data=value
-        )
-
-        return response.text
+        return self.easy_client.upload_file(value)
 
     def should_download(self, value, **_):
         if isinstance(value, six.string_types) and BYTES_PREFIX in value:
@@ -45,9 +40,4 @@ class BytesResolver(ResolverBase):
         """
         real_id = file_id.partition(BYTES_PREFIX)[2]
 
-        response = requests.get(
-            url=self.easy_client.client.base_url + "api/vbeta/file",
-            params={"file_id": real_id},
-        )
-
-        return response.content
+        return self.easy_client.download_file(real_id)

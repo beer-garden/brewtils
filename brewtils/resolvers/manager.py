@@ -6,14 +6,14 @@ from typing import Any, Dict, List, Mapping
 
 from brewtils.models import Parameter
 from brewtils.resolvers.bytes import BytesResolver
-from brewtils.resolvers.file import FileResolver
+from brewtils.resolvers.chunks import ChunksResolver
 
 
 def build_resolver_map(easy_client=None):
     """Builds all resolvers"""
 
     return {
-        "file": FileResolver(easy_client=easy_client),
+        "file": ChunksResolver(easy_client=easy_client),
         "bytes": BytesResolver(easy_client=easy_client),
     }
 

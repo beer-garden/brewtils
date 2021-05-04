@@ -11,18 +11,8 @@ from brewtils.resolvers import ResolverBase
 UI_FILE_ID_PREFIX = "BGFileID:"
 
 
-class FileResolver(ResolverBase):
-    """Uses the BG chunk API
-
-    Resolvers are meant to be written for specific storage types. In this case, we are
-    uploading and downloading file chunks.
-
-    This class is meant to be used transparently to Plugin developers.
-    Resolvers respond to two methods:
-
-    Attributes:
-        easy_client: A `brewtils.EasyClient`
-    """
+class ChunksResolver(ResolverBase):
+    """Resolver that uses the Beergarden chunks API"""
 
     def __init__(self, easy_client):
         self.easy_client = easy_client

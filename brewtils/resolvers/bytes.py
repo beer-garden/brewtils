@@ -9,7 +9,7 @@ BYTES_PREFIX = "BGBytesID:"
 
 
 class BytesResolver(ResolverBase):
-    """Resolver that uses new direct BG API"""
+    """Resolver that uses the Beergarden file API"""
 
     def __init__(self, easy_client):
         self.easy_client = easy_client

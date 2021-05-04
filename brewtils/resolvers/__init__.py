@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 
-from brewtils.resolvers.file import FileResolver
-from brewtils.resolvers.bytes import BytesResolver
+import abc
+
+import six
 
 
-def build_resolver_map(easy_client=None):
-    """Builds all resolvers"""
+@six.add_metaclass(abc.ABCMeta)
+class ResolverBase(object):
+    """Base for all Resolver implementations"""
 
-    return {
-        "file": FileResolver(easy_client=easy_client),
-        "bytes": BytesResolver(easy_client=easy_client),
-    }
+    def should_upload(self, value, definition=None):
+        pass
+
+    def should_download(self, value, definition=None):
+        pass
+
+    def upload(self, value, definition=None):
+        pass
+
+    def download(self, value, definition=None):
+        pass

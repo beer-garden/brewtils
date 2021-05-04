@@ -6,7 +6,9 @@ import sys
 import six
 
 from brewtils.errors import ValidationError
-from brewtils.resolvers.parameter import ResolverBase, UI_FILE_ID_PREFIX
+from brewtils.resolvers import ResolverBase
+
+UI_FILE_ID_PREFIX = "BGFileID:"
 
 
 class FileResolver(ResolverBase):

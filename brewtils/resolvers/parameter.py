@@ -1,34 +1,21 @@
 # -*- coding: utf-8 -*-
 
-import abc
 import collections
 import logging
 from typing import Any, Dict, List, Mapping
 
-import six
-
-import brewtils.resolvers
 from brewtils.models import Parameter
+from brewtils.resolvers.bytes import BytesResolver
+from brewtils.resolvers.file import FileResolver
 
-UI_FILE_ID_PREFIX = "BGFileID:"
-BYTES_PREFIX = "BGBytesID:"
 
+def build_resolver_map(easy_client=None):
+    """Builds all resolvers"""
 
-@six.add_metaclass(abc.ABCMeta)
-class ResolverBase(object):
-    """Base for all Resolver implementations"""
-
-    def should_upload(self, value, definition=None):
-        pass
-
-    def should_download(self, value, definition=None):
-        pass
-
-    def upload(self, value, definition=None):
-        pass
-
-    def download(self, value, definition=None):
-        pass
+    return {
+        "file": FileResolver(easy_client=easy_client),
+        "bytes": BytesResolver(easy_client=easy_client),
+    }
 
 
 class ParameterResolver(object):
@@ -46,7 +33,7 @@ class ParameterResolver(object):
 
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
-        self.resolvers = brewtils.resolvers.build_resolver_map(**kwargs)
+        self.resolvers = build_resolver_map(**kwargs)
 
     def resolve(self, values, definitions=None, upload=True):
         # type: (Mapping[str, Any], List[Parameter], bool) -> Dict[str, Any]

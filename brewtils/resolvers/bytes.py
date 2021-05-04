@@ -3,7 +3,9 @@
 import requests
 import six
 
-from brewtils.resolvers.parameter import BYTES_PREFIX, ResolverBase
+from brewtils.resolvers import ResolverBase
+
+BYTES_PREFIX = "BGBytesID:"
 
 
 class BytesResolver(ResolverBase):

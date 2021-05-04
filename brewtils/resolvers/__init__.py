@@ -9,5 +9,5 @@ def build_resolver_map(easy_client=None):
 
     return {
         "file": FileResolver(easy_client=easy_client),
-        "bytes": BytesResolver(),
+        "bytes": BytesResolver(easy_client=easy_client),
     }

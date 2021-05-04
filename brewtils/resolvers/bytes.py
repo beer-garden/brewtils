@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import requests
 import six
 
@@ -6,6 +8,9 @@ from brewtils.resolvers.parameter import BYTES_PREFIX, ResolverBase
 
 class BytesResolver(ResolverBase):
     """Resolver that uses new direct BG API"""
+
+    def __init__(self, easy_client):
+        self.easy_client = easy_client
 
     def should_upload(self, value, **_):
         return isinstance(value, six.binary_type)
@@ -19,7 +24,9 @@ class BytesResolver(ResolverBase):
         Returns:
             A valid beer garden assigned ID
         """
-        response = requests.put(url="http://localhost:2337/api/vbeta/file", data=value)
+        response = requests.put(
+            url=self.easy_client.client.base_url + "api/vbeta/file", data=value
+        )
 
         return response.text
 
@@ -37,7 +44,7 @@ class BytesResolver(ResolverBase):
         real_id = file_id.partition(BYTES_PREFIX)[2]
 
         response = requests.get(
-            url="http://localhost:2337/api/vbeta/file",
+            url=self.easy_client.client.base_url + "api/vbeta/file",
             params={"file_id": real_id},
         )
 

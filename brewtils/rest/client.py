@@ -611,7 +611,7 @@ class RestClient(object):
         return self.session.delete(self.job_url + job_id)
 
     @enable_auth
-    def get_file(self, file_id, **kwargs):
+    def get_chunked_file(self, file_id, **kwargs):
         # type: (str, **Any) -> Response
         """Performs a GET on the specific File URL
 
@@ -625,7 +625,7 @@ class RestClient(object):
         return self.session.get(self.chunk_url + "?file_id=" + file_id, **kwargs)
 
     @enable_auth
-    def delete_file(self, file_id, **kwargs):
+    def delete_chunked_file(self, file_id, **kwargs):
         # type: (str, **Any) -> Response
         """Performs a GET on the specific File URL
 
@@ -639,7 +639,7 @@ class RestClient(object):
         return self.session.delete(self.chunk_url + "?file_id=" + file_id, **kwargs)
 
     @enable_auth
-    def post_file(self, fd, file_params, current_position=0):
+    def post_chunked_file(self, fd, file_params, current_position=0):
         """Performs a POST on the file URL.
 
         Args:

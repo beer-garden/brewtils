@@ -50,7 +50,7 @@ class FileResolver(ResolverBase):
         else:
             file_types = (io.IOBase,)
         if isinstance(value, six.string_types) or isinstance(value, file_types):
-            return self.easy_client.upload_file(value, **kwargs)
+            return self.easy_client.upload_chunked_file(value, **kwargs)
         else:
             raise ValidationError(
                 "Do not know how to upload value of type %s" % type(value)
@@ -67,4 +67,4 @@ class FileResolver(ResolverBase):
         Args:
             file_id: A BG generated file ID
         """
-        return self.easy_client.download_file(file_id)
+        return self.easy_client.download_chunked_file(file_id)

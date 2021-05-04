@@ -742,8 +742,8 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
-    def _check_file_validity(self, file_id):
-        """Request that beer garden
+    def _check_chunked_file_validity(self, file_id):
+        """Verify a chunked file
 
         Args:
             file_id: The BG-assigned file id.
@@ -751,7 +751,7 @@ class EasyClient(object):
         Returns:
             A tuple containing the result and supporting metadata, if available
         """
-        response = self.client.get_file(file_id, params={"verify": True})
+        response = self.client.get_chunked_file(file_id, params={"verify": True})
         if not response.ok:
             return False, None
 
@@ -762,8 +762,8 @@ class EasyClient(object):
         else:
             return False, metadata_json
 
-    def download_file(self, file_id):
-        """Download a file from the Beer Garden server.
+    def download_chunked_file(self, file_id):
+        """Download a chunked file from the Beer Garden server.
 
         Args:
             file_id: The beer garden-assigned file id.
@@ -771,11 +771,11 @@ class EasyClient(object):
         Returns:
             A file object
         """
-        (valid, meta) = self._check_file_validity(file_id)
+        (valid, meta) = self._check_chunked_file_validity(file_id)
         file_obj = BytesIO()
         if valid:
             for x in range(meta["number_of_chunks"]):
-                resp = self.client.get_file(file_id, params={"chunk": x})
+                resp = self.client.get_chunked_file(file_id, params={"chunk": x})
                 if resp.ok:
                     data = resp.json()["data"]
                     file_obj.write(b64decode(data))
@@ -787,7 +787,7 @@ class EasyClient(object):
         file_obj.seek(0)
         return file_obj
 
-    def delete_file(self, file_id):
+    def delete_chunked_file(self, file_id):
         """Delete a given file on the Beer Garden server.
 
         Args:
@@ -796,9 +796,11 @@ class EasyClient(object):
         Returns:
             The API response
         """
-        return self.client.delete_file(file_id)
+        return self.client.delete_chunked_file(file_id)
 
-    def upload_file(self, file_to_upload, desired_filename=None, file_params=None):
+    def upload_chunked_file(
+        self, file_to_upload, desired_filename=None, file_params=None
+    ):
         """Upload a given file to the Beer Garden server.
 
         Args:
@@ -842,7 +844,7 @@ class EasyClient(object):
             default_file_params, **self._default_file_params
         )
         try:
-            response = self.client.post_file(
+            response = self.client.post_chunked_file(
                 fd, file_params, current_position=cur_cursor
             )
             fd.seek(cur_cursor)
@@ -856,12 +858,12 @@ class EasyClient(object):
         # The file post is best effort; make sure to verify before we let the
         # user do anything with it
         file_id = response.json()["file_id"]
-        (valid, meta) = self._check_file_validity(file_id)
+        (valid, meta) = self._check_chunked_file_validity(file_id)
         if valid:
             return file_id
         else:
             # Clean up if you can
-            self.client.delete_file(file_id)
+            self.client.delete_chunked_file(file_id)
             raise ValidationError(
                 "Error occurred while uploading file %s"
                 % default_file_params["file_name"]

@@ -169,8 +169,9 @@ class RestClient(object):
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
 
+            # Beta
             self.event_url = self.base_url + "api/vbeta/events/"
-            self.file_url = self.base_url + "api/v1/files/"
+            self.chunk_url = self.base_url + "api/vbeta/chunks/"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -621,7 +622,7 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.get(self.file_url + "?file_id=" + file_id, **kwargs)
+        return self.session.get(self.chunk_url + "?file_id=" + file_id, **kwargs)
 
     @enable_auth
     def delete_file(self, file_id, **kwargs):
@@ -635,7 +636,7 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.file_url + "?file_id=" + file_id, **kwargs)
+        return self.session.delete(self.chunk_url + "?file_id=" + file_id, **kwargs)
 
     @enable_auth
     def post_file(self, fd, file_params, current_position=0):
@@ -655,7 +656,7 @@ class RestClient(object):
         # authenticate and try again, only to post an empty file.
         fd.seek(current_position)
         # Establish a top-level file handle first
-        result = self.session.get(self.file_url + "id/", params=file_params)
+        result = self.session.get(self.chunk_url + "id/", params=file_params)
         if result.ok:
             file_id = result.json()["file_id"]
             offset = 0
@@ -671,7 +672,7 @@ class RestClient(object):
                     data = bytes(data, "utf-8")
                 data = b64encode(data)
                 chunk_result = self.session.post(
-                    self.file_url + "?file_id=" + file_id,
+                    self.chunk_url + "?file_id=" + file_id,
                     json={"data": data, "offset": offset},
                 )
 

@@ -58,8 +58,9 @@ class ResolutionManager(object):
                     break
 
             if isinstance(value, collections.Mapping):
+                nested_defintions = definition.parameters if definition else None
                 resolved = self.resolve(
-                    value, definitions=definition.parameters, upload=upload
+                    value, definitions=nested_defintions, upload=upload
                 )
             elif isinstance(value, list):
                 # This is kind of gross because multi-parameters are kind of gross

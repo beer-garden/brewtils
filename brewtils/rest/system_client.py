@@ -18,7 +18,7 @@ from brewtils.errors import (
     _deprecate,
 )
 from brewtils.models import Request, System
-from brewtils.resolvers.parameter import ParameterResolver
+from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -253,7 +253,7 @@ class SystemClient(object):
         kwargs.setdefault("stacklevel", 5)
 
         self._easy_client = EasyClient(*args, **kwargs)
-        self._resolver = ParameterResolver(easy_client=self._easy_client)
+        self._resolver = ResolutionManager(easy_client=self._easy_client)
 
     def __getattr__(self, item):
         # type: (str) -> partial

@@ -18,7 +18,7 @@ def build_resolver_map(easy_client=None):
     }
 
 
-class ParameterResolver(object):
+class ResolutionManager(object):
     """Parameter resolution manager
 
     This class is used under-the-hood for various plugin functions. Its purpose is to

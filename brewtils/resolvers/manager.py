@@ -62,10 +62,15 @@ class ResolutionManager(object):
                     value, definitions=definition.parameters, upload=upload
                 )
             elif isinstance(value, list):
-                resolved = [
-                    self.resolve(p, definitions=[definition], upload=upload)
-                    for p in value
-                ]
+                # This is kind of gross because multi-parameters are kind of gross
+                # We have to wrap everything into the correct form and pull it out
+                resolved = []
+
+                for item in value:
+                    resolved_item = self.resolve(
+                        {key: item}, definitions=definitions, upload=upload
+                    )
+                    resolved.append(resolved_item[key])
             else:
                 for resolver in self.resolvers.values():
                     if upload and resolver.should_upload(value, definition=definition):

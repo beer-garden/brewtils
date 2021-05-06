@@ -324,8 +324,6 @@ class EasyClient(object):
 
         """
         operations = []
-        metadata = kwargs.pop("metadata", {})
-        add_instance = kwargs.pop("add_instance", None)
 
         if new_commands is not None:
             commands = SchemaParser.serialize_command(
@@ -333,16 +331,19 @@ class EasyClient(object):
             )
             operations.append(PatchOperation("replace", "/commands", commands))
 
+        add_instance = kwargs.pop("add_instance", None)
         if add_instance:
             instance = SchemaParser.serialize_instance(add_instance, to_string=False)
             operations.append(PatchOperation("add", "/instance", instance))
 
+        metadata = kwargs.pop("metadata", {})
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))
 
+        # The remaining kwargs are all strings
+        # Sending an empty string (instead of None) ensures they're actually cleared
         for key, value in kwargs.items():
-            if value is not None:
-                operations.append(PatchOperation("replace", "/%s" % key, value))
+            operations.append(PatchOperation("replace", "/%s" % key, value or ""))
 
         return self.client.patch_system(
             system_id, SchemaParser.serialize_patch(operations, many=True)

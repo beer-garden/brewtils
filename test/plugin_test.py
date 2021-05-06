@@ -469,7 +469,7 @@ class TestInitializeSystem(object):
             description=bg_system.description,
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
-            template="./template.html",
+            template="<html>template</html>",
         )
         # assert ez_client.create_system.return_value == plugin.system
 
@@ -497,7 +497,7 @@ class TestInitializeSystem(object):
             description=bg_system.description,
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
-            template="./template.html",
+            template="<html>template</html>",
             add_instance=ANY,
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name

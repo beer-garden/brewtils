@@ -463,6 +463,9 @@ class Plugin(object):
         # Make sure that the system is actually valid before trying anything
         self._validate_system()
 
+        # Do any necessary template resolution
+        self._system.template = resolve_template(self._system.template)
+
         existing_system = self._ez_client.find_unique_system(
             name=self._system.name,
             version=self._system.version,
@@ -795,7 +798,7 @@ class Plugin(object):
                 max_instances=self._config.max_instances,
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
-                template=resolve_template(self._config.template),
+                template=self._config.template,
             )
 
         return system

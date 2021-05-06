@@ -141,17 +141,44 @@ class TestResolveTemplate(object):
             resolve_template(data)
 
 
-@pytest.mark.parametrize(
-    "schema,expected",
-    [
-        ("/abs/path/schema.json", "/abs/path/schema.json"),
-        ("./schema.json", "/abs/test/dir/schema.json"),
-        ("../rel/schema.json", "/abs/test/rel/schema.json"),
-    ],
-)
-def test_load_from_path(monkeypatch, schema, expected):
-    with patch("brewtils.display.open") as op_mock:
-        op_mock.return_value.__enter__.return_value.read.return_value = "{}"
-        _load_from_path(schema, base_dir="/abs/test/dir")
+class TestLoadFromPath(object):
+    @pytest.fixture(autouse=True)
+    def patch_cwd(self, monkeypatch, tmpdir):
+        monkeypatch.setattr(
+            brewtils.display.os, "getcwd", Mock(return_value=str(tmpdir))
+        )
 
-    op_mock.assert_called_once_with(expected, "r")
+    class TestNoBaseDir(object):
+        def test_absolute(self, monkeypatch):
+            schema_path = "/abs/path/schema.json"
+
+            with patch("brewtils.display.open") as op_mock:
+                op_mock.return_value.__enter__.return_value.read.return_value = "{}"
+                _load_from_path(schema_path)
+
+            op_mock.assert_called_once_with(schema_path, "r")
+
+        def test_relative(self, monkeypatch, tmpdir):
+            schema_path = "./schema.json"
+
+            with patch("brewtils.display.open") as op_mock:
+                op_mock.return_value.__enter__.return_value.read.return_value = "{}"
+                _load_from_path(schema_path)
+
+            expected = os.path.abspath(os.path.join(str(tmpdir), schema_path))
+            op_mock.assert_called_once_with(expected, "r")
+
+    @pytest.mark.parametrize(
+        "schema,expected",
+        [
+            ("/abs/path/schema.json", "/abs/path/schema.json"),
+            ("./schema.json", "/abs/test/dir/schema.json"),
+            ("../rel/schema.json", "/abs/test/rel/schema.json"),
+        ],
+    )
+    def test_base_dir(self, monkeypatch, schema, expected):
+        with patch("brewtils.display.open") as op_mock:
+            op_mock.return_value.__enter__.return_value.read.return_value = "{}"
+            _load_from_path(schema, base_dir="/abs/test/dir")
+
+        op_mock.assert_called_once_with(expected, "r")

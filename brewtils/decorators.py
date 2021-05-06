@@ -163,7 +163,7 @@ def command(
 def parameter(
     _wrapped=None,  # type: Union[Callable, MethodType, Type]
     key=None,  # type: str
-    type=None,  # type: Optional[str]
+    type=None,  # type: Optional[Union[str, Type]]
     multi=None,  # type: Optional[bool]
     display_name=None,  # type: Optional[str]
     optional=None,  # type: Optional[bool]

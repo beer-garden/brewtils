@@ -119,9 +119,9 @@ def _load_from_path(path, base_dir=None):
     dependent on the file in which they're declared would be extremely confusing.
 
     So in an attempt to remain compatible this will attempt to use a provided base_dir
-    as the starting point for relative path resolution. If the loading fails (there's
-    no file there) then it will attempt the loading again, this time using the cwd as
-    he starting point. If no base_dir is provided then just use the cwd to start.
+    as the starting point for relative path resolution. If there's no file there then it
+    will re-resolve the path, this time using the cwd as he starting point. If no
+    base_dir is provided then it'll just use the cwd.
 
     Going forward this will hopefully allow us to present using the cwd as a best
     practice for everything without forcing anyone to rewrite their plugins.

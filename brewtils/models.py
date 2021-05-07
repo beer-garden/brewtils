@@ -104,6 +104,7 @@ class Command(BaseModel):
         template=None,
         icon_name=None,
         hidden=False,
+        metadata=None,
     ):
         self.name = name
         self.description = description
@@ -115,6 +116,7 @@ class Command(BaseModel):
         self.template = template
         self.icon_name = icon_name
         self.hidden = hidden
+        self.metadata = metadata or {}
 
     def __str__(self):
         return self.name
@@ -701,6 +703,7 @@ class System(BaseModel):
         metadata=None,
         namespace=None,
         local=None,
+        template=None,
     ):
         self.name = name
         self.description = description
@@ -714,6 +717,7 @@ class System(BaseModel):
         self.metadata = metadata or {}
         self.namespace = namespace
         self.local = local
+        self.template = template
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

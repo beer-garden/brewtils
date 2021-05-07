@@ -96,6 +96,7 @@ def _load_from_url(url):
 
 
 def _load_from_path(path, base_dir=None):
+    # type: (str, str) -> str
     """Load a definition from a path
 
     This is a little odd because of the differences between command-level resources and
@@ -126,7 +127,6 @@ def _load_from_path(path, base_dir=None):
     Going forward this will hopefully allow us to present using the cwd as a best
     practice for everything without forcing anyone to rewrite their plugins.
     """
-    # type: (str, str) -> str
 
     if base_dir and os.path.exists(os.path.abspath(os.path.join(base_dir, path))):
         file_path = os.path.abspath(os.path.join(base_dir, path))

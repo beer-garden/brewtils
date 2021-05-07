@@ -96,10 +96,42 @@ def _load_from_url(url):
 
 
 def _load_from_path(path, base_dir=None):
+    """Load a definition from a path
+
+    This is a little odd because of the differences between command-level resources and
+    system-level ones and the need to be backwards-compatible.
+
+    The problem is determining the "correct" base to use when a relative path is given.
+    For command resources we're able to use ``inspect`` on the method object to
+    determine the current module file. So we've always just used the directory
+    containing that file as the base for relative paths.
+
+    However, we don't have that ability when it comes to system resources. For example,
+    supposed the system template is specified in an environment variable:
+
+      BG_SYSTEM_TEMPLATE=./resources/template.html
+
+    The only thing that really makes sense in this case is starting in the plugin's
+    current working directory. In hindsight, we probably should have done that for
+    command resources as well.
+
+    Finally, having ONLY system resources start at cwd and ONLY command resources be
+    dependent on the file in which they're declared would be extremely confusing.
+
+    So in an attempt to remain compatible this will attempt to use a provided base_dir
+    as the starting point for relative path resolution. If the loading fails (there's
+    no file there) then it will attempt the loading again, this time using the cwd as
+    he starting point. If no base_dir is provided then just use the cwd to start.
+
+    Going forward this will hopefully allow us to present using the cwd as a best
+    practice for everything without forcing anyone to rewrite their plugins.
+    """
     # type: (str, str) -> str
-    if not base_dir:
-        base_dir = os.getcwd()
-    file_path = os.path.abspath(os.path.join(base_dir, path))
+
+    if base_dir and os.path.exists(os.path.abspath(os.path.join(base_dir, path))):
+        file_path = os.path.abspath(os.path.join(base_dir, path))
+    else:
+        file_path = os.path.abspath(os.path.join(os.getcwd(), path))
 
     with open(file_path, "r") as definition_file:
         return definition_file.read()

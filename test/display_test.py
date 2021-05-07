@@ -3,14 +3,14 @@ import json
 import os
 
 import pytest
-from mock import Mock, patch
+from mock import Mock
 
 import brewtils.display
 from brewtils.display import (
+    _load_from_path,
     resolve_form,
     resolve_schema,
     resolve_template,
-    _load_from_path,
 )
 from brewtils.errors import PluginParamError
 
@@ -148,37 +148,45 @@ class TestLoadFromPath(object):
             brewtils.display.os, "getcwd", Mock(return_value=str(tmpdir))
         )
 
+    @pytest.fixture(autouse=True)
+    def test_file(self, tmpdir):
+        path = os.path.join(str(tmpdir), "test.txt")
+        with open(path, "w") as f:
+            f.write("TEST")
+
+        return path
+
+    class TestBaseDir(object):
+        @pytest.fixture
+        def base_dir(self, tmpdir):
+            return os.path.join(str(tmpdir), "nested")
+
+        def test_absolute(self, test_file, base_dir):
+            """base_dir should be ignored if an absolute path is given"""
+            assert (
+                _load_from_path(os.path.abspath(test_file), base_dir=base_dir) == "TEST"
+            )
+
+        def test_relative_exists(self, tmpdir, base_dir):
+            """File exists at given path relative to base_dir"""
+            assert _load_from_path("../test.txt", base_dir=base_dir) == "TEST"
+
+        def test_relative_fallback_to_cwd(self, tmpdir, base_dir):
+            """File DOES NOT exists at given path relative to base_dir, but DOES
+            exist relative to cwd"""
+            assert _load_from_path("./test.txt", base_dir=base_dir) == "TEST"
+
+        def test_nonexistent(self, base_dir):
+            with pytest.raises(IOError):
+                _load_from_path("./foo.bar", base_dir=base_dir)
+
     class TestNoBaseDir(object):
-        def test_absolute(self, monkeypatch):
-            schema_path = "/abs/path/schema.json"
+        def test_absolute(self, test_file):
+            assert _load_from_path(os.path.abspath(test_file)) == "TEST"
 
-            with patch("brewtils.display.open") as op_mock:
-                op_mock.return_value.__enter__.return_value.read.return_value = "{}"
-                _load_from_path(schema_path)
+        def test_relative(self):
+            assert _load_from_path("./test.txt") == "TEST"
 
-            op_mock.assert_called_once_with(schema_path, "r")
-
-        def test_relative(self, monkeypatch, tmpdir):
-            schema_path = "./schema.json"
-
-            with patch("brewtils.display.open") as op_mock:
-                op_mock.return_value.__enter__.return_value.read.return_value = "{}"
-                _load_from_path(schema_path)
-
-            expected = os.path.abspath(os.path.join(str(tmpdir), schema_path))
-            op_mock.assert_called_once_with(expected, "r")
-
-    @pytest.mark.parametrize(
-        "schema,expected",
-        [
-            ("/abs/path/schema.json", "/abs/path/schema.json"),
-            ("./schema.json", "/abs/test/dir/schema.json"),
-            ("../rel/schema.json", "/abs/test/rel/schema.json"),
-        ],
-    )
-    def test_base_dir(self, monkeypatch, schema, expected):
-        with patch("brewtils.display.open") as op_mock:
-            op_mock.return_value.__enter__.return_value.read.return_value = "{}"
-            _load_from_path(schema, base_dir="/abs/test/dir")
-
-        op_mock.assert_called_once_with(expected, "r")
+        def test_nonexistent(self):
+            with pytest.raises(IOError):
+                _load_from_path("./foo.bar")

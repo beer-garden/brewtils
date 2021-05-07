@@ -74,13 +74,11 @@ class ResolutionManager(object):
                     resolved.append(resolved_item[key])
             else:
                 for resolver in self.resolvers.values():
-                    if upload and resolver.should_upload(value, definition=definition):
-                        resolved = resolver.upload(value, definition=definition)
+                    if upload and resolver.should_upload(value, definition):
+                        resolved = resolver.upload(value, definition)
                         break
-                    elif not upload and resolver.should_download(
-                        value, definition=definition
-                    ):
-                        resolved = resolver.download(value, definition=definition)
+                    elif not upload and resolver.should_download(value, definition):
+                        resolved = resolver.download(value, definition)
                         break
                 else:
                     resolved = value

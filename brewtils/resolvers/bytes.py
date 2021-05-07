@@ -13,10 +13,10 @@ class BytesResolver(ResolverBase):
     def __init__(self, easy_client):
         self.easy_client = easy_client
 
-    def should_upload(self, value, **_):
+    def should_upload(self, value, definition):
         return isinstance(value, six.binary_type)
 
-    def upload(self, value, **_):
+    def upload(self, value, definition):
         """Upload the bytes value to the server
 
         Args:
@@ -27,12 +27,12 @@ class BytesResolver(ResolverBase):
         """
         return self.easy_client.upload_file(value)
 
-    def should_download(self, value, **_):
+    def should_download(self, value, definition):
         if isinstance(value, six.string_types) and BYTES_PREFIX in value:
             return True
         return False
 
-    def download(self, file_id, **_):
+    def download(self, file_id, definition):
         """Download the given bytes parameter.
 
         Args:

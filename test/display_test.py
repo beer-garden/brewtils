@@ -55,7 +55,7 @@ class TestResolveSchema(object):
         requests_mock.get(
             url,
             json=schema,
-            headers={"content-type": "application/json"},
+            headers={"content-type": "application/json; charset=utf-8"},
         )
 
         assert resolve_schema(url) == schema
@@ -94,7 +94,7 @@ class TestResolveForm(object):
         requests_mock.get(
             url,
             json=form,
-            headers={"content-type": "application/json"},
+            headers={"content-type": "application/json; charset=utf-8"},
         )
 
         assert resolve_form(url) == form

@@ -94,8 +94,8 @@ def _load_from_url(url):
     # Use a RestClient's session since TLS will (hopefully) be configured
     response = RestClient(bg_host="").session.get(url)
 
-    if response.headers.get("content-type", "").lower() == "application/json":
-        return json.loads(response.text)
+    if "application/json" in response.headers.get("content-type", "").lower():
+        return response.json()
     return response.text
 
 

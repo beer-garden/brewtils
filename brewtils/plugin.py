@@ -569,6 +569,7 @@ class Plugin(object):
             max_workers=self._config.max_concurrent,
             working_directory=self._config.working_directory,
             resolver=ResolutionManager(easy_client=self._ez_client),
+            system=self._system,
         )
 
         return admin_processor, request_processor

@@ -5,7 +5,6 @@ import os
 from io import open
 from typing import Optional, Union
 
-import requests
 import six
 
 from brewtils.errors import PluginParamError
@@ -89,7 +88,12 @@ def resolve_template(template=None, base_dir=None):
 
 def _load_from_url(url):
     # type: (str) -> Union[str, dict]
-    response = requests.get(url)
+    """Load a definition from a URL"""
+    from brewtils.rest.client import RestClient
+
+    # Use a RestClient's session since TLS will (hopefully) be configured
+    response = RestClient(bg_host="").session.get(url)
+
     if response.headers.get("content-type", "").lower() == "application/json":
         return json.loads(response.text)
     return response.text

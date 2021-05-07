@@ -133,5 +133,14 @@ def _load_from_path(path, base_dir=None):
     else:
         file_path = os.path.abspath(os.path.join(os.getcwd(), path))
 
-    with open(file_path, "r") as definition_file:
-        return definition_file.read()
+    try:
+        with open(file_path, "r") as definition_file:
+            return definition_file.read()
+    except IOError as ex:
+        six.raise_from(
+            PluginParamError(
+                "%s. Please remember that relative paths will be resolved starting "
+                "from the plugin's current working directory." % ex
+            ),
+            ex,
+        )

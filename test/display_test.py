@@ -177,7 +177,7 @@ class TestLoadFromPath(object):
             assert _load_from_path("./test.txt", base_dir=base_dir) == "TEST"
 
         def test_nonexistent(self, base_dir):
-            with pytest.raises(IOError):
+            with pytest.raises(PluginParamError):
                 _load_from_path("./foo.bar", base_dir=base_dir)
 
     class TestNoBaseDir(object):
@@ -188,5 +188,5 @@ class TestLoadFromPath(object):
             assert _load_from_path("./test.txt") == "TEST"
 
         def test_nonexistent(self):
-            with pytest.raises(IOError):
+            with pytest.raises(PluginParamError):
                 _load_from_path("./foo.bar")

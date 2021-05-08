@@ -754,7 +754,7 @@ class EasyClient(object):
         Returns:
 
         """
-        return self.client.put_file(data).text
+        return self.client.post_file(data).text
 
     def download_file(self, file_id):
         # type: (str) -> bytes

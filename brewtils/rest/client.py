@@ -626,7 +626,7 @@ class RestClient(object):
         return self.session.get(self.file_url + file_id, **kwargs)
 
     @enable_auth
-    def put_file(self, data):
+    def post_file(self, data):
         # type: (bytes) -> Response
         """Performs a PUT on the file URL
 
@@ -636,7 +636,7 @@ class RestClient(object):
         Returns:
             A Requests Response object
         """
-        return self.session.put(self.file_url, data=data)
+        return self.session.post(self.file_url, data=data)
 
     @enable_auth
     def delete_file(self, file_id):

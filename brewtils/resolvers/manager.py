@@ -4,9 +4,10 @@ import collections
 import logging
 from typing import Any, Dict, List, Mapping
 
-from brewtils.models import Parameter
+from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver
 from brewtils.resolvers.chunks import ChunksResolver
+from brewtils.schema_parser import SchemaParser
 
 
 def build_resolver_map(easy_client=None):
@@ -51,17 +52,19 @@ class ResolutionManager(object):
 
         for key, value in values.items():
             # First find the matching Parameter definition, if possible
-            definition = None
+            definition = Parameter()
             for param_def in definitions or []:
                 if param_def.key == key:
                     definition = param_def
                     break
 
-            if isinstance(value, collections.Mapping):
-                nested_defintions = definition.parameters if definition else None
+            # Check to see if this is a nested parameter
+            if isinstance(value, collections.Mapping) and definition.parameters:
                 resolved = self.resolve(
-                    value, definitions=nested_defintions, upload=upload
+                    value, definitions=definition.parameters, upload=upload
                 )
+
+            # See if this is a multi parameter
             elif isinstance(value, list):
                 # This is kind of gross because multi-parameters are kind of gross
                 # We have to wrap everything into the correct form and pull it out
@@ -72,14 +75,21 @@ class ResolutionManager(object):
                         {key: item}, definitions=definitions, upload=upload
                     )
                     resolved.append(resolved_item[key])
+
+            # This is a simple parameter
             else:
+                # See if this is a parameter that needs to be resolved
                 for resolver in self.resolvers.values():
                     if upload and resolver.should_upload(value, definition):
-                        resolved = resolver.upload(value, definition)
+                        resolvable = resolver.upload(value, definition)
+                        resolved = SchemaParser.serialize(resolvable, to_string=False)
                         break
                     elif not upload and resolver.should_download(value, definition):
-                        resolved = resolver.download(value, definition)
+                        resolvable = Resolvable(**value)
+                        resolved = resolver.download(resolvable, definition)
                         break
+
+                # Just a normal parameter
                 else:
                     resolved = value
 

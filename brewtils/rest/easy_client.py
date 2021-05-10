@@ -768,62 +768,6 @@ class EasyClient(object):
         """
         return self.client.get_file(file_id).content
 
-    def _check_chunked_file_validity(self, file_id):
-        """Verify a chunked file
-
-        Args:
-            file_id: The BG-assigned file id.
-
-        Returns:
-            A tuple containing the result and supporting metadata, if available
-        """
-        response = self.client.get_chunked_file(file_id, params={"verify": True})
-        if not response.ok:
-            return False, None
-
-        metadata_json = response.json()
-
-        if "valid" in metadata_json and metadata_json["valid"]:
-            return True, metadata_json
-        else:
-            return False, metadata_json
-
-    def download_chunked_file(self, file_id):
-        """Download a chunked file from the Beer Garden server.
-
-        Args:
-            file_id: The beer garden-assigned file id.
-
-        Returns:
-            A file object
-        """
-        (valid, meta) = self._check_chunked_file_validity(file_id)
-        file_obj = BytesIO()
-        if valid:
-            for x in range(meta["number_of_chunks"]):
-                resp = self.client.get_chunked_file(file_id, params={"chunk": x})
-                if resp.ok:
-                    data = resp.json()["data"]
-                    file_obj.write(b64decode(data))
-                else:
-                    raise ValueError("Could not fetch chunk %d" % x)
-        else:
-            raise ValidationError("Requested file %s is incomplete." % file_id)
-
-        file_obj.seek(0)
-        return file_obj
-
-    def delete_chunked_file(self, file_id):
-        """Delete a given file on the Beer Garden server.
-
-        Args:
-            file_id: The beer garden-assigned file id.
-
-        Returns:
-            The API response
-        """
-        return self.client.delete_chunked_file(file_id)
-
     @wrap_response(parse_method="parse_resolvable")
     def upload_chunked_file(
         self, file_to_upload, desired_filename=None, file_params=None
@@ -897,6 +841,43 @@ class EasyClient(object):
 
         return response
 
+    def download_chunked_file(self, file_id):
+        """Download a chunked file from the Beer Garden server.
+
+        Args:
+            file_id: The beer garden-assigned file id.
+
+        Returns:
+            A file object
+        """
+        (valid, meta) = self._check_chunked_file_validity(file_id)
+        file_obj = BytesIO()
+        if valid:
+            for x in range(meta["number_of_chunks"]):
+                resp = self.client.get_chunked_file(file_id, params={"chunk": x})
+                if resp.ok:
+                    data = resp.json()["data"]
+                    file_obj.write(b64decode(data))
+                else:
+                    raise ValueError("Could not fetch chunk %d" % x)
+        else:
+            raise ValidationError("Requested file %s is incomplete." % file_id)
+
+        file_obj.seek(0)
+
+        return file_obj
+
+    def delete_chunked_file(self, file_id):
+        """Delete a given file on the Beer Garden server.
+
+        Args:
+            file_id: The beer garden-assigned file id.
+
+        Returns:
+            The API response
+        """
+        return self.client.delete_chunked_file(file_id)
+
     def forward(self, operation):
         """Forwards an Operation
 
@@ -957,3 +938,23 @@ class EasyClient(object):
         return self.client.patch_job(
             job_id, SchemaParser.serialize_patch(operations, many=True)
         )
+
+    def _check_chunked_file_validity(self, file_id):
+        """Verify a chunked file
+
+        Args:
+            file_id: The BG-assigned file id.
+
+        Returns:
+            A tuple containing the result and supporting metadata, if available
+        """
+        response = self.client.get_chunked_file(file_id, params={"verify": True})
+        if not response.ok:
+            return False, None
+
+        metadata_json = response.json()
+
+        if "valid" in metadata_json and metadata_json["valid"]:
+            return True, metadata_json
+        else:
+            return False, metadata_json

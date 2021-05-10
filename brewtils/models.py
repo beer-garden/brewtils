@@ -276,7 +276,7 @@ class Parameter(BaseModel):
 
     def __init__(
         self,
-        key,
+        key=None,
         type=None,
         multi=None,
         display_name=None,

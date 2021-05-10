@@ -744,8 +744,8 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
+    @wrap_response(parse_method="parse_resolvable")
     def upload_file(self, data):
-        # type: (bytes) -> str
         """Upload a file
 
         Args:
@@ -754,7 +754,7 @@ class EasyClient(object):
         Returns:
 
         """
-        return self.client.post_file(data).text
+        return self.client.post_file(data)
 
     def download_file(self, file_id):
         # type: (str) -> bytes

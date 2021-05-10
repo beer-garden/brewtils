@@ -824,6 +824,7 @@ class EasyClient(object):
         """
         return self.client.delete_chunked_file(file_id)
 
+    @wrap_response(parse_method="parse_resolvable")
     def upload_chunked_file(
         self, file_to_upload, desired_filename=None, file_params=None
     ):
@@ -883,17 +884,18 @@ class EasyClient(object):
 
         # The file post is best effort; make sure to verify before we let the
         # user do anything with it
-        file_id = response.json()["file_id"]
-        (valid, meta) = self._check_chunked_file_validity(file_id)
-        if valid:
-            return file_id
-        else:
+        file_id = response.json()["details"]["file_id"]
+
+        valid, meta = self._check_chunked_file_validity(file_id)
+        if not valid:
             # Clean up if you can
             self.client.delete_chunked_file(file_id)
             raise ValidationError(
                 "Error occurred while uploading file %s"
                 % default_file_params["file_name"]
             )
+
+        return response
 
     def forward(self, operation):
         """Forwards an Operation

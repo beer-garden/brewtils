@@ -696,41 +696,43 @@ class RestClient(object):
         # read on each of the files, that method fails with a 4XX, we then
         # authenticate and try again, only to post an empty file.
         fd.seek(current_position)
+
         # Establish a top-level file handle first
         result = self.session.get(self.chunk_url + "id/", params=file_params)
-        if result.ok:
-            file_id = result.json()["file_id"]
-            offset = 0
-            retry = 0
-            current_cursor = 0
-            # Break up the file into chunks and send them
-            while True:
-                current_cursor = fd.tell()
-                data = fd.read(file_params["chunk_size"])
-                if not data:
-                    break
-                if type(data) != bytes:
-                    data = bytes(data, "utf-8")
-                data = b64encode(data)
-                chunk_result = self.session.post(
-                    self.chunk_url + "?file_id=" + file_id,
-                    json={"data": data, "offset": offset},
-                )
 
-                # Allow the system to try to resend the chunk a couple of
-                # times before giving up.
-                if chunk_result.ok:
-                    offset += 1
-                    retry = 0
-                elif retry < 3:
-                    fd.seek(current_cursor)
-                    retry += 1
-                else:
-                    raise RuntimeError(
-                        "Could not send chunk %s, ran out of retries" % offset
-                    )
-        else:
+        if not result.ok:
             raise RuntimeError("Could not request file ID for file %s" % fd.name)
+
+        file_id = result.json()["details"]["file_id"]
+        offset = 0
+        retry = 0
+
+        # Break up the file into chunks and send them
+        while True:
+            current_cursor = fd.tell()
+            data = fd.read(file_params["chunk_size"])
+            if not data:
+                break
+            if type(data) != bytes:
+                data = bytes(data, "utf-8")
+            data = b64encode(data)
+            chunk_result = self.session.post(
+                self.chunk_url + "?file_id=" + file_id,
+                json={"data": data, "offset": offset},
+            )
+
+            # Allow the system to try to resend the chunk a couple of
+            # times before giving up.
+            if chunk_result.ok:
+                offset += 1
+                retry = 0
+            elif retry < 3:
+                fd.seek(current_cursor)
+                retry += 1
+            else:
+                raise RuntimeError(
+                    "Could not send chunk %s, ran out of retries" % offset
+                )
 
         return result
 

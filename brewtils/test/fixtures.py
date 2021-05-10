@@ -751,3 +751,14 @@ def resolvable_dict():
 @pytest.fixture
 def bg_resolvable(resolvable_dict):
     return Resolvable(**resolvable_dict)
+
+
+@pytest.fixture
+def resolvable_chunk_dict():
+    """A resolvable as a dictionary."""
+    return {"storage": "gridfs", "details": {"file_id": "60996b9dc021bf0d4add8b67"}}
+
+
+@pytest.fixture
+def bg_resolvable_chunk(resolvable_chunk_dict):
+    return Resolvable(**resolvable_chunk_dict)

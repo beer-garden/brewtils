@@ -492,6 +492,11 @@ class RunnerSchema(BaseSchema):
     restart = fields.Boolean(allow_none=True)
 
 
+class ResolvableSchema(BaseSchema):
+    storage = fields.Str(allow_none=True)
+    details = fields.Dict(allow_none=True)
+
+
 model_schema_map.update(
     {
         "Choices": ChoicesSchema,
@@ -520,6 +525,7 @@ model_schema_map.update(
         "System": SystemSchema,
         "Operation": OperationSchema,
         "Runner": RunnerSchema,
+        "Resolvable": ResolvableSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import six
-
 from brewtils.resolvers import ResolverBase
 
 BYTES_PREFIX = "BGBytesID:"

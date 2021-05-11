@@ -235,7 +235,7 @@ class RequestProcessor(object):
 
     @staticmethod
     def _format_output(output):
-        if isinstance(output, six.string_types):
+        if isinstance(output, (six.string_types, six.binary_type)):
             return output
 
         try:
@@ -429,12 +429,7 @@ class HTTPRequestUpdater(RequestUpdater):
             try:
                 if not self._should_be_final_attempt(headers):
                     self._wait_if_not_first_attempt(headers)
-                    self._ez_client.update_request(
-                        request.id,
-                        status=request.status,
-                        output=request.output,
-                        error_class=request.error_class,
-                    )
+                    self._do_update(request)
                 else:
                     self._ez_client.update_request(
                         request.id,
@@ -450,6 +445,19 @@ class HTTPRequestUpdater(RequestUpdater):
                 self._handle_request_update_failure(request, headers, ex)
             finally:
                 sys.stdout.flush()
+
+    def _do_update(self, request):
+        """Actually do the update"""
+        if isinstance(request.output, six.binary_type):
+            resolvable = self._ez_client.upload_bytes(request.output)
+            request.output = SchemaParser.serialize(resolvable, to_string=False)
+
+        self._ez_client.update_request(
+            request.id,
+            status=request.status,
+            output=request.output,
+            error_class=request.error_class,
+        )
 
     def _wait_if_not_first_attempt(self, headers):
         if headers.get("retry_attempt", 0) > 0:

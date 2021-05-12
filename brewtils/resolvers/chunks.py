@@ -23,7 +23,7 @@ class ChunksResolver(ResolverBase):
         - String representation of a valid filename.
         - An IOBase object
         """
-        if definition.type.casefold() == "base64":
+        if definition.type.lower() == "base64":
             if sys.version_info[0] == 2:
                 file_types = (io.IOBase, file)  # noqa: F821
             else:
@@ -38,7 +38,7 @@ class ChunksResolver(ResolverBase):
         return self.easy_client.upload_chunked_file(value)
 
     def should_download(self, value, definition):
-        return definition.type.casefold() == "base64"
+        return definition.type.lower() == "base64"
 
     def download(self, value, definition):
         return self.easy_client.download_chunked_file(value.details["file_id"])

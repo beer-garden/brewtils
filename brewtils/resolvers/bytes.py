@@ -12,13 +12,13 @@ class BytesResolver(ResolverBase):
         self.easy_client = easy_client
 
     def should_upload(self, value, definition):
-        return definition.type.casefold() == "bytes"
+        return definition.type.lower() == "bytes"
 
     def upload(self, value, definition):
         return self.easy_client.upload_file(value)
 
     def should_download(self, value, definition):
-        return definition.type.casefold() == "bytes"
+        return definition.type.lower() == "bytes"
 
     def download(self, value, definition):
         return self.easy_client.download_file(value.details["id"])

@@ -7,8 +7,6 @@ import six
 
 from brewtils.resolvers import ResolverBase
 
-UI_FILE_ID_PREFIX = "BGFileID:"
-
 
 class ChunksResolver(ResolverBase):
     """Resolver that uses the Beergarden chunks API"""

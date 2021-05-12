@@ -2,8 +2,6 @@
 
 from brewtils.resolvers import ResolverBase
 
-BYTES_PREFIX = "BGBytesID:"
-
 
 class BytesResolver(ResolverBase):
     """Resolver that uses the Beergarden file API"""

@@ -39,6 +39,7 @@ from brewtils.specification import _CONNECTION_SPEC
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
+request_context.current_request = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)

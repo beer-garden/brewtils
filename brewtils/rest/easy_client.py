@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from base64 import b64decode
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union
 
 import six
@@ -750,10 +751,10 @@ class EasyClient(object):
         """Upload a file
 
         Args:
-            data:
+            data: The bytes to upload
 
         Returns:
-
+            The bytes Resolvable
         """
         return self.client.post_file(data)
 
@@ -768,6 +769,42 @@ class EasyClient(object):
             The bytes data
         """
         return self.client.get_file(file_id).content
+
+    @wrap_response(parse_method="parse_resolvable")
+    def upload_file(self, path):
+        # type: (Union[str, Path]) -> Any
+        """Upload a file
+
+        Args:
+            path: Path to file
+
+        Returns:
+            The file Resolvable
+        """
+        # As of now this just converts the data param to bytes and uses the bytes API
+        # Ideally this would fail-over to using the chunks API if necessary
+        with open(path, "rb") as f:
+            bytes_data = f.read()
+
+        return self.client.post_file(bytes_data)
+
+    def download_file(self, file_id, path):
+        # type: (str, Union[str, Path]) -> Union[str, Path]
+        """Download a file
+
+        Args:
+            file_id: The File id.
+            path: Location for downloaded file
+
+        Returns:
+            Path to downloaded file
+        """
+        data = self.download_bytes(file_id)
+
+        with open(path, "wb") as f:
+            f.write(data)
+
+        return path
 
     @wrap_response(parse_method="parse_resolvable")
     def upload_chunked_file(

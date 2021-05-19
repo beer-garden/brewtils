@@ -10,6 +10,7 @@ import threading
 import appdirs
 from box import Box
 from packaging.version import Version
+from pathlib import Path
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
@@ -351,7 +352,6 @@ class Plugin(object):
 
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
-        self._admin_processor, self._request_processor = self._initialize_processors()
 
         if self._config.working_directory is None:
             app_parts = [self._system.name, self._instance.name]
@@ -362,7 +362,12 @@ class Plugin(object):
                 appname=os.path.join(*app_parts), version=self._system.version
             )
 
-        self._logger.debug("Starting up processors")
+            workdir = Path(self._config.working_directory)
+            if not workdir.exists():
+                workdir.mkdir(parents=True)
+
+        self._logger.debug("Initializing and starting processors")
+        self._admin_processor, self._request_processor = self._initialize_processors()
         self._admin_processor.startup()
         self._request_processor.startup()
 

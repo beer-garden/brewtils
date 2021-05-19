@@ -572,8 +572,10 @@ class Plugin(object):
             validation_funcs=[self._correct_system, self._is_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
-            working_directory=self._config.working_directory,
-            resolver=ResolutionManager(easy_client=self._ez_client),
+            resolver=ResolutionManager(
+                easy_client=self._ez_client,
+                working_directory=self._config.working_directory,
+            ),
             system=self._system,
         )
 

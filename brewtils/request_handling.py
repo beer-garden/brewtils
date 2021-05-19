@@ -53,7 +53,6 @@ class RequestProcessor(object):
         plugin_name=None,
         max_workers=None,
         resolver=None,
-        working_directory=None,
         system=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
@@ -68,7 +67,6 @@ class RequestProcessor(object):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
         self._resolver = resolver
-        self._working_directory = working_directory
         self._system = system
 
     def on_message_received(self, message, headers):

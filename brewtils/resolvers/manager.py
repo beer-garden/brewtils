@@ -13,10 +13,10 @@ from brewtils.schema_parser import SchemaParser
 def build_resolver_map(easy_client=None):
     """Builds all resolvers"""
 
-    return {
-        "bytes": BytesResolver(easy_client),
-        "chunks": ChunksResolver(easy_client),
-    }
+    return [
+        BytesResolver(easy_client),
+        ChunksResolver(easy_client),
+    ]
 
 
 class ResolutionManager(object):
@@ -79,7 +79,7 @@ class ResolutionManager(object):
             # This is a simple parameter
             else:
                 # See if this is a parameter that needs to be resolved
-                for resolver in self.resolvers.values():
+                for resolver in self.resolvers:
                     if upload and resolver.should_upload(value, definition):
                         resolvable = resolver.upload(value, definition)
                         resolved = SchemaParser.serialize(resolvable, to_string=False)

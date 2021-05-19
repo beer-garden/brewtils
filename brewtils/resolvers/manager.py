@@ -7,17 +7,15 @@ from typing import Any, Dict, List, Mapping
 from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver
 from brewtils.resolvers.chunks import ChunksResolver
-from brewtils.resolvers.files import FileResolver
 from brewtils.schema_parser import SchemaParser
 
 
-def build_resolver_map(easy_client=None, working_directory=None):
+def build_resolver_map(easy_client=None):
     """Builds all resolvers"""
 
     return {
         "bytes": BytesResolver(easy_client),
         "chunks": ChunksResolver(easy_client),
-        "file": FileResolver(easy_client, working_directory),
     }
 
 

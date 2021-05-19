@@ -937,7 +937,8 @@ class TestFormatType(object):
             ("Dictionary", "Dictionary"),
             ("DateTime", "DateTime"),
             ("Any", "Any"),
-            ("file", "Bytes"),
+            ("Bytes", "Bytes"),
+            ("File", "File"),
             ("string", "String"),
         ],
     )

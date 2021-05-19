@@ -609,11 +609,9 @@ def _initialize_parameter(
 
     # Type info is where type specific information goes. For now, this is specific
     # to file types. See #289 for more details.
-    if param.type == "Bytes":
+    # Also nullify default parameters for safety
+    if param.type in ("Base64", "Bytes", "File"):
         param.type_info = {"storage": "gridfs"}
-
-    # Nullifying default file parameters for safety
-    if param.type == "Base64":
         param.default = None
 
     # Now deal with nested parameters
@@ -655,8 +653,6 @@ def _format_type(param_type):
         return "Boolean"
     elif param_type == dict:
         return "Dictionary"
-    elif str(param_type).lower() == "file":
-        return "Bytes"
     elif str(param_type).lower() == "datetime":
         return "DateTime"
     elif not param_type:

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Mapping
 from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver
 from brewtils.resolvers.chunks import ChunksResolver
+from brewtils.resolvers.identity import IdentityResolver
 from brewtils.schema_parser import SchemaParser
 
 
@@ -14,6 +15,7 @@ def build_resolver_map(easy_client=None):
     """Builds all resolvers"""
 
     return [
+        IdentityResolver(),  # This should always be first
         BytesResolver(easy_client),
         ChunksResolver(easy_client),
     ]

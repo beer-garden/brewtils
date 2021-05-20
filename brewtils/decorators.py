@@ -610,8 +610,9 @@ def _initialize_parameter(
     # Type info is where type specific information goes. For now, this is specific
     # to file types. See #289 for more details.
     # Also nullify default parameters for safety
+    param.type_info = param.type_info or {}
     if param.type in ("Base64", "Bytes", "File"):
-        param.type_info = {"storage": "gridfs"}
+        param.type_info["storage"] = "gridfs"
         param.default = None
 
     # Now deal with nested parameters

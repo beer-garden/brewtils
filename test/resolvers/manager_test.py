@@ -17,7 +17,7 @@ def resolver_mock():
 @pytest.fixture
 def manager(resolver_mock):
     m = ResolutionManager()
-    m.resolvers = {"test": resolver_mock}
+    m.resolvers = [resolver_mock]
     return m
 
 

@@ -611,7 +611,7 @@ def _initialize_parameter(
     # to file types. See #289 for more details.
     # Also nullify default parameters for safety
     param.type_info = param.type_info or {}
-    if param.type in ("Base64", "Bytes", "File"):
+    if param.type in ("Base64", "Bytes"):
         param.type_info["storage"] = "gridfs"
         param.default = None
 

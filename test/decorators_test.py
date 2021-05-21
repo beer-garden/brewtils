@@ -721,7 +721,7 @@ class TestInitializeParameter(object):
         return MyModel
 
     def test_file_type_info(self):
-        assert _initialize_parameter(Parameter(key="foo", type="file")).type_info == {
+        assert _initialize_parameter(Parameter(key="foo", type="bytes")).type_info == {
             "storage": "gridfs"
         }
 

@@ -1473,6 +1473,9 @@ class Runner(BaseModel):
 class Resolvable(BaseModel):
     schema = "ResolvableSchema"
 
+    # Resolvable parameter types
+    TYPES = ("Base64", "Bytes")
+
     def __init__(self, storage=None, details=None):
         self.storage = storage
         self.details = details or {}

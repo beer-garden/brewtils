@@ -17,7 +17,7 @@ except ImportError:
 from brewtils.choices import parse
 from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
-from brewtils.models import Command, Parameter, Choices
+from brewtils.models import Command, Parameter, Choices, Resolvable
 
 if sys.version_info.major == 2:
     from funcsigs import signature, Parameter as InspectParameter  # noqa
@@ -611,7 +611,7 @@ def _initialize_parameter(
     # to file types. See #289 for more details.
     # Also nullify default parameters for safety
     param.type_info = param.type_info or {}
-    if param.type in ("Base64", "Bytes"):
+    if param.type in Resolvable.TYPES:
         param.type_info["storage"] = "gridfs"
         param.default = None
 

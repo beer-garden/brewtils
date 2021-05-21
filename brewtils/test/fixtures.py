@@ -745,7 +745,11 @@ def bg_runner(runner_dict):
 @pytest.fixture
 def resolvable_dict():
     """A resolvable as a dictionary."""
-    return {"storage": "gridfs", "details": {"id": "60996b9dc021bf0d4add8b67"}}
+    return {
+        "type": "bytes",
+        "storage": "gridfs",
+        "details": {"id": "60996b9dc021bf0d4add8b67"},
+    }
 
 
 @pytest.fixture
@@ -756,7 +760,11 @@ def bg_resolvable(resolvable_dict):
 @pytest.fixture
 def resolvable_chunk_dict():
     """A resolvable as a dictionary."""
-    return {"storage": "gridfs", "details": {"file_id": "60996b9dc021bf0d4add8b67"}}
+    return {
+        "type": "base64",
+        "storage": "gridfs",
+        "details": {"file_id": "60996b9dc021bf0d4add8b67"},
+    }
 
 
 @pytest.fixture

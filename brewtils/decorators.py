@@ -17,7 +17,7 @@ except ImportError:
 from brewtils.choices import parse
 from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
-from brewtils.models import Command, Parameter, Choices
+from brewtils.models import Command, Parameter, Choices, Resolvable
 
 if sys.version_info.major == 2:
     from funcsigs import signature, Parameter as InspectParameter  # noqa
@@ -609,11 +609,10 @@ def _initialize_parameter(
 
     # Type info is where type specific information goes. For now, this is specific
     # to file types. See #289 for more details.
-    if param.type == "Bytes":
-        param.type_info = {"storage": "gridfs"}
-
-    # Nullifying default file parameters for safety
-    if param.type == "Base64":
+    # Also nullify default parameters for safety
+    param.type_info = param.type_info or {}
+    if param.type in Resolvable.TYPES:
+        param.type_info["storage"] = "gridfs"
         param.default = None
 
     # Now deal with nested parameters
@@ -655,8 +654,6 @@ def _format_type(param_type):
         return "Boolean"
     elif param_type == dict:
         return "Dictionary"
-    elif str(param_type).lower() == "file":
-        return "Bytes"
     elif str(param_type).lower() == "datetime":
         return "DateTime"
     elif not param_type:

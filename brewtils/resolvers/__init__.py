@@ -1,15 +1,29 @@
-from brewtils.resolvers.file import FileResolver
-from brewtils.resolvers.parameter import DownloadResolver, UploadResolver
+# -*- coding: utf-8 -*-
 
-__all__ = ["DownloadResolver", "FileResolver", "UploadResolver"]
+import abc
+from typing import Any
 
-_resolver_map = {"file": {"class": FileResolver}}
+import six
+
+from brewtils.models import Parameter, Resolvable
 
 
-def build_resolver_map(easy_client):
-    """Builds all the resolvers"""
-    resolvers = {}
-    for key, options in _resolver_map.items():
-        klass = options["class"]
-        resolvers[key] = klass(client=easy_client)
-    return resolvers
+@six.add_metaclass(abc.ABCMeta)
+class ResolverBase(object):
+    """Base for all Resolver implementations"""
+
+    def should_upload(self, value, definition):
+        # type: (Any, Parameter) -> bool
+        pass
+
+    def upload(self, value, definition):
+        # type: (Any, Parameter) -> Resolvable
+        pass
+
+    def should_download(self, value, definition):
+        # type: (Any, Parameter) -> bool
+        pass
+
+    def download(self, value, definition):
+        # type: (Resolvable, Parameter) -> Any
+        pass

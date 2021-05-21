@@ -31,6 +31,7 @@ from brewtils.models import (
     Request,
     RequestFile,
     RequestTemplate,
+    Resolvable,
     Role,
     Runner,
     System,
@@ -188,6 +189,7 @@ assert_trigger_equal = partial(
 )
 assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
+assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):

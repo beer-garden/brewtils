@@ -34,6 +34,7 @@ __all__ = [
     "FileTrigger",
     "Garden",
     "Operation",
+    "Resolvable",
 ]
 
 
@@ -275,7 +276,7 @@ class Parameter(BaseModel):
 
     def __init__(
         self,
-        key,
+        key=None,
         type=None,
         multi=None,
         display_name=None,
@@ -1467,3 +1468,20 @@ class Runner(BaseModel):
                 self.restart,
             )
         )
+
+
+class Resolvable(BaseModel):
+    schema = "ResolvableSchema"
+
+    # Resolvable parameter types
+    TYPES = ("Base64", "Bytes")
+
+    def __init__(self, storage=None, details=None):
+        self.storage = storage
+        self.details = details or {}
+
+    def __str__(self):
+        return "%s" % self.storage
+
+    def __repr__(self):
+        return "<Resolvable: storage=%s, details=%s>" % (self.storage, self.details)

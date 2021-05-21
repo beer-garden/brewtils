@@ -169,8 +169,10 @@ class RestClient(object):
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
 
+            # Beta
             self.event_url = self.base_url + "api/vbeta/events/"
-            self.file_url = self.base_url + "api/v1/files/"
+            self.chunk_url = self.base_url + "api/vbeta/chunks/"
+            self.file_url = self.base_url + "api/vbeta/file/"
         else:
             raise ValueError("Invalid Beer-garden API version: %s" % self.api_version)
 
@@ -621,10 +623,36 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.get(self.file_url + "?file_id=" + file_id, **kwargs)
+        return self.session.get(self.file_url + file_id, **kwargs)
 
     @enable_auth
-    def delete_file(self, file_id, **kwargs):
+    def post_file(self, data):
+        # type: (bytes) -> Response
+        """Performs a PUT on the file URL
+
+        Args:
+            data: Data bytes
+
+        Returns:
+            A Requests Response object
+        """
+        return self.session.post(self.file_url, data=data)
+
+    @enable_auth
+    def delete_file(self, file_id):
+        # type: (str) -> Response
+        """Performs a DELETE on the specific File URL
+
+        Args:
+            file_id: File ID
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.delete(self.file_url + file_id)
+
+    @enable_auth
+    def get_chunked_file(self, file_id, **kwargs):
         # type: (str, **Any) -> Response
         """Performs a GET on the specific File URL
 
@@ -635,10 +663,24 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.file_url + "?file_id=" + file_id, **kwargs)
+        return self.session.get(self.chunk_url + "?file_id=" + file_id, **kwargs)
 
     @enable_auth
-    def post_file(self, fd, file_params, current_position=0):
+    def delete_chunked_file(self, file_id, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a GET on the specific File URL
+
+        Args:
+            file_id: File ID
+            kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.delete(self.chunk_url + "?file_id=" + file_id, **kwargs)
+
+    @enable_auth
+    def post_chunked_file(self, fd, file_params, current_position=0):
         """Performs a POST on the file URL.
 
         Args:
@@ -654,41 +696,43 @@ class RestClient(object):
         # read on each of the files, that method fails with a 4XX, we then
         # authenticate and try again, only to post an empty file.
         fd.seek(current_position)
-        # Establish a top-level file handle first
-        result = self.session.get(self.file_url + "id/", params=file_params)
-        if result.ok:
-            file_id = result.json()["file_id"]
-            offset = 0
-            retry = 0
-            current_cursor = 0
-            # Break up the file into chunks and send them
-            while True:
-                current_cursor = fd.tell()
-                data = fd.read(file_params["chunk_size"])
-                if not data:
-                    break
-                if type(data) != bytes:
-                    data = bytes(data, "utf-8")
-                data = b64encode(data)
-                chunk_result = self.session.post(
-                    self.file_url + "?file_id=" + file_id,
-                    json={"data": data, "offset": offset},
-                )
 
-                # Allow the system to try to resend the chunk a couple of
-                # times before giving up.
-                if chunk_result.ok:
-                    offset += 1
-                    retry = 0
-                elif retry < 3:
-                    fd.seek(current_cursor)
-                    retry += 1
-                else:
-                    raise RuntimeError(
-                        "Could not send chunk %s, ran out of retries" % offset
-                    )
-        else:
+        # Establish a top-level file handle first
+        result = self.session.get(self.chunk_url + "id/", params=file_params)
+
+        if not result.ok:
             raise RuntimeError("Could not request file ID for file %s" % fd.name)
+
+        file_id = result.json()["details"]["file_id"]
+        offset = 0
+        retry = 0
+
+        # Break up the file into chunks and send them
+        while True:
+            current_cursor = fd.tell()
+            data = fd.read(file_params["chunk_size"])
+            if not data:
+                break
+            if type(data) != bytes:
+                data = bytes(data, "utf-8")
+            data = b64encode(data)
+            chunk_result = self.session.post(
+                self.chunk_url + "?file_id=" + file_id,
+                json={"data": data, "offset": offset},
+            )
+
+            # Allow the system to try to resend the chunk a couple of
+            # times before giving up.
+            if chunk_result.ok:
+                offset += 1
+                retry = 0
+            elif retry < 3:
+                fd.seek(current_cursor)
+                retry += 1
+            else:
+                raise RuntimeError(
+                    "Could not send chunk %s, ran out of retries" % offset
+                )
 
         return result
 

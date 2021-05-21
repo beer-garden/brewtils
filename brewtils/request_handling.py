@@ -21,7 +21,6 @@ from brewtils.errors import (
     parse_exception_as_json,
 )
 from brewtils.models import Request
-from brewtils.resolvers import DownloadResolver
 from brewtils.schema_parser import SchemaParser
 
 
@@ -53,8 +52,8 @@ class RequestProcessor(object):
         logger=None,
         plugin_name=None,
         max_workers=None,
-        resolvers=None,
-        working_directory=None,
+        resolver=None,
+        system=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
 
@@ -67,8 +66,8 @@ class RequestProcessor(object):
         self._validation_funcs = validation_funcs or []
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-        self._resolvers = resolvers
-        self._working_directory = working_directory
+        self._resolver = resolver
+        self._system = system
 
     def on_message_received(self, message, headers):
         """Callback function that will be invoked for received messages
@@ -210,16 +209,22 @@ class RequestProcessor(object):
                 "Could not find an implementation of command '%s'" % request.command
             )
 
-        if self._resolvers:
-            with DownloadResolver(
-                request, [], self._resolvers, self._working_directory
-            ) as resolved_params:
-                output = getattr(target, request.command)(**resolved_params)
-        else:
-            parameters = request.parameters or {}
-            output = getattr(target, request.command)(**parameters)
+        # Get the command to use the parameter definitions when resolving
+        command = None
+        if self._system:
+            command = self._system.get_command_by_name(request.command)
 
-        return output
+        # Now resolve parameters, if necessary
+        if request.is_ephemeral or not command:
+            parameters = request.parameters or {}
+        else:
+            parameters = self._resolver.resolve(
+                request.parameters,
+                definitions=command.parameters,
+                upload=False,
+            )
+
+        return getattr(target, request.command)(**parameters)
 
     @staticmethod
     def _format_error_output(request, exc):

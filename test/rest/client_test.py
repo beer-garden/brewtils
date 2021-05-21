@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 import warnings
 
 import pytest
@@ -10,7 +11,6 @@ from yapconf.exceptions import YapconfItemError
 
 import brewtils.rest
 from brewtils.rest.client import RestClient
-from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
 
 
 class TestRestClient(object):
@@ -320,31 +320,30 @@ class TestRestClient(object):
         assert client.access_token == "token"
         assert client.refresh_token == "refresh"
 
-    def test_get_file(self, client, session_mock):
-        client.get_file("id")
-        session_mock.get.assert_called_with(client.file_url + "?file_id=" + "id")
+    def test_get_chunked_file(self, client, session_mock):
+        client.get_chunked_file("id")
+        session_mock.get.assert_called_with(client.chunk_url + "?file_id=" + "id")
 
-    @pytest.fixture
-    def target_file_metadata(self):
-        return {"file_name": "test", "file_size": 1024, "chunk_size": 1024}
-
-    @pytest.fixture
-    def target_file_id(self):
-        return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
-
-    def test_post_file(
-        self, monkeypatch, client, session_mock, target_file_metadata, target_file_id
+    def test_post_chunked_file(
+        self, monkeypatch, client, session_mock, tmpdir, resolvable_chunk_dict
     ):
-        open_file = Mock()
-        open_file.read = Mock(side_effect=iter([b"My content", None]))
-        open_file.tell = Mock(return_value=0)
-        response = Mock()
-        response.ok = True
-        response.json = Mock(return_value={"file_id": target_file_id})
+        path = os.path.join(str(tmpdir), "foo.txt")
+        with open(path, "w") as f:
+            f.write("content")
+
+        response = Mock(ok=True, json=Mock(return_value=resolvable_chunk_dict))
         monkeypatch.setattr(client.session, "get", Mock(return_value=response))
-        ret = client.post_file(open_file, file_params=target_file_metadata)
+
+        target_file_metadata = {
+            "file_name": "foo.txt",
+            "file_size": 1024,
+            "chunk_size": 1024,
+        }
+
+        with open(path, "r") as f:
+            ret = client.post_chunked_file(f, file_params=target_file_metadata)
+
         assert ret == response
-        open_file.seek.assert_called_with(0)
 
     def test_patch_admin(self, client, session_mock):
         client.patch_admin(payload="payload")

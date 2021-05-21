@@ -25,12 +25,11 @@ from brewtils.rest.easy_client import (
     handle_response_failure,
 )
 from brewtils.schema_parser import SchemaParser
-from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
 
 
 @pytest.fixture
 def target_file_id():
-    return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
+    return "123456789012345678901234"
 
 
 @pytest.fixture
@@ -476,33 +475,47 @@ class TestRescan(object):
         assert patch_op.operation == "rescan"
 
 
-class TestRequestFileUpload(object):
+class TestChunked(object):
     def test_stream_to_sink_fail(self, client, rest_client):
-        client._check_file_validity = Mock(return_value=(False, {}))
-        rest_client.get_file.return_value = None
+        client._check_chunked_file_validity = Mock(return_value=(False, {}))
+        rest_client.get_chunked_file.return_value = None
         with pytest.raises(ValidationError):
-            client.download_file("file_id")
+            client.download_chunked_file("file_id")
 
-    def test_download_file(self, client, rest_client, target_file, target_file_id):
+    def test_download_chunked_file(
+        self, client, rest_client, target_file, target_file_id
+    ):
         file_data = b64encode(target_file.read())
 
-        client._check_file_validity = Mock(
+        client._check_chunked_file_validity = Mock(
             return_value=(True, {"file_id": target_file_id, "number_of_chunks": 1})
         )
         response = Mock()
         response.ok = True
         response.json = Mock(return_value={"data": file_data})
-        rest_client.get_file.return_value = response
-        byte_obj = client.download_file("file_id")
+        rest_client.get_chunked_file.return_value = response
+        byte_obj = client.download_chunked_file("file_id")
         assert byte_obj.read() == b64decode(file_data)
 
-    def test_upload_file(self, client, rest_client, success, target_file):
-        success.json = Mock(return_value={"file_id": "SERVER_RESPONSE"})
-        rest_client.post_file.return_value = success
-        client._check_file_validity = Mock(return_value=(True, {}))
-        assert client.upload_file(target_file, "desired_name") == "SERVER_RESPONSE"
+    def test_upload_chunked_file(
+        self,
+        client,
+        rest_client,
+        parser,
+        success,
+        target_file,
+        resolvable_chunk_dict,
+        bg_resolvable_chunk,
+    ):
+        success.json = Mock(return_value=resolvable_chunk_dict)
+        rest_client.post_chunked_file.return_value = success
+        parser.parse_resolvable.return_value = bg_resolvable_chunk
+        client._check_chunked_file_validity = Mock(return_value=(True, {}))
+
+        resolvable = client.upload_chunked_file(target_file, "desired_name")
+        assert resolvable == bg_resolvable_chunk
 
     def test_upload_file_fail(self, client, rest_client, server_error, target_file):
-        rest_client.post_file.return_value = server_error
+        rest_client.post_chunked_file.return_value = server_error
         with pytest.raises(SaveError):
-            assert client.upload_file(target_file, "desired_name")
+            assert client.upload_chunked_file(target_file, "desired_name")

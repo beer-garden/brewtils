@@ -10,6 +10,7 @@ import threading
 import appdirs
 from box import Box
 from packaging.version import Version
+from pathlib import Path
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
@@ -33,7 +34,7 @@ from brewtils.request_handling import (
     RequestConsumer,
     RequestProcessor,
 )
-from brewtils.resolvers import build_resolver_map
+from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
 
@@ -352,7 +353,6 @@ class Plugin(object):
 
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
-        self._admin_processor, self._request_processor = self._initialize_processors()
 
         if self._config.working_directory is None:
             app_parts = [self._system.name, self._instance.name]
@@ -363,7 +363,12 @@ class Plugin(object):
                 appname=os.path.join(*app_parts), version=self._system.version
             )
 
-        self._logger.debug("Starting up processors")
+            workdir = Path(self._config.working_directory)
+            if not workdir.exists():
+                workdir.mkdir(parents=True)
+
+        self._logger.debug("Initializing and starting processors")
+        self._admin_processor, self._request_processor = self._initialize_processors()
         self._admin_processor.startup()
         self._request_processor.startup()
 
@@ -573,8 +578,8 @@ class Plugin(object):
             validation_funcs=[self._correct_system, self._is_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
-            working_directory=self._config.working_directory,
-            resolvers=build_resolver_map(self._ez_client),
+            resolver=ResolutionManager(easy_client=self._ez_client),
+            system=self._system,
         )
 
         return admin_processor, request_processor

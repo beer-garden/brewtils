@@ -656,3 +656,14 @@ class TestRunner(object):
             "path=system-1.0.0, instance_id=%s, stopped=False, "
             "dead=False, restart=True>" % (bg_runner.id, bg_instance.id)
         )
+
+
+class TestResolvable(object):
+    def test_str(self, bg_resolvable):
+        assert str(bg_resolvable) == bg_resolvable.storage
+
+    def test_repr(self, bg_resolvable):
+        assert repr(bg_resolvable) == "<Resolvable: storage=%s, details=%s>" % (
+            bg_resolvable.storage,
+            bg_resolvable.details,
+        )

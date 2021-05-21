@@ -47,6 +47,7 @@ class SchemaParser(object):
         "SystemSchema": brewtils.models.System,
         "OperationSchema": brewtils.models.Operation,
         "RunnerSchema": brewtils.models.Runner,
+        "ResolvableSchema": brewtils.models.Resolvable,
     }
 
     logger = logging.getLogger(__name__)
@@ -291,6 +292,19 @@ class SchemaParser(object):
         """
         return cls.parse(
             runner, brewtils.models.Runner, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_resolvable(cls, resolvable, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a runner model object
+
+        :param resolvable: The raw input
+        :param from_string: True if input is a JSON string, False if a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: A Resolvable object
+        """
+        return cls.parse(
+            resolvable, brewtils.models.Resolvable, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -561,7 +575,7 @@ class SchemaParser(object):
     def serialize_garden(cls, garden, to_string=True, **kwargs):
         """Convert an garden model into serialized form
 
-        :param garden: The instance object(s) to be serialized
+        :param garden: The garden object(s) to be serialized
         :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of garden
@@ -577,7 +591,7 @@ class SchemaParser(object):
     def serialize_operation(cls, operation, to_string=True, **kwargs):
         """Convert an operation model into serialized form
 
-        :param operation: The instance object(s) to be serialized
+        :param operation: The operation object(s) to be serialized
         :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of operation
@@ -593,7 +607,7 @@ class SchemaParser(object):
     def serialize_runner(cls, runner, to_string=True, **kwargs):
         """Convert a runner model into serialized form
 
-        :param operation: The instance object(s) to be serialized
+        :param runner: The runner object(s) to be serialized
         :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
         :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
         :return: Serialized representation of runner
@@ -602,6 +616,22 @@ class SchemaParser(object):
             runner,
             to_string=to_string,
             schema_name=brewtils.models.Runner.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_resolvable(cls, resolvable, to_string=True, **kwargs):
+        """Convert a resolvable model into serialized form
+
+        :param resolvable: The resolvable object(s) to be serialized
+        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
+        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+        :return: Serialized representation of runner
+        """
+        return cls.serialize(
+            resolvable,
+            to_string=to_string,
+            schema_name=brewtils.models.Resolvable.schema,
             **kwargs
         )
 

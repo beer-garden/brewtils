@@ -690,6 +690,8 @@ class System(BaseModel):
         metadata=None,
         namespace=None,
         local=None,
+        # TODO I beleive this is where I needed to add this
+        dependencies=None,
     ):
         self.name = name
         self.description = description
@@ -703,6 +705,8 @@ class System(BaseModel):
         self.metadata = metadata or {}
         self.namespace = namespace
         self.local = local
+        # TODO I beleive this is where I needed to add this
+        self.dependencies = dependencies or []
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

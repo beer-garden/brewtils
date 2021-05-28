@@ -909,27 +909,3 @@ class EasyClient(object):
         return self.client.patch_job(
             job_id, SchemaParser.serialize_patch(operations, many=True)
         )
-
-    def add_dependency(self, dependency):
-        dependency_dict = {}
-        for arg in dependency_dict.keys():
-            if dependency_dict[arg] != dependecy:
-                dependency_dict[dependency] = {}
-                dependency_dict[dependency]["System_name"] = brewtils.plugin.CONFIG.name
-                dependency_dict[dependency]["Version"] = brewtils.plugin.CONFIG.version
-                dependency_dict[dependency][
-                    "Instance"
-                ] = brewtils.plugin.CONFIG.instance_name
-                dependency_dict[dependency][
-                    "Namespace"
-                ] = brewtils.plugin.CONFIG.namespace
-                added_dependency = True
-
-    def remove_all_dependencies(self):
-        dependency_dict.clear()
-        added_dependency = False
-        check_dependency = False
-
-    def remove_a_dependency(self, dependency):
-        dependency_dict.pop(dependency)
-        # TODO update check_dependency

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
 import six
 from lark import Lark, Transformer
@@ -115,7 +115,7 @@ def _determine_type(type_value):
 
 
 def process_choices(choices):
-    # type: (Union[dict, str, Iterable]) -> Optional[Choices]
+    # type: (Union[dict, str, Iterable, Callable]) -> Optional[Choices]
     """Process a choices definition into a usable Choices object
 
     Args:
@@ -128,6 +128,10 @@ def process_choices(choices):
     if choices is None or isinstance(choices, Choices):
         return choices
 
+    # If choices is a Callable, call it
+    if callable(choices):
+        choices = choices()
+
     if isinstance(choices, dict):
         if not choices.get("value"):
             raise PluginParamError(
@@ -135,7 +139,11 @@ def process_choices(choices):
                 "provide valid values."
             )
 
+        # Again, if value is a Callable, call it
         value = choices.get("value")
+        if callable(value):
+            value = value()
+
         display = choices.get("display", _determine_display(value))
         choice_type = choices.get("type")
         strict = choices.get("strict", True)

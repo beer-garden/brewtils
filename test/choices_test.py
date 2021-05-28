@@ -157,6 +157,15 @@ class TestProcessChoices(object):
                 },
             ),
             (
+                lambda: ["1", "2", "3"],
+                {
+                    "type": "static",
+                    "value": ["1", "2", "3"],
+                    "display": "select",
+                    "strict": True,
+                },
+            ),
+            (
                 list(range(100)),
                 {
                     "type": "static",
@@ -176,6 +185,15 @@ class TestProcessChoices(object):
             ),
             (
                 {"value": [1, 2, 3]},
+                {
+                    "type": "static",
+                    "value": [1, 2, 3],
+                    "display": "select",
+                    "strict": True,
+                },
+            ),
+            (
+                {"value": lambda: [1, 2, 3]},
                 {
                     "type": "static",
                     "value": [1, 2, 3],

@@ -164,7 +164,7 @@ def parameter(
     optional=None,  # type: Optional[bool]
     default=None,  # type: Optional[Any]
     description=None,  # type: Optional[str]
-    choices=None,  # type: Optional[Union[Dict, Iterable, str]]
+    choices=None,  # type: Optional[Union[Callable, Dict, Iterable, str]]
     parameters=None,  # type: Optional[List[Parameter]]
     nullable=None,  # type: Optional[bool]
     maximum=None,  # type: Optional[int]

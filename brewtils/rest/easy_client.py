@@ -66,23 +66,28 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         RestConnectionError: Status code 503
         default_exc: Any other status code
     """
+    try:
+        message = response.json()
+    except ValueError:
+        message = response.text
+
     if response.status_code == 404:
         if raise_404:
-            raise NotFoundError(response.json())
+            raise NotFoundError(message)
         else:
             return None
     elif response.status_code == 408:
-        raise WaitExceededError(response.json())
+        raise WaitExceededError(message)
     elif response.status_code == 409:
-        raise ConflictError(response.json())
+        raise ConflictError(message)
     elif response.status_code == 413:
-        raise TooLargeError(response.json())
+        raise TooLargeError(message)
     elif 400 <= response.status_code < 500:
-        raise ValidationError(response.json())
+        raise ValidationError(message)
     elif response.status_code == 503:
-        raise RestConnectionError(response.json())
+        raise RestConnectionError(message)
     else:
-        raise default_exc(response.json())
+        raise default_exc(message)
 
 
 def wrap_response(

@@ -563,17 +563,26 @@ class Plugin(object):
             **common_args
         )
 
+        # Both RequestProcessors need an updater
+        updater = HTTPRequestUpdater(
+            self._ez_client,
+            self._shutdown_event,
+            max_attempts=self._config.max_attempts,
+            max_timeout=self._config.max_timeout,
+            starting_timeout=self._config.starting_timeout,
+        )
+
         # Finally, create the actual RequestProcessors
         admin_processor = AdminProcessor(
             target=self,
-            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
+            updater=updater,
             consumer=admin_consumer,
             plugin_name=self.unique_name,
             max_workers=1,
         )
         request_processor = RequestProcessor(
             target=self._client,
-            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
+            updater=updater,
             consumer=request_consumer,
             validation_funcs=[self._correct_system, self._is_running],
             plugin_name=self.unique_name,

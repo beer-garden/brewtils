@@ -921,17 +921,20 @@ class EasyClient(object):
         """
         return self.client.delete_chunked_file(file_id)
 
-    def forward(self, operation):
+    def forward(self, operation, **kwargs):
         """Forwards an Operation
 
         Args:
             operation: The Operation to be forwarded
+            kwargs: Keyword arguments to pass to Requests session call
 
         Returns:
             The API response
 
         """
-        return self.client.post_forward(SchemaParser.serialize_operation(operation))
+        return self.client.post_forward(
+            SchemaParser.serialize_operation(operation), **kwargs
+        )
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError

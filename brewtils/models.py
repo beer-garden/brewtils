@@ -586,8 +586,16 @@ class RequestTemplate(BaseModel):
 class Request(RequestTemplate):
     schema = "RequestSchema"
 
-    STATUS_LIST = ("CREATED", "RECEIVED", "IN_PROGRESS", "CANCELED", "SUCCESS", "ERROR")
-    COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR")
+    STATUS_LIST = (
+        "CREATED",
+        "RECEIVED",
+        "IN_PROGRESS",
+        "CANCELED",
+        "SUCCESS",
+        "ERROR",
+        "INVALID",
+    )
+    COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR", "INVALID")
     COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN")
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 

@@ -737,18 +737,19 @@ class RestClient(object):
         return result
 
     @enable_auth
-    def post_forward(self, payload):
-        # type: (str) -> Response
+    def post_forward(self, payload, **kwargs):
+        # type: (str, **Any) -> Response
         """Performs a POST on the Forward URL
 
         Args:
             payload: The operation to be executed
+            kwargs: Keyword arguments to pass to Requests session call
 
         Returns:
             The API response
         """
         return self.session.post(
-            self.forward_url, data=payload, headers=self.JSON_HEADERS
+            self.forward_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
         )
 
     @enable_auth

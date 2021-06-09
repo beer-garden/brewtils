@@ -432,6 +432,20 @@ class TestJobs(object):
         assert patch_op.value == "RUNNING"
 
 
+def test_forward(client, rest_client, success, bg_operation):
+    rest_client.post_forward.return_value = success
+
+    client.forward(bg_operation)
+    assert rest_client.post_forward.called is True
+
+
+def test_get_user(client, rest_client, success, bg_principal):
+    rest_client.get_user.return_value = success
+
+    client.get_user(bg_principal.username)
+    rest_client.get_user.assert_called_once_with(bg_principal.username)
+
+
 class TestWhoAmI(object):
     def test_user(self, client, rest_client, success):
         rest_client.get_user.return_value = success
@@ -445,13 +459,6 @@ class TestWhoAmI(object):
 
         client.who_am_i()
         rest_client.get_user.assert_called_once_with("anonymous")
-
-
-def test_get_user(client, rest_client, success, bg_principal):
-    rest_client.get_user.return_value = success
-
-    client.get_user(bg_principal.username)
-    rest_client.get_user.assert_called_once_with(bg_principal.username)
 
 
 class TestRescan(object):

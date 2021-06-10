@@ -25,16 +25,10 @@ from brewtils.models import Request
 from brewtils.request_handling import HTTPRequestUpdater, RequestProcessor
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import assert_request_equal
-from brewtils.resolvers.parameter import UI_FILE_ID_PREFIX
 
 
 class CustomException(SuppressStacktrace):
     pass
-
-
-@pytest.fixture
-def target_file_id():
-    return "%s %s" % (UI_FILE_ID_PREFIX, "123456789012345678901234")
 
 
 class TestRequestProcessor(object):
@@ -51,8 +45,27 @@ class TestRequestProcessor(object):
         return Mock()
 
     @pytest.fixture
-    def processor(self, target_mock, updater_mock, consumer_mock):
-        return RequestProcessor(target_mock, updater_mock, consumer_mock, max_workers=1)
+    def resolver_mock(self):
+        def resolve(values, **_):
+            return values
+
+        resolver = Mock()
+        resolver.resolve.side_effect = resolve
+
+        return resolver
+
+    @pytest.fixture
+    def processor(
+        self, target_mock, updater_mock, consumer_mock, resolver_mock, bg_system
+    ):
+        return RequestProcessor(
+            target_mock,
+            updater_mock,
+            consumer_mock,
+            max_workers=1,
+            resolver=resolver_mock,
+            system=bg_system,
+        )
 
     @pytest.fixture
     def invoke_mock(self, processor):
@@ -337,17 +350,16 @@ class TestRequestProcessor(object):
             assert ret_val == getattr(target_mock, command).return_value
             getattr(target_mock, command).assert_called_with(p1="param")
 
-        def test_call_with_resolver(self, processor, target_mock, target_file_id):
-            command = "foo"
-            request = Request(
-                command=command,
-                parameters={"p1": target_file_id},
-            )
+        def test_call_resolve(self, processor, target_mock, bg_command):
+            request = Request(command=bg_command.name, parameters={"message": "test"})
 
-            resolvers = {"file": Mock(download=Mock(return_value=b"bytes_value"))}
-            processor._resolvers = resolvers
             processor._invoke_command(target_mock, request, {})
-            getattr(target_mock, command).assert_called_with(p1=b"bytes_value")
+            processor._resolver.resolve.assert_called_once_with(
+                request.parameters, definitions=bg_command.parameters, upload=False
+            )
+            getattr(target_mock, bg_command.name).assert_called_once_with(
+                message="test"
+            )
 
 
 class TestHTTPRequestUpdater(object):

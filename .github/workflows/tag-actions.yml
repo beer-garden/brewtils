@@ -6,11 +6,11 @@ on:
       - '*'
 
 jobs:
-  PyPI-sdist:
+  PyPI:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
     name: Python ${{ matrix.python-version }} PyPi
     steps:
 
@@ -36,53 +36,34 @@ jobs:
           pip install setuptools wheel twine
 
       - name: Build and publish
+        # If the package already exists, we can continue on with releasing the Docker Images
+        continue-on-error: true
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          python setup.py sdist
-          twine upload dist/*
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: make publish-package
 
-  PyPI-Wheel:
-    needs: PyPi-sdist
+  Verify-PyPi:
+    needs: PyPi
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ '2.7', '3.4', '3.5', '3.6', '3.7', '3.8']
-    name: Python ${{ matrix.python-version }} PyPi
+    name: Verify PyPi Install
     steps:
-
-      - uses: actions/checkout@v2
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.8
 
-      # Need to update if we support other OS's
-      - name: Cache PIP Install
-        uses: actions/cache@v2
+      - name: Check PyPi
+        uses: nick-invision/retry@v2
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-build-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-pip-build
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          python setup.py bdist_wheel
-          twine upload dist/*
+          timeout_seconds: 30
+          max_attempts: 5
+          retry_on: error
+          retry_wait_seconds: 10
+          command: pip install brewtils==${GITHUB_REF#refs/tags/}
 
   Docker:
-    needs: PyPi-Wheel
+    needs: Verify-PyPi
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -93,8 +74,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Run Dep Docs
-        run: make deps-docs
+      - name: Build and publish
+        run: make publish-docker VERSION=${GITHUB_REF#refs/tags/}
 
-      - name: Build Images
-        run: make publish-docker VERSION=${GITHUB_REF/refs\/tags\//}
+      - name: Build and publish docs
+        run: make docs-deps publish-docker-docs VERSION=${GITHUB_REF#refs/tags/}

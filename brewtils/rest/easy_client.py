@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+from base64 import b64decode
+from io import BytesIO
+from pathlib import Path
+from typing import Any, Callable, List, NoReturn, Optional, Type, Union
 
 import six
 import wrapt
-from io import BytesIO
-from base64 import b64decode
-
 from brewtils.config import get_connection_info
 from brewtils.errors import (
+    BrewtilsException,
     ConflictError,
     DeleteError,
     FetchError,
@@ -19,12 +21,14 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import Event, PatchOperation
+from brewtils.models import BaseModel, Event, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
+from requests import Response
 
 
 def get_easy_client(**kwargs):
+    # type: (**Any) -> EasyClient
     """Easy way to get an EasyClient
 
     The benefit to this method over creating an EasyClient directly is that
@@ -41,6 +45,7 @@ def get_easy_client(**kwargs):
 
 
 def handle_response_failure(response, default_exc=RestError, raise_404=True):
+    # type: (Response, Type[BrewtilsException], bool) -> NoReturn
     """Deal with a response with non-2xx status code
 
     Args:
@@ -61,32 +66,38 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         RestConnectionError: Status code 503
         default_exc: Any other status code
     """
+    try:
+        message = response.json()
+    except ValueError:
+        message = response.text
+
     if response.status_code == 404:
         if raise_404:
-            raise NotFoundError(response.json())
+            raise NotFoundError(message)
         else:
             return None
     elif response.status_code == 408:
-        raise WaitExceededError(response.json())
+        raise WaitExceededError(message)
     elif response.status_code == 409:
-        raise ConflictError(response.json())
+        raise ConflictError(message)
     elif response.status_code == 413:
-        raise TooLargeError(response.json())
+        raise TooLargeError(message)
     elif 400 <= response.status_code < 500:
-        raise ValidationError(response.json())
+        raise ValidationError(message)
     elif response.status_code == 503:
-        raise RestConnectionError(response.json())
+        raise RestConnectionError(message)
     else:
-        raise default_exc(response.json())
+        raise default_exc(message)
 
 
 def wrap_response(
-    return_boolean=False,
-    parse_method=None,
-    parse_many=False,
-    default_exc=RestError,
-    raise_404=True,
+    return_boolean=False,  # type: bool
+    parse_method=None,  # type: Optional[str]
+    parse_many=False,  # type: bool
+    default_exc=RestError,  # type: Type[BrewtilsException]
+    raise_404=True,  # type: bool
 ):
+    # type: (...) -> Callable[..., Union[bool, Response, BaseModel, List[BaseModel]]]
     """Decorator to consolidate response parsing and error handling
 
     Args:
@@ -109,7 +120,7 @@ def wrap_response(
     """
 
     @wrapt.decorator
-    def wrapper(wrapped, instance, args, kwargs):
+    def wrapper(wrapped, _instance, args, kwargs):
         response = wrapped(*args, **kwargs)
 
         if response.ok:
@@ -159,10 +170,14 @@ class EasyClient(object):
         "chunk_size": 255 * 1024,
     }
 
-    def __init__(self, **kwargs):
-        self.client = RestClient(**kwargs)
+    def __init__(self, *args, **kwargs):
+        # This points DeprecationWarnings at the right line
+        kwargs.setdefault("stacklevel", 4)
+
+        self.client = RestClient(*args, **kwargs)
 
     def can_connect(self, **kwargs):
+        # type: (**Any) -> bool
         """Determine if the Beergarden server is responding.
 
         Kwargs:
@@ -308,32 +323,34 @@ class EasyClient(object):
             metadata (dict): New System metadata
             description (str): New System description
             display_name (str): New System display name
-            icon_name (str) The: New System icon name
+            icon_name (str): New System icon name
+            template (str): New System template
 
         Returns:
             System: The updated system
 
         """
         operations = []
-        metadata = kwargs.pop("metadata", {})
-        add_instance = kwargs.pop("add_instance", None)
 
-        if new_commands:
+        if new_commands is not None:
             commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )
             operations.append(PatchOperation("replace", "/commands", commands))
 
+        add_instance = kwargs.pop("add_instance", None)
         if add_instance:
             instance = SchemaParser.serialize_instance(add_instance, to_string=False)
             operations.append(PatchOperation("add", "/instance", instance))
 
+        metadata = kwargs.pop("metadata", {})
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))
 
+        # The remaining kwargs are all strings
+        # Sending an empty string (instead of None) ensures they're actually cleared
         for key, value in kwargs.items():
-            if value is not None:
-                operations.append(PatchOperation("replace", "/%s" % key, value))
+            operations.append(PatchOperation("replace", "/%s" % key, value or ""))
 
         return self.client.patch_system(
             system_id, SchemaParser.serialize_patch(operations, many=True)
@@ -733,63 +750,71 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
-    def _check_file_validity(self, file_id):
-        """Request that beer garden
+    @wrap_response(parse_method="parse_resolvable")
+    def upload_bytes(self, data):
+        # type: (bytes) -> Any
+        """Upload a file
 
         Args:
-            file_id: The BG-assigned file id.
+            data: The bytes to upload
 
         Returns:
-            A tuple containing the result and supporting metadata, if available
+            The bytes Resolvable
         """
-        response = self.client.get_file(file_id, params={"verify": True})
-        if not response.ok:
-            return False, None
+        return self.client.post_file(data)
 
-        metadata_json = response.json()
-
-        if "valid" in metadata_json and metadata_json["valid"]:
-            return True, metadata_json
-        else:
-            return False, metadata_json
-
-    def download_file(self, file_id):
-        """Download a file from the Beer Garden server.
+    def download_bytes(self, file_id):
+        # type: (str) -> bytes
+        """Download bytes
 
         Args:
-            file_id: The beer garden-assigned file id.
+            file_id: Id of bytes to download
 
         Returns:
-            A file object
+            The bytes data
         """
-        (valid, meta) = self._check_file_validity(file_id)
-        file_obj = BytesIO()
-        if valid:
-            for x in range(meta["number_of_chunks"]):
-                resp = self.client.get_file(file_id, params={"chunk": x})
-                if resp.ok:
-                    data = resp.json()["data"]
-                    file_obj.write(b64decode(data))
-                else:
-                    raise ValueError("Could not fetch chunk %d" % x)
-        else:
-            raise ValidationError("Requested file %s is incomplete." % file_id)
+        return self.client.get_file(file_id).content
 
-        file_obj.seek(0)
-        return file_obj
-
-    def delete_file(self, file_id):
-        """Delete a given file on the Beer Garden server.
+    @wrap_response(parse_method="parse_resolvable")
+    def upload_file(self, path):
+        # type: (Union[str, Path]) -> Any
+        """Upload a file
 
         Args:
-            file_id: The beer garden-assigned file id.
+            path: Path to file
 
         Returns:
-            The API response
+            The file Resolvable
         """
-        return self.client.delete_file(file_id)
+        # As of now this just converts the data param to bytes and uses the bytes API
+        # Ideally this would fail-over to using the chunks API if necessary
+        with open(path, "rb") as f:
+            bytes_data = f.read()
 
-    def upload_file(self, file_to_upload, desired_filename=None, file_params=None):
+        return self.client.post_file(bytes_data)
+
+    def download_file(self, file_id, path):
+        # type: (str, Union[str, Path]) -> Union[str, Path]
+        """Download a file
+
+        Args:
+            file_id: The File id.
+            path: Location for downloaded file
+
+        Returns:
+            Path to downloaded file
+        """
+        data = self.download_bytes(file_id)
+
+        with open(path, "wb") as f:
+            f.write(data)
+
+        return path
+
+    @wrap_response(parse_method="parse_resolvable")
+    def upload_chunked_file(
+        self, file_to_upload, desired_filename=None, file_params=None
+    ):
         """Upload a given file to the Beer Garden server.
 
         Args:
@@ -833,7 +858,7 @@ class EasyClient(object):
             default_file_params, **self._default_file_params
         )
         try:
-            response = self.client.post_file(
+            response = self.client.post_chunked_file(
                 fd, file_params, current_position=cur_cursor
             )
             fd.seek(cur_cursor)
@@ -846,17 +871,70 @@ class EasyClient(object):
 
         # The file post is best effort; make sure to verify before we let the
         # user do anything with it
-        file_id = response.json()["file_id"]
-        (valid, meta) = self._check_file_validity(file_id)
-        if valid:
-            return file_id
-        else:
+        file_id = response.json()["details"]["file_id"]
+
+        valid, meta = self._check_chunked_file_validity(file_id)
+        if not valid:
             # Clean up if you can
-            self.client.delete_file(file_id)
+            self.client.delete_chunked_file(file_id)
             raise ValidationError(
                 "Error occurred while uploading file %s"
                 % default_file_params["file_name"]
             )
+
+        return response
+
+    def download_chunked_file(self, file_id):
+        """Download a chunked file from the Beer Garden server.
+
+        Args:
+            file_id: The beer garden-assigned file id.
+
+        Returns:
+            A file object
+        """
+        (valid, meta) = self._check_chunked_file_validity(file_id)
+        file_obj = BytesIO()
+        if valid:
+            for x in range(meta["number_of_chunks"]):
+                resp = self.client.get_chunked_file(file_id, params={"chunk": x})
+                if resp.ok:
+                    data = resp.json()["data"]
+                    file_obj.write(b64decode(data))
+                else:
+                    raise ValueError("Could not fetch chunk %d" % x)
+        else:
+            raise ValidationError("Requested file %s is incomplete." % file_id)
+
+        file_obj.seek(0)
+
+        return file_obj
+
+    def delete_chunked_file(self, file_id):
+        """Delete a given file on the Beer Garden server.
+
+        Args:
+            file_id: The beer garden-assigned file id.
+
+        Returns:
+            The API response
+        """
+        return self.client.delete_chunked_file(file_id)
+
+    def forward(self, operation, **kwargs):
+        """Forwards an Operation
+
+        Args:
+            operation: The Operation to be forwarded
+            kwargs: Keyword arguments to pass to Requests session call
+
+        Returns:
+            The API response
+
+        """
+        return self.client.post_forward(
+            SchemaParser.serialize_operation(operation), **kwargs
+        )
 
     @wrap_response(
         parse_method="parse_principal", parse_many=False, default_exc=FetchError
@@ -882,6 +960,18 @@ class EasyClient(object):
         """
         return self.get_user(self.client.username or "anonymous")
 
+    @wrap_response(return_boolean=True)
+    def rescan(self):
+        """Rescan local plugin directory
+
+        Returns:
+            bool: True if rescan was successful
+
+        """
+        return self.client.patch_admin(
+            payload=SchemaParser.serialize_patch(PatchOperation(operation="rescan"))
+        )
+
     @wrap_response(return_boolean=True, default_exc=DeleteError)
     def _remove_system_by_id(self, system_id):
         if system_id is None:
@@ -894,3 +984,23 @@ class EasyClient(object):
         return self.client.patch_job(
             job_id, SchemaParser.serialize_patch(operations, many=True)
         )
+
+    def _check_chunked_file_validity(self, file_id):
+        """Verify a chunked file
+
+        Args:
+            file_id: The BG-assigned file id.
+
+        Returns:
+            A tuple containing the result and supporting metadata, if available
+        """
+        response = self.client.get_chunked_file(file_id, params={"verify": True})
+        if not response.ok:
+            return False, None
+
+        metadata_json = response.json()
+
+        if "valid" in metadata_json and metadata_json["valid"]:
+            return True, metadata_json
+        else:
+            return False, metadata_json

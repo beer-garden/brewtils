@@ -25,7 +25,9 @@ from brewtils.models import (
     Request,
     RequestFile,
     RequestTemplate,
+    Resolvable,
     Role,
+    Runner,
     System,
 )
 
@@ -167,6 +169,7 @@ def command_dict(parameter_dict, system_id):
         "form": {},
         "template": "<html></html>",
         "icon_name": "icon!",
+        "metadata": {"meta": "data"},
     }
 
 
@@ -218,7 +221,7 @@ def instance_dict(ts_epoch):
             "url": "amqp://guest:guest@localhost:5672",
         },
         "status_info": {"heartbeat": ts_epoch},
-        "metadata": {},
+        "metadata": {"meta": "data"},
     }
 
 
@@ -246,6 +249,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "metadata": {"some": "stuff"},
         "namespace": "ns",
         "local": True,
+        "template": "<html>template</html>",
     }
 
 
@@ -273,6 +277,7 @@ def child_request_dict(ts_epoch):
         "output": "nested output",
         "output_type": "STRING",
         "status": "CREATED",
+        "hidden": True,
         "command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
@@ -310,6 +315,7 @@ def parent_request_dict(ts_epoch):
         "status": "CREATED",
         "command_type": "ACTION",
         "created_at": ts_epoch,
+        "hidden": False,
         "updated_at": ts_epoch,
         "error_class": None,
         "metadata": {"parent": "stuff"},
@@ -367,6 +373,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "output": "output",
         "output_type": "STRING",
         "status": "CREATED",
+        "hidden": False,
         "command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
@@ -712,3 +719,54 @@ def bg_operation(operation_dict, bg_request):
     dict_copy = copy.deepcopy(operation_dict)
     dict_copy["model"] = bg_request
     return Operation(**dict_copy)
+
+
+@pytest.fixture
+def runner_dict(instance_dict):
+    """A runner as a dictionary."""
+
+    return {
+        "id": "EIBqyAVAyP",
+        "name": "system-1.0.0",
+        "path": "system-1.0.0",
+        "instance_id": instance_dict["id"],
+        "stopped": False,
+        "dead": False,
+        "restart": True,
+    }
+
+
+@pytest.fixture
+def bg_runner(runner_dict):
+    """A runner as a model."""
+    return Runner(**runner_dict)
+
+
+@pytest.fixture
+def resolvable_dict():
+    """A resolvable as a dictionary."""
+    return {
+        "type": "bytes",
+        "storage": "gridfs",
+        "details": {"id": "60996b9dc021bf0d4add8b67"},
+    }
+
+
+@pytest.fixture
+def bg_resolvable(resolvable_dict):
+    return Resolvable(**resolvable_dict)
+
+
+@pytest.fixture
+def resolvable_chunk_dict():
+    """A resolvable as a dictionary."""
+    return {
+        "type": "base64",
+        "storage": "gridfs",
+        "details": {"file_id": "60996b9dc021bf0d4add8b67"},
+    }
+
+
+@pytest.fixture
+def bg_resolvable_chunk(resolvable_chunk_dict):
+    return Resolvable(**resolvable_chunk_dict)

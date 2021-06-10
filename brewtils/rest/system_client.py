@@ -4,6 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
+from typing import Any, Dict, Iterable, Optional
 
 from packaging.version import parse
 
@@ -14,9 +15,10 @@ from brewtils.errors import (
     RequestProcessException,
     TimeoutExceededError,
     ValidationError,
+    _deprecate,
 )
-from brewtils.models import Request
-from brewtils.resolvers import UploadResolver, build_resolver_map
+from brewtils.models import Request, System
+from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -187,34 +189,74 @@ class SystemClient(object):
         refresh_token (str): Refresh token for Beer-garden authentication
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger(__name__)
 
         self._loaded = False
         self._system = None
-        self._commands = None
+        self._commands = {}
 
-        self._system_name = kwargs.get("system_name")
-        self._version_constraint = kwargs.get("version_constraint", "latest")
-        self._default_instance = kwargs.get("default_instance", "default")
+        # Need this for back-compatibility (see #836)
+        if len(args) > 2:
+            _deprecate(
+                "Heads up - passing system_name as a positional argument is deprecated "
+                "and will be removed in version 4.0",
+            )
+            kwargs.setdefault("system_name", args[2])
+
+        # Now need to determine if the intended target is the current running plugin.
+        # Start by ensuring there's a valid Plugin context active
+        target_self = bool(brewtils.plugin.CONFIG)
+
+        # If ANY of the target specification arguments don't match the current plugin
+        # then the target is different
+        config_map = {
+            "system_name": "name",
+            "version_constraint": "version",
+            "default_instance": "instance_name",
+            "system_namespace": "namespace",
+        }
+        for key, value in config_map.items():
+            if (
+                kwargs.get(key) is not None
+                and kwargs.get(key) != brewtils.plugin.CONFIG[value]
+            ):
+                target_self = False
+                break
+
+        # Now assign self._system_name, etc based on the value of target_self
+        if target_self:
+            self._system_name = brewtils.plugin.CONFIG.name
+            self._version_constraint = brewtils.plugin.CONFIG.version
+            self._default_instance = brewtils.plugin.CONFIG.instance_name
+            self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
+        else:
+            self._system_name = kwargs.get("system_name")
+            self._version_constraint = kwargs.get("version_constraint", "latest")
+            self._default_instance = kwargs.get("default_instance", "default")
+            self._system_namespace = kwargs.get(
+                "system_namespace", brewtils.plugin.CONFIG.namespace or ""
+            )
+
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
         self._max_delay = kwargs.get("max_delay", 30)
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
-        self._system_namespace = kwargs.get(
-            "system_namespace", brewtils.plugin.CONFIG.namespace or ""
-        )
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
         # in that version. This logic is what was added in Python 3.5
         max_concurrent = kwargs.get("max_concurrent", (cpu_count() or 1) * 5)
         self._thread_pool = ThreadPoolExecutor(max_workers=max_concurrent)
 
-        self._easy_client = EasyClient(**kwargs)
-        self._resolvers = build_resolver_map(self._easy_client)
+        # This points DeprecationWarnings at the right line
+        kwargs.setdefault("stacklevel", 5)
+
+        self._easy_client = EasyClient(*args, **kwargs)
+        self._resolver = ResolutionManager(easy_client=self._easy_client)
 
     def __getattr__(self, item):
+        # type: (str) -> partial
         """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)
 
@@ -235,6 +277,7 @@ class SystemClient(object):
         return self._default_instance
 
     def create_bg_request(self, command_name, **kwargs):
+        # type: (str, **Any) -> partial
         """Create a callable that will execute a Beer-garden request when called.
 
         Normally you interact with the SystemClient by accessing attributes, but there
@@ -353,6 +396,7 @@ class SystemClient(object):
         return self._wait_for_request(request, raise_on_error, timeout)
 
     def load_bg_system(self):
+        # type: () -> None
         """Query beer-garden for a System definition
 
         This method will make the query to beer-garden for a System matching the name
@@ -398,6 +442,7 @@ class SystemClient(object):
         self._loaded = True
 
     def _wait_for_request(self, request, raise_on_error, timeout):
+        # type: (Request, bool, int) -> Request
         """Poll the server until the request is completed or errors"""
 
         delay_time = 0.5
@@ -421,6 +466,7 @@ class SystemClient(object):
         return request
 
     def _get_parent_for_request(self):
+        # type: () -> Optional[Request]
         parent = getattr(brewtils.plugin.request_context, "current_request", None)
         if parent is None:
             return None
@@ -441,6 +487,7 @@ class SystemClient(object):
         return Request(id=str(parent.id))
 
     def _construct_bg_request(self, **kwargs):
+        # type: (**Any) -> Request
         """Create a request that can be used with EasyClient.create_request"""
 
         command = kwargs.pop("_command", None)
@@ -457,10 +504,9 @@ class SystemClient(object):
         if system_display:
             metadata["system_display_name"] = system_display
 
+        # Don't check namespace - https://github.com/beer-garden/beer-garden/issues/827
         if command is None:
             raise ValidationError("Unable to send a request with no command")
-        if system_namespace is None:
-            raise ValidationError("Unable to send a request with no system namespace")
         if system_name is None:
             raise ValidationError("Unable to send a request with no system name")
         if system_version is None:
@@ -481,14 +527,33 @@ class SystemClient(object):
             parameters=kwargs,
         )
 
-        file_params = self._commands[command].parameter_keys_by_type("Base64")
-        resolver = UploadResolver(request, file_params, self._resolvers)
-        request.parameters = resolver.resolve_parameters()
+        request.parameters = self._resolve_parameters(command, request)
 
         return request
 
+    def _resolve_parameters(self, command, request):
+        # type: (str, Request) -> Dict[str, Any]
+        """Attempt to upload any necessary file parameters
+
+        This will inspect the Command model for the given command, looking for file
+        parameters. Any file parameters will be "resolved" (aka uploaded) before
+        continuing.
+
+        If the command name can not be found in the current list of commands the
+        parameter list will just be returned. This most likely indicates a direct
+        invocation of send_bg_request since a bad command name should be caught earlier
+        in the "normal" workflow.
+        """
+        if command not in self._commands:
+            return request.parameters
+
+        return self._resolver.resolve(
+            request.parameters, self._commands[command].parameters, upload=True
+        )
+
     @staticmethod
     def _determine_latest(systems):
+        # type: (Iterable[System]) -> Optional[System]
         return (
             sorted(systems, key=lambda x: parse(x.version), reverse=True)[0]
             if systems

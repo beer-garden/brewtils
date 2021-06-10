@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from brewtils.__version__ import __version__
 from brewtils.config import get_argument_parser, get_connection_info, load_config
-from brewtils.decorators import command, parameter, system
+from brewtils.decorators import client, command, parameter, system
 from brewtils.log import configure_logging
 from brewtils.plugin import Plugin, RemotePlugin  # noqa F401
 from brewtils.rest import normalize_url_prefix
@@ -10,6 +10,7 @@ from brewtils.rest.system_client import SystemClient
 
 __all__ = [
     "__version__",
+    "client",
     "command",
     "parameter",
     "system",

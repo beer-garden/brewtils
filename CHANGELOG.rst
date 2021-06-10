@@ -1,6 +1,101 @@
 Brewtils Changelog
 ==================
 
+3.3.0
+-----
+4/23/21
+
+Bug Fixes
+^^^^^^^^^
+- Better error messages for incorrect parameter definitions (Issue #986 / PR #309)
+- Fixed a case where reusing a parameter model could break (Issue #987 / PR #310)
+
+New Features
+^^^^^^^^^^^^
+- Support for scheduled job modification (Issue #294 / PR #308)
+
+3.2.1
+-----
+4/16/21
+
+Bug Fixes
+^^^^^^^^^
+- Nullable multi parameters with a model no longer set a problematic default (Issue #769, #983 / PR #305)
+- End date is now set correctly for cron-type jobs  (Issue #963 / PR #306)
+- Order of parameters in the UI now matches the order of decorators (Issue #267, #981 / PR #304)
+
+Other Changes
+^^^^^^^^^^^^^
+- More type hints for SystemClient and EasyClient methods (Issue #957 / PR #303)
+
+3.2.0
+-----
+4/1/21
+
+New Features
+^^^^^^^^^^^^
+- SystemClient with no parameters will default to the current plugin (Issue #780 / PR #293)
+- Added methods to RestClient and EasyClient for using the /api/v1/forward API (PR #301)
+- New and improved decorators module (Issue #777 / PR #290)
+
+Other Changes
+^^^^^^^^^^^^^
+- The @system decorator has been renamed to @client (Issue #927 / PR #297)
+- @parameters (plural, with an "s") is now deprecated (Issue #924, PR #299)
+- Easier to specify logger name when creating a StoppableThread (Issue #874 / PR #291)
+
+3.1.0
+-----
+2/5/21
+
+Bug Fixes
+^^^^^^^^^
+- SystemClient parameter resolution no longer always fails if no system is assigned (Issue #859 / PR #289)
+- Added positional arguments back-compatibility for EasyClient and SystemClient creation (Issue #836 / PR #286)
+- Fixed regression relating to old decorator deprecations (Issue #835 / PR #285)
+
+Other Changes
+^^^^^^^^^^^^^
+- Added 'hidden' field to Request ile model (Issue #414 / PR #288)
+- Added 'job' and 'request' fields to File model (Issue #833 / PR #284)
+
+3.0.2
+-----
+Date: 1/11/21
+
+Bug Fixes
+^^^^^^^^^
+- SystemClient no longer disallows creating a Request for a System without a namespace (Issue #827 / PR #281)
+- Logs are now written correctly when a Plugin encounters an uncaught exception after initialization (Issue #787 / PR #276)
+- Plugin registration will now behave as expected when the list of plugin Commands is empty (Issue #806 / PR #277)
+
+New Features
+^^^^^^^^^^^^
+- Added a Rescan method to the EasyClient (Issue #815 / PR #278)
+
+Other Changes
+^^^^^^^^^^^^^
+- The decorators ``command_registrar``, ``register``, and ``plugin_param`` are officially deprecated (Issue #825 / PR #280)
+
+3.0.1
+-----
+Date: 12/15/20
+
+New Features
+^^^^^^^^^^^^
+- Added ``client_key`` parameter to support separate key and cert files (beer-garden#785)
+- Better ``SystemClient`` error message if a positional parameter is used (beer-garden#775)
+- Plugins will now work when connected to a v2 Beer Garden (beer-garden#751)
+- Support for file-type parameters (beer-garden#368)
+
+Bug Fixes
+^^^^^^^^^
+- Using nested models when defining Parameters now works correctly (beer-garden#354)
+
+Other Changes
+^^^^^^^^^^^^^
+- Plugins now register a SIGTERM handler for shutdown consistency (beer-garden/#745)
+
 3.0.0
 -----
 Date: 11/10/20
@@ -32,7 +127,7 @@ Other Changes
 - Using a pika version <1 is deprecated
 
 2.4.15
------
+------
 Date: 10/13/20
 
 Bug Fixes

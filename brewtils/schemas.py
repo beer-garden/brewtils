@@ -187,6 +187,7 @@ class CommandSchema(BaseSchema):
     template = fields.Str(allow_none=True)
     icon_name = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
+    metadata = fields.Dict(allow_none=True)
 
 
 class InstanceSchema(BaseSchema):
@@ -214,6 +215,7 @@ class SystemSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
     namespace = fields.Str(allow_none=True)
     local = fields.Bool(allow_none=True)
+    template = fields.Str(allow_none=True)
 
 
 class RequestFileSchema(BaseSchema):
@@ -227,6 +229,8 @@ class FileSchema(BaseSchema):
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
     owner = fields.Raw(allow_none=True)
+    job = fields.Nested("JobSchema", allow_none=True)
+    request = fields.Nested("RequestSchema", allow_none=True)
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
@@ -237,9 +241,9 @@ class FileSchema(BaseSchema):
 class FileChunkSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     file_id = fields.Str(allow_none=False)
-    owner = fields.Raw(allow_none=True)
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
+    owner = fields.Nested("FileSchema", allow_none=True)
 
 
 class FileStatusSchema(BaseSchema):
@@ -290,6 +294,7 @@ class RequestSchema(RequestTemplateSchema):
         "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
     )
     output = fields.Str(allow_none=True)
+    hidden = fields.Boolean(allow_none=True)
     status = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
@@ -477,6 +482,22 @@ class OperationSchema(BaseSchema):
     operation_type = fields.Str(allow_none=True)
 
 
+class RunnerSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    path = fields.Str(allow_none=True)
+    instance_id = fields.Str(allow_none=True)
+    stopped = fields.Boolean(allow_none=True)
+    dead = fields.Boolean(allow_none=True)
+    restart = fields.Boolean(allow_none=True)
+
+
+class ResolvableSchema(BaseSchema):
+    type = fields.Str(allow_none=True)
+    storage = fields.Str(allow_none=True)
+    details = fields.Dict(allow_none=True)
+
+
 model_schema_map.update(
     {
         "Choices": ChoicesSchema,
@@ -504,6 +525,8 @@ model_schema_map.update(
         "Role": RoleSchema,
         "System": SystemSchema,
         "Operation": OperationSchema,
+        "Runner": RunnerSchema,
+        "Resolvable": ResolvableSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

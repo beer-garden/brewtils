@@ -4,15 +4,19 @@ import logging
 import logging.config
 import os
 import signal
+import sys
 import threading
 
 import appdirs
 from box import Box
 from packaging.version import Version
+from pathlib import Path
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.config import load_config
+from brewtils.decorators import _parse_client
+from brewtils.display import resolve_template
 from brewtils.errors import (
     ConflictError,
     DiscardMessageException,
@@ -30,12 +34,13 @@ from brewtils.request_handling import (
     RequestConsumer,
     RequestProcessor,
 )
-from brewtils.resolvers import build_resolver_map
+from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
+request_context.current_request = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
@@ -261,8 +266,30 @@ class Plugin(object):
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
 
-        # And commands always do
-        self._system.commands = getattr(new_client, "_bg_commands", [])
+        # Now roll up / interpret all metadata to get the Commands
+        self._system.commands = _parse_client(new_client)
+
+        try:
+            # Put some attributes on the Client class
+            client_clazz = type(new_client)
+            client_clazz.current_request = property(
+                lambda _: request_context.current_request
+            )
+
+            # Add for back-compatibility
+            client_clazz._bg_name = self._system.name
+            client_clazz._bg_version = self._system.version
+            client_clazz._bg_commands = self._system.commands
+            client_clazz._current_request = client_clazz.current_request
+        except TypeError:
+            if sys.version_info.major != 2:
+                raise
+
+            self._logger.warning(
+                "Unable to assign attributes to Client class - current_request will "
+                "not be available. If you're using an old-style class declaration "
+                "it's recommended to switch to new-style if possible."
+            )
 
         self._client = new_client
 
@@ -293,6 +320,18 @@ class Plugin(object):
         signal.signal(signal.SIGINT, _handler)
         signal.signal(signal.SIGTERM, _handler)
 
+    @staticmethod
+    def _set_exception_hook(logger):
+        """Ensure uncaught exceptions are logged instead of being written to stderr"""
+
+        def _hook(exc_type, exc_value, traceback):
+            logger.error(
+                "An uncaught exception was raised in the plugin process:",
+                exc_info=(exc_type, exc_value, traceback),
+            )
+
+        sys.excepthook = _hook
+
     def _startup(self):
         """Plugin startup procedure
 
@@ -314,7 +353,6 @@ class Plugin(object):
 
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
-        self._admin_processor, self._request_processor = self._initialize_processors()
 
         if self._config.working_directory is None:
             app_parts = [self._system.name, self._instance.name]
@@ -322,11 +360,15 @@ class Plugin(object):
                 app_parts.insert(0, self._system.namespace)
 
             self._config.working_directory = appdirs.user_data_dir(
-                appname=os.path.join(*app_parts),
-                version=self._system.version,
+                appname=os.path.join(*app_parts), version=self._system.version
             )
 
-        self._logger.debug("Starting up processors")
+            workdir = Path(self._config.working_directory)
+            if not workdir.exists():
+                workdir.mkdir(parents=True)
+
+        self._logger.debug("Initializing and starting processors")
+        self._admin_processor, self._request_processor = self._initialize_processors()
         self._admin_processor.startup()
         self._request_processor.startup()
 
@@ -403,6 +445,10 @@ class Plugin(object):
                 "configuration. The default configuration will be used instead. Caused "
                 "by: {0}".format(ex)
             )
+            return
+
+        # Finally, log uncaught exceptions using the configuration instead of stderr
+        self._set_exception_hook(self._logger)
 
     def _initialize_system(self):
         """Let Beergarden know about System-level info
@@ -422,6 +468,9 @@ class Plugin(object):
         """
         # Make sure that the system is actually valid before trying anything
         self._validate_system()
+
+        # Do any necessary template resolution
+        self._system.template = resolve_template(self._system.template)
 
         existing_system = self._ez_client.find_unique_system(
             name=self._system.name,
@@ -455,6 +504,7 @@ class Plugin(object):
             "description": self._system.description,
             "display_name": self._system.display_name,
             "icon_name": self._system.icon_name,
+            "template": self._system.template,
         }
 
         # And if this particular instance doesn't exist we want to add it
@@ -513,23 +563,32 @@ class Plugin(object):
             **common_args
         )
 
+        # Both RequestProcessors need an updater
+        updater = HTTPRequestUpdater(
+            self._ez_client,
+            self._shutdown_event,
+            max_attempts=self._config.max_attempts,
+            max_timeout=self._config.max_timeout,
+            starting_timeout=self._config.starting_timeout,
+        )
+
         # Finally, create the actual RequestProcessors
         admin_processor = AdminProcessor(
             target=self,
-            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
+            updater=updater,
             consumer=admin_consumer,
             plugin_name=self.unique_name,
             max_workers=1,
         )
         request_processor = RequestProcessor(
             target=self._client,
-            updater=HTTPRequestUpdater(self._ez_client, self._shutdown_event),
+            updater=updater,
             consumer=request_consumer,
             validation_funcs=[self._correct_system, self._is_running],
             plugin_name=self.unique_name,
             max_workers=self._config.max_concurrent,
-            working_directory=self._config.working_directory,
-            resolvers=build_resolver_map(self._ez_client),
+            resolver=ResolutionManager(easy_client=self._ez_client),
+            system=self._system,
         )
 
         return admin_processor, request_processor
@@ -722,6 +781,7 @@ class Plugin(object):
             "max_instances",
             "metadata",
             "namespace",
+            "template",
         }
 
         if system:
@@ -753,6 +813,7 @@ class Plugin(object):
                 max_instances=self._config.max_instances,
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
+                template=self._config.template,
             )
 
         return system

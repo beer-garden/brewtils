@@ -24,6 +24,13 @@ from brewtils.plugin import Plugin, PluginBase, RemotePlugin
 
 
 @pytest.fixture(autouse=True)
+def stub_dangerous(monkeypatch):
+    """Stub out stuff that could interfere with pytest"""
+    monkeypatch.setattr(brewtils.plugin.Plugin, "_set_signal_handlers", Mock())
+    monkeypatch.setattr(brewtils.plugin.Plugin, "_set_exception_hook", Mock())
+
+
+@pytest.fixture(autouse=True)
 def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
     _ez_client = Mock(
         name="ez_client",
@@ -446,6 +453,7 @@ class TestInitializeSystem(object):
             instances=[bg_instance],
             commands=current_commands,
             metadata={"foo": "bar"},
+            template=None,
         )
         ez_client.find_unique_system.return_value = existing_system
 
@@ -461,6 +469,7 @@ class TestInitializeSystem(object):
             description=bg_system.description,
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
+            template="<html>template</html>",
         )
         # assert ez_client.create_system.return_value == plugin.system
 
@@ -472,6 +481,7 @@ class TestInitializeSystem(object):
             instances=[bg_instance],
             max_instances=2,
             metadata={"foo": "bar"},
+            template=None,
         )
         ez_client.find_unique_system.return_value = existing_system
 
@@ -487,6 +497,7 @@ class TestInitializeSystem(object):
             description=bg_system.description,
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
+            template="<html>template</html>",
             add_instance=ANY,
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
@@ -626,9 +637,7 @@ class TestLegacyGarden(object):
         assert plugin._legacy_garden() is False
 
     def test_legacy(self, caplog, plugin, ez_client):
-        ez_client.get_version.return_value = {
-            "brew_view_version": "2.4.19",
-        }
+        ez_client.get_version.return_value = {"brew_view_version": "2.4.19"}
 
         with caplog.at_level(logging.WARNING):
             with warnings.catch_warnings(record=True) as w:

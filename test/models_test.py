@@ -606,10 +606,12 @@ class TestCronTrigger(object):
             "jitter": None,
         }
 
-    def test_scheduler_kwargs(self, bg_cron_trigger, cron_trigger_dict, ts_dt_utc):
+    def test_scheduler_kwargs(
+        self, bg_cron_trigger, cron_trigger_dict, ts_dt_utc, ts_2_dt_utc
+    ):
         expected = cron_trigger_dict
         expected.update(
-            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_dt_utc}
+            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
         )
         assert bg_cron_trigger.scheduler_kwargs == expected
 
@@ -642,3 +644,32 @@ class TestCronTrigger(object):
 def test_str(model, str_expected, repr_expected):
     assert str(model) == str_expected
     assert repr(model) == repr_expected
+
+
+class TestRunner(object):
+    def test_str(self, bg_runner):
+        assert str(bg_runner) == bg_runner.name
+
+    def test_repr(self, bg_runner, bg_instance):
+        assert (
+            repr(bg_runner) == "<Runner: id=%s, name=system-1.0.0, "
+            "path=system-1.0.0, instance_id=%s, stopped=False, "
+            "dead=False, restart=True>" % (bg_runner.id, bg_instance.id)
+        )
+
+
+class TestResolvable(object):
+    def test_str(self, bg_resolvable):
+        assert str(bg_resolvable) == "%s %s" % (
+            bg_resolvable.type,
+            bg_resolvable.storage,
+        )
+
+    def test_repr(self, bg_resolvable):
+        assert repr(
+            bg_resolvable
+        ) == "<Resolvable: type=%s, storage=%s, details=%s>" % (
+            bg_resolvable.type,
+            bg_resolvable.storage,
+            bg_resolvable.details,
+        )

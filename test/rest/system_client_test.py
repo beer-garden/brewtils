@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import warnings
 from concurrent.futures import wait
 
 import pytest
@@ -91,6 +92,16 @@ def sleep_patch(monkeypatch):
     return mock
 
 
+def test_old_positional_args():
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        SystemClient("host", 80, "system")
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+
+
 class TestLoadBgSystem(object):
     def test_lazy_system_loading(self, client):
         assert client._loaded is False
@@ -115,16 +126,12 @@ class TestLoadBgSystem(object):
         client.load_bg_system()
         assert client._system == system_2
         easy_client.find_systems.assert_called_once_with(
-            name=system_1.name,
-            namespace="",
+            name=system_1.name, namespace=""
         )
 
     @pytest.mark.parametrize(
         "constraint,systems",
-        [
-            ("1.0.0", lazy_fixture("system_1")),
-            (None, lazy_fixture("system_1")),
-        ],
+        [("1.0.0", lazy_fixture("system_1")), (None, lazy_fixture("system_1"))],
     )
     def test_non_latest(self, client, easy_client, system_1, constraint, systems):
         client._version_constraint = constraint
@@ -135,9 +142,7 @@ class TestLoadBgSystem(object):
         assert client._system == system_1
 
         easy_client.find_unique_system.assert_called_once_with(
-            name=system_1.name,
-            version=constraint,
-            namespace="",
+            name=system_1.name, version=constraint, namespace=""
         )
 
     def test_failure_with_constraint(self, client, easy_client):
@@ -171,9 +176,74 @@ class TestLoadBgSystem(object):
         client.load_bg_system()
         assert client._system == system_1
         easy_client.find_systems.assert_called_once_with(
-            name=system_1.name,
-            namespace="foo",
+            name=system_1.name, namespace="foo"
         )
+
+    def test_no_system_kwargs(self):
+
+        brewtils.plugin.CONFIG.namespace = "foo"
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "foo"
+
+        client = SystemClient()
+
+        assert client._system_namespace == brewtils.plugin.CONFIG.namespace
+        assert client._system_name == brewtils.plugin.CONFIG.name
+        assert client._version_constraint == brewtils.plugin.CONFIG.version
+        assert client._default_instance == brewtils.plugin.CONFIG.instance_name
+
+    def test_all_system_kwargs(self):
+
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "foo"
+
+        client = SystemClient(
+            system_name="not foo",
+            version_constraint="2.0.0",
+            default_instance="not foo",
+        )
+
+        assert client._system_name != brewtils.plugin.CONFIG.name
+        assert client._version_constraint != brewtils.plugin.CONFIG.version
+        assert client._default_instance != brewtils.plugin.CONFIG.instance_name
+
+    def test_different_system_name(self):
+        """Using a system name that's NOT the current running system"""
+
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "instance"
+
+        client = SystemClient(system_name="not foo")
+
+        assert client._system_name == "not foo"
+        assert client._version_constraint == "latest"
+        assert client._default_instance == "default"
+
+    def test_system_name_kwarg_matching(self):
+        """Behavior should be the same regardless of whether the system name comes
+        from the global config or a kwarg"""
+
+        brewtils.plugin.CONFIG.name = "foo"
+        brewtils.plugin.CONFIG.version = "1.0.0"
+        brewtils.plugin.CONFIG.instance_name = "instance"
+
+        client = SystemClient(system_name="foo")
+
+        assert client._system_name == "foo"
+        assert client._version_constraint == "1.0.0"
+        assert client._default_instance == "instance"
+
+    def test_non_plugin(self):
+        """Ensure things default correctly when running outside of a Plugin"""
+        client = SystemClient()
+
+        assert client._system_name is None
+        assert client._version_constraint == "latest"
+        assert client._default_instance == "default"
+        assert client._system_namespace == ""
 
 
 class TestCreateRequest(object):
@@ -242,18 +312,13 @@ class TestCreateRequest(object):
 
     @pytest.mark.parametrize(
         "remove_kwarg",
-        [
-            "_command",
-            "_system_namespace",
-            "_system_name",
-            "_system_version",
-            "_instance_name",
-        ],
+        ["_command", "_system_name", "_system_version", "_instance_name"],
     )
-    def test_missing_field(self, client, remove_kwarg):
+    def test_missing_field(self, monkeypatch, client, remove_kwarg):
+        monkeypatch.setattr(client, "_resolve_parameters", Mock())
+
         kwargs = {
             "_command": "",
-            "_system_namespace": "",
             "_system_name": "",
             "_system_version": "",
             "_instance_name": "",

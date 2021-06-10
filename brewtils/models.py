@@ -34,6 +34,7 @@ __all__ = [
     "FileTrigger",
     "Garden",
     "Operation",
+    "Resolvable",
 ]
 
 
@@ -76,6 +77,10 @@ class Events(Enum):
     JOB_PAUSED = 35
     JOB_RESUMED = 36
     PLUGIN_LOGGER_FILE_CHANGE = 37
+    RUNNER_STARTED = 38
+    RUNNER_STOPPED = 39
+    RUNNER_REMOVED = 40
+    JOB_UPDATED = 41
 
 
 class BaseModel(object):
@@ -100,6 +105,7 @@ class Command(BaseModel):
         template=None,
         icon_name=None,
         hidden=False,
+        metadata=None,
     ):
         self.name = name
         self.description = description
@@ -111,6 +117,7 @@ class Command(BaseModel):
         self.template = template
         self.icon_name = icon_name
         self.hidden = hidden
+        self.metadata = metadata or {}
 
     def __str__(self):
         return self.name
@@ -269,7 +276,7 @@ class Parameter(BaseModel):
 
     def __init__(
         self,
-        key,
+        key=None,
         type=None,
         multi=None,
         display_name=None,
@@ -284,6 +291,8 @@ class Parameter(BaseModel):
         regex=None,
         form_input_type=None,
         type_info=None,
+        is_kwarg=None,
+        model=None,
     ):
         self.key = key
         self.type = type
@@ -300,6 +309,12 @@ class Parameter(BaseModel):
         self.regex = regex
         self.form_input_type = form_input_type
         self.type_info = type_info or {}
+
+        # These are special - they aren't part of the Parameter "API" (they aren't in
+        # the serialization schema) but we still need them on this model for consistency
+        # when creating Clients - https://github.com/beer-garden/beer-garden/issues/777
+        self.is_kwarg = is_kwarg
+        self.model = model
 
     def __str__(self):
         return self.key
@@ -382,12 +397,7 @@ class Parameter(BaseModel):
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
 
-    def __init__(
-        self,
-        storage_type=None,
-        filename=None,
-        id=None,
-    ):
+    def __init__(self, storage_type=None, filename=None, id=None):
         self.storage_type = storage_type
         self.filename = filename
         self.id = id
@@ -416,11 +426,15 @@ class File(BaseModel):
         chunks=None,
         chunk_size=None,
         owner=None,
+        job=None,
+        request=None,
     ):
         self.id = id
         self.owner_id = owner_id
         self.owner_type = owner_type
         self.owner = owner
+        self.job = job
+        self.request = request
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
@@ -452,10 +466,7 @@ class FileChunk(BaseModel):
         return self.data
 
     def __repr__(self):
-        return "<FileChunk: file_id=%s, offset=%s>" % (
-            self.file_id,
-            self.offset,
-        )
+        return "<FileChunk: file_id=%s, offset=%s>" % (self.file_id, self.offset)
 
 
 class FileStatus(BaseModel):
@@ -575,8 +586,16 @@ class RequestTemplate(BaseModel):
 class Request(RequestTemplate):
     schema = "RequestSchema"
 
-    STATUS_LIST = ("CREATED", "RECEIVED", "IN_PROGRESS", "CANCELED", "SUCCESS", "ERROR")
-    COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR")
+    STATUS_LIST = (
+        "CREATED",
+        "RECEIVED",
+        "IN_PROGRESS",
+        "CANCELED",
+        "SUCCESS",
+        "ERROR",
+        "INVALID",
+    )
+    COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR", "INVALID")
     COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN")
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
@@ -599,6 +618,7 @@ class Request(RequestTemplate):
         created_at=None,
         error_class=None,
         metadata=None,
+        hidden=None,
         updated_at=None,
         has_parent=None,
         requester=None,
@@ -620,6 +640,7 @@ class Request(RequestTemplate):
         self.children = children
         self.output = output
         self._status = status
+        self.hidden = hidden
         self.created_at = created_at
         self.updated_at = updated_at
         self.error_class = error_class
@@ -691,6 +712,7 @@ class System(BaseModel):
         metadata=None,
         namespace=None,
         local=None,
+        template=None,
     ):
         self.name = name
         self.description = description
@@ -704,6 +726,7 @@ class System(BaseModel):
         self.metadata = metadata or {}
         self.namespace = namespace
         self.local = local
+        self.template = template
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
@@ -1287,7 +1310,7 @@ class CronTrigger(BaseModel):
             {
                 "timezone": tz,
                 "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.start_date) if self.start_date else None,
+                "end_date": tz.localize(self.end_date) if self.end_date else None,
             }
         )
 
@@ -1297,13 +1320,7 @@ class CronTrigger(BaseModel):
 class FileTrigger(BaseModel):
     schema = "FileTriggerSchema"
 
-    def __init__(
-        self,
-        pattern=None,
-        path=None,
-        recursive=None,
-        callbacks=None,
-    ):
+    def __init__(self, pattern=None, path=None, recursive=None, callbacks=None):
         self.pattern = pattern
         self.path = path
         self.recursive = recursive
@@ -1418,4 +1435,66 @@ class Operation(BaseModel):
                 self.args,
                 self.kwargs,
             )
+        )
+
+
+class Runner(BaseModel):
+    schema = "RunnerSchema"
+
+    def __init__(
+        self,
+        id=None,
+        name=None,
+        path=None,
+        instance_id=None,
+        stopped=None,
+        dead=None,
+        restart=None,
+    ):
+        self.id = id
+        self.name = name
+        self.path = path
+        self.instance_id = instance_id
+        self.stopped = stopped
+        self.dead = dead
+        self.restart = restart
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return (
+            "<Runner: id=%s, name=%s, path=%s, instance_id=%s, stopped=%s, dead=%s, "
+            "restart=%s>"
+            % (
+                self.id,
+                self.name,
+                self.path,
+                self.instance_id,
+                self.stopped,
+                self.dead,
+                self.restart,
+            )
+        )
+
+
+class Resolvable(BaseModel):
+    schema = "ResolvableSchema"
+
+    # Resolvable parameter types
+    TYPES = ("Base64", "Bytes")
+
+    def __init__(self, type=None, storage=None, details=None):
+        self.type = type
+        self.storage = storage
+        self.details = details or {}
+
+    def __str__(self):
+        return "%s %s" % (self.type, self.storage)
+
+    def __repr__(self):
+        return "<Resolvable: type=%s, storage=%s, details=%s>" % (
+            self.type,
+            self.storage,
+            self.details,
         )

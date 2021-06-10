@@ -4,7 +4,7 @@ import warnings
 from concurrent.futures import wait
 
 import pytest
-from mock import call, Mock, PropertyMock
+from mock import Mock, call
 from pytest_lazyfixture import lazy_fixture
 
 import brewtils.rest
@@ -16,38 +16,6 @@ from brewtils.errors import (
     ValidationError,
 )
 from brewtils.rest.system_client import SystemClient
-
-
-@pytest.fixture
-def command_1():
-    mock = Mock(parameter_keys_by_type=Mock(return_value=[]))
-    type(mock).name = PropertyMock(return_value="command_1")
-    return mock
-
-
-@pytest.fixture
-def command_2():
-    mock = Mock(parameter_keys_by_type=Mock(return_value=[]))
-    type(mock).name = PropertyMock(return_value="command_2")
-    return mock
-
-
-@pytest.fixture
-def system_1(command_1, command_2):
-    mock = Mock(
-        version="1.0.0", instance_names=[u"default"], commands=[command_1, command_2]
-    )
-    type(mock).name = PropertyMock(return_value="system")
-    return mock
-
-
-@pytest.fixture
-def system_2(command_1, command_2):
-    mock = Mock(
-        version="2.0.0", instance_names=[u"default"], commands=[command_1, command_2]
-    )
-    type(mock).name = PropertyMock(return_value="system")
-    return mock
 
 
 @pytest.fixture
@@ -66,10 +34,10 @@ def mock_error():
 
 
 @pytest.fixture(autouse=True)
-def easy_client(monkeypatch, system_1):
+def easy_client(monkeypatch, bg_system):
     mock = Mock(name="easy_client")
-    mock.find_unique_system.return_value = system_1
-    mock.find_systems.return_value = [system_1]
+    mock.find_unique_system.return_value = bg_system
+    mock.find_systems.return_value = [bg_system]
     mock.client.bg_host = "localhost"
     mock.client.bg_port = 3000
 
@@ -110,7 +78,7 @@ class TestLoadBgSystem(object):
         send_mock = Mock()
         client.send_bg_request = send_mock
 
-        client.command_1()
+        client.speak()
         assert client._loaded is True
         assert client._system is not None
         assert client._commands is not None
@@ -118,31 +86,31 @@ class TestLoadBgSystem(object):
 
     def test_no_attribute(self, client):
         with pytest.raises(AttributeError):
-            client.command_3()
+            client.no_command()
 
-    def test_latest(self, client, easy_client, system_1, system_2):
-        easy_client.find_systems.return_value = [system_1, system_2]
+    def test_latest(self, client, easy_client, bg_system, bg_system_2):
+        easy_client.find_systems.return_value = [bg_system, bg_system_2]
 
         client.load_bg_system()
-        assert client._system == system_2
+        assert client._system == bg_system_2
         easy_client.find_systems.assert_called_once_with(
-            name=system_1.name, namespace=""
+            name=bg_system.name, namespace=""
         )
 
     @pytest.mark.parametrize(
         "constraint,systems",
-        [("1.0.0", lazy_fixture("system_1")), (None, lazy_fixture("system_1"))],
+        [("1.0.0", lazy_fixture("bg_system")), (None, lazy_fixture("bg_system"))],
     )
-    def test_non_latest(self, client, easy_client, system_1, constraint, systems):
+    def test_non_latest(self, client, easy_client, bg_system, constraint, systems):
         client._version_constraint = constraint
         easy_client.find_unique_system.return_value = systems
 
         client.load_bg_system()
         assert client._loaded is True
-        assert client._system == system_1
+        assert client._system == bg_system
 
         easy_client.find_unique_system.assert_called_once_with(
-            name=system_1.name, version=constraint, namespace=""
+            name=bg_system.name, version=constraint, namespace=""
         )
 
     def test_failure_with_constraint(self, client, easy_client):
@@ -164,19 +132,19 @@ class TestLoadBgSystem(object):
         load_mock = Mock()
         client.load_bg_system = load_mock
 
-        client.command_1()
+        client.speak()
         assert load_mock.called is True
 
-    def test_latest_config_ns(self, easy_client, system_1):
-        easy_client.find_systems.return_value = [system_1]
+    def test_latest_config_ns(self, easy_client, bg_system):
+        easy_client.find_systems.return_value = [bg_system]
 
         brewtils.plugin.CONFIG.namespace = "foo"
         client = SystemClient(bg_host="localhost", bg_port=3000, system_name="system")
 
         client.load_bg_system()
-        assert client._system == system_1
+        assert client._system == bg_system
         easy_client.find_systems.assert_called_once_with(
-            name=system_1.name, namespace="foo"
+            name=bg_system.name, namespace="foo"
         )
 
     def test_no_system_kwargs(self):
@@ -252,7 +220,7 @@ class TestCreateRequest(object):
         easy_client.create_request.return_value = mock_success
         monkeypatch.setattr(brewtils.plugin, "request_context", context)
 
-        client.command_1()
+        client.speak()
 
         parent = easy_client.create_request.call_args[0][0].parent
         assert parent is None
@@ -268,7 +236,7 @@ class TestCreateRequest(object):
         brewtils.plugin.CONFIG.bg_host = "localhost"
         brewtils.plugin.CONFIG.bg_port = 3000
 
-        client.command_1()
+        client.speak()
 
         parent = easy_client.create_request.call_args[0][0].parent
         assert parent.id == parent_request.id
@@ -284,7 +252,7 @@ class TestCreateRequest(object):
         brewtils.plugin.CONFIG.bg_host = "OTHER_HOST"
         brewtils.plugin.CONFIG.bg_port = 3000
 
-        client.command_1()
+        client.speak()
 
         parent = easy_client.create_request.call_args[0][0].parent
         assert parent is None
@@ -296,7 +264,7 @@ class TestCreateRequest(object):
     ):
         easy_client.create_request.return_value = mock_success
 
-        client.command_1(_parent=bg_request)
+        client.speak(_parent=bg_request)
         assert easy_client.create_request.call_args[0][0].parent == bg_request
 
     def test_create_request_manual_parent_context(
@@ -307,7 +275,7 @@ class TestCreateRequest(object):
             brewtils.plugin, "request_context", Mock(current_request=Mock(id="1"))
         )
 
-        client.command_1(_parent=bg_request)
+        client.speak(_parent=bg_request)
         assert easy_client.create_request.call_args[0][0].parent == bg_request
 
     @pytest.mark.parametrize(
@@ -332,16 +300,16 @@ class TestCreateRequest(object):
         easy_client.create_request.return_value = mock_success
 
         with pytest.raises(RequestProcessException):
-            client.command_1("Positional Parameter")
+            client.speak("Positional Parameter")
 
 
 class TestExecute(object):
     @pytest.mark.usefixtures("sleep_patch")
-    def test_command_1(self, client, easy_client, mock_success, mock_in_progress):
+    def test_speak(self, client, easy_client, mock_success, mock_in_progress):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
-        request = client.command_1(_blocking=False).result()
+        request = client.speak(_blocking=False).result()
 
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
         assert request.status == mock_success.status
@@ -352,7 +320,7 @@ class TestExecute(object):
         easy_client.create_request.return_value = mock_error
 
         with pytest.raises(RequestFailedError) as ex:
-            client.command_1(_raise_on_error=True)
+            client.speak(_raise_on_error=True)
 
         assert ex.value.request.status == mock_error.status
         assert ex.value.request.output == mock_error.output
@@ -361,7 +329,7 @@ class TestExecute(object):
     def test_error_no_raise(self, client, easy_client, mock_error):
         easy_client.create_request.return_value = mock_error
 
-        request = client.command_1(_raise_on_error=False)
+        request = client.speak(_raise_on_error=False)
 
         assert request.status == mock_error.status
         assert request.output == mock_error.output
@@ -370,29 +338,29 @@ class TestExecute(object):
         easy_client.create_request.side_effect = ValidationError
 
         with pytest.raises(ValidationError):
-            client.command_1()
+            client.speak()
         assert easy_client.create_request.call_count == 1
 
     def test_retry_send_different_version(
-        self, client, easy_client, system_2, mock_success
+        self, client, easy_client, bg_system_2, mock_success
     ):
         client.load_bg_system()
 
-        easy_client.find_systems.return_value = [system_2]
+        easy_client.find_systems.return_value = [bg_system_2]
         easy_client.create_request.side_effect = [ValidationError, mock_success]
 
-        client.command_1()
+        client.speak()
         assert client._system.version == "2.0.0"
         assert easy_client.create_request.call_count == 2
 
 
 class TestExecuteNonBlocking(object):
     @pytest.mark.usefixtures("sleep_patch")
-    def test_command_1(self, client, easy_client, mock_success, mock_in_progress):
+    def test_speak(self, client, easy_client, mock_success, mock_in_progress):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
-        request = client.command_1(_blocking=False).result()
+        request = client.speak(_blocking=False).result()
 
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
         assert request.status == mock_success.status
@@ -405,7 +373,7 @@ class TestExecuteNonBlocking(object):
         easy_client.find_unique_request.return_value = mock_success
         easy_client.create_request.return_value = mock_in_progress
 
-        futures = [client.command_1(_blocking=False) for _ in range(3)]
+        futures = [client.speak(_blocking=False) for _ in range(3)]
         wait(futures)
 
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
@@ -418,7 +386,7 @@ class TestExecuteNonBlocking(object):
     def test_error_raise(self, client, easy_client, mock_error):
         easy_client.create_request.return_value = mock_error
 
-        future = client.command_1(_blocking=False, _raise_on_error=True)
+        future = client.speak(_blocking=False, _raise_on_error=True)
 
         with pytest.raises(RequestFailedError) as ex:
             future.result()
@@ -438,7 +406,7 @@ class TestWaitForRequest(object):
             mock_success,
         ]
 
-        client.command_1(_blocking=False).result()
+        client.speak(_blocking=False).result()
 
         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(2.0)])
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
@@ -454,7 +422,7 @@ class TestWaitForRequest(object):
         ]
 
         client._max_delay = 1
-        client.command_1(_blocking=False).result()
+        client.speak(_blocking=False).result()
 
         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(1.0)])
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
@@ -471,7 +439,7 @@ class TestWaitForRequest(object):
             mock_success,
         ]
 
-        request = client.command_1(_blocking=False, _timeout=timeout).result()
+        request = client.speak(_blocking=False, _timeout=timeout).result()
 
         assert request.status == mock_success.status
         assert request.output == mock_success.output
@@ -482,7 +450,7 @@ class TestWaitForRequest(object):
         easy_client.create_request.return_value = mock_in_progress
         easy_client.find_unique_request.return_value = mock_in_progress
 
-        future = client.command_1(_blocking=False, _timeout=timeout)
+        future = client.speak(_blocking=False, _timeout=timeout)
 
         with pytest.raises(TimeoutExceededError):
             future.result()
@@ -494,7 +462,7 @@ class TestWaitForRequest(object):
         easy_client.create_request.return_value = mock_in_progress
 
         client._timeout = 1
-        futures = [client.command_1(_blocking=False) for _ in range(3)]
+        futures = [client.speak(_blocking=False) for _ in range(3)]
         wait(futures)
 
         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)

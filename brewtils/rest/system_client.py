@@ -260,6 +260,9 @@ class SystemClient(object):
         """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)
 
+    def __str__(self):
+        return "%s[%s]" % (self.bg_system, self.bg_default_instance)
+
     @property
     def bg_system(self):
         return self._system

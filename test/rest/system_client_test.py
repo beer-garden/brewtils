@@ -60,6 +60,15 @@ def sleep_patch(monkeypatch):
     return mock
 
 
+class TestStr(object):
+    def test_unresolved(self, client):
+        assert str(client) == "None[default]"
+
+    def test_resolved(self, client):
+        client.load_bg_system()
+        assert str(client) == "ns:system-1.0.0[default]"
+
+
 def test_old_positional_args():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")

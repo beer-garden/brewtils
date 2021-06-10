@@ -261,16 +261,8 @@ class SystemClient(object):
         return self.create_bg_request(item)
 
     @property
-    def bg_resolved_system(self):
+    def bg_system(self):
         return self._system
-
-    @property
-    def bg_system_name(self):
-        return self._system_name
-
-    @property
-    def bg_system_version(self):
-        return self._version_constraint
 
     @property
     def bg_default_instance(self):

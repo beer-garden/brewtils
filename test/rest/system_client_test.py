@@ -92,7 +92,8 @@ class TestLoadBgSystem(object):
         easy_client.find_systems.return_value = [bg_system, bg_system_2]
 
         client.load_bg_system()
-        assert client._system == bg_system_2
+        assert client.bg_system == bg_system_2
+        assert client.bg_default_instance == "default"
         easy_client.find_systems.assert_called_once_with(
             name=bg_system.name, namespace=""
         )
@@ -107,7 +108,7 @@ class TestLoadBgSystem(object):
 
         client.load_bg_system()
         assert client._loaded is True
-        assert client._system == bg_system
+        assert client.bg_system == bg_system
 
         easy_client.find_unique_system.assert_called_once_with(
             name=bg_system.name, version=constraint, namespace=""
@@ -142,7 +143,7 @@ class TestLoadBgSystem(object):
         client = SystemClient(bg_host="localhost", bg_port=3000, system_name="system")
 
         client.load_bg_system()
-        assert client._system == bg_system
+        assert client.bg_system == bg_system
         easy_client.find_systems.assert_called_once_with(
             name=bg_system.name, namespace="foo"
         )

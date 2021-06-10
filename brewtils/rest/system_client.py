@@ -260,6 +260,14 @@ class SystemClient(object):
         """Standard way to create and send beer-garden requests"""
         return self.create_bg_request(item)
 
+    @property
+    def bg_system(self):
+        return self._system
+
+    @property
+    def bg_default_instance(self):
+        return self._default_instance
+
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial
         """Create a callable that will execute a Beer-garden request when called.

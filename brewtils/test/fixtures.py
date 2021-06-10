@@ -263,6 +263,16 @@ def bg_system(system_dict, bg_instance, bg_command, bg_command_2):
 
 
 @pytest.fixture
+def bg_system_2(system_dict, bg_instance, bg_command, bg_command_2):
+    """A system with a different version."""
+    dict_copy = copy.deepcopy(system_dict)
+    dict_copy["version"] = "2.0.0"
+    dict_copy["instances"] = [bg_instance]
+    dict_copy["commands"] = [bg_command, bg_command_2]
+    return System(**dict_copy)
+
+
+@pytest.fixture
 def child_request_dict(ts_epoch):
     """A child request represented as a dictionary."""
     return {

@@ -38,15 +38,9 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [ '2.7', '3.6', '3.7', '3.8', '3.9']
-        pika-version: ['0.13.1', '1.1.0']
         # Can't use ubuntu-latest until Python 3.4 has Ubuntu 20.X install options in setup-python@v2
         os: ['ubuntu-18.04']
-        exclude:
-          - python-version: '3.7'
-            pika-version: '0.13.1'
-          - python-version: '3.6'
-            pika-version: '0.13.1'
-    name: PyTests OS ${{ matrix.os }} - Python ${{ matrix.python-version }} - PIKA ${{ matrix.pika-version }}
+    name: PyTests OS ${{ matrix.os }} - Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
 
@@ -66,9 +60,6 @@ jobs:
 
       - name: Make Deps
         run: make deps
-
-      - name: Install PIKA
-        run: pip install pika==${{ matrix.pika-version }}
 
       - name: Run Tests
         run: make test

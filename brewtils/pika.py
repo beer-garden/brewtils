@@ -3,11 +3,9 @@ from __future__ import absolute_import
 
 import logging
 import ssl as pyssl
-import warnings
 from functools import partial
 
 from pika import (
-    __version__ as pika_version,
     BasicProperties,
     BlockingConnection,
     ConnectionParameters,
@@ -22,15 +20,6 @@ from pika.spec import PERSISTENT_DELIVERY_MODE
 from brewtils.errors import DiscardMessageException, RepublishRequestException
 from brewtils.request_handling import RequestConsumer
 from brewtils.schema_parser import SchemaParser
-
-PIKA_ONE = pika_version.startswith("1.")
-
-if not PIKA_ONE:
-    warnings.warn(
-        "Support for pika < 1 is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
 
 
 class PikaClient(object):
@@ -81,11 +70,10 @@ class PikaClient(object):
         self._exchange = exchange
 
         ssl = ssl or {}
+        self._ssl_options = None
         self._ssl_enabled = ssl.get("enabled", False)
 
-        if not self._ssl_enabled:
-            self._ssl_options = None
-        elif PIKA_ONE:
+        if self._ssl_enabled:
             ssl_context = pyssl.create_default_context(cafile=ssl.get("ca_cert", None))
             if ssl.get("ca_verify"):
                 ssl_context.verify_mode = pyssl.CERT_REQUIRED
@@ -93,13 +81,6 @@ class PikaClient(object):
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = pyssl.CERT_NONE
             self._ssl_options = SSLOptions(ssl_context, server_hostname=self._host)
-        else:
-            mode = pyssl.CERT_REQUIRED if ssl.get("ca_verify") else pyssl.CERT_NONE
-            self._ssl_options = SSLOptions(
-                cafile=ssl.get("ca_cert", None),
-                verify_mode=mode,
-                server_hostname=self._host,
-            )
 
         # Save the 'normal' params so they don't need to be reconstructed
         self._conn_params = self.connection_parameters()
@@ -155,9 +136,6 @@ class PikaClient(object):
             ),
             "credentials": credentials,
         }
-
-        if not PIKA_ONE:
-            conn_params["ssl"] = kwargs.get("ssl_enabled", self._ssl_enabled)
 
         return ConnectionParameters(**conn_params)
 
@@ -649,13 +627,9 @@ class PikaConsumer(RequestConsumer):
         self._channel.basic_qos(prefetch_count=self._max_concurrent)
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
 
-        consume_kwargs = {"queue": self._queue_name}
-        if PIKA_ONE:
-            consume_kwargs["on_message_callback"] = self.on_message
-        else:
-            consume_kwargs["consumer_callback"] = self.on_message
-
-        self._consumer_tag = self._channel.basic_consume(**consume_kwargs)
+        self._consumer_tag = self._channel.basic_consume(
+            queue=self._queue_name, on_message_callback=self.on_message
+        )
 
     def stop_consuming(self):
         """Stop consuming messages

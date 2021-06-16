@@ -1128,6 +1128,7 @@ class Job(BaseModel):
         error_count=None,
         status=None,
         max_instances=None,
+        timeout=None,
     ):
         self.id = id
         self.name = name
@@ -1141,6 +1142,7 @@ class Job(BaseModel):
         self.error_count = error_count
         self.status = status
         self.max_instances = max_instances
+        self.timeout = timeout
 
     def __str__(self):
         return "%s: %s" % (self.name, self.id)

@@ -468,6 +468,7 @@ class JobSchema(BaseSchema):
     error_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
+    timeout = fields.Int(allow_none=True)
 
 
 class OperationSchema(BaseSchema):

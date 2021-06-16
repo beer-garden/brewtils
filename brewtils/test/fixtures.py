@@ -553,6 +553,7 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         "error_count": 0,
         "status": "RUNNING",
         "max_instances": 3,
+        "timeout": 30,
     }
 
 

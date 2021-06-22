@@ -47,7 +47,7 @@ class Events(Enum):
     REQUEST_STARTED = 6
     REQUEST_UPDATED = 22
     REQUEST_COMPLETED = 7
-    REQUEST_CANCELED = 29
+    REQUEST_CANCELED = 42
     INSTANCE_INITIALIZED = 8
     INSTANCE_STARTED = 9
     INSTANCE_UPDATED = 23
@@ -81,6 +81,8 @@ class Events(Enum):
     RUNNER_STOPPED = 39
     RUNNER_REMOVED = 40
     JOB_UPDATED = 41
+
+    # Next: 43
 
 
 class BaseModel(object):

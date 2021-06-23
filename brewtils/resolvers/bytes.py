@@ -19,4 +19,4 @@ class BytesResolver(ResolverBase):
         return definition.type.lower() == "bytes"
 
     def download(self, value, definition):
-        return self.easy_client.download_bytes(value.details["id"])
+        return self.easy_client.download_bytes(value.id)

@@ -59,6 +59,4 @@ class TestShouldDownload(object):
 
 def test_download(resolver, ez_client, definition, bg_resolvable_chunk):
     resolver.download(bg_resolvable_chunk, definition)
-    ez_client.download_chunked_file.assert_called_once_with(
-        bg_resolvable_chunk.details["file_id"]
-    )
+    ez_client.download_chunked_file.assert_called_once_with(bg_resolvable_chunk.id)

@@ -1488,16 +1488,18 @@ class Resolvable(BaseModel):
     # Resolvable parameter types
     TYPES = ("Base64", "Bytes")
 
-    def __init__(self, type=None, storage=None, details=None):
+    def __init__(self, id=None, type=None, storage=None, details=None):
+        self.id = id
         self.type = type
         self.storage = storage
         self.details = details or {}
 
     def __str__(self):
-        return "%s %s" % (self.type, self.storage)
+        return "%s: %s %s" % (self.id, self.type, self.storage)
 
     def __repr__(self):
-        return "<Resolvable: type=%s, storage=%s, details=%s>" % (
+        return "<Resolvable: id=%s, type=%s, storage=%s, details=%s>" % (
+            self.id,
             self.type,
             self.storage,
             self.details,

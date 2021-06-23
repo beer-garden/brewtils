@@ -494,6 +494,7 @@ class RunnerSchema(BaseSchema):
 
 
 class ResolvableSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
     type = fields.Str(allow_none=True)
     storage = fields.Str(allow_none=True)
     details = fields.Dict(allow_none=True)

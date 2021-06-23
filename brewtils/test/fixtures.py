@@ -757,9 +757,10 @@ def bg_runner(runner_dict):
 def resolvable_dict():
     """A resolvable as a dictionary."""
     return {
+        "id": "60996b9dc021bf0d4add8b67",
         "type": "bytes",
         "storage": "gridfs",
-        "details": {"id": "60996b9dc021bf0d4add8b67"},
+        "details": {"random": "detail"},
     }
 
 

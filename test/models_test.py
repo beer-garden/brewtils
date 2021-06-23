@@ -660,7 +660,8 @@ class TestRunner(object):
 
 class TestResolvable(object):
     def test_str(self, bg_resolvable):
-        assert str(bg_resolvable) == "%s %s" % (
+        assert str(bg_resolvable) == "%s: %s %s" % (
+            bg_resolvable.id,
             bg_resolvable.type,
             bg_resolvable.storage,
         )
@@ -668,7 +669,8 @@ class TestResolvable(object):
     def test_repr(self, bg_resolvable):
         assert repr(
             bg_resolvable
-        ) == "<Resolvable: type=%s, storage=%s, details=%s>" % (
+        ) == "<Resolvable: id=%s, type=%s, storage=%s, details=%s>" % (
+            bg_resolvable.id,
             bg_resolvable.type,
             bg_resolvable.storage,
             bg_resolvable.details,

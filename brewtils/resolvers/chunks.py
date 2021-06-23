@@ -39,4 +39,4 @@ class ChunksResolver(ResolverBase):
         return definition.type.lower() == "base64"
 
     def download(self, value, definition):
-        return self.easy_client.download_chunked_file(value.details["file_id"])
+        return self.easy_client.download_chunked_file(value.id)

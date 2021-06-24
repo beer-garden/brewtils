@@ -1,6 +1,37 @@
 Brewtils Changelog
 ==================
 
+3.4.0
+-----
+6/24/21
+
+Bug Fixes
+^^^^^^^^^
+- Changed duplicate event enum value (Issue #932 / PR #330)
+- Better handling of non-json error responses (Issue #1033 / PR #324)
+- No longer ignoring `max_attempts`, `max_timeout`, and `starting_timeout` values (Issue #1028 / PR #323)
+- A plugin Client instance can now be reused (Issue #1014 / PR #321)
+- Charset in content-type header no longer breaks URL-based display resource loading (Issue #1010 / PR #319)
+- URL-based template resolution respects connection configuration (Issue #1009 / PR #318)
+- System attributes (like description) can now be cleared (Issue #1002 / PR #317)
+
+New Features
+^^^^^^^^^^^^
+- Jobs now have a timeout field (Issue #1046 / PR #329)
+- Added `bg_system` and `bg_default_instance` properties to SystemClient (Issue #279 / PR #273)
+- Forwarding REST calls now support `blocking` and `timeout` parameters (Issue #895 / PR #325)
+- Added support for lambdas as a Choices source (Issue #1004 / PR #322)
+- Bytes-type parameters are now supported (Issue #991 / PR #316)
+- Systems can now have UI templates (Issue #997 / PR #315)
+- Commands now have a metadata field (Issue #358 / PR #314)
+
+Other Changes
+^^^^^^^^^^^^^
+- Removed support for pika versions below 1.0 (Issue #651 / PR #328)
+- SystemClient now has a `__str__` method (Issue #76 / PR #327)
+- Dropped official support for Python 3.5 (Issue #1043 / PR #326)
+- Added INVALID Request status (PR #325)
+
 3.3.0
 -----
 4/23/21

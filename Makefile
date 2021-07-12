@@ -57,7 +57,7 @@ clean-build: ## remove build artifacts
 	find . -name '*.egg' -exec rm -f {} +
 
 clean-docs: ## remove doc artifacts
-	rm -f docs/$(MODULE_NAME).rst
+	rm -f docs/$(MODULE_NAME)*.rst
 	rm -f docs/modules.rst
 
 clean-python: ## remove Python file artifacts

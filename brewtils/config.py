@@ -49,7 +49,7 @@ def get_argument_parser():
     from failing on the unknown argument.
 
     Returns:
-        :ArgumentParser: Argument parser with Brewtils arguments loaded
+        ArgumentParser: Argument parser with Brewtils arguments loaded
     """
     parser = ArgumentParser()
 
@@ -71,7 +71,7 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
         **kwargs: Additional configuration overrides
 
     Returns:
-        :dict: Parameters needed to make a connection to Beergarden
+        dict: Parameters needed to make a connection to Beergarden
     """
     config = load_config(cli_args=cli_args, argument_parser=argument_parser, **kwargs)
 
@@ -108,7 +108,7 @@ def load_config(
         **kwargs: Additional configuration overrides
 
     Returns:
-        :obj:`box.Box`: The resolved configuration object
+        box.Box: The resolved configuration object
     """
     spec = YapconfSpec(SPECIFICATION, env_prefix="BG_")
 
@@ -172,8 +172,7 @@ def _translate_kwargs(**kwargs):
     - Convert "url_prefix" to "bg_url_prefix"
 
     Args:
-        kwargs: Keyword arguments to translate
-
+        **kwargs: Keyword arguments to translate
     """
     name_map = [
         # (old_name, new_name, show_deprecation)

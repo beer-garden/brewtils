@@ -276,7 +276,11 @@ def parameter(
 
 
 def parameters(*args, **kwargs):
-    """Decorator for specifying multiple Parameter definitions at once
+    """
+    .. deprecated:: 3.0
+        Will be removed in version 4.0. Please use ``@command`` instead.
+
+    Decorator for specifying multiple Parameter definitions at once
 
     This can be useful for commands which have a large number of complicated
     parameters but aren't good candidates for a Model.
@@ -853,6 +857,10 @@ system = client
 
 
 def command_registrar(*args, **kwargs):
+    """
+    .. deprecated: 3.0
+        Will be removed in 4.0. Use ``@system`` instead.
+    """
     _deprecate(
         "Looks like you're using the '@command_registrar' decorator. Heads up - this "
         "name will be removed in version 4.0, please use '@system' instead. Thanks!"
@@ -861,6 +869,10 @@ def command_registrar(*args, **kwargs):
 
 
 def register(*args, **kwargs):
+    """
+    .. deprecated: 3.0
+        Will be removed in 4.0. Use ``@command`` instead.
+    """
     _deprecate(
         "Looks like you're using the '@register' decorator. Heads up - this name will "
         "be removed in version 4.0, please use '@command' instead. Thanks!"
@@ -869,6 +881,10 @@ def register(*args, **kwargs):
 
 
 def plugin_param(*args, **kwargs):
+    """
+    .. deprecated: 3.0
+        Will be removed in 4.0. Use ``@parameter`` instead.
+    """
     _deprecate(
         "Looks like you're using the '@plugin_param' decorator. Heads up - this name "
         "will be removed in version 4.0, please use '@parameter' instead. Thanks!"

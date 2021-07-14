@@ -39,7 +39,7 @@ def get_easy_client(**kwargs):
         **kwargs: Options for configuring the EasyClient
 
     Returns:
-        :obj:`brewtils.rest.easy_client.EasyClient`: The configured client
+        brewtils.rest.easy_client.EasyClient: The configured client
     """
     return EasyClient(**get_connection_info(**kwargs))
 
@@ -180,8 +180,8 @@ class EasyClient(object):
         # type: (**Any) -> bool
         """Determine if the Beergarden server is responding.
 
-        Kwargs:
-            Arguments passed to the underlying Requests method
+        Args:
+            **kwargs: Keyword arguments passed to the underlying Requests method
 
         Returns:
             A bool indicating if the connection attempt was successful. Will
@@ -444,7 +444,11 @@ class EasyClient(object):
         )
 
     def get_instance_status(self, instance_id):
-        """Get an Instance's status
+        """
+        .. deprecated: 3.0
+            Will be removed in 4.0. Use ``get_instance()`` instead
+
+        Get an Instance's status
 
         Args:
             instance_id: The Id
@@ -461,7 +465,11 @@ class EasyClient(object):
         return self.get_instance(instance_id).status
 
     def update_instance_status(self, instance_id, new_status):
-        """Update an Instance status
+        """
+        .. deprecated: 3.0
+            Will be removed in 4.0. Use ``update_instance()`` instead
+
+        Get an Instance's status
 
         Args:
             instance_id (str): The Instance ID
@@ -580,7 +588,7 @@ class EasyClient(object):
 
         Args:
             request: New request definition
-            kwargs: Extra request parameters
+            **kwargs: Extra request parameters
 
         Keyword Args:
             blocking (bool): Wait for request to complete before returning
@@ -926,7 +934,7 @@ class EasyClient(object):
 
         Args:
             operation: The Operation to be forwarded
-            kwargs: Keyword arguments to pass to Requests session call
+            **kwargs: Keyword arguments to pass to Requests session call
 
         Returns:
             The API response

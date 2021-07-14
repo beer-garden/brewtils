@@ -802,7 +802,10 @@ class System(BaseModel):
         return None
 
     def get_instance(self, name):
-        """DEPRECATED: Please use get_instance_by_name instead"""
+        """
+        .. deprecated::3.0
+           Will be removed in 4.0. Use ``get_instance_by_name`` instead
+        """
         _deprecate(
             "Heads up! This method is deprecated, please use get_instance_by_name"
         )

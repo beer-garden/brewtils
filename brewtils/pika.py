@@ -417,14 +417,14 @@ class PikaConsumer(RequestConsumer):
         an exception:
 
         - If there is no exception it acks the message
-        - If there is an exception:
-          - If the exception is an instance of DiscardMessageException it nacks the
-            message and does not requeue it
-          - If the exception is an instance of RepublishRequestException it will
-            construct an entirely new BlockingConnection, use that to publish a new
-            message, and then ack the original message
-          - If the exception is not an instance of either the panic_event is set and
-            the consumer will self-destruct
+        - If there is an exception
+            - If the exception is an instance of DiscardMessageException it acks the
+              message and does not requeue it
+            - If the exception is an instance of RepublishRequestException it will
+              construct an entirely new BlockingConnection, use that to publish a new
+              message, and then ack the original message
+            - If the exception is not an instance of either the panic_event is set and
+              the consumer will self-destruct
 
         Also, if there's ever an error acking a message the panic_event is set and the
         consumer will self-destruct.
@@ -545,11 +545,9 @@ class PikaConsumer(RequestConsumer):
         Args:
             connection: The connection
             args: Tuple of arguments describing why the connection closed
-                pika < 1:
-                    reply_code: Numeric code indicating close reason
-                    reply_text: String describing close reason
-                pika >= 1:
-                    exc: Exception describing close
+                For pika < 1: reply_code (Numeric code indicating close reason),
+                reply_text (String describing close reason).  For pika >= 1
+                exc (Exception describing close).
 
         Returns:
             None
@@ -595,11 +593,9 @@ class PikaConsumer(RequestConsumer):
         Args:
             channel: The channel
             args: Tuple of arguments describing why the channel closed
-                pika < 1:
-                    reply_code: Numeric code indicating close reason
-                    reply_text: String describing close reason
-                pika >= 1:
-                    exc: Exception describing close
+                For pika < 1: reply_code (Numeric code indicating close reason),
+                reply_text (String describing close reason).  For pika >= 1
+                exc (Exception describing close).
 
         Returns:
             None

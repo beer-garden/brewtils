@@ -21,10 +21,26 @@ brewtils.choices module
     :undoc-members:
     :show-inheritance:
 
+brewtils.config module
+----------------------
+
+.. automodule:: brewtils.config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 brewtils.decorators module
 --------------------------
 
 .. automodule:: brewtils.decorators
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+brewtils.display module
+-----------------------
+
+.. automodule:: brewtils.display
     :members:
     :undoc-members:
     :show-inheritance:
@@ -49,6 +65,14 @@ brewtils.models module
 ----------------------
 
 .. automodule:: brewtils.models
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+brewtils.pika module
+--------------------
+
+.. automodule:: brewtils.pika
     :members:
     :undoc-members:
     :show-inheritance:

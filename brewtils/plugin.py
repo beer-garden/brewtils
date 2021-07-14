@@ -410,7 +410,6 @@ class Plugin(object):
 
         Returns:
             None
-
         """
         if self._custom_logger:
             self._logger.debug("Skipping logging init: custom logger detected")
@@ -464,7 +463,6 @@ class Plugin(object):
 
         Raises:
             PluginValidationError: Unable to find or create a System for this Plugin
-
         """
         # Make sure that the system is actually valid before trying anything
         self._validate_system()
@@ -843,51 +841,111 @@ class Plugin(object):
     # These are provided for backward-compatibility
     @property
     def bg_host(self):
+        """
+        .. deprecated:: 3.0
+           bg_host is now in ``_config`` (``plugin._config.bg_host``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("bg_host is now in _config (plugin._config.bg_host)")
         return self._config.bg_host
 
     @property
     def bg_port(self):
+        """
+        .. deprecated:: 3.0
+           bg_port is now in _config (``plugin._config.bg_port``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("bg_port is now in _config (plugin._config.bg_port)")
         return self._config.bg_port
 
     @property
     def ssl_enabled(self):
+        """
+        .. deprecated:: 3.0
+           ssl_enabled is now in ``_config`` (``plugin._config.ssl_enabled``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("ssl_enabled is now in _config (plugin._config.ssl_enabled)")
         return self._config.ssl_enabled
 
     @property
     def ca_cert(self):
+        """
+        .. deprecated:: 3.0
+           ca_cert is now in ``_config`` (``plugin._config.ca_cert``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("ca_cert is now in _config (plugin._config.ca_cert)")
         return self._config.ca_cert
 
     @property
     def client_cert(self):
+        """
+        .. deprecated:: 3.0
+           client_cert is now in ``_config`` (``plugin._config.client_cert``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("client_cert is now in _config (plugin._config.client_cert)")
         return self._config.client_cert
 
     @property
     def bg_url_prefix(self):
+        """
+        .. deprecated:: 3.0
+           bg_url_prefix is now in ``_config`` (``plugin._config.bg_url_prefix``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("bg_url_prefix is now in _config (plugin._config.bg_url_prefix)")
         return self._config.bg_url_prefix
 
     @property
     def ca_verify(self):
+        """
+        .. deprecated:: 3.0
+           ca_verify is now in ``_config`` (``plugin._config.ca_verify``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("ca_verify is now in _config (plugin._config.ca_verify)")
         return self._config.ca_verify
 
     @property
     def max_attempts(self):
+        """
+        .. deprecated:: 3.0
+           max_attempts is now in ``_config`` (``plugin._config.max_attempts``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("max_attempts is now in _config (plugin._config.max_attempts)")
         return self._config.max_attempts
 
     @property
     def max_timeout(self):
+        """
+        .. deprecated:: 3.0
+           max_timeout is now in ``_config`` (``plugin._config.max_timeout``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("max_timeout has moved into _config (plugin._config.max_timeout)")
         return self._config.max_timeout
 
     @property
     def starting_timeout(self):
+        """
+        .. deprecated:: 3.0
+           starting_timeout is now in ``_config`` (``plugin._config.starting_timeout``)
+
+        Provided for backward-comptibility
+        """
         _deprecate(
             "starting_timeout is now in _config (plugin._config.starting_timeout)"
         )
@@ -895,42 +953,91 @@ class Plugin(object):
 
     @property
     def max_concurrent(self):
+        """
+        .. deprecated:: 3.0
+           max_concurrent is now in ``_config`` (``plugin._config.max_concurrent``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("max_concurrent is now in _config (plugin._config.max_concurrent)")
         return self._config.max_concurrent
 
     @property
     def instance_name(self):
+        """
+        .. deprecated:: 3.0
+           instance_name is now in ``_config`` (``plugin._config.instance_name``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("instance_name is now in _config (plugin._config.instance_name)")
         return self._config.instance_name
 
     @property
     def connection_parameters(self):
+        """
+        .. deprecated:: 3.0
+           connection_parameters has been removed. Please use ``_config``
+
+        Provided for backward-comptibility
+        """
         _deprecate("connection_parameters attribute was removed, please use '_config'")
         return {key: self._config[key] for key in _CONNECTION_SPEC}
 
     @property
     def metadata(self):
+        """
+        .. deprecated:: 3.0
+           metadata is now part of the ``system`` attribute (``plugin.system.metadata``)
+
+        Provided for backward-comptibility
+        """
         _deprecate("metadata is a part of the system attribute (plugin.system.metadata")
         return self._system.metadata
 
     @property
     def bm_client(self):
+        """
+        .. deprecated:: 3.0
+            bm_client attribute has been renamed to ``_ez_client``.
+
+        Provided for backward-comptibility
+        """
         _deprecate("bm_client attribute has been renamed to _ez_client")
         return self._ez_client
 
     @property
     def shutdown_event(self):
+        """
+        .. deprecated:: 3.0
+            shutdown_event attribute has been renamed to ``_shutdown_event``.
+
+        Provided for backward-comptibility
+        """
         _deprecate("shutdown_event attribute has been renamed to _shutdown_event")
         return self._shutdown_event
 
     @property
     def logger(self):
+        """
+        .. deprecated:: 3.0
+            logger attribute has been renamed to ``_logger``.
+
+        Provided for backward-comptibility
+        """
         _deprecate("logger attribute has been renamed to _logger")
         return self._logger
 
 
 # Alias old names
 class PluginBase(Plugin):
+    """
+    .. deprecated:: 3.0
+        Will be removed in version 4.0. Please use ``Plugin`` instead.
+
+    ``Plugin`` alias Provided for backward-comptibility
+    """
+
     def __init__(self, *args, **kwargs):
         _deprecate(
             "Looks like you're creating a 'PluginBase'. Heads up - this name will be "
@@ -940,6 +1047,13 @@ class PluginBase(Plugin):
 
 
 class RemotePlugin(Plugin):
+    """
+    .. deprecated:: 3.0
+        Will be removed in version 4.0. Please use ``Plugin`` instead.
+
+    ``Plugin`` alias Provided for backward-comptibility
+    """
+
     def __init__(self, *args, **kwargs):
         _deprecate(
             "Looks like you're creating a 'RemotePlugin'. Heads up - this name will be "

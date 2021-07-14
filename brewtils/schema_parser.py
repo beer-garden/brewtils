@@ -57,10 +57,13 @@ class SchemaParser(object):
     def parse_system(cls, system, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a system model object
 
-        :param system: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A System object
+        Args:
+            system: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A System object
         """
         return cls.parse(
             system, brewtils.models.System, from_string=from_string, **kwargs
@@ -70,10 +73,13 @@ class SchemaParser(object):
     def parse_instance(cls, instance, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to an instance model object
 
-        :param instance: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: An Instance object
+        Args:
+            instance: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            An Instance object
         """
         return cls.parse(
             instance, brewtils.models.Instance, from_string=from_string, **kwargs
@@ -83,10 +89,13 @@ class SchemaParser(object):
     def parse_command(cls, command, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a command model object
 
-        :param command: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Command object
+        Args:
+            command: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Command object
         """
         return cls.parse(
             command, brewtils.models.Command, from_string=from_string, **kwargs
@@ -96,10 +105,13 @@ class SchemaParser(object):
     def parse_parameter(cls, parameter, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a parameter model object
 
-        :param parameter: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: An Parameter object
+        Args:
+            parameter: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            An Parameter object
         """
         return cls.parse(
             parameter, brewtils.models.Parameter, from_string=from_string, **kwargs
@@ -109,10 +121,13 @@ class SchemaParser(object):
     def parse_request_file(cls, request_file, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a request file model object
 
-        :param request_file: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A RequestFile object
+        Args:
+            request_file: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A RequestFile object
         """
         return cls.parse(
             request_file, brewtils.models.RequestFile, from_string=from_string, **kwargs
@@ -122,10 +137,13 @@ class SchemaParser(object):
     def parse_file(cls, file, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a  file model object
 
-        :param file: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A File object
+        Args:
+            file: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A File object
         """
         return cls.parse(file, brewtils.models.File, from_string=from_string, **kwargs)
 
@@ -133,10 +151,13 @@ class SchemaParser(object):
     def parse_request(cls, request, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a request model object
 
-        :param request: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Request object
+        Args:
+            request: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Request object
         """
         return cls.parse(
             request, brewtils.models.Request, from_string=from_string, **kwargs
@@ -146,13 +167,17 @@ class SchemaParser(object):
     def parse_patch(cls, patch, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a patch model object
 
-        Note: for our patches, many is _always_ set to True. We will always return a list
-        from this method.
+        .. note::
+            for our patches, many is *always* set to True. We will always return a list
+            from this method.
 
-        :param patch: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A PatchOperation object
+        Args:
+            patch: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A PatchOperation object
         """
         return cls.parse(
             patch, brewtils.models.PatchOperation, from_string=from_string, **kwargs
@@ -162,10 +187,13 @@ class SchemaParser(object):
     def parse_logging_config(cls, logging_config, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a logging config model object
 
-        :param logging_config: The raw input
-        :param from_string: True if 'input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A LoggingConfig object
+        Args:
+            logging_config: The raw input
+            from_string: True if 'input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A LoggingConfig object
         """
         return cls.parse(
             logging_config,
@@ -178,10 +206,13 @@ class SchemaParser(object):
     def parse_event(cls, event, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to an event model object
 
-        :param event: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: An Event object
+        Args:
+            event: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            An Event object
         """
         return cls.parse(
             event, brewtils.models.Event, from_string=from_string, **kwargs
@@ -191,10 +222,13 @@ class SchemaParser(object):
     def parse_queue(cls, queue, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a queue model object
 
-        :param queue: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Queue object
+        Args:
+            queue: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Queue object
         """
         return cls.parse(
             queue, brewtils.models.Queue, from_string=from_string, **kwargs
@@ -204,10 +238,13 @@ class SchemaParser(object):
     def parse_principal(cls, principal, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a principal model object
 
-        :param principal: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Principal object
+        Args:
+            principal: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Principal object
         """
         return cls.parse(
             principal, brewtils.models.Principal, from_string=from_string, **kwargs
@@ -217,10 +254,13 @@ class SchemaParser(object):
     def parse_role(cls, role, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a role model object
 
-        :param role: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Role object
+        Args:
+            role: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Role object
         """
         return cls.parse(role, brewtils.models.Role, from_string=from_string, **kwargs)
 
@@ -228,10 +268,13 @@ class SchemaParser(object):
     def parse_refresh_token(cls, refresh_token, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a refresh token object
 
-        :param refresh_token: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A RefreshToken object
+        Args:
+            refresh_token: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A RefreshToken object
         """
         return cls.parse(
             refresh_token,
@@ -259,10 +302,13 @@ class SchemaParser(object):
     def parse_garden(cls, garden, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a garden model object
 
-        :param garden: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Garden object
+        Args:
+            garden: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Garden object
         """
         return cls.parse(
             garden, brewtils.models.Garden, from_string=from_string, **kwargs
@@ -272,10 +318,13 @@ class SchemaParser(object):
     def parse_operation(cls, operation, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a garden model object
 
-        :param operation: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: An Operation object
+        Args:
+            operation: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            An Operation object
         """
         return cls.parse(
             operation, brewtils.models.Operation, from_string=from_string, **kwargs
@@ -285,10 +334,13 @@ class SchemaParser(object):
     def parse_runner(cls, runner, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a runner model object
 
-        :param runner: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Runner object
+        Args:
+            runner: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Runner object
         """
         return cls.parse(
             runner, brewtils.models.Runner, from_string=from_string, **kwargs
@@ -298,10 +350,13 @@ class SchemaParser(object):
     def parse_resolvable(cls, resolvable, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a runner model object
 
-        :param resolvable: The raw input
-        :param from_string: True if input is a JSON string, False if a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: A Resolvable object
+        Args:
+            resolvable: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Resolvable object
         """
         return cls.parse(
             resolvable, brewtils.models.Resolvable, from_string=from_string, **kwargs
@@ -347,11 +402,15 @@ class SchemaParser(object):
     def serialize_system(cls, system, to_string=True, include_commands=True, **kwargs):
         """Convert a system model into serialized form
 
-        :param system: The system object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param include_commands: True if the system's command list should be included
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of system
+        Args:
+            system: The system object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            include_commands: True if the system's command list should be included
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of system
         """
         if not include_commands:
             if "exclude" in kwargs:
@@ -370,10 +429,14 @@ class SchemaParser(object):
     def serialize_instance(cls, instance, to_string=True, **kwargs):
         """Convert an instance model into serialized form
 
-        :param instance: The instance object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of instance
+        Args:
+            instance: The instance object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of instance
         """
         return cls.serialize(
             instance,
@@ -386,10 +449,14 @@ class SchemaParser(object):
     def serialize_command(cls, command, to_string=True, **kwargs):
         """Convert a command model into serialized form
 
-        :param command: The command object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of command
+        Args:
+            command: The command object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of command
         """
         return cls.serialize(
             command,
@@ -402,10 +469,14 @@ class SchemaParser(object):
     def serialize_parameter(cls, parameter, to_string=True, **kwargs):
         """Convert a parameter model into serialized form
 
-        :param parameter: The parameter object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of parameter
+        Args:
+            parameter: The parameter object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of parameter
         """
         return cls.serialize(
             parameter,
@@ -418,10 +489,14 @@ class SchemaParser(object):
     def serialize_request_file(cls, request_file, to_string=True, **kwargs):
         """Convert a request file model into serialized form
 
-        :param request_file: The request file object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of request file
+        Args:
+            request_file: The request file object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of request file
         """
         return cls.serialize(
             request_file,
@@ -434,10 +509,14 @@ class SchemaParser(object):
     def serialize_request(cls, request, to_string=True, **kwargs):
         """Convert a request model into serialized form
 
-        :param request: The request object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of request
+        Args:
+            request: The request object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of request
         """
         return cls.serialize(
             request,
@@ -450,10 +529,14 @@ class SchemaParser(object):
     def serialize_patch(cls, patch, to_string=True, **kwargs):
         """Convert a patch model into serialized form
 
-        :param patch: The patch object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of patch
+        Args:
+            patch: The patch object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of patch
         """
         return cls.serialize(
             patch,
@@ -466,10 +549,14 @@ class SchemaParser(object):
     def serialize_logging_config(cls, logging_config, to_string=True, **kwargs):
         """Convert a logging config model into serialize form
 
-        :param logging_config: The logging config object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of logging config
+        Args:
+            logging_config: The logging config object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of logging config
         """
         return cls.serialize(
             logging_config,
@@ -482,10 +569,14 @@ class SchemaParser(object):
     def serialize_event(cls, event, to_string=True, **kwargs):
         """Convert a logging config model into serialized form
 
-        :param event: The event object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of event
+        Args:
+            event: The event object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of event
         """
         return cls.serialize(
             event,
@@ -498,10 +589,14 @@ class SchemaParser(object):
     def serialize_queue(cls, queue, to_string=True, **kwargs):
         """Convert a queue model into serialized form
 
-        :param queue: The queue object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of queue
+        Args:
+            queue: The queue object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of queue
         """
         return cls.serialize(
             queue,
@@ -514,10 +609,14 @@ class SchemaParser(object):
     def serialize_principal(cls, principal, to_string=True, **kwargs):
         """Convert a principal model into serialized form
 
-        :param principal: The principal object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation
+        Args:
+            principal: The principal object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation
         """
         return cls.serialize(
             principal,
@@ -530,10 +629,14 @@ class SchemaParser(object):
     def serialize_role(cls, role, to_string=True, **kwargs):
         """Convert a role model into serialized form
 
-        :param role: The role object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation
+        Args:
+            role: The role object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation
         """
         return cls.serialize(
             role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
@@ -543,10 +646,14 @@ class SchemaParser(object):
     def serialize_refresh_token(cls, refresh_token, to_string=True, **kwargs):
         """Convert a role model into serialized form
 
-        :param refresh_token: The token object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation
+        Args:
+            refresh_token: The token object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation
         """
         return cls.serialize(
             refresh_token,
@@ -561,7 +668,8 @@ class SchemaParser(object):
 
         Args:
             job: The job object(s) to be serialized.
-            to_string: True to generate a JSON-formatted string, False to generate a dictionary.
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
             **kwargs: Additional parameters to be passed to the shcema (e.g. many=True)
 
         Returns:
@@ -575,10 +683,14 @@ class SchemaParser(object):
     def serialize_garden(cls, garden, to_string=True, **kwargs):
         """Convert an garden model into serialized form
 
-        :param garden: The garden object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of garden
+        Args:
+            garden: The garden object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of garden
         """
         return cls.serialize(
             garden,
@@ -591,10 +703,14 @@ class SchemaParser(object):
     def serialize_operation(cls, operation, to_string=True, **kwargs):
         """Convert an operation model into serialized form
 
-        :param operation: The operation object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of operation
+        Args:
+            operation: The operation object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of operation
         """
         return cls.serialize(
             operation,
@@ -607,10 +723,14 @@ class SchemaParser(object):
     def serialize_runner(cls, runner, to_string=True, **kwargs):
         """Convert a runner model into serialized form
 
-        :param runner: The runner object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of runner
+        Args:
+            runner: The runner object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of runner
         """
         return cls.serialize(
             runner,
@@ -623,10 +743,14 @@ class SchemaParser(object):
     def serialize_resolvable(cls, resolvable, to_string=True, **kwargs):
         """Convert a resolvable model into serialized form
 
-        :param resolvable: The resolvable object(s) to be serialized
-        :param to_string: True to generate a JSON-formatted string, False to generate a dictionary
-        :param kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
-        :return: Serialized representation of runner
+        Args:
+            resolvable: The resolvable object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of runner
         """
         return cls.serialize(
             resolvable,
@@ -649,16 +773,17 @@ class SchemaParser(object):
         This is potentially recursive - here's how this should work:
 
         - Determine the correct schema to use for serializing. This can be explicitly
-        passed as an argument, or it can be determined by inspecting the model to
-        serialize.
+          passed as an argument, or it can be determined by inspecting the model to
+          serialize.
         - Determine if the model to serialize is a collection or a single object.
             - If it's a single object, serialize it and return that.
             - If it's a collection, construct a list by calling this method for each
-            individual item in the collection. Then serialize **that** and return it.
+              individual item in the collection. Then serialize **that** and return it.
 
         Args:
             model: The model or model list
-            to_string: True to generate a JSON string, False to generate a dictionary
+            to_string: True to generate a JSON string, False to generate a
+                dictionary
             schema_name: Name of schema to use for serializing. If None, will be
             determined by inspecting ``model``
             **kwargs: Additional parameters to be passed to the Schema.

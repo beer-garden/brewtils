@@ -73,6 +73,7 @@ class TimeoutAdapter(HTTPAdapter):
         super(TimeoutAdapter, self).__init__(**kwargs)
 
     def send(self, *args, **kwargs):
+        """Sends PreparedRequest object with specified timeout."""
         kwargs["timeout"] = kwargs.get("timeout") or self.timeout
         return super(TimeoutAdapter, self).send(*args, **kwargs)
 
@@ -188,7 +189,7 @@ class RestClient(object):
         4. the global configuration (brewtils.plugin.CONFIG)
 
         Args:
-            args: DEPRECATED - host and port
+            args (deprecated): host and port
             kwargs: Standard connection arguments to be used
 
         Returns:
@@ -224,7 +225,7 @@ class RestClient(object):
         """Determine if a connection to the Beer-garden server is possible
 
         Args:
-            kwargs: Keyword arguments to pass to Requests session call
+            **kwargs: Keyword arguments to pass to Requests session call
 
         Returns:
             A bool indicating if the connection attempt was successful. Will
@@ -251,6 +252,9 @@ class RestClient(object):
         # type: (**Any) -> Response
         """Perform a GET to the version URL
 
+        Args:
+            **kwargs (deprecated): Unused. Accepted for compatibility.
+
         Returns:
             Requests Response object
         """
@@ -266,6 +270,9 @@ class RestClient(object):
     def get_config(self, **kwargs):
         # type: (**Any) -> Response
         """Perform a GET to the config URL
+
+        Args:
+            **kwargs (deprecated): Unused. Accepted for compatibility.
 
         Returns:
             Requests Response object
@@ -284,7 +291,7 @@ class RestClient(object):
         """Perform a GET to the logging config URL
 
         Args:
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -297,7 +304,7 @@ class RestClient(object):
         """Perform a GET on the System collection URL
 
         Args:
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -311,7 +318,7 @@ class RestClient(object):
 
         Args:
             system_id: System ID
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -435,7 +442,7 @@ class RestClient(object):
         """Performs a GET on the Requests URL
 
         Args:
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -462,7 +469,7 @@ class RestClient(object):
 
         Args:
             payload: New Request definition
-            kwargs: Extra request parameters
+            **kwargs: Extra request parameters
 
         Keyword Args:
             blocking: Wait for request to complete
@@ -549,7 +556,7 @@ class RestClient(object):
         """Performs a GET on the Jobs URL.
 
         Args:
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -618,7 +625,7 @@ class RestClient(object):
 
         Args:
             file_id: File ID
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -658,7 +665,7 @@ class RestClient(object):
 
         Args:
             file_id: File ID
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -672,7 +679,7 @@ class RestClient(object):
 
         Args:
             file_id: File ID
-            kwargs: Query parameters to be used in the GET request
+            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
@@ -743,7 +750,7 @@ class RestClient(object):
 
         Args:
             payload: The operation to be executed
-            kwargs: Keyword arguments to pass to Requests session call
+            **kwargs: Keyword arguments to pass to Requests session call
 
         Returns:
             The API response

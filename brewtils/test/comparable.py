@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """Module to simplify model comparisons.
 
-WARNING: This module was created to simplify testing. As such, it's not recommended for
-production use.
+.. warning::
+    This module was created to simplify testing. As such, it's not recommended for
+    production use.
 
-ANOTHER WARNING: This module subject to change outside of the normal deprecation cycle.
+.. warning::
+    This module subject to change outside of the normal deprecation cycle.
 
 Seriously, this is a 'use at your own risk' kind of thing.
-
 """
 from functools import partial
 
@@ -135,7 +136,7 @@ def _assert_equal(obj1, obj2, expected_type=None, deep_fields=None):
                 deep_fields[key](nested1, nested2)
 
 
-def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
+def _assert_wrapper(obj1, obj2, expected_type=None, do_raise=False, **kwargs):
     """Wrapper that will translate AssertionError to a boolean.
 
     This is a safety measure in case these functions are used outside of a testing
@@ -150,16 +151,16 @@ def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
     Args:
         obj1: Passed through to _assert_equal
         obj2: Passed through to _assert_equal
+        expected_type: Both objects will be checked (using isinstance) against this type
         do_raise: If True, re-raise any raised AssertionError. This helps with nested
             comparisons.
         **kwargs: Passed through to _assert_equal
 
     Returns:
-        True if the comparison was equal.
-        False if:
-            - The comparison was not equal and
-            - do_raise is False and
-            - called from outside of a testing context
+        bool: True if the comparison was equal.  False if
+                - The comparison was not equal and
+                - do_raise is False and
+                - called from outside of a testing context
 
     Raises:
         AssertionError:
@@ -168,7 +169,7 @@ def _assert_wrapper(obj1, obj2, do_raise=False, **kwargs):
 
     """
     try:
-        _assert_equal(obj1, obj2, **kwargs)
+        _assert_equal(obj1, obj2, expected_type=expected_type, **kwargs)
     except AssertionError:
         if do_raise or hasattr(brewtils.test, "_running_tests"):
             raise

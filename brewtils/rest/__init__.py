@@ -8,14 +8,17 @@ def normalize_url_prefix(url_prefix):
     the normalized form will be '/'.
 
     Examples:
-        INPUT       NORMALIZED
-        None            '/'
-        ''              '/'
-        '/'             '/'
-        'example'       '/example/'
-        '/example'      '/example/'
-        'example/'      '/example/'
-        '/example/'     '/example/'
+        ===========  ============
+        INPUT        NORMALIZED
+        ===========  ============
+        None         '/'
+        ''           '/'
+        '/'          '/'
+        'example'    '/example/'
+        '/example'   '/example/'
+        'example/'   '/example/'
+        '/example/'  '/example/'
+        ===========  ============
 
     Args:
         url_prefix (str): The prefix

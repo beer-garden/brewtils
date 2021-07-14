@@ -169,7 +169,7 @@ def _assert_wrapper(obj1, obj2, expected_type=None, do_raise=False, **kwargs):
 
     """
     try:
-        _assert_equal(obj1, obj2, expected_type, **kwargs)
+        _assert_equal(obj1, obj2, expected_type=expected_type, **kwargs)
     except AssertionError:
         if do_raise or hasattr(brewtils.test, "_running_tests"):
             raise

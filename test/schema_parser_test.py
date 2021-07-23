@@ -18,6 +18,8 @@ from brewtils.test.comparable import (
     assert_garden_equal,
     assert_instance_equal,
     assert_job_equal,
+    assert_job_id_list_equal,
+    assert_job_defn_list_equal,
     assert_logging_config_equal,
     assert_operation_equal,
     assert_parameter_equal,
@@ -142,6 +144,18 @@ class TestParse(object):
                 lazy_fixture("interval_job_dict"),
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
+            ),
+            (
+                brewtils.models.JobIDList,
+                lazy_fixture("job_id_list_dict"),
+                assert_job_id_list_equal,
+                lazy_fixture("bg_job_id_list")
+            ),
+            (
+                brewtils.models.JobDefinitionList,
+                lazy_fixture("job_dfn_list_dict"),
+                assert_job_defn_list_equal,
+                lazy_fixture("bg_job_defn_list")
             ),
             (
                 brewtils.models.RequestFile,

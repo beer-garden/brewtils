@@ -28,6 +28,8 @@ __all__ = [
     "RoleSchema",
     "RefreshTokenSchema",
     "JobSchema",
+    "JobExportSchema",
+    "JobImportSchema",
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
@@ -471,6 +473,14 @@ class JobSchema(BaseSchema):
     timeout = fields.Int(allow_none=True)
 
 
+class JobExportSchema(BaseSchema):
+    jobs = fields.List(fields.Nested(JobSchema, allow_none=True))
+
+
+class JobImportSchema(BaseSchema):
+    ids = fields.List(fields.String(allow_none=True))
+
+
 class OperationSchema(BaseSchema):
     model_type = fields.Str(allow_none=True)
     model = ModelField(allow_none=True, type_field="model_type")
@@ -512,6 +522,8 @@ model_schema_map.update(
         "Instance": InstanceSchema,
         "IntervalTrigger": IntervalTriggerSchema,
         "Job": JobSchema,
+        "JobImport": JobImportSchema,
+        "JobExport": JobExportSchema,
         "LoggingConfig": LoggingConfigSchema,
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,

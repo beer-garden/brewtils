@@ -21,7 +21,13 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import BaseModel, Event, PatchOperation
+from brewtils.models import (
+    BaseModel,
+    Event,
+    JobDefinitionList,
+    JobIDList,
+    PatchOperation,
+)
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 from requests import Response
@@ -704,6 +710,47 @@ class EasyClient(object):
 
         """
         return self.client.get_jobs(**kwargs)
+
+    @wrap_response(
+        parse_method="parse_job_definitions", parse_many=False, default_exc=FetchError
+    )
+    def export_jobs(self, job_id_list):
+        # type: (Optional[JobIDList]) -> JobDefinitionList
+        """Export job definitions from an optional job ID list.
+
+        If `job_id_list` is None or empty, definitions for all jobs
+        are returned.
+
+        Args:
+            job_id_list: A JobIDList of job IDS, optional
+
+        Returns:
+            A JobDefinitionList of job definitions
+        """
+        payload = ""  # type: str
+
+        if job_id_list is not None:
+            payload = SchemaParser.serialize_job_id_list(job_id_list)
+
+        return self.client.post_job_ids(payload)
+
+    @wrap_response(
+        parse_method="parse_job_ids", parse_many=False, default_exc=FetchError
+    )
+    def import_jobs(self, job_definition_list):
+        # type: (JobDefinitionList) -> JobIDList
+        """Import job definitions from JobDefinitionList.
+
+        Args:
+            job_definition_list: A JobDefinitionList describing the jobs
+                to import
+
+        Returns:
+            A JobIDList of the jobs created
+        """
+        return self.client.post_job_definitions(
+            SchemaParser.serialize_job_definition_list(job_definition_list)
+        )
 
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def create_job(self, job):

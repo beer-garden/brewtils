@@ -2,8 +2,8 @@
 
 from enum import Enum
 
-import pytz
-import six
+import pytz  # noqa # not in requirements file
+import six  # noqa # not in requirements file
 from brewtils.errors import ModelError, _deprecate
 
 __all__ = [
@@ -23,6 +23,8 @@ __all__ = [
     "Role",
     "RefreshToken",
     "Job",
+    "JobIDList",
+    "JobDefinitionList",
     "RequestFile",
     "File",
     "FileChunk",
@@ -210,7 +212,7 @@ class Instance(BaseModel):
         self,
         name=None,
         description=None,
-        id=None,
+        id=None,  # noqa # shadows built-in
         status=None,
         status_info=None,
         queue_type=None,
@@ -241,7 +243,10 @@ class Choices(BaseModel):
     TYPES = ("static", "url", "command")
     DISPLAYS = ("select", "typeahead")
 
-    def __init__(self, type=None, display=None, value=None, strict=None, details=None):
+    def __init__(
+        self, type=None, display=None, value=None, strict=None, details=None  # noqa
+    ):
+        # parameter 'type' shadows built-in
         self.type = type
         self.strict = strict
         self.value = value
@@ -279,7 +284,7 @@ class Parameter(BaseModel):
     def __init__(
         self,
         key=None,
-        type=None,
+        type=None,  # noqa # shadows built-in
         multi=None,
         display_name=None,
         optional=None,
@@ -399,10 +404,12 @@ class Parameter(BaseModel):
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
 
-    def __init__(self, storage_type=None, filename=None, id=None):
+    def __init__(
+        self, storage_type=None, filename=None, id=None  # noqa # shadows built-in
+    ):
         self.storage_type = storage_type
         self.filename = filename
-        self.id = id
+        self.id = id  # noqa # shadows built-in
 
     def __str__(self):
         return self.filename
@@ -419,7 +426,7 @@ class File(BaseModel):
 
     def __init__(
         self,
-        id=None,
+        id=None,  # noqa # shadows built-in
         owner_id=None,
         owner_type=None,
         updated_at=None,
@@ -457,7 +464,14 @@ class File(BaseModel):
 class FileChunk(BaseModel):
     schema = "FileChunkSchema"
 
-    def __init__(self, id=None, file_id=None, offset=None, data=None, owner=None):
+    def __init__(
+        self,
+        id=None,  # noqa # shadows built-in
+        file_id=None,
+        offset=None,
+        data=None,
+        owner=None,
+    ):
         self.id = id
         self.file_id = file_id
         self.offset = offset
@@ -608,7 +622,7 @@ class Request(RequestTemplate):
         instance_name=None,
         namespace=None,
         command=None,
-        id=None,
+        id=None,  # noqa # shadows built-in
         parent=None,
         children=None,
         parameters=None,
@@ -705,7 +719,7 @@ class System(BaseModel):
         name=None,
         description=None,
         version=None,
-        id=None,
+        id=None,  # noqa # shadows built-in
         max_instances=None,
         instances=None,
         commands=None,
@@ -778,7 +792,7 @@ class System(BaseModel):
 
         return None
 
-    def get_instance_by_id(self, id, raise_missing=False):
+    def get_instance_by_id(self, id, raise_missing=False):  # noqa # shadows built-in
         """Get an instance that currently exists in the system
 
         Args:
@@ -1053,7 +1067,7 @@ class Principal(BaseModel):
 
     def __init__(
         self,
-        id=None,
+        id=None,  # noqa # shadows built-in
         username=None,
         roles=None,
         permissions=None,
@@ -1081,7 +1095,13 @@ class Principal(BaseModel):
 class Role(BaseModel):
     schema = "RoleSchema"
 
-    def __init__(self, id=None, name=None, description=None, permissions=None):
+    def __init__(
+        self,
+        id=None,  # noqa # shadows built-in
+        name=None,
+        description=None,
+        permissions=None,
+    ):
         self.id = id
         self.name = name
         self.description = description
@@ -1097,7 +1117,13 @@ class Role(BaseModel):
 class RefreshToken(BaseModel):
     schema = "RefreshTokenSchema"
 
-    def __init__(self, id=None, issued=None, expires=None, payload=None):
+    def __init__(
+        self,
+        id=None,  # noqa # shadows built-in
+        issued=None,
+        expires=None,
+        payload=None,
+    ):
         self.id = id
         self.issued = issued
         self.expires = expires
@@ -1121,7 +1147,7 @@ class Job(BaseModel):
 
     def __init__(
         self,
-        id=None,
+        id=None,  # noqa # shadows built-in
         name=None,
         trigger_type=None,
         trigger=None,
@@ -1154,6 +1180,32 @@ class Job(BaseModel):
 
     def __repr__(self):
         return "<Job: name=%s, id=%s>" % (self.name, self.id)
+
+
+class JobIDList(BaseModel):
+    schema = "JobImportSchema"
+
+    def __init__(self, ids=None):
+        self.ids = ids
+
+    def __str__(self):
+        return "%s" % ", ".join(self.ids) if self.ids else ""
+
+    def __repr__(self):
+        return "<JobIDList: ids=[%s]>" % str(self)
+
+
+class JobDefinitionList(BaseModel):
+    schema = "JobExportSchema"
+
+    def __init__(self, jobs=None):
+        self.jobs = jobs
+
+    def __str__(self):
+        return "%s" % ", ".join(map(str, self.jobs))
+
+    def __repr__(self):
+        return "<JobDefinitionList: jobs=[%s]>" % str(self)
 
 
 class DateTrigger(BaseModel):
@@ -1379,7 +1431,7 @@ class Garden(BaseModel):
 
     def __init__(
         self,
-        id=None,
+        id=None,  # noqa # shadows built-in
         name=None,
         status=None,
         status_info=None,
@@ -1450,7 +1502,7 @@ class Runner(BaseModel):
 
     def __init__(
         self,
-        id=None,
+        id=None,  # noqa # shadows built-in
         name=None,
         path=None,
         instance_id=None,
@@ -1491,7 +1543,13 @@ class Resolvable(BaseModel):
     # Resolvable parameter types
     TYPES = ("Base64", "Bytes")
 
-    def __init__(self, id=None, type=None, storage=None, details=None):
+    def __init__(
+        self,
+        id=None,  # noqa # shadows built-in
+        type=None,  # noqa # shadows built-in
+        storage=None,
+        details=None,
+    ):
         self.id = id
         self.type = type
         self.storage = storage

@@ -73,6 +73,28 @@ class TestRestClient(object):
         assert client.bg_host == "localhost"
         assert client.bg_port == 3000
 
+    def test_proxy_config_no_ssl(self, monkeypatch):
+        proxy = "test:1234"
+
+        brewtils.plugin.CONFIG.bg_host = "localhost"
+        brewtils.plugin.CONFIG.bg_port = 3000
+        brewtils.plugin.CONFIG.ssl_enabled = False
+        brewtils.plugin.CONFIG.proxy = proxy
+
+        client = RestClient()
+        assert client.session.proxies["http"] == proxy
+
+    def test_proxy_config_ssl(self, monkeypatch):
+        proxy = "test:1234"
+
+        brewtils.plugin.CONFIG.bg_host = "localhost"
+        brewtils.plugin.CONFIG.bg_port = 3000
+        brewtils.plugin.CONFIG.ssl_enabled = True
+        brewtils.plugin.CONFIG.proxy = proxy
+
+        client = RestClient()
+        assert client.session.proxies["https"] == proxy
+
     def test_non_versioned_uris(self, client, url_prefix):
         assert client.version_url == "http://host:80" + url_prefix + "version"
         assert client.config_url == "http://host:80" + url_prefix + "config"

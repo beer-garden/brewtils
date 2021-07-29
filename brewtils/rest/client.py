@@ -124,6 +124,12 @@ class RestClient(object):
         # Configure the session to use when making requests
         self.session = Session()
 
+        if self._config.proxy:
+            if self._config.ssl_enabled:
+                self.session.proxies.update({"https": self._config.proxy})
+            else:
+                self.session.proxies.update({"http": self._config.proxy})
+
         # This is what Requests is expecting
         if self._config.client_key:
             self.session.cert = (self._config.client_cert, self._config.client_key)

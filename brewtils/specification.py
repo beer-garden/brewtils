@@ -96,6 +96,16 @@ _CONNECTION_SPEC = {
         "description": "Refresh token for authentication",
         "required": False,
     },
+    "proxy": {
+        "type": "str",
+        "description": "HTTP proxy to use when communicating with Beergarden",
+        "long_description": "Proxy information should be given in the format "
+        "of `<hostname>:<port>`. This setting will overwrite default proxy "
+        "set by the HTTP(s)_PROXY environment variable. Use of SSL for this "
+        "proxy will be determined by the ssl_enabled config option.",
+        "default": "",
+        "required": False,
+    },
 }
 
 _SYSTEM_SPEC = {

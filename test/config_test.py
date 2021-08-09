@@ -34,6 +34,7 @@ def params():
         "access_token": None,
         "refresh_token": None,
         "client_timeout": -1.0,
+        "proxy": "",
     }
 
 

@@ -9,6 +9,7 @@ from base64 import b64encode
 import jwt
 import requests.exceptions
 import urllib3
+from urllib.parse import quote_plus
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from yapconf import YapconfSpec
@@ -155,6 +156,7 @@ class RestClient(object):
         self.config_url = self.base_url + "config"
 
         if self.api_version == 1:
+            self.garden_url = self.base_url + "api/v1/gardens/"
             self.system_url = self.base_url + "api/v1/systems/"
             self.instance_url = self.base_url + "api/v1/instances/"
             self.command_url = self.base_url + "api/v1/commands/"
@@ -297,6 +299,52 @@ class RestClient(object):
             Requests Response object
         """
         return self.session.get(self.logging_url, params=kwargs)
+
+    @enable_auth
+    def get_garden(self, garden_name, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a GET on the Garden URL
+
+        Args:
+            garden_name: Name of garden to retreive
+            **kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
+        """
+        # quote_plus will URL encode the Garden name
+        return self.session.get(
+            self.garden_url + quote_plus(garden_name), params=kwargs
+        )
+
+    @enable_auth
+    def post_gardens(self, payload):
+        # type: (str) -> Response
+        """Performs a POST on the Garden URL
+
+        Args:
+            payload: New Garden definition
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.post(
+            self.garden_url, data=payload, headers=self.JSON_HEADERS
+        )
+
+    @enable_auth
+    def delete_garden(self, garden_name):
+        # type: (str) -> Response
+        """Performs a DELETE on a Garden URL
+
+        Args:
+            garden_name: Name of Garden to delete
+
+        Returns:
+            Requests Response object
+        """
+        # quote_plus will URL encode the Garden name
+        return self.session.delete(self.garden_url + quote_plus(garden_name))
 
     @enable_auth
     def get_systems(self, **kwargs):

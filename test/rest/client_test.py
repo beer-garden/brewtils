@@ -186,9 +186,7 @@ class TestRestClient(object):
 
     def test_get_garden(self, client, session_mock):
         client.get_garden("name!")
-        session_mock.get.assert_called_with(
-            client.garden_url + "name%21", params={}
-        )
+        session_mock.get.assert_called_with(client.garden_url + "name%21", params={})
 
     def test_post_garden(self, client, session_mock):
         client.post_gardens(payload="payload")

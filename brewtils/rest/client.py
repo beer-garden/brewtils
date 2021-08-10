@@ -9,7 +9,6 @@ from base64 import b64encode
 import jwt
 import requests.exceptions
 import urllib3
-from urllib.parse import quote_plus
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from yapconf import YapconfSpec
@@ -18,6 +17,11 @@ import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
+
+try:
+    from urllib.parse import quote_plus
+except ImportError:
+    from urllib import quote_plus
 
 
 def enable_auth(method):

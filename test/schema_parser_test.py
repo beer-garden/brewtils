@@ -149,13 +149,13 @@ class TestParse(object):
                 brewtils.models.JobIDList,
                 lazy_fixture("job_id_list_dict"),
                 assert_job_id_list_equal,
-                lazy_fixture("bg_job_id_list")
+                lazy_fixture("bg_job_id_list"),
             ),
             (
                 brewtils.models.JobDefinitionList,
                 lazy_fixture("job_dfn_list_dict"),
                 assert_job_defn_list_equal,
-                lazy_fixture("bg_job_defn_list")
+                lazy_fixture("bg_job_defn_list"),
             ),
             (
                 brewtils.models.RequestFile,
@@ -279,6 +279,19 @@ class TestParse(object):
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
             ),
+            (
+                "parse_job_ids",
+                lazy_fixture("job_id_list_dict"),
+                assert_job_id_list_equal,
+                lazy_fixture("bg_job_id_list")
+            ),
+            (
+                "parse_job_definitions",
+                lazy_fixture("job_dfn_list_dict"),
+                assert_job_defn_list_equal,
+                lazy_fixture("bg_job_defn_list")
+            ),
+
             (
                 "parse_request_file",
                 lazy_fixture("request_file_dict"),

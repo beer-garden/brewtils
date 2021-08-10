@@ -365,7 +365,7 @@ def assert_job_defn_list_equal(obj1, obj2, do_raise=False):
         obj2,
         expected_type=JobDefinitionList,
         deep_fields={"jobs": partial(assert_job_equal, do_raise=do_raise)},
-        do_raise=do_raise
+        do_raise=do_raise,
     )
 
 

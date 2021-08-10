@@ -627,12 +627,12 @@ class TestCronTrigger(object):
         (
             lazy_fixture("bg_job_id_list"),
             "58542eb571afd47ead90d26a",
-            "<JobIDList: ids=[58542eb571afd47ead90d26a]>"
+            "<JobIDList: ids=[58542eb571afd47ead90d26a]>",
         ),
         (
             lazy_fixture("bg_job_defn_list"),
             "job_name: 58542eb571afd47ead90d26a",
-            "<JobDefinitionList: jobs=[job_name: 58542eb571afd47ead90d26a]>"
+            "<JobDefinitionList: jobs=[job_name: 58542eb571afd47ead90d26a]>",
         ),
         (
             lazy_fixture("bg_date_trigger"),

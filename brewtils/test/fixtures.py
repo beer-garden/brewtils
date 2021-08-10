@@ -28,7 +28,9 @@ from brewtils.models import (
     Resolvable,
     Role,
     Runner,
-    System, JobIDList, JobDefinitionList,
+    System,
+    JobIDList,
+    JobDefinitionList,
 )
 
 
@@ -568,6 +570,7 @@ def job_dfn_list_dict(job_dict):
     """A job definition list represented as a dictionary."""
     return {"jobs": [job_dict]}
 
+
 @pytest.fixture
 def cron_job_dict(job_dict, cron_trigger_dict):
     """A cron job represented as a dictionary."""
@@ -608,6 +611,7 @@ def bg_job_defn_list(bg_job):
     """A job definition list as a model."""
     job_dfn_list = [bg_job]
     return JobDefinitionList(job_dfn_list)
+
 
 @pytest.fixture
 def bg_cron_job(cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt):

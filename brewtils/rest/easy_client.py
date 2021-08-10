@@ -732,7 +732,7 @@ class EasyClient(object):
         if job_id_list is not None:
             payload = SchemaParser.serialize_job_id_list(job_id_list)
 
-        return self.client.post_job_ids(payload)
+        return self.client.post_job_ids(payload)  # noqa # wrapper changes type
 
     @wrap_response(
         parse_method="parse_job_ids", parse_many=False, default_exc=FetchError
@@ -748,7 +748,7 @@ class EasyClient(object):
         Returns:
             A JobIDList of the jobs created
         """
-        return self.client.post_job_definitions(
+        return self.client.post_job_definitions(  # noqa # wrapper changes type
             SchemaParser.serialize_job_definition_list(job_definition_list)
         )
 

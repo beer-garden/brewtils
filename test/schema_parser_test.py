@@ -667,6 +667,16 @@ class TestSerialize(object):
                 lazy_fixture("cron_job_dict"),
             ),
             (
+                "serialize_job_id_list",
+                lazy_fixture("bg_job_id_list"),
+                lazy_fixture("job_id_list_dict")
+            ),
+            (
+                "serialize_job_definition_list",
+                lazy_fixture("bg_job_defn_list"),
+                lazy_fixture("job_dfn_list_dict")
+            ),
+            (
                 "serialize_job",
                 lazy_fixture("bg_interval_job"),
                 lazy_fixture("interval_job_dict"),

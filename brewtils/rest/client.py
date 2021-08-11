@@ -18,6 +18,11 @@ from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
 
+try:
+    from urllib.parse import quote_plus
+except ImportError:
+    from urllib import quote_plus
+
 
 def enable_auth(method):
     """Decorate methods with this to enable using authentication"""
@@ -548,7 +553,7 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.queue_url + queue_name)
+        return self.session.delete(self.queue_url + quote_plus(queue_name))
 
     @enable_auth
     def get_jobs(self, **kwargs):

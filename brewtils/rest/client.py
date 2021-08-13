@@ -10,6 +10,7 @@ import jwt
 import requests.exceptions
 import urllib3
 from requests import Response, Session
+from requests.utils import quote
 from requests.adapters import HTTPAdapter
 from yapconf import YapconfSpec
 
@@ -17,11 +18,6 @@ import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
-
-try:
-    from urllib.parse import quote_plus
-except ImportError:
-    from urllib import quote_plus
 
 
 def enable_auth(method):
@@ -316,10 +312,8 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        # quote_plus will URL encode the Garden name
-        return self.session.get(
-            self.garden_url + quote_plus(garden_name), params=kwargs
-        )
+        # quote will URL encode the Garden name
+        return self.session.get(self.garden_url + quote(garden_name), params=kwargs)
 
     @enable_auth
     def post_gardens(self, payload):
@@ -347,8 +341,8 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        # quote_plus will URL encode the Garden name
-        return self.session.delete(self.garden_url + quote_plus(garden_name))
+        # quote will URL encode the Garden name
+        return self.session.delete(self.garden_url + quote(garden_name))
 
     @enable_auth
     def get_systems(self, **kwargs):

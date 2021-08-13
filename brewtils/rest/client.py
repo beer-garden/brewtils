@@ -10,6 +10,7 @@ import jwt
 import requests.exceptions
 import urllib3
 from requests import Response, Session
+from requests.utils import quote
 from requests.adapters import HTTPAdapter
 from yapconf import YapconfSpec
 
@@ -17,8 +18,6 @@ import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
-
-from requests.utils import quote
 
 
 def enable_auth(method):

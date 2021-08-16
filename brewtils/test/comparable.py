@@ -33,7 +33,7 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Resolvable,
-    Role,
+    LegacyRole,
     Runner,
     System,
 )
@@ -298,7 +298,7 @@ def assert_role_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
         obj2,
-        expected_type=Role,
+        expected_type=LegacyRole,
         deep_fields={"roles": partial(assert_role_equal, do_raise=True)},
         do_raise=do_raise,
     )

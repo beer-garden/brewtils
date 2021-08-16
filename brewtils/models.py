@@ -20,7 +20,7 @@ __all__ = [
     "Events",
     "Queue",
     "Principal",
-    "Role",
+    "LegacyRole",
     "RefreshToken",
     "Job",
     "RequestFile",
@@ -1078,8 +1078,8 @@ class Principal(BaseModel):
         )
 
 
-class Role(BaseModel):
-    schema = "RoleSchema"
+class LegacyRole(BaseModel):
+    schema = "LegacyRoleSchema"
 
     def __init__(self, id=None, name=None, description=None, permissions=None):
         self.id = id
@@ -1091,7 +1091,7 @@ class Role(BaseModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Role: name=%s, permissions=%s>" % (self.name, self.permissions)
+        return "<LegacyRole: name=%s, permissions=%s>" % (self.name, self.permissions)
 
 
 class RefreshToken(BaseModel):

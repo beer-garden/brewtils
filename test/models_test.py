@@ -18,7 +18,7 @@ from brewtils.models import (
     Request,
     RequestFile,
     RequestTemplate,
-    Role,
+    LegacyRole,
 )
 from pytest_lazyfixture import lazy_fixture
 
@@ -544,16 +544,16 @@ class TestPrincipal(object):
         )
 
 
-class TestRole(object):
+class TestLegacyRole(object):
     @pytest.fixture
     def role(self):
-        return Role(name="bg-admin", permissions=["bg-all"])
+        return LegacyRole(name="bg-admin", permissions=["bg-all"])
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
-        assert repr(role) == "<Role: name=bg-admin, permissions=['bg-all']>"
+        assert repr(role) == "<LegacyRole: name=bg-admin, permissions=['bg-all']>"
 
 
 class TestDateTrigger(object):

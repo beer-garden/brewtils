@@ -25,7 +25,7 @@ __all__ = [
     "EventSchema",
     "QueueSchema",
     "PrincipalSchema",
-    "RoleSchema",
+    "LegacyRoleSchema",
     "RefreshTokenSchema",
     "JobSchema",
     "DateTriggerSchema",
@@ -34,6 +34,11 @@ __all__ = [
     "FileTriggerSchema",
     "GardenSchema",
     "OperationSchema",
+    "UserSchema",
+    "UserCreateSchema",
+    "UserListSchema",
+    "RoleSchema",
+    "RoleAssignmentSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -379,13 +384,13 @@ class QueueSchema(BaseSchema):
 class PrincipalSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
-    roles = fields.Nested("RoleSchema", many=True, allow_none=True)
+    roles = fields.Nested("LegacyRoleSchema", many=True, allow_none=True)
     permissions = fields.List(fields.Str(), allow_none=True)
     preferences = fields.Dict(allow_none=True)
     metadata = fields.Dict(allow_none=True)
 
 
-class RoleSchema(BaseSchema):
+class LegacyRoleSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
@@ -500,6 +505,33 @@ class ResolvableSchema(BaseSchema):
     details = fields.Dict(allow_none=True)
 
 
+class RoleSchema(BaseSchema):
+    id = fields.Str()
+    name = fields.Str()
+    description = fields.Str()
+    permissions = fields.List(fields.Str())
+
+
+class RoleAssignmentSchema(BaseSchema):
+    domain = fields.Str()
+    role = fields.Nested(RoleSchema())
+
+
+class UserSchema(BaseSchema):
+    id = fields.Str()
+    username = fields.Str()
+    role_assignments = fields.List(fields.Nested(RoleAssignmentSchema()))
+
+
+class UserCreateSchema(BaseSchema):
+    username = fields.Str(required=True)
+    password = fields.Str(required=True, load_only=True)
+
+
+class UserListSchema(BaseSchema):
+    users = fields.List(fields.Nested(UserSchema()))
+
+
 model_schema_map.update(
     {
         "Choices": ChoicesSchema,
@@ -524,7 +556,7 @@ model_schema_map.update(
         "FileChunk": FileChunkSchema,
         "FileStatus": FileStatusSchema,
         "RequestTemplate": RequestTemplateSchema,
-        "Role": RoleSchema,
+        "LegacyRole": LegacyRoleSchema,
         "System": SystemSchema,
         "Operation": OperationSchema,
         "Runner": RunnerSchema,

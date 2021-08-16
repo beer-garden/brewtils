@@ -26,7 +26,7 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Resolvable,
-    Role,
+    LegacyRole,
     Runner,
     System,
 )
@@ -534,7 +534,7 @@ def role_dict():
 @pytest.fixture
 def bg_role(role_dict):
     dict_copy = copy.deepcopy(role_dict)
-    return Role(**dict_copy)
+    return LegacyRole(**dict_copy)
 
 
 @pytest.fixture

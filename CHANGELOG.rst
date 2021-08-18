@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+3.5.0
+-----
+8/18/21
+
+New Features
+^^^^^^^^^^^^
+- Can now specify proxy parameters when creating RestClients
+
 3.4.0
 -----
 6/24/21

@@ -6,29 +6,42 @@ on:
       - '*'
 
 jobs:
-  PyPI:
+  github-release:
+    name: Github Release
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.8']
-    name: Python ${{ matrix.python-version }} PyPi
-    steps:
 
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+
+  pypi-publish:
+    name: PyPI Publish
+    runs-on: ubuntu-latest
+
+    steps:
       - uses: actions/checkout@v2
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.7
 
-      # Need to update if we support other OS's
       - name: Cache PIP Install
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-build-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-pip-build
+            ${{ runner.os }}-3.7-pip-build
 
       - name: Install dependencies
         run: |
@@ -36,22 +49,23 @@ jobs:
           pip install setuptools wheel twine
 
       - name: Build and publish
-        # If the package already exists, we can continue on with releasing the Docker Images
         continue-on-error: true
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: make publish-package
 
-  Verify-PyPi:
-    needs: PyPi
+
+  pypi-verify:
+    name: Verify PyPI Publish
     runs-on: ubuntu-latest
-    name: Verify PyPi Install
+    needs: pypi-publish
+
     steps:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.7
 
       - name: Check PyPi
         uses: nick-invision/retry@v2
@@ -62,9 +76,12 @@ jobs:
           retry_wait_seconds: 10
           command: pip install brewtils==${GITHUB_REF#refs/tags/}
 
-  Docker:
-    needs: Verify-PyPi
+
+  docker-publish:
+    name: Docker Publish
     runs-on: ubuntu-latest
+    needs: pypi-verify
+
     steps:
       - uses: actions/checkout@v2
 
@@ -74,8 +91,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Build and publish
+      - name: Build and publish images
         run: make publish-docker VERSION=${GITHUB_REF#refs/tags/}
 
-      - name: Build and publish docs
+      - name: Build and publish documentation images
         run: make docs-deps publish-docker-docs VERSION=${GITHUB_REF#refs/tags/}

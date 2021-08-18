@@ -598,12 +598,12 @@ class RestClient(object):
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
     @enable_auth
-    def post_job_ids(self, payload):
+    def post_export_jobs(self, payload):
         # type: (str) -> Response
         """Perform a POST on the Job export URL.
 
         Args:
-            payload: Serialized JobIDList
+            payload: Serialized list of Jobs
 
         Returns:
             Requests Response object
@@ -613,7 +613,7 @@ class RestClient(object):
         )
 
     @enable_auth
-    def post_job_definitions(self, payload):
+    def post_import_jobs(self, payload):
         # type: (str) -> Response
         """Perform a POST on the Job import URL.
 

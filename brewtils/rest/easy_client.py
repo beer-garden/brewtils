@@ -24,8 +24,7 @@ from brewtils.errors import (
 from brewtils.models import (
     BaseModel,
     Event,
-    JobDefinitionList,
-    JobIDList,
+    Job,
     PatchOperation,
 )
 from brewtils.rest.client import RestClient
@@ -712,44 +711,43 @@ class EasyClient(object):
         return self.client.get_jobs(**kwargs)
 
     @wrap_response(
-        parse_method="parse_job_definitions", parse_many=False, default_exc=FetchError
+        parse_method="parse_job", parse_many=True, default_exc=FetchError
     )
-    def export_jobs(self, job_id_list):
-        # type: (Optional[JobIDList]) -> JobDefinitionList
-        """Export job definitions from an optional job ID list.
+    def export_jobs(self, job_id_list=None):
+        # type: (Optional[List[str]]) -> List[Job]
+        """Export jobs from an optional job ID list.
 
         If `job_id_list` is None or empty, definitions for all jobs
         are returned.
 
         Args:
-            job_id_list: A JobIDList of job IDS, optional
+            job_id_list: A list of job IDS, optional
 
         Returns:
-            A JobDefinitionList of job definitions
+            A list of job definitions
         """
-        payload = ""  # type: str
+        payload = ""
 
         if job_id_list is not None:
-            payload = SchemaParser.serialize_job_id_list(job_id_list)
+            payload = SchemaParser.serialize_job_ids(job_id_list, many=True)
 
-        return self.client.post_job_ids(payload)  # noqa # wrapper changes type
+        return self.client.post_export_jobs(payload)  # noqa # wrapper changes type
 
     @wrap_response(
         parse_method="parse_job_ids", parse_many=False, default_exc=FetchError
     )
-    def import_jobs(self, job_definition_list):
-        # type: (JobDefinitionList) -> JobIDList
-        """Import job definitions from JobDefinitionList.
+    def import_jobs(self, job_list):
+        # type: (List[Job]) -> List[Job]
+        """Import job definitions from a list of Jobs.
 
         Args:
-            job_definition_list: A JobDefinitionList describing the jobs
-                to import
+            job_list: A list of jobs to import
 
         Returns:
-            A JobIDList of the jobs created
+            A list of the jobs created
         """
-        return self.client.post_job_definitions(  # noqa # wrapper changes type
-            SchemaParser.serialize_job_definition_list(job_definition_list)
+        return self.client.post_import_jobs(  # noqa # wrapper changes type
+            SchemaParser.serialize_job(job_list)
         )
 
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)

@@ -326,13 +326,13 @@ class TestRestClient(object):
         session_mock.delete.assert_called_with(client.job_url + "id")
 
     def test_post_job_ids(self, client, session_mock):
-        client.post_job_ids(payload="payload")
+        client.post_export_jobs(payload="payload")
         session_mock.post.assert_called_with(
             client.job_export_url, data="payload", headers=client.JSON_HEADERS
         )
 
     def test_post_job_defns(self, client, session_mock):
-        client.post_job_definitions(payload="payload")
+        client.post_import_jobs(payload="payload")
         session_mock.post.assert_called_with(
             client.job_import_url, data="payload", headers=client.JSON_HEADERS
         )

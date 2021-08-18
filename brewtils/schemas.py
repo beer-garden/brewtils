@@ -29,7 +29,7 @@ __all__ = [
     "RefreshTokenSchema",
     "JobSchema",
     "JobExportSchema",
-    "JobImportSchema",
+    "JobExportInputSchema",
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
@@ -473,12 +473,20 @@ class JobSchema(BaseSchema):
     timeout = fields.Int(allow_none=True)
 
 
-class JobExportSchema(BaseSchema):
+class JobExportListSchema(BaseSchema):
     jobs = fields.List(fields.Nested(JobSchema, allow_none=True))
 
 
-class JobImportSchema(BaseSchema):
+class JobExportInputSchema(BaseSchema):
     ids = fields.List(fields.String(allow_none=True))
+
+
+class JobExportSchema(JobSchema):
+    def __init__(self, *args, **kwargs):
+        # exclude from a Job the fields that we don't want when we later go to import
+        # the Job definition
+        self.opts.exclude += ("id", "next_run_time", "success_count", "error_count")
+        super().__init__(*args, **kwargs)
 
 
 class OperationSchema(BaseSchema):

@@ -31,8 +31,6 @@ class SchemaParser(object):
         "InstanceSchema": brewtils.models.Instance,
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
         "JobSchema": brewtils.models.Job,
-        "JobImportSchema": brewtils.models.JobIDList,
-        "JobExportSchema": brewtils.models.JobDefinitionList,
         "LoggingConfigSchema": brewtils.models.LoggingConfig,
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
@@ -299,22 +297,6 @@ class SchemaParser(object):
 
         """
         return cls.parse(job, brewtils.models.Job, from_string=from_string, **kwargs)
-
-    @classmethod
-    def parse_job_ids(cls, job_list, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a list of job IDs.
-
-        Args:
-            job_list: Raw input or dictionary
-            from_string: True if input is a JSON string, False if a dictionary
-            **kwargs: Optional parameters for the Schema
-
-        Returns:
-            A list of Job IDs.
-        """
-        return cls.parse(
-            job_list, brewtils.models.JobIDList, from_string=from_string, **kwargs
-        )
 
     @classmethod
     def parse_job_definitions(cls, job_dfn_list, from_string=False, **kwargs):
@@ -724,53 +706,22 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def serialize_job_id_list(
-        cls,
-        job_id_list,  # type: brewtils.models.JobIDList
-        to_string=True,  # type: bool
-        **kwargs  # type: Any
-    ):  # type: (...) -> Optional[Union[str, Dict[str, Any]]]
-        """Convert a job id list model into serialized form.
+    def serialize_job_ids(cls, job_ids, to_string=True, **kwargs):
+        """Convert a list of IDS into serialized form expected by the export endpoint.
 
         Args:
-            job_id_list: The JobIDList to be serialized.
+            job_ids: The list of ID(s) to be serialized.
             to_string: True to generate a JSON-formatted string, False to generate a
-                dictionary
-            **kwargs: Additional parameters to be passed to the schema
+                dictionary.
+            **kwargs: Additional parameters to be passed to the schema (e.g. many=True)
 
         Returns:
-            Serialized representation of the job ID list.
+            Serialized representation of the job IDs.
         """
+        arg_dict = {"ids": job_ids}
+
         return cls.serialize(
-            job_id_list,
-            to_string=to_string,
-            schema_name=brewtils.models.JobIDList.schema,
-            **kwargs
-        )
-
-    @classmethod
-    def serialize_job_definition_list(
-        cls,
-        job_definition_list,  # type: brewtils.models.JobDefinitionList
-        to_string=True,  # type: bool
-        **kwargs  # type: Any
-    ):  # type: (...) -> Optional[Union[str, Dict[str, Any]]]
-
-        """Convert a job definition list model into serialized form.
-
-        Args:
-            job_definition_list: The JobDefinitionList to be serialized.
-            to_string: True to generate a JSON-formatted string, False to generate a
-                dictionary
-            **kwargs: Additional parameters to be passed to the schema
-
-        Returns:
-            Serialized representation of the job definition list.
-        """
-        return cls.serialize(
-            job_definition_list,
-            to_string=to_string,
-            schema_name=brewtils.models.JobDefinitionList.schema,
+            arg_dict, to_string=to_string, schema_name="JobExportInputSchema",
             **kwargs
         )
 
@@ -859,7 +810,7 @@ class SchemaParser(object):
         cls,
         model,  # type: Union[BaseModel, typing.Iterable[BaseModel], dict]
         to_string=False,  # type: bool
-        schema_name=None,  # type: str
+        schema_name=None,  # type: Optional[str]
         **kwargs  # type: Any
     ):
         # type: (...) -> Union[Dict[str, Any], Optional[str]]

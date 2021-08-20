@@ -10,6 +10,7 @@ import jwt
 import requests.exceptions
 import urllib3
 from requests import Response, Session
+from requests.utils import quote
 from requests.adapters import HTTPAdapter
 from yapconf import YapconfSpec
 
@@ -554,7 +555,7 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.queue_url + queue_name)
+        return self.session.delete(self.queue_url + quote(queue_name))
 
     @enable_auth
     def get_jobs(self, **kwargs):

@@ -298,8 +298,8 @@ class TestRestClient(object):
         session_mock.delete.assert_called_with(client.queue_url)
 
     def test_delete_queue(self, client, session_mock):
-        client.delete_queue("queue_name")
-        session_mock.delete.assert_called_with(client.queue_url + "queue_name")
+        client.delete_queue("queue_name!")
+        session_mock.delete.assert_called_with(client.queue_url + "queue_name%21")
 
     def test_get_jobs(self, client, session_mock):
         client.get_jobs(key="value")

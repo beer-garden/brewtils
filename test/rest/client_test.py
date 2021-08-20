@@ -206,6 +206,20 @@ class TestRestClient(object):
             assert len(w) == 1
             assert w[0].category == DeprecationWarning
 
+    def test_get_garden(self, client, session_mock):
+        client.get_garden("name!")
+        session_mock.get.assert_called_with(client.garden_url + "name%21", params={})
+
+    def test_post_garden(self, client, session_mock):
+        client.post_gardens(payload="payload")
+        session_mock.post.assert_called_with(
+            client.garden_url, data="payload", headers=client.JSON_HEADERS
+        )
+
+    def test_delete_garden(self, client, session_mock):
+        client.delete_garden("name!")
+        session_mock.delete.assert_called_with(client.garden_url + "name%21")
+
     def test_get_system_1(self, client, session_mock):
         client.get_system("id")
         session_mock.get.assert_called_with(client.system_url + "id", params={})

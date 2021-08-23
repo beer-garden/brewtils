@@ -237,6 +237,53 @@ class EasyClient(object):
         return self.client.get_logging_config(local=local)
 
     @wrap_response(
+        parse_method="parse_garden", parse_many=False, default_exc=FetchError
+    )
+    def get_garden(self, garden_name, **kwargs):
+        """Get a System
+
+        Args:
+            garden_name: Name of garden to retrieve
+
+        Returns:
+            The Garden
+
+        """
+        return self.client.get_garden(garden_name, **kwargs)
+
+    @wrap_response(parse_method="parse_garden", parse_many=False, default_exc=SaveError)
+    def create_garden(self, garden):
+        """Create a new Garden
+
+        Args:
+            garden (Garden): The Garden to create
+
+        Returns:
+            Garden: The newly-created Garden
+
+        """
+        return self.client.post_gardens(SchemaParser.serialize_garden(garden))
+
+    def remove_garden(self, garden_name):
+        """Remove a unique Garden
+
+        Args:
+            garden_name (String): Name of Garden to remove
+
+        Returns:
+            bool: True if removal was successful
+
+        Raises:
+            FetchError: Couldn't find a System matching given parameters
+
+        """
+        garden = self.get_garden(garden_name)
+
+        if garden is None:
+            raise FetchError("No matching Garden found")
+        return self.client.delete_garden(garden_name)
+
+    @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError
     )
     def get_system(self, system_id, **kwargs):

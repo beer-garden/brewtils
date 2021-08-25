@@ -859,13 +859,13 @@ system = client
 def command_registrar(*args, **kwargs):
     """
     .. deprecated: 3.0
-        Will be removed in 4.0. Use ``@system`` instead.
+        Will be removed in 4.0. Use ``@client`` instead.
     """
     _deprecate(
         "Looks like you're using the '@command_registrar' decorator. Heads up - this "
-        "name will be removed in version 4.0, please use '@system' instead. Thanks!"
+        "name will be removed in version 4.0, please use '@client' instead. Thanks!"
     )
-    return system(*args, **kwargs)
+    return client(*args, **kwargs)
 
 
 def register(*args, **kwargs):

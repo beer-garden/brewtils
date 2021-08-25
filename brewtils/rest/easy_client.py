@@ -273,21 +273,14 @@ class EasyClient(object):
         Returns:
             bool: True if removal was successful
 
-        Raises:
-            FetchError: Couldn't find a System matching given parameters
-
         """
-        garden = self.get_garden(garden_name)
-
-        if garden is None:
-            raise FetchError("No matching Garden found")
-        return self.client.delete_garden(garden_name)
+        return self.client.delete_garden(garden_name).ok
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError
     )
-    def get_system(self, system_id, **kwargs):
-        """Get a System
+    def get_system(self, system_id):
+        """Get a Garden
 
         Args:
             system_id: The Id
@@ -296,7 +289,7 @@ class EasyClient(object):
             The System
 
         """
-        return self.client.get_system(system_id, **kwargs)
+        return self.client.get_system(system_id)
 
     def find_unique_system(self, **kwargs):
         """Find a unique system

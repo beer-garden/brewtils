@@ -273,8 +273,14 @@ class EasyClient(object):
         Returns:
             bool: True if removal was successful
 
+        Raises:
+            FetchError: Couldn't find a System matching given parameters
+
         """
-        return self.client.delete_garden(garden_name).ok
+        if self.client.delete_garden(garden_name).ok:
+            return True
+        else:
+            raise FetchError
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError

@@ -149,7 +149,8 @@ class TestGardens(object):
         def test_not_found(self, monkeypatch, client, rest_client, not_found, bg_garden):
             monkeypatch.setattr(rest_client, "delete_garden", Mock(return_value=not_found))
 
-            assert client.remove_garden(bg_garden.name) == False
+            with pytest.raises(FetchError):
+                client.remove_garden(bg_garden.name)
 
 
 class TestSystems(object):

@@ -26,7 +26,7 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Resolvable,
-    Role,
+    LegacyRole,
     Runner,
     System,
 )
@@ -503,11 +503,11 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def principal_dict(role_dict):
+def principal_dict(legacy_role_dict):
     return {
         "id": "58542eb571afd47ead90d24f",
         "username": "admin",
-        "roles": [role_dict],
+        "roles": [legacy_role_dict],
         "permissions": ["bg-all"],
         "preferences": {"theme": "dark"},
         "metadata": {"foo": "bar"},
@@ -522,7 +522,7 @@ def bg_principal(principal_dict, bg_role):
 
 
 @pytest.fixture
-def role_dict():
+def legacy_role_dict():
     return {
         "id": "58542eb571afd47ead90d26f",
         "name": "bg-admin",
@@ -532,9 +532,9 @@ def role_dict():
 
 
 @pytest.fixture
-def bg_role(role_dict):
-    dict_copy = copy.deepcopy(role_dict)
-    return Role(**dict_copy)
+def bg_role(legacy_role_dict):
+    dict_copy = copy.deepcopy(legacy_role_dict)
+    return LegacyRole(**dict_copy)
 
 
 @pytest.fixture

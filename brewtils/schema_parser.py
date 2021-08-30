@@ -262,7 +262,9 @@ class SchemaParser(object):
         Returns:
             A Role object
         """
-        return cls.parse(role, brewtils.models.LegacyRole, from_string=from_string, **kwargs)
+        return cls.parse(
+            role, brewtils.models.LegacyRole, from_string=from_string, **kwargs
+        )
 
     @classmethod
     def parse_refresh_token(cls, refresh_token, from_string=False, **kwargs):
@@ -639,7 +641,10 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            role, to_string=to_string, schema_name=brewtils.models.LegacyRole.schema, **kwargs
+            role,
+            to_string=to_string,
+            schema_name=brewtils.models.LegacyRole.schema,
+            **kwargs
         )
 
     @classmethod

@@ -470,6 +470,20 @@ class TestJobs(object):
         assert patch_op.value == "RUNNING"
 
 
+class TestJobImportExport(object):
+    def test_import(self, client, rest_client, success, bg_job_defn_list):
+        rest_client.post_import_jobs.return_value = success
+
+        assert client.import_jobs(bg_job_defn_list)
+        assert rest_client.post_import_jobs.called is True
+
+    def test_export(self, client, rest_client, success, bg_job_id_list):
+        rest_client.post_export_jobs.return_value = success
+
+        assert client.export_jobs(bg_job_id_list)
+        assert rest_client.post_export_jobs.called is True
+
+
 def test_forward(client, rest_client, success, bg_operation):
     rest_client.post_forward.return_value = success
 

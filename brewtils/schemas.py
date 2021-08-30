@@ -28,6 +28,8 @@ __all__ = [
     "LegacyRoleSchema",
     "RefreshTokenSchema",
     "JobSchema",
+    "JobExportSchema",
+    "JobExportInputSchema",
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",
@@ -476,6 +478,22 @@ class JobSchema(BaseSchema):
     timeout = fields.Int(allow_none=True)
 
 
+class JobExportListSchema(BaseSchema):
+    jobs = fields.List(fields.Nested(JobSchema, allow_none=True))
+
+
+class JobExportInputSchema(BaseSchema):
+    ids = fields.List(fields.String(allow_none=True))
+
+
+class JobExportSchema(JobSchema):
+    def __init__(self, *args, **kwargs):
+        # exclude from a Job the fields that we don't want when we later go to import
+        # the Job definition
+        self.opts.exclude += ("id", "next_run_time", "success_count", "error_count")
+        super().__init__(*args, **kwargs)
+
+
 class OperationSchema(BaseSchema):
     model_type = fields.Str(allow_none=True)
     model = ModelField(allow_none=True, type_field="model_type")
@@ -544,6 +562,7 @@ model_schema_map.update(
         "Instance": InstanceSchema,
         "IntervalTrigger": IntervalTriggerSchema,
         "Job": JobSchema,
+        "JobExport": JobExportSchema,
         "LoggingConfig": LoggingConfigSchema,
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,

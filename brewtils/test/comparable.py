@@ -36,6 +36,8 @@ from brewtils.models import (
     LegacyRole,
     Runner,
     System,
+    JobIDList,
+    JobDefinitionList,
 )
 
 __all__ = [
@@ -54,6 +56,8 @@ __all__ = [
     "assert_role_equal",
     "assert_system_equal",
     "assert_job_equal",
+    "assert_job_id_list_equal",
+    "assert_job_defn_list_equal",
     "assert_request_file_equal",
     "assert_operation_equal",
     "assert_runner_equal",
@@ -326,6 +330,41 @@ def assert_job_equal(obj1, obj2, do_raise=False):
             "trigger": partial(assert_trigger_equal, do_raise=True),
             "request_template": partial(assert_request_template_equal, do_raise=True),
         },
+        do_raise=do_raise,
+    )
+
+
+def _assert_job_id_equal(str1, str2, do_raise=False):
+    try:
+        assert isinstance(str1, str), "Not a job ID string: %s" % str1
+        assert isinstance(str2, str), "Not a job ID string: %s" % str2
+        assert str1 == str2, "Unequal job ID strings: %s/%s" % (str1, str2)
+    except AssertionError:
+        if do_raise:
+            raise
+        return False
+    return True
+
+
+def assert_job_id_list_equal(obj1, obj2, do_raise=False):
+    assert isinstance(obj1, JobIDList)
+    assert hasattr(obj1, "ids")
+    assert isinstance(obj1.ids, list)
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=JobIDList,
+        deep_fields={"ids": partial(_assert_job_id_equal, do_raise=do_raise)},
+        do_raise=do_raise,
+    )
+
+
+def assert_job_defn_list_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=JobDefinitionList,
+        deep_fields={"jobs": partial(assert_job_equal, do_raise=do_raise)},
         do_raise=do_raise,
     )
 

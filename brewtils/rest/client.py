@@ -170,6 +170,8 @@ class RestClient(object):
             self.queue_url = self.base_url + "api/v1/queues/"
             self.logging_url = self.base_url + "api/v1/logging/"
             self.job_url = self.base_url + "api/v1/jobs/"
+            self.job_export_url = self.base_url + "api/v1/export/jobs/"
+            self.job_import_url = self.base_url + "api/v1/import/jobs/"
             self.token_url = self.base_url + "api/v1/tokens/"
             self.user_url = self.base_url + "api/v1/users/"
             self.admin_url = self.base_url + "api/v1/admin/"
@@ -640,6 +642,36 @@ class RestClient(object):
             Requests Response object
         """
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
+
+    @enable_auth
+    def post_export_jobs(self, payload):
+        # type: (str) -> Response
+        """Perform a POST on the Job export URL.
+
+        Args:
+            payload: Serialized list of Jobs
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.post(
+            self.job_export_url, data=payload, headers=self.JSON_HEADERS
+        )
+
+    @enable_auth
+    def post_import_jobs(self, payload):
+        # type: (str) -> Response
+        """Perform a POST on the Job import URL.
+
+        Args:
+            payload: Serialized JobDefinitionList
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.post(
+            self.job_import_url, data=payload, headers=self.JSON_HEADERS
+        )
 
     @enable_auth
     def patch_job(self, job_id, payload):

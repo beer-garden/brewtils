@@ -2,17 +2,17 @@
 import json
 import logging
 import typing
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict
 
-import six
-from box import Box
+import six  # type: ignore
+from box import Box  # type: ignore
 
 import brewtils.models
 import brewtils.schemas
 from brewtils.models import BaseModel
 
 try:
-    from collections.abc import Iterable
+    from collections.abc import Iterable  # type: ignore  # noqa
 except ImportError:
     from collections import Iterable
 
@@ -301,6 +301,25 @@ class SchemaParser(object):
         return cls.parse(job, brewtils.models.Job, from_string=from_string, **kwargs)
 
     @classmethod
+    def parse_job_definitions(cls, job_dfn_list, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a list of job model objects.
+
+        Args:
+            job_dfn_list: Raw input or dictionary
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Optional parameters for the Schema
+
+        Returns:
+            A list of Job objects.
+        """
+        return cls.parse(
+            job_dfn_list,
+            brewtils.models.JobDefinitionList,
+            from_string=from_string,
+            **kwargs
+        )
+
+    @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a garden model object
 
@@ -365,7 +384,13 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def parse(cls, data, model_class, from_string=False, **kwargs):
+    def parse(
+        cls,
+        data,  # type: Optional[Union[str, Dict[str, Any]]]
+        model_class,  # type: Any
+        from_string=False,  # type: bool
+        **kwargs  # type: Any
+    ):  # type: (...) -> Union[str, Dict[str, Any]]
         """Convert a JSON string or dictionary into a model object
 
         Args:
@@ -675,13 +700,40 @@ class SchemaParser(object):
             job: The job object(s) to be serialized.
             to_string: True to generate a JSON-formatted string, False to generate a
                 dictionary
-            **kwargs: Additional parameters to be passed to the shcema (e.g. many=True)
+            **kwargs: Additional parameters to be passed to the schema (e.g. many=True)
 
         Returns:
             Serialize representation of job.
         """
         return cls.serialize(
             job, to_string=to_string, schema_name=brewtils.models.Job.schema, **kwargs
+        )
+
+    @classmethod
+    def serialize_job_ids(cls, job_ids, to_string=True, **kwargs):
+        """Convert a list of IDS into serialized form expected by the export endpoint.
+
+        Args:
+            job_ids: The list of ID(s) to be serialized.
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary.
+            **kwargs: Additional parameters to be passed to the schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of the job IDs.
+        """
+        arg_dict = {"ids": job_ids}
+
+        return cls.serialize(
+            arg_dict, to_string=to_string, schema_name="JobExportInputSchema", **kwargs
+        )
+
+    @classmethod
+    def serialize_job_for_import(cls, job, to_string=True, **kwargs):
+        """TODO
+        """
+        return cls.serialize(
+            job, to_string=to_string, schema_name="JobExportSchema", **kwargs
         )
 
     @classmethod
@@ -769,10 +821,10 @@ class SchemaParser(object):
         cls,
         model,  # type: Union[BaseModel, typing.Iterable[BaseModel], dict]
         to_string=False,  # type: bool
-        schema_name=None,  # type: str
+        schema_name=None,  # type: Optional[str]
         **kwargs  # type: Any
     ):
-        # type: (...) -> Optional[str]
+        # type: (...) -> Union[Dict[str, Any], Optional[str]]
         """Convert a model object or list of models into a dictionary or JSON string.
 
         This is potentially recursive - here's how this should work:

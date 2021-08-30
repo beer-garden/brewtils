@@ -625,6 +625,16 @@ class TestCronTrigger(object):
             "<Job: name=job_name, id=58542eb571afd47ead90d26a>",
         ),
         (
+            lazy_fixture("bg_job_id_list"),
+            "58542eb571afd47ead90d26a",
+            "<JobIDList: ids=[58542eb571afd47ead90d26a]>",
+        ),
+        (
+            lazy_fixture("bg_job_defn_list"),
+            "job_name: 58542eb571afd47ead90d26a",
+            "<JobDefinitionList: jobs=[job_name: 58542eb571afd47ead90d26a]>",
+        ),
+        (
             lazy_fixture("bg_date_trigger"),
             "<DateTrigger: run_date=2016-01-01 00:00:00>",
             "<DateTrigger: run_date=2016-01-01 00:00:00>",

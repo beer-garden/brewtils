@@ -275,7 +275,7 @@ class EasyClient(object):
             bool: True if removal was successful
 
         Raises:
-            FetchError: Couldn't find a System matching given parameters
+            NotFoundError: Couldn't find a Garden matching given name
 
         """
         return self.client.delete_garden(garden_name)

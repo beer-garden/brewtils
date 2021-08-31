@@ -239,8 +239,8 @@ class EasyClient(object):
     @wrap_response(
         parse_method="parse_garden", parse_many=False, default_exc=FetchError
     )
-    def get_garden(self, garden_name, **kwargs):
-        """Get a System
+    def get_garden(self, garden_name):
+        """Get a Garden 
 
         Args:
             garden_name: Name of garden to retrieve
@@ -249,7 +249,7 @@ class EasyClient(object):
             The Garden
 
         """
-        return self.client.get_garden(garden_name, **kwargs)
+        return self.client.get_garden(garden_name)
 
     @wrap_response(parse_method="parse_garden", parse_many=False, default_exc=SaveError)
     def create_garden(self, garden):
@@ -264,6 +264,7 @@ class EasyClient(object):
         """
         return self.client.post_gardens(SchemaParser.serialize_garden(garden))
 
+    @wrap_response(return_boolean=True, raise_404=True)
     def remove_garden(self, garden_name):
         """Remove a unique Garden
 
@@ -277,10 +278,7 @@ class EasyClient(object):
             FetchError: Couldn't find a System matching given parameters
 
         """
-        if self.client.delete_garden(garden_name).ok:
-            return True
-        else:
-            raise FetchError
+        return self.client.delete_garden(garden_name)
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError

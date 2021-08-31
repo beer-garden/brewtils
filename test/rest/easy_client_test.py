@@ -153,7 +153,7 @@ class TestGardens(object):
                 rest_client, "delete_garden", Mock(return_value=not_found)
             )
 
-            with pytest.raises(FetchError):
+            with pytest.raises(NotFoundError):
                 client.remove_garden(bg_garden.name)
 
 

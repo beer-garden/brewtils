@@ -240,7 +240,7 @@ class EasyClient(object):
         parse_method="parse_garden", parse_many=False, default_exc=FetchError
     )
     def get_garden(self, garden_name):
-        """Get a Garden 
+        """Get a Garden
 
         Args:
             garden_name: Name of garden to retrieve

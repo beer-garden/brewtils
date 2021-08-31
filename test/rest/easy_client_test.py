@@ -119,6 +119,44 @@ def test_get_logging_config(client, rest_client, parser, success):
     assert client.get_logging_config() == success.json()
 
 
+class TestGardens(object):
+    class TestGet(object):
+        def test_success(self, client, rest_client, bg_garden, success, parser):
+            rest_client.get_garden.return_value = success
+            parser.parse_garden.return_value = bg_garden
+
+            assert client.get_garden(bg_garden.name) == bg_garden
+
+        def test_404(self, client, rest_client, bg_garden, not_found):
+            rest_client.get_garden.return_value = not_found
+
+            with pytest.raises(NotFoundError):
+                client.get_garden(bg_garden.name)
+
+    def test_create(self, client, rest_client, success, bg_garden):
+        rest_client.post_gardens.return_value = success
+        client.create_garden(bg_garden)
+        assert rest_client.post_gardens.called is True
+
+    class TestRemove(object):
+        def test_name(self, monkeypatch, client, rest_client, success, bg_garden):
+            monkeypatch.setattr(client, "get_garden", Mock(return_value=[bg_garden]))
+            rest_client.get_garden.return_value = success
+
+            client.remove_garden(bg_garden.name)
+            rest_client.delete_garden.assert_called_once_with(bg_garden.name)
+
+        def test_not_found(
+            self, monkeypatch, client, rest_client, not_found, bg_garden
+        ):
+            monkeypatch.setattr(
+                rest_client, "delete_garden", Mock(return_value=not_found)
+            )
+
+            with pytest.raises(NotFoundError):
+                client.remove_garden(bg_garden.name)
+
+
 class TestSystems(object):
     class TestGet(object):
         def test_success(self, client, rest_client, bg_system, success, parser):

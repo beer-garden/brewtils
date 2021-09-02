@@ -19,17 +19,12 @@ from brewtils.errors import (
     TooLargeError,
     ValidationError,
     WaitExceededError,
-    _deprecate,
+    _deprecate
 )
-from brewtils.models import (
-    BaseModel,
-    Event,
-    Job,
-    PatchOperation,
-)
+from brewtils.models import BaseModel, Event, Job, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
-from requests import Response
+from requests import Response  # noqa # not in requirements file
 
 
 def get_easy_client(**kwargs):
@@ -759,8 +754,7 @@ class EasyClient(object):
         # type: (Optional[List[str]]) -> List[Job]
         """Export jobs from an optional job ID list.
 
-        If `job_id_list` is None or empty, definitions for all jobs
-        are returned.
+        If `job_id_list` is None or empty, definitions for all jobs are returned.
 
         Args:
             job_id_list: A list of job IDS, optional
@@ -776,9 +770,11 @@ class EasyClient(object):
 
         return self.client.post_export_jobs(payload)  # noqa # wrapper changes type
 
-    @wrap_response(parse_method="parse_job", parse_many=True, default_exc=FetchError)
+    @wrap_response(
+        parse_method="parse_job_ids", parse_many=True, default_exc=FetchError
+    )
     def import_jobs(self, job_list):
-        # type: (List[Job]) -> List[Job]
+        # type: (List[Job]) -> List[str]
         """Import job definitions from a list of Jobs.
 
         Args:
@@ -788,7 +784,7 @@ class EasyClient(object):
             A list of the jobs created
         """
         return self.client.post_import_jobs(  # noqa # wrapper changes type
-            SchemaParser.serialize_job(job_list, many=True)
+            SchemaParser.serialize_job_for_import(job_list, many=True)
         )
 
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)

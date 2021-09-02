@@ -471,16 +471,16 @@ class TestJobs(object):
 
 
 class TestJobImportExport(object):
-    def test_import(self, client, rest_client, success, bg_job_defn_list):
+    def test_import(self, client, rest_client, success, bg_job_defns_list):
         rest_client.post_import_jobs.return_value = success
 
-        assert client.import_jobs(bg_job_defn_list)
+        assert client.import_jobs(bg_job_defns_list)
         assert rest_client.post_import_jobs.called is True
 
-    def test_export(self, client, rest_client, success, bg_job_id_list):
+    def test_export(self, client, rest_client, success, bg_job_ids):
         rest_client.post_export_jobs.return_value = success
 
-        assert client.export_jobs(bg_job_id_list)
+        assert client.export_jobs(bg_job_ids)
         assert rest_client.post_export_jobs.called is True
 
 

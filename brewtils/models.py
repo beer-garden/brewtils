@@ -23,8 +23,6 @@ __all__ = [
     "LegacyRole",
     "RefreshToken",
     "Job",
-    "JobIDList",
-    "JobDefinitionList",
     "RequestFile",
     "File",
     "FileChunk",

@@ -5,11 +5,8 @@ from __future__ import unicode_literals
 
 import copy
 
-import pytest
-from marshmallow.exceptions import MarshmallowError
-from pytest_lazyfixture import lazy_fixture
-
 import brewtils.models
+import pytest
 from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
@@ -18,8 +15,6 @@ from brewtils.test.comparable import (
     assert_garden_equal,
     assert_instance_equal,
     assert_job_equal,
-    assert_job_id_list_equal,
-    assert_job_defn_list_equal,
     assert_logging_config_equal,
     assert_operation_equal,
     assert_parameter_equal,
@@ -31,8 +26,10 @@ from brewtils.test.comparable import (
     assert_resolvable_equal,
     assert_role_equal,
     assert_runner_equal,
-    assert_system_equal,
+    assert_system_equal
 )
+from marshmallow.exceptions import MarshmallowError
+from pytest_lazyfixture import lazy_fixture
 
 
 class TestParse(object):
@@ -144,18 +141,6 @@ class TestParse(object):
                 lazy_fixture("interval_job_dict"),
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
-            ),
-            (
-                brewtils.models.JobIDList,
-                lazy_fixture("job_id_list_dict"),
-                assert_job_id_list_equal,
-                lazy_fixture("bg_job_id_list"),
-            ),
-            (
-                brewtils.models.JobDefinitionList,
-                lazy_fixture("job_dfn_list_dict"),
-                assert_job_defn_list_equal,
-                lazy_fixture("bg_job_defn_list"),
             ),
             (
                 brewtils.models.RequestFile,
@@ -278,18 +263,6 @@ class TestParse(object):
                 lazy_fixture("interval_job_dict"),
                 assert_job_equal,
                 lazy_fixture("bg_interval_job"),
-            ),
-            (
-                "parse_job_ids",
-                lazy_fixture("job_id_list_dict"),
-                assert_job_id_list_equal,
-                lazy_fixture("bg_job_id_list")
-            ),
-            (
-                "parse_job_definitions",
-                lazy_fixture("job_dfn_list_dict"),
-                assert_job_defn_list_equal,
-                lazy_fixture("bg_job_defn_list")
             ),
             (
                 "parse_request_file",
@@ -670,19 +643,19 @@ class TestSerialize(object):
                 lazy_fixture("cron_job_dict"),
             ),
             (
-                "serialize_job_id_list",
-                lazy_fixture("bg_job_id_list"),
-                lazy_fixture("job_id_list_dict")
-            ),
-            (
-                "serialize_job_definition_list",
-                lazy_fixture("bg_job_defn_list"),
-                lazy_fixture("job_dfn_list_dict")
-            ),
-            (
                 "serialize_job",
                 lazy_fixture("bg_interval_job"),
                 lazy_fixture("interval_job_dict"),
+            ),
+            (
+                "serialize_job_ids",
+                lazy_fixture("bg_job_ids"),
+                lazy_fixture("job_ids_dict"),
+            ),
+            (
+                "serialize_job_for_import",
+                lazy_fixture("bg_job"),
+                lazy_fixture("job_dict_for_import"),
             ),
             (
                 "serialize_garden",

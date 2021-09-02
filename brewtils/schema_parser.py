@@ -2,18 +2,17 @@
 import json
 import logging
 import typing
-from typing import Any, Optional, Union, Dict
-
-import six  # type: ignore
-from box import Box  # type: ignore
+from typing import Any, Dict, Optional, Union
 
 import brewtils.models
 import brewtils.schemas
+import six  # type: ignore
+from box import Box  # type: ignore
 from brewtils.models import BaseModel
 
 try:
     from collections.abc import Iterable  # type: ignore  # noqa
-except ImportError:
+except ImportError:  # pragma: no cover
     from collections import Iterable
 
 
@@ -301,23 +300,33 @@ class SchemaParser(object):
         return cls.parse(job, brewtils.models.Job, from_string=from_string, **kwargs)
 
     @classmethod
-    def parse_job_definitions(cls, job_dfn_list, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a list of job model objects.
+    def parse_job_ids(cls, job_id_list, from_string=False, **kwargs):
+        """Convert raw JSON string or list of strings to a list of job ids.
+
+        Passes a list of strings through unaltered if from_string is False.
 
         Args:
-            job_dfn_list: Raw input or dictionary
-            from_string: True if input is a JSON string, False if a dictionary
-            **kwargs: Optional parameters for the Schema
+            job_id_list: Raw input
+            from_string: True if input is a JSON string, False otherwise
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A list of Job objects.
+            A list of job ids.
         """
-        return cls.parse(
-            job_dfn_list,
-            brewtils.models.JobDefinitionList,
-            from_string=from_string,
-            **kwargs
-        )
+        # this is needed by easy_client
+        #
+        # some functionality duplicated from the parse method because model not used
+        if job_id_list is None:  # pragma: no cover
+            raise TypeError("job_id_list can not be None")
+        if not bool(from_string):
+            if isinstance(job_id_list, list):
+                if len(job_id_list) > 0 and not all(
+                    map(lambda x: isinstance(x, str), job_id_list)
+                ):  # pragma: no cover
+                    raise TypeError("Not a list of strings")
+                return job_id_list
+
+        return json.dumps(job_id_list)
 
     @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):
@@ -710,19 +719,19 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def serialize_job_ids(cls, job_ids, to_string=True, **kwargs):
+    def serialize_job_ids(cls, job_id_list, to_string=True, **kwargs):
         """Convert a list of IDS into serialized form expected by the export endpoint.
 
         Args:
-            job_ids: The list of ID(s) to be serialized.
+            job_id_list: The list of Job id(s) to be serialized
             to_string: True to generate a JSON-formatted string, False to generate a
-                dictionary.
+                dictionary
             **kwargs: Additional parameters to be passed to the schema (e.g. many=True)
 
         Returns:
-            Serialized representation of the job IDs.
+            Serialized representation of the job IDs
         """
-        arg_dict = {"ids": job_ids}
+        arg_dict = {"ids": job_id_list}
 
         return cls.serialize(
             arg_dict, to_string=to_string, schema_name="JobExportInputSchema", **kwargs
@@ -730,7 +739,19 @@ class SchemaParser(object):
 
     @classmethod
     def serialize_job_for_import(cls, job, to_string=True, **kwargs):
-        """TODO
+        """Convert a Job object into serialized form expected by the import endpoint.
+
+        The fields that an existing Job would have that a new Job should not (e.g. 'id')
+        are removed by the schema.
+
+        Args:
+            job: The Job to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of the Job
         """
         return cls.serialize(
             job, to_string=to_string, schema_name="JobExportSchema", **kwargs
@@ -860,7 +881,10 @@ class SchemaParser(object):
             return schema.dumps(model).data if to_string else schema.dump(model).data
 
         # Explicitly force to_string to False so only original call returns a string
-        multiple = [cls.serialize(x, to_string=False, **kwargs) for x in model]
+        multiple = [
+            cls.serialize(x, to_string=False, schema_name=schema_name, **kwargs)
+            for x in model
+        ]
 
         return json.dumps(multiple) if to_string else multiple
 

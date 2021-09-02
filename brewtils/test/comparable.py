@@ -35,9 +35,7 @@ from brewtils.models import (
     Resolvable,
     LegacyRole,
     Runner,
-    System,
-    JobIDList,
-    JobDefinitionList,
+    System
 )
 
 __all__ = [
@@ -56,8 +54,6 @@ __all__ = [
     "assert_role_equal",
     "assert_system_equal",
     "assert_job_equal",
-    "assert_job_id_list_equal",
-    "assert_job_defn_list_equal",
     "assert_request_file_equal",
     "assert_operation_equal",
     "assert_runner_equal",
@@ -344,29 +340,6 @@ def _assert_job_id_equal(str1, str2, do_raise=False):
             raise
         return False
     return True
-
-
-def assert_job_id_list_equal(obj1, obj2, do_raise=False):
-    assert isinstance(obj1, JobIDList)
-    assert hasattr(obj1, "ids")
-    assert isinstance(obj1.ids, list)
-    return _assert_wrapper(
-        obj1,
-        obj2,
-        expected_type=JobIDList,
-        deep_fields={"ids": partial(_assert_job_id_equal, do_raise=do_raise)},
-        do_raise=do_raise,
-    )
-
-
-def assert_job_defn_list_equal(obj1, obj2, do_raise=False):
-    return _assert_wrapper(
-        obj1,
-        obj2,
-        expected_type=JobDefinitionList,
-        deep_fields={"jobs": partial(assert_job_equal, do_raise=do_raise)},
-        do_raise=do_raise,
-    )
 
 
 def assert_operation_equal(obj1, obj2, do_raise=False):

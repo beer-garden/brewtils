@@ -44,6 +44,8 @@ __all__ = [
 ]
 
 # This will be updated after all the schema classes are defined
+from brewtils.models import Job
+
 model_schema_map = {}
 
 
@@ -131,7 +133,7 @@ class DateTime(fields.DateTime):
 class BaseSchema(Schema):
     class Meta:
         version_nums = marshmallow.__version__.split(".")
-        if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:
+        if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:  # pragma: no cover
             json_module = simplejson
         else:
             render_module = simplejson
@@ -488,10 +490,15 @@ class JobExportInputSchema(BaseSchema):
 
 class JobExportSchema(JobSchema):
     def __init__(self, *args, **kwargs):
-        # exclude from a Job the fields that we don't want when we later go to import
+        # exclude fields from a Job that we don't want when we later go to import
         # the Job definition
         self.opts.exclude += ("id", "next_run_time", "success_count", "error_count")
         super().__init__(*args, **kwargs)
+
+    @post_load
+    def make_object(self, data):
+        # this is necessary because everything here revolves around brewtils models
+        return Job(**data)
 
 
 class OperationSchema(BaseSchema):
@@ -562,7 +569,6 @@ model_schema_map.update(
         "Instance": InstanceSchema,
         "IntervalTrigger": IntervalTriggerSchema,
         "Job": JobSchema,
-        "JobExport": JobExportSchema,
         "LoggingConfig": LoggingConfigSchema,
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,

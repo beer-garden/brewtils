@@ -21,7 +21,12 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate
 )
-from brewtils.models import BaseModel, Event, Job, PatchOperation
+from brewtils.models import (
+    BaseModel,
+    Event,
+    Job,
+    PatchOperation,
+)
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 from requests import Response  # noqa # not in requirements file
@@ -748,6 +753,7 @@ class EasyClient(object):
 
         """
         return self.client.get_jobs(**kwargs)
+
 
     @wrap_response(parse_method="parse_job", parse_many=True, default_exc=FetchError)
     def export_jobs(self, job_id_list=None):

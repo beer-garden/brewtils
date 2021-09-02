@@ -569,6 +569,7 @@ model_schema_map.update(
         "Instance": InstanceSchema,
         "IntervalTrigger": IntervalTriggerSchema,
         "Job": JobSchema,
+        "JobExport": JobExportSchema,
         "LoggingConfig": LoggingConfigSchema,
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,

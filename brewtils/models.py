@@ -23,6 +23,8 @@ __all__ = [
     "LegacyRole",
     "RefreshToken",
     "Job",
+    "JobIDList",
+    "JobDefinitionList",
     "RequestFile",
     "File",
     "FileChunk",
@@ -1178,6 +1180,32 @@ class Job(BaseModel):
 
     def __repr__(self):
         return "<Job: name=%s, id=%s>" % (self.name, self.id)
+
+
+class JobIDList(BaseModel):
+    schema = "JobImportSchema"
+
+    def __init__(self, ids=None):
+        self.ids = ids
+
+    def __str__(self):
+        return "%s" % ", ".join(self.ids) if self.ids else ""
+
+    def __repr__(self):
+        return "<JobIDList: ids=[%s]>" % str(self)
+
+
+class JobDefinitionList(BaseModel):
+    schema = "JobExportSchema"
+
+    def __init__(self, jobs=None):
+        self.jobs = jobs
+
+    def __str__(self):
+        return "%s" % ", ".join(map(str, self.jobs))
+
+    def __repr__(self):
+        return "<JobDefinitionList: jobs=[%s]>" % str(self)
 
 
 class DateTrigger(BaseModel):

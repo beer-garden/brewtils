@@ -35,7 +35,7 @@ from brewtils.models import (
     Resolvable,
     LegacyRole,
     Runner,
-    System
+    System,
 )
 
 __all__ = [

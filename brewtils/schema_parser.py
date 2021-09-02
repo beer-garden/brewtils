@@ -429,6 +429,7 @@ class SchemaParser(object):
             kwargs["many"] = True
 
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
+
         schema.context["models"] = cls._models
 
         return schema.loads(data).data if from_string else schema.load(data).data

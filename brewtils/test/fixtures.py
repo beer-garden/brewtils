@@ -27,7 +27,7 @@ from brewtils.models import (
     Resolvable,
     LegacyRole,
     Runner,
-    System
+    System,
 )
 
 
@@ -554,6 +554,18 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         "max_instances": 3,
         "timeout": 30,
     }
+
+
+@pytest.fixture
+def job_id_list_dict(job_dict):
+    """A job ID list represented as a dictionary."""
+    return {"ids": [job_dict["id"]]}
+
+
+@pytest.fixture
+def job_dfn_list_dict(job_dict):
+    """A job definition list represented as a dictionary."""
+    return {"jobs": [job_dict]}
 
 
 @pytest.fixture

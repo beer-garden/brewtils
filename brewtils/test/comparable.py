@@ -54,6 +54,7 @@ __all__ = [
     "assert_role_equal",
     "assert_system_equal",
     "assert_job_equal",
+    "assert_job_ids_equal",
     "assert_request_file_equal",
     "assert_operation_equal",
     "assert_runner_equal",
@@ -330,11 +331,27 @@ def assert_job_equal(obj1, obj2, do_raise=False):
     )
 
 
-def _assert_job_id_equal(str1, str2, do_raise=False):
+def assert_job_ids_equal(dict1, dict2, do_raise=False):
     try:
-        assert isinstance(str1, str), "Not a job ID string: %s" % str1
-        assert isinstance(str2, str), "Not a job ID string: %s" % str2
-        assert str1 == str2, "Unequal job ID strings: %s/%s" % (str1, str2)
+        assert (
+            isinstance(dict1, dict) and "ids" in dict1
+        ), "Not a job ID dict: %s" % str(dict1)
+        assert (
+            isinstance(dict2, dict) and "ids" in dict2
+        ), "Not a job ID dict: %s" % str(dict2)
+
+        lst1, lst2 = dict1.get("ids", None), dict2.get("ids", None)
+
+        assert lst1 is not None and lst2 is not None, "ID list is 'None'"
+        assert isinstance(lst1, list) and isinstance(
+            lst2, list
+        ), "ID list is not a list"
+        assert len(lst1) == len(lst1), "ID lists different lengths"
+
+        for str1, str2 in zip(sorted(lst1), sorted(lst2)):
+            assert isinstance(str1, str), "Not a job ID string: %s" % str(str1)
+            assert isinstance(str2, str), "Not a job ID string: %s" % str(str2)
+            assert str1 == str2, "Unequal job ID strings: %s/%s" % (str1, str2)
     except AssertionError:
         if do_raise:
             raise

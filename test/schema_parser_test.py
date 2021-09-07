@@ -15,8 +15,7 @@ from brewtils.test.comparable import (
     assert_garden_equal,
     assert_instance_equal,
     assert_job_equal,
-    assert_job_id_list_equal,
-    assert_job_defn_list_equal,
+    assert_job_ids_equal,
     assert_logging_config_equal,
     assert_operation_equal,
     assert_parameter_equal,
@@ -145,18 +144,6 @@ class TestParse(object):
                 lazy_fixture("bg_interval_job"),
             ),
             (
-                brewtils.models.JobIDList,
-                lazy_fixture("job_id_list_dict"),
-                assert_job_id_list_equal,
-                lazy_fixture("bg_job_id_list"),
-            ),
-            (
-                brewtils.models.JobDefinitionList,
-                lazy_fixture("job_dfn_list_dict"),
-                assert_job_defn_list_equal,
-                lazy_fixture("bg_job_defn_list"),
-            ),
-            (
                 brewtils.models.RequestFile,
                 lazy_fixture("request_file_dict"),
                 assert_request_file_equal,
@@ -280,17 +267,10 @@ class TestParse(object):
             ),
             (
                 "parse_job_ids",
-                lazy_fixture("job_id_list_dict"),
-                assert_job_id_list_equal,
-                lazy_fixture("bg_job_id_list")
+                lazy_fixture("job_ids_dict"),
+                assert_job_ids_equal,
+                lazy_fixture("job_id_list_dict")
             ),
-            (
-                "parse_job_definitions",
-                lazy_fixture("job_dfn_list_dict"),
-                assert_job_defn_list_equal,
-                lazy_fixture("bg_job_defn_list")
-            ),
-
             (
                 "parse_request_file",
                 lazy_fixture("request_file_dict"),
@@ -668,16 +648,6 @@ class TestSerialize(object):
                 "serialize_job",
                 lazy_fixture("bg_cron_job"),
                 lazy_fixture("cron_job_dict"),
-            ),
-            (
-                "serialize_job_id_list",
-                lazy_fixture("bg_job_id_list"),
-                lazy_fixture("job_id_list_dict")
-            ),
-            (
-                "serialize_job_definition_list",
-                lazy_fixture("bg_job_defn_list"),
-                lazy_fixture("job_dfn_list_dict")
             ),
             (
                 "serialize_job",

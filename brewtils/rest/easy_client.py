@@ -754,7 +754,6 @@ class EasyClient(object):
         """
         return self.client.get_jobs(**kwargs)
 
-
     @wrap_response(parse_method="parse_job", parse_many=True, default_exc=FetchError)
     def export_jobs(self, job_id_list=None):
         # type: (Optional[List[str]]) -> List[Job]
@@ -787,7 +786,7 @@ class EasyClient(object):
             job_list: A list of jobs to import
 
         Returns:
-            A list of the jobs created
+            A list of the job IDs created
         """
         return self.client.post_import_jobs(  # noqa # wrapper changes type
             SchemaParser.serialize_job_for_import(job_list, many=True)

@@ -30,6 +30,7 @@ class SchemaParser(object):
         "InstanceSchema": brewtils.models.Instance,
         "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
         "JobSchema": brewtils.models.Job,
+        "JobExport": brewtils.models.Job,
         "LoggingConfigSchema": brewtils.models.LoggingConfig,
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
@@ -198,7 +199,7 @@ class SchemaParser(object):
             logging_config,
             brewtils.models.LoggingConfig,
             from_string=from_string,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -281,7 +282,7 @@ class SchemaParser(object):
             refresh_token,
             brewtils.models.RefreshToken,
             from_string=from_string,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -323,7 +324,9 @@ class SchemaParser(object):
                 if len(job_id_list) > 0 and not all(
                     map(lambda x: isinstance(x, str), job_id_list)
                 ):  # pragma: no cover
-                    raise TypeError("Not a list of strings")
+                    raise TypeError(
+                        f"Not a list of strings: {', '.join(map(str, job_id_list))}"
+                    )
                 return job_id_list
 
         return json.dumps(job_id_list)
@@ -398,7 +401,7 @@ class SchemaParser(object):
         data,  # type: Optional[Union[str, Dict[str, Any]]]
         model_class,  # type: Any
         from_string=False,  # type: bool
-        **kwargs  # type: Any
+        **kwargs,  # type: Any
     ):  # type: (...) -> Union[str, Dict[str, Any]]
         """Convert a JSON string or dictionary into a model object
 
@@ -459,7 +462,7 @@ class SchemaParser(object):
             system,
             to_string=to_string,
             schema_name=brewtils.models.System.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -479,7 +482,7 @@ class SchemaParser(object):
             instance,
             to_string=to_string,
             schema_name=brewtils.models.Instance.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -499,7 +502,7 @@ class SchemaParser(object):
             command,
             to_string=to_string,
             schema_name=brewtils.models.Command.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -519,7 +522,7 @@ class SchemaParser(object):
             parameter,
             to_string=to_string,
             schema_name=brewtils.models.Parameter.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -539,7 +542,7 @@ class SchemaParser(object):
             request_file,
             to_string=to_string,
             schema_name=brewtils.models.RequestFile.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -559,7 +562,7 @@ class SchemaParser(object):
             request,
             to_string=to_string,
             schema_name=brewtils.models.Request.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -579,7 +582,7 @@ class SchemaParser(object):
             patch,
             to_string=to_string,
             schema_name=brewtils.models.PatchOperation.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -599,7 +602,7 @@ class SchemaParser(object):
             logging_config,
             to_string=to_string,
             schema_name=brewtils.models.LoggingConfig.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -619,7 +622,7 @@ class SchemaParser(object):
             event,
             to_string=to_string,
             schema_name=brewtils.models.Event.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -639,7 +642,7 @@ class SchemaParser(object):
             queue,
             to_string=to_string,
             schema_name=brewtils.models.Queue.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -659,7 +662,7 @@ class SchemaParser(object):
             principal,
             to_string=to_string,
             schema_name=brewtils.models.Principal.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -679,7 +682,7 @@ class SchemaParser(object):
             role,
             to_string=to_string,
             schema_name=brewtils.models.LegacyRole.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -699,7 +702,7 @@ class SchemaParser(object):
             refresh_token,
             to_string=to_string,
             schema_name=brewtils.models.RefreshToken.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -775,7 +778,7 @@ class SchemaParser(object):
             garden,
             to_string=to_string,
             schema_name=brewtils.models.Garden.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -795,7 +798,7 @@ class SchemaParser(object):
             operation,
             to_string=to_string,
             schema_name=brewtils.models.Operation.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -815,7 +818,7 @@ class SchemaParser(object):
             runner,
             to_string=to_string,
             schema_name=brewtils.models.Runner.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -835,7 +838,7 @@ class SchemaParser(object):
             resolvable,
             to_string=to_string,
             schema_name=brewtils.models.Resolvable.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -844,7 +847,7 @@ class SchemaParser(object):
         model,  # type: Union[BaseModel, typing.Iterable[BaseModel], dict]
         to_string=False,  # type: bool
         schema_name=None,  # type: Optional[str]
-        **kwargs  # type: Any
+        **kwargs,  # type: Any
     ):
         # type: (...) -> Union[Dict[str, Any], Optional[str]]
         """Convert a model object or list of models into a dictionary or JSON string.

@@ -27,7 +27,7 @@ from brewtils.test.comparable import (
     assert_resolvable_equal,
     assert_role_equal,
     assert_runner_equal,
-    assert_system_equal
+    assert_system_equal,
 )
 from marshmallow.exceptions import MarshmallowError
 from pytest_lazyfixture import lazy_fixture
@@ -269,7 +269,7 @@ class TestParse(object):
                 "parse_job_ids",
                 lazy_fixture("job_ids_dict"),
                 assert_job_ids_equal,
-                lazy_fixture("job_id_list_dict")
+                lazy_fixture("job_id_list_dict"),
             ),
             (
                 "parse_request_file",

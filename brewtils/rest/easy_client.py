@@ -19,7 +19,7 @@ from brewtils.errors import (
     TooLargeError,
     ValidationError,
     WaitExceededError,
-    _deprecate
+    _deprecate,
 )
 from brewtils.models import (
     BaseModel,

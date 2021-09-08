@@ -5,7 +5,6 @@ from datetime import datetime
 
 import pytest
 import pytz
-
 from brewtils.models import (
     Choices,
     Command,
@@ -558,6 +557,18 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
 
 
 @pytest.fixture
+def job_id_list_dict(job_dict):
+    """A job ID list represented as a dictionary."""
+    return {"ids": [job_dict["id"]]}
+
+
+@pytest.fixture
+def job_dfn_list_dict(job_dict):
+    """A job definition list represented as a dictionary."""
+    return {"jobs": [job_dict]}
+
+
+@pytest.fixture
 def cron_job_dict(job_dict, cron_trigger_dict):
     """A cron job represented as a dictionary."""
     dict_copy = copy.deepcopy(job_dict)
@@ -572,6 +583,22 @@ def interval_job_dict(job_dict, interval_trigger_dict):
     dict_copy = copy.deepcopy(job_dict)
     dict_copy["trigger_type"] = "interval"
     dict_copy["trigger"] = interval_trigger_dict
+    return dict_copy
+
+
+@pytest.fixture
+def job_ids_dict(job_dict):
+    """A list of job IDs represented as a dictionary."""
+    dict_copy = copy.deepcopy(job_dict)
+    return {"ids": [dict_copy["id"]]}
+
+
+@pytest.fixture
+def job_dict_for_import(job_dict):
+    """A job dict but some keys and values are missing."""
+    dict_copy = copy.deepcopy(job_dict)
+    for field in ["id", "next_run_time", "success_count", "error_count"]:
+        dict_copy.pop(field, None)
     return dict_copy
 
 
@@ -603,6 +630,19 @@ def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger,
     dict_copy["trigger"] = bg_interval_trigger
     dict_copy["request_template"] = bg_request_template
     return Job(**dict_copy)
+
+
+@pytest.fixture
+def bg_job_ids(job_dict):
+    """A list of job IDs"""
+    dict_copy = copy.deepcopy(job_dict)
+    return [str(dict_copy["id"])]
+
+
+@pytest.fixture
+def bg_job_defns_list(job_dict_for_import):
+    """A list of job definitions"""
+    return [Job(**job_dict_for_import)]
 
 
 @pytest.fixture

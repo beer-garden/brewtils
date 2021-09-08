@@ -1,0 +1,4 @@
+ignore:
+  - "test/*.py"
+  - "brewtils/test/*.py"
+

@@ -81,13 +81,13 @@ clean: clean-build clean-docs clean-python clean-test ## remove everything but s
 
 # Formatting
 format: ## Run black formatter in-line
-	black -t py27 $(MODULE_NAME) $(TEST_DIR)
+	black --target-version py27 $(MODULE_NAME) $(TEST_DIR)
 
 
 # Linting
 lint: ## check style with flake8
 	flake8 $(MODULE_NAME) $(TEST_DIR)
-	black --check $(MODULE_NAME) $(TEST_DIR)
+	black --target-version py27 --check $(MODULE_NAME) $(TEST_DIR)
 
 
 # Testing / Coverage

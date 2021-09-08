@@ -260,9 +260,9 @@ class Plugin(object):
 
         # Several _system properties can come from the client, so update if needed
         if not self._system.name:
-            self._system.name = getattr(new_client, "_bg_name")
+            self._system.name = getattr(new_client, "_bg_name")  # noqa
         if not self._system.version:
-            self._system.version = getattr(new_client, "_bg_version")
+            self._system.version = getattr(new_client, "_bg_version")  # noqa
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
 
@@ -635,7 +635,7 @@ class Plugin(object):
 
     def _correct_system(self, request):
         """Validate that a request is intended for this Plugin"""
-        request_system = getattr(request, "system") or ""
+        request_system = getattr(request, "system") or ""  # noqa
         if request_system.upper() != self._system.name.upper():
             raise DiscardMessageException(
                 "Received message for system {0}".format(request.system)

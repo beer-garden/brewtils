@@ -480,10 +480,6 @@ class JobSchema(BaseSchema):
     timeout = fields.Int(allow_none=True)
 
 
-class JobExportListSchema(BaseSchema):
-    jobs = fields.List(fields.Nested(JobSchema, allow_none=True))
-
-
 class JobExportInputSchema(BaseSchema):
     ids = fields.List(fields.String(allow_none=True))
 
@@ -499,6 +495,10 @@ class JobExportSchema(JobSchema):
     def make_object(self, data):
         # this is necessary because everything here revolves around brewtils models
         return Job(**data)
+
+
+class JobExportListSchema(BaseSchema):
+    jobs = fields.List(fields.Nested(JobExportSchema, allow_none=True))
 
 
 class OperationSchema(BaseSchema):

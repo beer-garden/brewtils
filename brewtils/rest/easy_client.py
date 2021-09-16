@@ -762,10 +762,15 @@ class EasyClient(object):
         Returns:
             A list of job definitions
         """
+        # we should check that the argument is a list (if it's not None) because the
+        # call to `len` will otherwise produce an unhelpful error message
+        if job_id_list is not None and not isinstance(job_id_list, list):
+            raise TypeError("Argument must be a list of job IDs, an empty list or None")
+
         payload = (
             SchemaParser.serialize_job_ids(job_id_list, many=True)
-            if job_id_list is not None
-            else ""
+            if job_id_list is not None and len(job_id_list) > 0
+            else "{}"
         )
 
         return self.client.post_export_jobs(payload)  # noqa # wrapper changes type

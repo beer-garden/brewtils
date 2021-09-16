@@ -30,6 +30,7 @@ __all__ = [
     "JobSchema",
     "JobExportSchema",
     "JobExportInputSchema",
+    "JobExportListSchema",
     "DateTriggerSchema",
     "IntervalTriggerSchema",
     "CronTriggerSchema",

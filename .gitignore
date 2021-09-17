@@ -65,3 +65,7 @@ target/
 
 # IDE
 .idea/
+
+# Jupyter
+.ipydb_checkpoints/
+*.ipynb

@@ -21,10 +21,10 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import BaseModel, Event, PatchOperation
+from brewtils.models import BaseModel, Event, Job, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
-from requests import Response
+from requests import Response  # noqa # not in requirements file
 
 
 def get_easy_client(**kwargs):
@@ -748,6 +748,49 @@ class EasyClient(object):
 
         """
         return self.client.get_jobs(**kwargs)
+
+    @wrap_response(parse_method="parse_job", parse_many=True, default_exc=FetchError)
+    def export_jobs(self, job_id_list=None):
+        # type: (Optional[List[str]]) -> List[Job]
+        """Export jobs from an optional job ID list.
+
+        If `job_id_list` is None or empty, definitions for all jobs are returned.
+
+        Args:
+            job_id_list: A list of job IDS, optional
+
+        Returns:
+            A list of job definitions
+        """
+        # we should check that the argument is a list (if it's not None) because the
+        # call to `len` will otherwise produce an unhelpful error message
+        if job_id_list is not None and not isinstance(job_id_list, list):
+            raise TypeError("Argument must be a list of job IDs, an empty list or None")
+
+        payload = (
+            SchemaParser.serialize_job_ids(job_id_list, many=True)
+            if job_id_list is not None and len(job_id_list) > 0
+            else "{}"
+        )
+
+        return self.client.post_export_jobs(payload)  # noqa # wrapper changes type
+
+    @wrap_response(
+        parse_method="parse_job_ids", parse_many=True, default_exc=FetchError
+    )
+    def import_jobs(self, job_list):
+        # type: (List[Job]) -> List[str]
+        """Import job definitions from a list of Jobs.
+
+        Args:
+            job_list: A list of jobs to import
+
+        Returns:
+            A list of the job IDs created
+        """
+        return self.client.post_import_jobs(  # noqa # wrapper changes type
+            SchemaParser.serialize_job_for_import(job_list, many=True)
+        )
 
     @wrap_response(parse_method="parse_job", parse_many=False, default_exc=SaveError)
     def create_job(self, job):

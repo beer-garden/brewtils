@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+from marshmallow.exceptions import ValidationError
 from mock import Mock
 from pytest_lazyfixture import lazy_fixture
 
@@ -8,6 +9,7 @@ from brewtils.models import System
 from brewtils.schemas import (
     BaseSchema,
     DateTime,
+    RoleAssignmentSchema,
     SystemSchema,
     _deserialize_model,
     _serialize_model,
@@ -94,3 +96,69 @@ class TestFields(object):
         assert len(models) == len(
             SchemaParser._models
         ), "Missing mapped schema for deserialization"
+
+
+class TestRoleAssignmentSchema(object):
+    @pytest.fixture
+    def schema(self):
+        yield RoleAssignmentSchema()
+
+    @pytest.fixture
+    def role_assignment_garden_scope(self):
+        role = {"name": "myrole", "permissions": ["perm1"]}
+        domain = {"scope": "Garden", "identifiers": {"name": "mygarden"}}
+        role_assignment = {"role": role, "domain": domain}
+
+        yield role_assignment
+
+    @pytest.fixture
+    def role_assignment_system_scope(self):
+        role = {"name": "myrole", "permissions": ["perm1"]}
+        domain = {
+            "scope": "System",
+            "identifiers": {"name": "mysystem", "namespace": "mygarden"},
+        }
+        role_assignment = {"role": role, "domain": domain}
+
+        yield role_assignment
+
+    def test_role_assignment_domain_schema_can_deserialize_garden_scope(
+        self, schema, role_assignment_garden_scope
+    ):
+        assert (
+            schema.load(role_assignment_garden_scope).data
+            == role_assignment_garden_scope
+        )
+
+    def test_role_assignment_domain_schema_can_deserialize_system_scope(
+        self, schema, role_assignment_system_scope
+    ):
+        assert (
+            schema.load(role_assignment_system_scope).data
+            == role_assignment_system_scope
+        )
+
+    def test_role_assignment_domain_schema_can_serialize(
+        self, schema, role_assignment_garden_scope
+    ):
+        assert (
+            schema.dump(role_assignment_garden_scope).data
+            == role_assignment_garden_scope
+        )
+
+    def test_role_assignment_domain_schema_validates_identifiers(
+        self, schema, role_assignment_system_scope
+    ):
+        # Remove one of the required identifier fields
+        del role_assignment_system_scope["domain"]["identifiers"]["namespace"]
+
+        with pytest.raises(ValidationError):
+            schema.load(role_assignment_system_scope)
+
+    def test_role_assignment_domain_schema_raises_error_on_invalid_scope(
+        self, schema, role_assignment_system_scope
+    ):
+        role_assignment_system_scope["domain"]["scope"] = "Unsupported"
+
+        with pytest.raises(ValidationError):
+            schema.load(role_assignment_system_scope)

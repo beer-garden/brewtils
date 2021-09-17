@@ -70,6 +70,21 @@ def _deserialize_model(_, data, type_field=None, allowed_types=None):
     return model_schema_map.get(data[type_field])()
 
 
+def _domain_identifier_schema_selector(_, role_assignment_domain):
+    scope_schema_map = {
+        "Garden": GardenDomainIdentifierSchema,
+        "System": SystemDomainIdentifierSchema,
+    }
+
+    scope = role_assignment_domain.get("scope")
+    schema = scope_schema_map.get(scope)
+
+    if schema is None:
+        raise TypeError("Invalid scope: %s" % scope)
+
+    return schema()
+
+
 class ModelField(PolyField):
     """Field representing a Brewtils model
 
@@ -226,6 +241,12 @@ class SystemSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     local = fields.Bool(allow_none=True)
     template = fields.Str(allow_none=True)
+
+
+class SystemDomainIdentifierSchema(BaseSchema):
+    name = fields.Str(required=True)
+    version = fields.Str(allow_none=True)
+    namespace = fields.Str(required=True)
 
 
 class RequestFileSchema(BaseSchema):
@@ -461,6 +482,10 @@ class GardenSchema(BaseSchema):
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
 
 
+class GardenDomainIdentifierSchema(BaseSchema):
+    name = fields.Str(required=True)
+
+
 class JobSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
@@ -538,8 +563,17 @@ class RoleSchema(BaseSchema):
     permissions = fields.List(fields.Str())
 
 
+class RoleAssignmentDomainSchema(BaseSchema):
+    scope = fields.Str()
+    identifiers = PolyField(
+        serialization_schema_selector=_domain_identifier_schema_selector,
+        deserialization_schema_selector=_domain_identifier_schema_selector,
+        required=True,
+    )
+
+
 class RoleAssignmentSchema(BaseSchema):
-    domain = fields.Str()
+    domain = fields.Nested(RoleAssignmentDomainSchema)
     role = fields.Nested(RoleSchema())
 
 

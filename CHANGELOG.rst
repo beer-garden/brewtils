@@ -1,6 +1,23 @@
 Brewtils Changelog
 ==================
 
+3.6.0
+-----
+9/22/21
+
+Bug Fixes
+^^^^^^^^^
+- Fixed issues related to interacting with beer-garden urls containing unicode characters (Issue #339 / PR #344)
+
+New Features
+^^^^^^^^^^^^
+- Added `export_jobs` and `import_jobs` to EasyClient (Issue #353 / PR #337)
+- Added `create_garden` and `remove_garden` to EasyClient (Issue #348 / PR #350)
+
+Other Changes
+^^^^^^^^^^^^^
+- Added schemas for use in future authorization related features (Issue #345 / PR #347)
+
 3.5.0
 -----
 8/18/21

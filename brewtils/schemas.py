@@ -42,6 +42,9 @@ __all__ = [
     "UserListSchema",
     "RoleSchema",
     "RoleAssignmentSchema",
+    "RoleAssignmentDomainSchema",
+    "GardenDomainIdentifierSchema",
+    "SystemDomainIdentifierSchema",
 ]
 
 # This will be updated after all the schema classes are defined

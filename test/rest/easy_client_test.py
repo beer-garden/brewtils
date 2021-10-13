@@ -469,6 +469,16 @@ class TestJobs(object):
         assert patch_op.path == "/status"
         assert patch_op.value == "RUNNING"
 
+    def test_execute(self, client, rest_client, parser, success, bg_job):
+        rest.client.patch_job.return_value = request # what should /execute endpoint return?
+
+        client.execute_job(bg_job.id)
+        assert rest_client.patch_job.called is True
+
+        patch_op = parser.serialize_patch.call_args[0][0][0]
+        assert patch_op.path == "/execute"
+        assert patch_op.value == "True"
+
 
 class TestJobImportExport(object):
     def test_import(self, client, rest_client, success, bg_job_defns_list):

@@ -41,7 +41,7 @@ setup(
         "requests<3",
         "simplejson<4",
         "six<2",
-        "wrapt<2",
+        "wrapt<1.13",
         "yapconf>=0.3.7",
     ],
     extras_require={

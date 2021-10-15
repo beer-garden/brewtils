@@ -1,6 +1,22 @@
 Brewtils Changelog
 ==================
 
+3.7.0
+-----
+10/15/21
+
+Bug Fixes
+^^^^^^^^^
+- N/a
+
+New Features
+^^^^^^^^^^^^
+- N/a
+
+Other Changes
+^^^^^^^^^^^^^
+- Added `SystemDomainIdentifierSchema`, `GardenDomainIdentifierSchema` and `RoleAssignmentDomainSchema` schemas and updated the `RoleAssignmentSchema`. These changes require the role assignment schema to have a role assignment domain with nested data consisting of the system and garden domains (Issue #354 / PR #355)
+
 3.6.0
 -----
 9/22/21

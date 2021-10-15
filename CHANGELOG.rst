@@ -1,13 +1,13 @@
 Brewtils Changelog
 ==================
 
-3.7.0
+3.7.1
 -----
 10/15/21
 
 Bug Fixes
 ^^^^^^^^^
-- N/a
+- Pinned troublesome dependency `wrapt` to version that's known to not be a problem
 
 New Features
 ^^^^^^^^^^^^

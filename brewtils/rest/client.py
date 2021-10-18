@@ -643,6 +643,18 @@ class RestClient(object):
         """
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
+    def post_execute_job(self, job_id):
+        # type: (str) -> Response
+        """Performs a POST on the Job Execute URL
+
+        Args:
+            job_id: The ID of the Job
+
+        Returns:
+            Request Response object
+        """
+        return self.session.post(self.job_url + job_id + "/execute", headers=self.JSON_HEADERS)
+
     @enable_auth
     def post_export_jobs(self, payload):
         # type: (str) -> Response

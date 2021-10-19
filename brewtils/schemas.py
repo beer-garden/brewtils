@@ -79,7 +79,11 @@ def _domain_identifier_schema_selector(_, role_assignment_domain):
         "System": SystemDomainIdentifierSchema,
     }
 
-    scope = role_assignment_domain.get("scope")
+    if isinstance(role_assignment_domain, dict):
+        scope = role_assignment_domain.get("scope")
+    else:
+        scope = role_assignment_domain.scope
+
     schema = scope_schema_map.get(scope)
 
     if schema is None:
@@ -562,7 +566,7 @@ class ResolvableSchema(BaseSchema):
 class RoleSchema(BaseSchema):
     id = fields.Str()
     name = fields.Str()
-    description = fields.Str()
+    description = fields.Str(allow_none=True)
     permissions = fields.List(fields.Str())
 
 

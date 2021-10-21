@@ -77,6 +77,7 @@ def _domain_identifier_schema_selector(_, role_assignment_domain):
     scope_schema_map = {
         "Garden": GardenDomainIdentifierSchema,
         "System": SystemDomainIdentifierSchema,
+        "Global": Schema,
     }
 
     if isinstance(role_assignment_domain, dict):
@@ -575,7 +576,7 @@ class RoleAssignmentDomainSchema(BaseSchema):
     identifiers = PolyField(
         serialization_schema_selector=_domain_identifier_schema_selector,
         deserialization_schema_selector=_domain_identifier_schema_selector,
-        required=True,
+        required=False,
     )
 
 

@@ -341,6 +341,11 @@ class TestRequest(object):
             if key != "command_type":
                 assert getattr(request, key) == getattr(bg_request_template, key)
 
+    def test_status_updated_at(self, request1):
+        first_time = request1.status_updated_at
+        request1.status = "RECEIVED"
+        assert first_time is not request1.status_updated_at
+
 
 class TestSystem(object):
     def test_get_command_by_name(self, bg_system, bg_command):

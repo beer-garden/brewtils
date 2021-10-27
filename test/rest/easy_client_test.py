@@ -470,14 +470,10 @@ class TestJobs(object):
         assert patch_op.value == "RUNNING"
 
     def test_execute(self, client, rest_client, parser, success, bg_job):
-        rest.client.patch_job.return_value = request # what should /execute endpoint return?
+        rest_client.patch_job.return_value = success
 
         client.execute_job(bg_job.id)
-        assert rest_client.patch_job.called is True
-
-        patch_op = parser.serialize_patch.call_args[0][0][0]
-        assert patch_op.path == "/execute"
-        assert patch_op.value == "True"
+        assert rest_client.post_execute_job.called is True
 
 
 class TestJobImportExport(object):

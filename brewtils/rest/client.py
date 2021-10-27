@@ -653,7 +653,9 @@ class RestClient(object):
         Returns:
             Request Response object
         """
-        return self.session.post(self.job_url + job_id + "/execute", headers=self.JSON_HEADERS)
+        return self.session.post(
+            self.job_url + job_id + "/execute", headers=self.JSON_HEADERS
+        )
 
     @enable_auth
     def post_export_jobs(self, payload):

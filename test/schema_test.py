@@ -122,6 +122,14 @@ class TestRoleAssignmentSchema(object):
 
         yield role_assignment
 
+    @pytest.fixture
+    def role_assignment_global_scope(self):
+        role = {"name": "myrole", "permissions": ["perm1"]}
+        domain = {"scope": "Global"}
+        role_assignment = {"role": role, "domain": domain}
+
+        yield role_assignment
+
     def test_role_assignment_domain_schema_can_deserialize_garden_scope(
         self, schema, role_assignment_garden_scope
     ):
@@ -138,12 +146,28 @@ class TestRoleAssignmentSchema(object):
             == role_assignment_system_scope
         )
 
+    def test_role_assignment_domain_schema_can_deserialize_global_scope(
+        self, schema, role_assignment_global_scope
+    ):
+        assert (
+            schema.load(role_assignment_global_scope).data
+            == role_assignment_global_scope
+        )
+
     def test_role_assignment_domain_schema_can_serialize(
         self, schema, role_assignment_garden_scope
     ):
         assert (
             schema.dump(role_assignment_garden_scope).data
             == role_assignment_garden_scope
+        )
+
+    def test_role_assignment_domain_schema_can_serialize_global_scope(
+        self, schema, role_assignment_global_scope
+    ):
+        assert (
+            schema.dump(role_assignment_global_scope).data
+            == role_assignment_global_scope
         )
 
     def test_role_assignment_domain_schema_validates_identifiers(

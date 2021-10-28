@@ -469,6 +469,12 @@ class TestJobs(object):
         assert patch_op.path == "/status"
         assert patch_op.value == "RUNNING"
 
+    def test_execute(self, client, rest_client, parser, success, bg_job):
+        rest_client.patch_job.return_value = success
+
+        client.execute_job(bg_job.id)
+        assert rest_client.post_execute_job.called is True
+
 
 class TestJobImportExport(object):
     def test_import(self, client, rest_client, success, bg_job_defns_list):

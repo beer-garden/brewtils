@@ -845,6 +845,17 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
+    def execute_job(self, job_id):
+        """Execute a Job
+
+        Args:
+            job_id (str): The Job ID
+
+        Returns:
+            Request: The returned request
+        """
+        return self.client.post_execute_job(job_id)
+
     @wrap_response(parse_method="parse_resolvable")
     def upload_bytes(self, data):
         # type: (bytes) -> Any

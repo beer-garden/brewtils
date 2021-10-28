@@ -81,8 +81,9 @@ class Events(Enum):
     RUNNER_STOPPED = 39
     RUNNER_REMOVED = 40
     JOB_UPDATED = 41
+    JOB_EXECUTED = 43
 
-    # Next: 43
+    # Next: 44
 
 
 class BaseModel(object):

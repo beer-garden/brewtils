@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
-
 from enum import Enum
 
 import pytz  # noqa # not in requirements file
@@ -703,7 +701,6 @@ class Request(RequestTemplate):
 
     @status.setter
     def status(self, value):
-        self.status_updated_at = datetime.now()
         self._status = value
 
     @property

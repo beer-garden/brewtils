@@ -2,11 +2,9 @@
 
 import functools
 import json
-from datetime import datetime
 from typing import Any, List
 from base64 import b64encode
 
-import jwt
 import requests.exceptions
 import urllib3
 from requests import Response, Session
@@ -25,33 +23,10 @@ def enable_auth(method):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
-
-        # Proactively refresh access token, if possible
-        try:
-            if self.access_token and self.refresh_token:
-                now = datetime.utcnow()
-
-                decoded = jwt.decode(self.access_token, verify=False)
-                issued = datetime.utcfromtimestamp(int(decoded["iat"]))
-                expires = datetime.utcfromtimestamp(int(decoded["exp"]))
-
-                # Try to refresh there's less than 10% time remaining
-                if (expires - now) < (0.1 * (expires - issued)):
-                    self.refresh()
-        except Exception:
-            pass
-
         original_response = method(self, *args, **kwargs)
 
         if original_response.status_code != 401:
             return original_response
-
-        # Try to use the refresh token
-        if self.refresh_token:
-            refresh_response = self.refresh()
-
-            if refresh_response.ok:
-                return method(self, *args, **kwargs)
 
         # Try to use credentials
         if self.username and self.password:
@@ -60,7 +35,7 @@ def enable_auth(method):
             if credential_response.ok:
                 return method(self, *args, **kwargs)
 
-        # Nothing worked, just return the original response
+        # Authenticate and retry failed; just return the original response
         return original_response
 
     return wrapper
@@ -102,7 +77,7 @@ class RestClient(object):
         username (str): Username for Beer-garden authentication
         password (str): Password for Beer-garden authentication
         access_token (str): Access token for Beer-garden authentication
-        refresh_token (str): Refresh token for Beer-garden authentication
+        refresh_token (deprecated): Refresh token for Beer-garden authentication
     """
 
     # Latest API version currently released
@@ -173,7 +148,6 @@ class RestClient(object):
             self.job_export_url = self.base_url + "api/v1/export/jobs/"
             self.job_import_url = self.base_url + "api/v1/import/jobs/"
             self.token_url = self.base_url + "api/v1/token/"
-            self.token_refresh_url = self.base_url + "api/v1/token/refresh/"
             self.user_url = self.base_url + "api/v1/users/"
             self.admin_url = self.base_url + "api/v1/admin/"
             self.forward_url = self.base_url + "api/v1/forward"
@@ -912,33 +886,6 @@ class RestClient(object):
             response_data = response.json()
 
             self.access_token = response_data["access"]
-            self.refresh_token = response_data["refresh"]
-            self.session.headers["Authorization"] = "Bearer " + self.access_token
-
-        return response
-
-    def refresh(self, refresh_token=None):
-        # type: (str) -> Response
-        """Use a refresh token to obtain a new access token
-
-        Args:
-            refresh_token: Refresh token to use
-
-        Returns:
-            Requests Response object
-        """
-        refresh_token = refresh_token or self.refresh_token
-        response = self.session.post(
-            self.token_refresh_url,
-            headers={"Content-Type": "application/json"},
-            json={"refresh": refresh_token},
-        )
-
-        if response.ok:
-            response_data = response.json()
-
-            self.access_token = response_data["access"]
-            self.refresh_token = response_data["refresh"]
             self.session.headers["Authorization"] = "Bearer " + self.access_token
 
         return response

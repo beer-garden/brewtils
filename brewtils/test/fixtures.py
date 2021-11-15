@@ -290,6 +290,7 @@ def child_request_dict(ts_epoch):
         "command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
+        "status_updated_at": ts_epoch,
         "error_class": None,
         "metadata": {"child": "stuff"},
         "has_parent": True,
@@ -303,6 +304,7 @@ def child_request(child_request_dict, ts_dt):
     dict_copy = copy.deepcopy(child_request_dict)
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
+    dict_copy["status_updated_at"] = ts_dt
     return Request(**dict_copy)
 
 
@@ -326,6 +328,7 @@ def parent_request_dict(ts_epoch):
         "created_at": ts_epoch,
         "hidden": False,
         "updated_at": ts_epoch,
+        "status_updated_at": ts_epoch,
         "error_class": None,
         "metadata": {"parent": "stuff"},
         "has_parent": False,
@@ -339,6 +342,7 @@ def parent_request(parent_request_dict, ts_dt):
     dict_copy = copy.deepcopy(parent_request_dict)
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
+    dict_copy["status_updated_at"] = ts_dt
     return Request(**dict_copy)
 
 
@@ -386,6 +390,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
+        "status_updated_at": ts_epoch,
         "error_class": "ValueError",
         "metadata": {"request": "stuff"},
         "has_parent": True,
@@ -401,6 +406,7 @@ def bg_request(request_dict, parent_request, child_request, ts_dt):
     dict_copy["children"] = [child_request]
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
+    dict_copy["status_updated_at"] = ts_dt
     return Request(**dict_copy)
 
 

@@ -29,6 +29,8 @@ class TestRestClient(object):
             bg_port=80,
             api_version=1,
             url_prefix=url_prefix,
+            username="admin",
+            password="secret",
             ssl_enabled=False,
         )
         client.session = session_mock
@@ -110,7 +112,7 @@ class TestRestClient(object):
             ("logging_url", "http://host:80%sapi/v1/logging/"),
             ("logging_config_url", "http://host:80%sapi/v1/config/logging/"),
             ("job_url", "http://host:80%sapi/v1/jobs/"),
-            ("token_url", "http://host:80%sapi/v1/tokens/"),
+            ("token_url", "http://host:80%sapi/v1/token/"),
             ("user_url", "http://host:80%sapi/v1/users/"),
             ("admin_url", "http://host:80%sapi/v1/admin/"),
         ],
@@ -129,7 +131,7 @@ class TestRestClient(object):
             ("logging_url", "https://host:80%sapi/v1/logging/"),
             ("logging_config_url", "https://host:80%sapi/v1/config/logging/"),
             ("job_url", "https://host:80%sapi/v1/jobs/"),
-            ("token_url", "https://host:80%sapi/v1/tokens/"),
+            ("token_url", "https://host:80%sapi/v1/token/"),
             ("user_url", "https://host:80%sapi/v1/users/"),
             ("admin_url", "https://host:80%sapi/v1/admin/"),
         ],
@@ -357,7 +359,7 @@ class TestRestClient(object):
 
     def test_get_tokens(self, client, session_mock):
         response = Mock(ok=True)
-        response.json.return_value = {"token": "token", "refresh": "refresh"}
+        response.json.return_value = {"access": "access", "refresh": "refresh"}
         session_mock.post.return_value = response
         kwargs = {"username": "admin", "password": "secret"}
 
@@ -365,8 +367,20 @@ class TestRestClient(object):
         session_mock.post.assert_called_with(
             client.token_url, data=json.dumps(kwargs), headers=ANY
         )
-        assert client.access_token == "token"
-        assert client.refresh_token == "refresh"
+        assert client.access_token == "access"
+
+    def test_get_authenticate_and_retry(self, client, session_mock):
+        response401 = Mock(status_code=401)
+        response200 = Mock(status_code=200)
+        post_response = Mock(ok=True)
+        post_response.json.return_value = {"access": "access", "refresh": "refresh"}
+
+        session_mock.get.side_effect = [response401, response200]
+        session_mock.post.return_value = post_response
+        client.get_systems()
+
+        assert session_mock.get.call_count == 2
+        session_mock.post.assert_any_call(client.token_url, headers=ANY, data=ANY)
 
     def test_get_chunked_file(self, client, session_mock):
         client.get_chunked_file("id")
@@ -398,30 +412,6 @@ class TestRestClient(object):
         session_mock.patch.assert_called_with(
             client.admin_url, data="payload", headers=client.JSON_HEADERS
         )
-
-    def test_refresh(self, client, session_mock):
-        response = Mock(ok=True)
-        response.json.return_value = {"token": "new_token"}
-        session_mock.get.return_value = response
-
-        client.refresh(refresh_token="refresh")
-        session_mock.get.assert_called_with(
-            client.token_url, headers={"X-BG-RefreshID": "refresh"}
-        )
-        assert client.access_token == "new_token"
-
-    def test_refresh_404_fallback(self, client, session_mock):
-        response404 = Mock(status_code=404)
-        response200 = Mock(status_code=404)
-        response200.json.return_value = {"token": "new_token"}
-        session_mock.get.side_effect = [response404, response200]
-        client.refresh(refresh_token="refresh")
-        assert session_mock.get.call_count == 2
-        session_mock.get.assert_any_call(client.token_url + "refresh")
-        session_mock.get.assert_any_call(
-            client.token_url, headers={"X-BG-RefreshID": "refresh"}
-        )
-        assert client.access_token == "new_token"
 
     def test_session_client_cert(self):
         client = RestClient(

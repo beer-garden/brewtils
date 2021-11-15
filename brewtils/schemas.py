@@ -338,6 +338,7 @@ class RequestSchema(RequestTemplateSchema):
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    status_updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     has_parent = fields.Bool(allow_none=True)
     requester = fields.String(allow_none=True)
 

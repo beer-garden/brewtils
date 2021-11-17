@@ -775,9 +775,7 @@ class EasyClient(object):
 
         return self.client.post_export_jobs(payload)  # noqa # wrapper changes type
 
-    @wrap_response(
-        parse_method="parse_job_ids", parse_many=True, default_exc=FetchError
-    )
+    @wrap_response(parse_method="parse_job_ids")
     def import_jobs(self, job_list):
         # type: (List[Job]) -> List[str]
         """Import job definitions from a list of Jobs.

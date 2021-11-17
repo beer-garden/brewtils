@@ -301,33 +301,25 @@ class SchemaParser(object):
         return cls.parse(job, brewtils.models.Job, from_string=from_string, **kwargs)
 
     @classmethod
-    def parse_job_ids(cls, job_id_list, from_string=False, **kwargs):
-        """Convert raw JSON string or list of strings to a list of job ids.
+    def parse_job_ids(cls, job_id_json, from_string=False, **kwargs):
+        """Convert raw JSON string containing a list of strings to a list of job ids.
 
         Passes a list of strings through unaltered if from_string is False.
 
         Args:
-            job_id_list: Raw input
+            job_id_json: Raw input
             from_string: True if input is a JSON string, False otherwise
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A list of job ids.
+            A dictionary containing a list of job ids
         """
-        # this is needed by easy_client
-        #
-        # some functionality duplicated from the parse method because model not used
-        if job_id_list is None:  # pragma: no cover
-            raise TypeError("job_id_list can not be None")
-        if not bool(from_string):
-            if isinstance(job_id_list, list):
-                if len(job_id_list) > 0 and not all(
-                    map(lambda x: isinstance(x, str), job_id_list)
-                ):  # pragma: no cover
-                    raise TypeError("Not a list of strings")
-                return job_id_list
+        schema = brewtils.schemas.JobExportInputSchema(**kwargs)
 
-        return json.dumps(job_id_list)
+        if from_string:
+            return schema.loads(job_id_json).data
+        else:
+            return schema.load(job_id_json).data
 
     @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):

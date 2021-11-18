@@ -1,6 +1,19 @@
 Brewtils Changelog
 ==================
 
+3.8.0
+-----
+11/18/21
+
+New Features
+^^^^^^^^^^^^
+- EasyClient now has an `execute_job` method for doing ad-hoc executions of a scheduled job.
+- Request now has a `status_updated_at` field representing when the last status changed occured.
+
+Other Changes
+^^^^^^^^^^^^^
+- Misc additions related to future support of authentication / authorization in Beer Garden.
+
 3.7.1
 -----
 10/15/21
@@ -8,10 +21,6 @@ Brewtils Changelog
 Bug Fixes
 ^^^^^^^^^
 - Pinned troublesome dependency `wrapt` to version that's known to not be a problem
-
-New Features
-^^^^^^^^^^^^
-- N/a
 
 Other Changes
 ^^^^^^^^^^^^^

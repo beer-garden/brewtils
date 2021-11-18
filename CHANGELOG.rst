@@ -1,21 +1,30 @@
 Brewtils Changelog
 ==================
 
+3.8.0
+-----
+11/18/21
+
+New Features
+^^^^^^^^^^^^
+- EasyClient now has an ``execute_job`` method for doing ad-hoc executions of a scheduled job.
+- Request now has a ``status_updated_at`` field representing when the last status changed occured.
+
+Other Changes
+^^^^^^^^^^^^^
+- Misc additions related to future support of authentication / authorization in Beer Garden.
+
 3.7.1
 -----
 10/15/21
 
 Bug Fixes
 ^^^^^^^^^
-- Pinned troublesome dependency `wrapt` to version that's known to not be a problem
-
-New Features
-^^^^^^^^^^^^
-- N/a
+- Pinned troublesome dependency ``wrapt`` to version that's known to not be a problem
 
 Other Changes
 ^^^^^^^^^^^^^
-- Added `SystemDomainIdentifierSchema`, `GardenDomainIdentifierSchema` and `RoleAssignmentDomainSchema` schemas and updated the `RoleAssignmentSchema`. These changes require the role assignment schema to have a role assignment domain with nested data consisting of the system and garden domains (Issue #354 / PR #355)
+- Misc additions related to future support of authentication / authorization in Beer Garden.
 
 3.6.0
 -----
@@ -27,8 +36,8 @@ Bug Fixes
 
 New Features
 ^^^^^^^^^^^^
-- Added `export_jobs` and `import_jobs` to EasyClient (Issue #353 / PR #337)
-- Added `create_garden` and `remove_garden` to EasyClient (Issue #348 / PR #350)
+- Added ``export_jobs`` and ``import_jobs`` to EasyClient (Issue #353 / PR #337)
+- Added ``create_garden`` and ``remove_garden`` to EasyClient (Issue #348 / PR #350)
 
 Other Changes
 ^^^^^^^^^^^^^
@@ -50,7 +59,7 @@ Bug Fixes
 ^^^^^^^^^
 - Changed duplicate event enum value (Issue #932 / PR #330)
 - Better handling of non-json error responses (Issue #1033 / PR #324)
-- No longer ignoring `max_attempts`, `max_timeout`, and `starting_timeout` values (Issue #1028 / PR #323)
+- No longer ignoring ``max_attempts``, ``max_timeout``, and ``starting_timeout`` values (Issue #1028 / PR #323)
 - A plugin Client instance can now be reused (Issue #1014 / PR #321)
 - Charset in content-type header no longer breaks URL-based display resource loading (Issue #1010 / PR #319)
 - URL-based template resolution respects connection configuration (Issue #1009 / PR #318)
@@ -59,8 +68,8 @@ Bug Fixes
 New Features
 ^^^^^^^^^^^^
 - Jobs now have a timeout field (Issue #1046 / PR #329)
-- Added `bg_system` and `bg_default_instance` properties to SystemClient (Issue #279 / PR #273)
-- Forwarding REST calls now support `blocking` and `timeout` parameters (Issue #895 / PR #325)
+- Added ``bg_system`` and ``bg_default_instance`` properties to SystemClient (Issue #279 / PR #273)
+- Forwarding REST calls now support ``blocking`` and ``timeout`` parameters (Issue #895 / PR #325)
 - Added support for lambdas as a Choices source (Issue #1004 / PR #322)
 - Bytes-type parameters are now supported (Issue #991 / PR #316)
 - Systems can now have UI templates (Issue #997 / PR #315)
@@ -69,7 +78,7 @@ New Features
 Other Changes
 ^^^^^^^^^^^^^
 - Removed support for pika versions below 1.0 (Issue #651 / PR #328)
-- SystemClient now has a `__str__` method (Issue #76 / PR #327)
+- SystemClient now has a ``__str__`` method (Issue #76 / PR #327)
 - Dropped official support for Python 3.5 (Issue #1043 / PR #326)
 - Added INVALID Request status (PR #325)
 

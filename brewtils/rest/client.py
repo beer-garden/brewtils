@@ -629,9 +629,13 @@ class RestClient(object):
         Returns:
             Request Response object
         """
-        url_params = "?reset_interval=True" if reset_interval else ""
+        url_params = {}
+        if reset_interval:
+            url_params["reset_interval"] = "True"
+
+        "?reset_interval=True" if reset_interval else ""
         return self.session.post(
-            self.job_url + job_id + "/execute" + url_params, headers=self.JSON_HEADERS
+            self.job_url + job_id + "/execute", headers=self.JSON_HEADERS, params=url_params
         )
 
     @enable_auth

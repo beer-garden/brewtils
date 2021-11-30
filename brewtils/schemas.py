@@ -584,7 +584,7 @@ class RoleAssignmentDomainSchema(BaseSchema):
 
 
 class RoleAssignmentSchema(BaseSchema):
-    domain = fields.Nested(RoleAssignmentDomainSchema)
+    domain = fields.Nested(RoleAssignmentDomainSchema, required=True)
     role = fields.Nested(RoleSchema())
 
 

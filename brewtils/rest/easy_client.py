@@ -843,16 +843,18 @@ class EasyClient(object):
         """
         return self._patch_job(job_id, [PatchOperation("update", "/status", "RUNNING")])
 
-    def execute_job(self, job_id):
+    def execute_job(self, job_id, reset_interval=False):
         """Execute a Job
 
         Args:
             job_id (str): The Job ID
+            reset_interval (bool): Restarts the job's interval time to now if
+                the job's trigger is an interval
 
         Returns:
             Request: The returned request
         """
-        return self.client.post_execute_job(job_id)
+        return self.client.post_execute_job(job_id, reset_interval)
 
     @wrap_response(parse_method="parse_resolvable")
     def upload_bytes(self, data):

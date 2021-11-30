@@ -618,18 +618,25 @@ class RestClient(object):
         """
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
-    def post_execute_job(self, job_id):
+    def post_execute_job(self, job_id, reset_interval=False):
         # type: (str) -> Response
         """Performs a POST on the Job Execute URL
 
         Args:
             job_id: The ID of the Job
+            reset_interval: Sets interval of job to restart now
 
         Returns:
             Request Response object
         """
+        url_params = {}
+        if reset_interval:
+            url_params["reset_interval"] = "True"
+
         return self.session.post(
-            self.job_url + job_id + "/execute", headers=self.JSON_HEADERS
+            self.job_url + job_id + "/execute",
+            headers=self.JSON_HEADERS,
+            params=url_params,
         )
 
     @enable_auth

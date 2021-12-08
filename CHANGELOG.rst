@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+3.9.0
+-----
+12/8/21
+
+New Features
+^^^^^^^^^^^^
+- EasyClient ``execute_job`` method now supports resetting the run interval for jobs with an interval trigger.
+
 3.8.0
 -----
 11/18/21

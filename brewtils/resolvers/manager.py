@@ -2,7 +2,8 @@
 
 import collections
 import logging
-from typing import Any, Dict, List, Mapping
+from collections.abc import Mapping
+from typing import Any, Dict, List
 
 from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver
@@ -89,7 +90,7 @@ class ResolutionManager(object):
                     elif (
                         not upload
                         and resolver.should_download(value, definition)
-                        and value
+                        and isinstance(value, Mapping)
                     ):
                         resolvable = Resolvable(**value)
                         resolved = resolver.download(resolvable, definition)

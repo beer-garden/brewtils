@@ -100,10 +100,9 @@ class TestSimpleResolve(object):
         assert resolved == {"message": "hi"}
 
     def test_download_value_none(
-        self, manager, resolver_mock, bg_command, resolvable_dict, bg_resolvable
+        self, manager, resolver_mock, bg_command, bg_resolvable
     ):
         resolver_mock.should_download.return_value = True
-        resolver_mock.download.return_value = "hi"
 
         # Need to clear out nested parameters otherwise this is a model parameter
         for param in bg_command.parameters:

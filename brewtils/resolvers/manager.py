@@ -86,7 +86,11 @@ class ResolutionManager(object):
                         resolvable = resolver.upload(value, definition)
                         resolved = SchemaParser.serialize(resolvable, to_string=False)
                         break
-                    elif not upload and resolver.should_download(value, definition):
+                    elif (
+                        not upload
+                        and resolver.should_download(value, definition)
+                        and isinstance(value, Mapping)
+                    ):
                         resolvable = Resolvable(**value)
                         resolved = resolver.download(resolvable, definition)
                         break

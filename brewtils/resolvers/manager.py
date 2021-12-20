@@ -2,8 +2,7 @@
 
 import collections
 import logging
-from collections.abc import Mapping
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Mapping
 
 from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver

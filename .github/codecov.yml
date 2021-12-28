@@ -1,5 +1,8 @@
+github_checks:
+  annotations: false
+
 coverage:
   patch:
     default:
-      enabled: no
+      enabled: false
       if_not_found: success

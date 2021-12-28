@@ -29,7 +29,7 @@ def enable_auth(method):
             return original_response
 
         # Try to use credentials
-        if self.username and self.password:
+        if (self.username and self.password) or self.client_cert:
             credential_response = self.get_tokens()
 
             if credential_response.ok:
@@ -96,6 +96,8 @@ class RestClient(object):
         self.password = self._config.password
         self.access_token = self._config.access_token
         self.refresh_token = self._config.refresh_token
+        self.client_cert = self._config.client_cert
+        self.client_key = self._config.client_key
 
         # Configure the session to use when making requests
         self.session = Session()

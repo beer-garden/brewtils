@@ -436,3 +436,26 @@ class TestRestClient(object):
         client = RestClient(bg_host="host", bg_port=80, api_version=1, ca_verify=False)
         assert client.session.verify is False
         assert urllib_mock.disable_warnings.called is True
+
+    def test_client_cert_without_username_password(self, monkeypatch):
+        get_tokens_mock = Mock()
+        monkeypatch.setattr(
+            brewtils.rest.client.RestClient, "get_tokens", get_tokens_mock
+        )
+
+        client = RestClient(
+            bg_host="host",
+            bg_port=443,
+            api_version=1,
+            ssl_enabled=True,
+            client_cert="/path/to/cert",
+        )
+
+        session_get_response = Mock()
+        session_get_response.status_code = 401
+        session_get_mock = Mock(return_value=session_get_response)
+        monkeypatch.setattr(client.session, "get", session_get_mock)
+
+        client.get_garden("somegarden")
+
+        assert get_tokens_mock.called is True

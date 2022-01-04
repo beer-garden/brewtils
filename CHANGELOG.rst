@@ -1,6 +1,15 @@
 Brewtils Changelog
 ==================
 
+3.10.0
+------
+1/4/2022
+
+Bug Fixes
+^^^^^^^^^
+- ``Bytes`` and ``Base64`` parameter types can now be defined as optional.
+- ``RestClient`` no longer requires ``username`` and ``password`` when using certificates.
+
 3.9.0
 -----
 12/8/21

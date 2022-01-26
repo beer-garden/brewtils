@@ -2,20 +2,19 @@
 
 import functools
 import json
-from typing import Any, List
 from base64 import b64encode
-
-import requests.exceptions
-import urllib3
-from requests import Response, Session
-from requests.utils import quote
-from requests.adapters import HTTPAdapter
-from yapconf import YapconfSpec
+from typing import Any, List
 
 import brewtils.plugin
+import requests.exceptions
+import urllib3
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC
+from requests import Response, Session
+from requests.adapters import HTTPAdapter
+from requests.utils import quote
+from yapconf import YapconfSpec
 
 
 def enable_auth(method):
@@ -301,6 +300,18 @@ class RestClient(object):
         return self.session.get(self.garden_url + quote(garden_name), params=kwargs)
 
     @enable_auth
+    def get_gardens(self, **kwargs):
+        # type: (**Any) -> Response
+        """Preform a GET on the Garden URL
+
+        This fetches all gardens.
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.get(self.garden_url, params=kwargs)
+
+    @enable_auth
     def post_gardens(self, payload):
         # type: (str) -> Response
         """Performs a POST on the Garden URL
@@ -328,6 +339,24 @@ class RestClient(object):
         """
         # quote will URL encode the Garden name
         return self.session.delete(self.garden_url + quote(garden_name))
+
+    @enable_auth
+    def patch_garden(self, garden_name, payload):
+        # type: (str, str) -> Response
+        """Perform a PATCH on a Garden URL
+
+        Args:
+            garden_name: Garden name
+            payload: Serialized patch operation
+
+        Returns:
+            Request Response object
+        """
+        return self.session.patch(
+            self.garden_url + quote(garden_name),
+            data=payload,
+            headers=self.JSON_HEADERS,
+        )
 
     @enable_auth
     def get_systems(self, **kwargs):
@@ -621,7 +650,7 @@ class RestClient(object):
         return self.session.post(self.job_url, data=payload, headers=self.JSON_HEADERS)
 
     def post_execute_job(self, job_id, reset_interval=False):
-        # type: (str) -> Response
+        # type: (str, bool) -> Response
         """Performs a POST on the Job Execute URL
 
         Args:

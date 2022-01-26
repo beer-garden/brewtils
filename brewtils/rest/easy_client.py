@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+from asyncio.log import logger  # noqa
 from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
@@ -251,6 +253,15 @@ class EasyClient(object):
         """
         return self.client.get_garden(garden_name)
 
+    @wrap_response(parse_method="parse_garden", parse_many=True, default_exc=FetchError)
+    def get_gardens(self):
+        """Get all Gardens.
+
+        Returns:
+            A list of all the Gardens
+        """
+        return self.client.get_gardens()
+
     @wrap_response(parse_method="parse_garden", parse_many=False, default_exc=SaveError)
     def create_garden(self, garden):
         """Create a new Garden
@@ -279,6 +290,28 @@ class EasyClient(object):
 
         """
         return self.client.delete_garden(garden_name)
+
+    @wrap_response(parse_method="parse_garden")
+    def update_garden(self, garden):
+        operations = [
+            PatchOperation(
+                operation="config",
+                path="",
+                value=SchemaParser.serialize_garden(garden, many=False),
+            ),
+        ]
+        patches = SchemaParser.serialize_patch(operations, many=True, to_string=True)
+
+        patches = json.dumps(
+            [
+                {
+                    "operation": "config",
+                    "path": "",
+                    "value": SchemaParser.serialize_garden(garden, to_string=False),
+                }
+            ]
+        )
+        return self.client.patch_garden(garden.name, patches)
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError

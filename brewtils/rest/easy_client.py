@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-from asyncio.log import logger  # noqa
 from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
@@ -291,26 +290,20 @@ class EasyClient(object):
         """
         return self.client.delete_garden(garden_name)
 
-    @wrap_response(parse_method="parse_garden")
+    @wrap_response(parse_method="parse_garden", default_exc=FetchError)
     def update_garden(self, garden):
-        operations = [
-            PatchOperation(
-                operation="config",
-                path="",
-                value=SchemaParser.serialize_garden(garden, many=False),
-            ),
-        ]
-        patches = SchemaParser.serialize_patch(operations, many=True, to_string=True)
+        garden_as_dict = SchemaParser.serialize_garden(garden, to_string=False)
 
         patches = json.dumps(
             [
                 {
                     "operation": "config",
                     "path": "",
-                    "value": SchemaParser.serialize_garden(garden, to_string=False),
+                    "value": garden_as_dict,
                 }
             ]
         )
+
         return self.client.patch_garden(garden.name, patches)
 
     @wrap_response(

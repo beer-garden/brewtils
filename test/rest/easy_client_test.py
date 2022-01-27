@@ -24,6 +24,7 @@ from brewtils.rest.easy_client import (
     handle_response_failure,
 )
 from brewtils.schema_parser import SchemaParser
+from brewtils.schemas import GardenSchema
 from mock import ANY, Mock
 
 
@@ -159,6 +160,7 @@ class TestGardens(object):
     def test_update(self, client, rest_client, bg_garden, success, parser):
         rest_client.patch_garden.return_value = success
         parser.parse_garden.return_value = bg_garden
+        parser.serialize_garden.return_value = GardenSchema().dumps(bg_garden)
         updated = client.update_garden(bg_garden)
 
         assert updated == bg_garden

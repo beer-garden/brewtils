@@ -592,6 +592,7 @@ class UserSchema(BaseSchema):
     id = fields.Str()
     username = fields.Str()
     role_assignments = fields.List(fields.Nested(RoleAssignmentSchema()))
+    permissions = fields.Dict()
 
 
 class UserCreateSchema(BaseSchema):

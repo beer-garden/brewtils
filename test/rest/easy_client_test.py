@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import copy
 import warnings
-
-import pytest
-from mock import ANY, Mock
-from base64 import b64encode, b64decode
+from base64 import b64decode, b64encode
 
 import brewtils.rest.easy_client
+import pytest
 from brewtils.errors import (
     ConflictError,
     DeleteError,
@@ -25,6 +24,8 @@ from brewtils.rest.easy_client import (
     handle_response_failure,
 )
 from brewtils.schema_parser import SchemaParser
+from brewtils.schemas import GardenSchema
+from mock import ANY, Mock
 
 
 @pytest.fixture
@@ -155,6 +156,23 @@ class TestGardens(object):
 
             with pytest.raises(NotFoundError):
                 client.remove_garden(bg_garden.name)
+
+    def test_update(self, client, rest_client, bg_garden, success, parser):
+        rest_client.patch_garden.return_value = success
+        parser.parse_garden.return_value = bg_garden
+        parser.serialize_garden.return_value = GardenSchema().dumps(bg_garden)
+        updated = client.update_garden(bg_garden)
+
+        assert updated == bg_garden
+
+    def test_get_all(self, client, rest_client, bg_garden, success, parser):
+        child_garden = copy.deepcopy(bg_garden)
+        child_garden.name = "child1"
+        both_gardens = [bg_garden, child_garden]
+        rest_client.get_gardens.return_value = success
+        parser.parse_garden.return_value = both_gardens
+
+        assert client.get_gardens() == both_gardens
 
 
 class TestSystems(object):

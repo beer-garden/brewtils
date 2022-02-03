@@ -4,13 +4,12 @@ import json
 import os
 import warnings
 
+import brewtils.rest
 import pytest
 import requests.exceptions
+from brewtils.rest.client import RestClient
 from mock import ANY, MagicMock, Mock
 from yapconf.exceptions import YapconfItemError
-
-import brewtils.rest
-from brewtils.rest.client import RestClient
 
 
 class TestRestClient(object):
@@ -212,10 +211,22 @@ class TestRestClient(object):
         client.get_garden("name!")
         session_mock.get.assert_called_with(client.garden_url + "name%21", params={})
 
+    def test_get_gardens(self, client, session_mock):
+        client.get_gardens()
+        session_mock.get.assert_called_with(client.garden_url, params={})
+
     def test_post_garden(self, client, session_mock):
         client.post_gardens(payload="payload")
         session_mock.post.assert_called_with(
             client.garden_url, data="payload", headers=client.JSON_HEADERS
+        )
+
+    def test_patch_garden(self, client, session_mock):
+        client.patch_garden("gardenname", "payload")
+        session_mock.patch.assert_called_with(
+            client.garden_url + "gardenname",
+            data="payload",
+            headers=client.JSON_HEADERS,
         )
 
     def test_delete_garden(self, client, session_mock):

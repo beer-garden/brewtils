@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
@@ -251,6 +252,15 @@ class EasyClient(object):
         """
         return self.client.get_garden(garden_name)
 
+    @wrap_response(parse_method="parse_garden", parse_many=True, default_exc=FetchError)
+    def get_gardens(self):
+        """Get all Gardens.
+
+        Returns:
+            A list of all the Gardens
+        """
+        return self.client.get_gardens()
+
     @wrap_response(parse_method="parse_garden", parse_many=False, default_exc=SaveError)
     def create_garden(self, garden):
         """Create a new Garden
@@ -279,6 +289,22 @@ class EasyClient(object):
 
         """
         return self.client.delete_garden(garden_name)
+
+    @wrap_response(parse_method="parse_garden", default_exc=FetchError)
+    def update_garden(self, garden):
+        garden_as_dict = SchemaParser.serialize_garden(garden, to_string=False)
+
+        patches = json.dumps(
+            [
+                {
+                    "operation": "config",
+                    "path": "",
+                    "value": garden_as_dict,
+                }
+            ]
+        )
+
+        return self.client.patch_garden(garden.name, patches)
 
     @wrap_response(
         parse_method="parse_system", parse_many=False, default_exc=FetchError

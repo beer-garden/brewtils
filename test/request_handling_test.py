@@ -284,7 +284,7 @@ class TestRequestProcessor(object):
             "output,expected",
             [
                 ("foo", "foo"),
-                (u"foo", "foo"),
+                ("foo", "foo"),
                 ({"foo": "bar"}, json.dumps({"foo": "bar"})),
                 (["foo", "bar"], json.dumps(["foo", "bar"])),
                 # TypeError

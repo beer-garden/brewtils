@@ -87,7 +87,7 @@ format: ## Run black formatter in-line
 # Linting
 lint: ## check style with flake8
 	flake8 $(MODULE_NAME) $(TEST_DIR)
-	black --target-version py27 --check $(MODULE_NAME) $(TEST_DIR)
+	black --check $(MODULE_NAME) $(TEST_DIR)
 
 
 # Testing / Coverage

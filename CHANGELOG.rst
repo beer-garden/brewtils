@@ -1,6 +1,19 @@
 Brewtils Changelog
 ==================
 
+3.11.0
+------
+2/9/2022
+^^^^^^^^^
+
+New Features
+^^^^^^^^^^^^
+- ``get_gardens`` (list of all Gardens) and ``update_garden`` (apply a new definition to an existing Garden) added to easy client
+
+Other Changes
+^^^^^^^^^^^^^
+- Permission field added to ``UserSchema``.
+
 3.10.0
 ------
 1/4/2022

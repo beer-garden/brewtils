@@ -4,6 +4,7 @@ from enum import Enum
 
 import pytz  # noqa # not in requirements file
 import six  # noqa # not in requirements file
+
 from brewtils.errors import ModelError, _deprecate
 
 __all__ = [
@@ -82,8 +83,10 @@ class Events(Enum):
     RUNNER_REMOVED = 40
     JOB_UPDATED = 41
     JOB_EXECUTED = 43
+    USER_UPDATED = 44
+    USERS_IMPORTED = 45
 
-    # Next: 44
+    # Next: 46
 
 
 class BaseModel(object):

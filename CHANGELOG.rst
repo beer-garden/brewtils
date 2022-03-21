@@ -1,6 +1,16 @@
 Brewtils Changelog
 ==================
 
+3.12.0
+------
+3/21/2022
+^^^^^^^^^
+
+Other Changes
+^^^^^^^^^^^^^
+- Added new internal event types: ``USER_UPDATED`` and ``USERS_IMPORTED``.
+
+
 3.11.0
 ------
 2/9/2022

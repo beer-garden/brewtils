@@ -69,3 +69,6 @@ target/
 # Jupyter
 .ipydb_checkpoints/
 *.ipynb
+
+# Vim
+*.swp

@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import collections
 import logging
 from typing import Any, Dict, List, Mapping
+
+try:
+    from collections import Mapping as CollectionsMapping
+except ImportError:
+    from collections.abc import Mapping as CollectionsMapping
 
 from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver
@@ -61,7 +65,7 @@ class ResolutionManager(object):
                     break
 
             # Check to see if this is a nested parameter
-            if isinstance(value, collections.Mapping) and definition.parameters:
+            if isinstance(value, CollectionsMapping) and definition.parameters:
                 resolved = self.resolve(
                     value, definitions=definition.parameters, upload=upload
                 )

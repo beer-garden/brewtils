@@ -2,3 +2,9 @@ ignore:
   - "test/*.py"
   - "brewtils/test/*.py"
 
+github_checks:
+  annotations: false
+
+coverage:
+  status:
+    patch: false

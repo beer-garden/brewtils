@@ -72,6 +72,7 @@ class PikaClient(object):
         ssl = ssl or {}
         self._ssl_options = None
         self._ssl_enabled = ssl.get("enabled", False)
+        self._ssl_client_cert = ssl.get("client_cert")
 
         if self._ssl_enabled:
             ssl_context = pyssl.create_default_context(cafile=ssl.get("ca_cert", None))
@@ -80,6 +81,10 @@ class PikaClient(object):
             else:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = pyssl.CERT_NONE
+
+            if self._ssl_client_cert:
+                ssl_context.load_cert_chain(self._ssl_client_cert)
+
             self._ssl_options = SSLOptions(ssl_context, server_hostname=self._host)
 
         # Save the 'normal' params so they don't need to be reconstructed

@@ -136,7 +136,9 @@ class Plugin(object):
             authority that issued the Beer-garden server certificate
         ca_verify (bool): Whether to verify Beer-garden server certificate
         client_cert (str): Path to client certificate to use when communicating with
-            Beer-garden
+            Beer-garden. NOTE: This is required to be a cert / key bundle if SSL/TLS is
+            enabled for rabbitmq in your environment.
+        client_key (str): Path to client key. Not necessary if client_cert is a bundle.
         api_version (int): Beer-garden API version to use
         client_timeout (int): Max time to wait for Beer-garden server response
         username (str): Username for Beer-garden authentication
@@ -531,13 +533,14 @@ class Plugin(object):
         # values specified at plugin creation
         connection_info = self._instance.queue_info["connection"]
         if "ssl" in connection_info:
-            connection_info["ssl"].update(
-                {
-                    "ca_cert": self._config.ca_cert,
-                    "ca_verify": self._config.ca_verify,
-                    "client_cert": self._config.client_cert,
-                }
-            )
+            if self._config.ca_verify:
+                connection_info["ssl"]["ca_verify"] = self._config.ca_verify
+
+            if self._config.ca_cert:
+                connection_info["ssl"]["ca_cert"] = self._config.ca_cert
+
+            if self._config.client_cert:
+                connection_info["ssl"]["client_cert"] = self._config.client_cert
 
         # Each RequestProcessor needs a RequestConsumer, so start with those
         common_args = {

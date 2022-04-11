@@ -5,6 +5,7 @@ from datetime import datetime
 
 import pytest
 import pytz
+
 from brewtils.models import (
     Choices,
     Command,
@@ -215,7 +216,12 @@ def instance_dict(ts_epoch):
                 "user": "guest",
                 "password": "guest",
                 "virtual_host": "/",
-                "ssl": {"enabled": False},
+                "ssl": {
+                    "enabled": False,
+                    "ca_verify": False,
+                    "client_cert": "/path/to/cert",
+                    "ca_cert": "/path/to/cacert",
+                },
             },
             "url": "amqp://guest:guest@localhost:5672",
         },

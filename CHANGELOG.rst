@@ -1,20 +1,34 @@
 Brewtils Changelog
 ==================
 
+3.13.0
+------
+4/12/2022
+
+**NOTE:** This release fixes an issue where client certificates would not be
+sent to rabbitmq, even if a Plugin was configured to do so. Connecting to
+rabbitmq with certificates currently requires that the provided certificate be a
+key and certificate bundle. Please be aware that in certain configurations where
+the certificate is already set and is not a bundle, your connection to rabbitmq
+may fail under this release. To fix this, switch your certificate to be a bundle
+that also includes the key.
+
+Bug Fixes
+^^^^^^^^^
+- Plugins will now properly use client certificates when connecting to rabbitmq if provided.
+- Fixed an issue that was preventing brewtils from working properly in python 3.10.
+
 3.12.0
 ------
 3/21/2022
-^^^^^^^^^
 
 Other Changes
 ^^^^^^^^^^^^^
 - Added new internal event types: ``USER_UPDATED`` and ``USERS_IMPORTED``.
 
-
 3.11.0
 ------
 2/9/2022
-^^^^^^^^^
 
 New Features
 ^^^^^^^^^^^^

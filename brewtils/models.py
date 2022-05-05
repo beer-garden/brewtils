@@ -85,8 +85,10 @@ class Events(Enum):
     JOB_EXECUTED = 43
     USER_UPDATED = 44
     USERS_IMPORTED = 45
+    ROLE_UPDATED = 46
+    ROLES_IMPORTED = 47
 
-    # Next: 46
+    # Next: 48
 
 
 class BaseModel(object):

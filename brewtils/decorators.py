@@ -108,9 +108,9 @@ def command(
             from decorators and inferred from the method signature.
         command_type: The command type. Valid options are Command.COMMAND_TYPES.
         output_type: The output type. Valid options are Command.OUTPUT_TYPES.
-        schema: A custom schema definition.
-        DEPRECATED form: A custom form definition.
-        template: A custom template definition.
+        schema: Deprecated and will be removed in future release. Custom schema definition.
+        form: Deprecated and will be removed in future release. Custom form definition.
+        template: Deprecated and will be removed in future release. Custom template definition.
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
         metadata: Free-form dictionary
@@ -118,6 +118,15 @@ def command(
     Returns:
         The decorated function
     """
+    if form != None:
+        _deprecate("Use of the form paramter with @command is now deprecated and will eventually be removed.")
+
+    if schema != None:
+        _deprecate("Use of the schema parameter with @command is now deprecated and will eventually be removed.")
+
+    if template != None:
+        _deprecate("Use of the template parameter with @command is now deprecated and will eventually be removed.")    
+
     if _wrapped is None:
         return functools.partial(
             command,

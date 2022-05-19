@@ -109,7 +109,7 @@ def command(
         command_type: The command type. Valid options are Command.COMMAND_TYPES.
         output_type: The output type. Valid options are Command.OUTPUT_TYPES.
         schema: A custom schema definition.
-        form: A custom form definition.
+        DEPRECATED form: A custom form definition.
         template: A custom template definition.
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.

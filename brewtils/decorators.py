@@ -125,8 +125,8 @@ def command(
         _deprecate("Use of schema with @command is now deprecated and will eventually be removed")
 
     if template is not None:
-        _deprecate("Use of template with @command is now deprecated" +
-            " and will eventually be removed")
+        _deprecate(
+            "Use of template with @command is now deprecated and will eventually be removed")
 
     if _wrapped is None:
         return functools.partial(

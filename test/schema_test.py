@@ -5,14 +5,17 @@ from marshmallow.exceptions import ValidationError
 from mock import Mock
 from pytest_lazyfixture import lazy_fixture
 
-from brewtils.models import System
+from brewtils.models import Job, System
 from brewtils.schemas import (
     BaseSchema,
+    PatchSchema,
+    JobExportSchema,
     DateTime,
     RoleAssignmentSchema,
     SystemSchema,
     _deserialize_model,
     _serialize_model,
+    _domain_identifier_schema_selector,
     model_schema_map,
 )
 
@@ -34,6 +37,19 @@ class TestSchemas(object):
         assert "id" in attributes
         assert "name" in attributes
         assert "__model__" not in attributes
+
+    def test_patch_schema_list_returns_data(self):
+        # the many arg seems to do nothing, so I just made it true
+        list = []
+        schema = PatchSchema()
+        result = schema.unwrap_envelope(list, True)
+        assert result == list
+
+    def test_job_export_creation(self):
+        schema = JobExportSchema()
+        test_data = {}
+        job = schema.make_object(data=test_data)
+        assert isinstance(job, Job)
 
 
 class TestFields(object):
@@ -186,3 +202,7 @@ class TestRoleAssignmentSchema(object):
 
         with pytest.raises(ValidationError):
             schema.load(role_assignment_system_scope)
+
+    def test_domain_identifier_selector_scope_not_dict(self):
+        with pytest.raises(AttributeError):
+            _domain_identifier_schema_selector(True, "test")

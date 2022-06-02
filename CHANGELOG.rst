@@ -1,6 +1,22 @@
 Brewtils Changelog
 ==================
 
+3.14.0
+------
+6/2/2022
+
+Deprecations / Removals
+^^^^^^^^^^^^^^^^^^^^^^^
+- The ability to customize rendering in the Beer Garden UI by specifying the
+  schema, form, and template parameters in the @command decorator is now
+  deprecated. Future releases of Beer Garden will no longer support this type
+  of customization, so these options should no longer be used in brewtils.
+
+Other Changes
+^^^^^^^^^^^^^
+- Removed pyjwt dependency
+- Added various internal event types
+
 3.13.0
 ------
 4/12/2022

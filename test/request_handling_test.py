@@ -409,12 +409,12 @@ class TestHTTPRequestUpdater(object):
             with pytest.raises(raised):
                 updater.update_request(bg_request, {})
             assert client.update_request.called is True
-            assert updater.brew_view_down is bv_down
+            assert updater.beergarden_down is bv_down
 
         def test_wait_during_error(self, updater, client, bg_request):
             error_condition_mock = MagicMock()
-            updater.brew_view_error_condition = error_condition_mock
-            updater.brew_view_down = True
+            updater.beergarden_error_condition = error_condition_mock
+            updater.beergarden_down = True
 
             updater.update_request(bg_request, {})
             assert error_condition_mock.wait.called is True
@@ -455,31 +455,31 @@ class TestHTTPRequestUpdater(object):
             updater._connection_poll()
             assert client.get_version.called is False
 
-        def test_brew_view_normal(self, updater, client, shutdown_event):
+        def test_beergarden_normal(self, updater, client, shutdown_event):
             shutdown_event.wait.side_effect = [False, True]
 
             updater._connection_poll()
             assert client.get_version.called is False
 
-        def test_brew_view_down(self, updater, client, shutdown_event):
+        def test_beergarden_down(self, updater, client, shutdown_event):
             shutdown_event.wait.side_effect = [False, True]
-            updater.brew_view_down = True
+            updater.beergarden_down = True
             client.get_version.side_effect = ValueError
 
             updater._connection_poll()
             assert client.get_version.called is True
-            assert updater.brew_view_down is True
+            assert updater.beergarden_down is True
 
-        def test_brew_view_back(self, updater, client, shutdown_event):
+        def test_beergarden_back(self, updater, client, shutdown_event):
             shutdown_event.wait.side_effect = [False, True]
-            updater.brew_view_down = True
+            updater.beergarden_down = True
 
             updater._connection_poll()
             assert client.get_version.called is True
-            assert updater.brew_view_down is False
+            assert updater.beergarden_down is False
 
         def test_never_die(self, monkeypatch, updater, client, shutdown_event):
-            monkeypatch.setattr(updater, "brew_view_error_condition", None)
+            monkeypatch.setattr(updater, "beergarden_error_condition", None)
             shutdown_event.wait.side_effect = [False, True]
 
             # Test passes if this doesn't raise

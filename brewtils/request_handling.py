@@ -383,9 +383,9 @@ class HTTPRequestUpdater(RequestUpdater):
         self.max_timeout = kwargs.get("max_timeout", 30)
         self.starting_timeout = kwargs.get("starting_timeout", 5)
 
-        # Tightly manage when we're in an 'error' state, aka Brew-view is down
-        self.brew_view_error_condition = threading.Condition()
-        self.brew_view_down = False
+        # Tightly manage when we're in an 'error' state, aka beergarden is down
+        self.beergarden_error_condition = threading.Condition()
+        self.beergarden_down = False
 
         self.logger.debug("Creating and starting connection poll thread")
         self.connection_poll_thread = self._create_connection_poll_thread()
@@ -393,15 +393,15 @@ class HTTPRequestUpdater(RequestUpdater):
 
     def shutdown(self):
         self.logger.debug("Shutting down, about to wake any sleeping updater threads")
-        with self.brew_view_error_condition:
-            self.brew_view_error_condition.notify_all()
+        with self.beergarden_error_condition:
+            self.beergarden_error_condition.notify_all()
 
     def update_request(self, request, headers):
         """Sends a Request update to beer-garden
 
         Ephemeral requests do not get updated, so we simply skip them.
 
-        If brew-view appears to be down, it will wait for brew-view to come back
+        If beergarden appears to be down, it will wait for beergarden to come back
          up before updating.
 
         If this is the final attempt to update, we will attempt a known, good
@@ -422,9 +422,9 @@ class HTTPRequestUpdater(RequestUpdater):
             sys.stdout.flush()
             return
 
-        with self.brew_view_error_condition:
+        with self.beergarden_error_condition:
 
-            self._wait_for_brew_view_if_down(request)
+            self._wait_for_beergarden_if_down(request)
 
             try:
                 if not self._should_be_final_attempt(headers):
@@ -460,10 +460,10 @@ class HTTPRequestUpdater(RequestUpdater):
 
     def _handle_request_update_failure(self, request, headers, exc):
 
-        # If brew-view is down, we always want to try again
+        # If beergarden is down, we always want to try again
         # Yes, even if it is the 'final_attempt'
         if isinstance(exc, (RequestsConnectionError, RestConnectionError)):
-            self.brew_view_down = True
+            self.beergarden_down = True
             self.logger.error(
                 "Error updating request status: {0} exception: {1}".format(
                     request.id, exc
@@ -528,14 +528,14 @@ class HTTPRequestUpdater(RequestUpdater):
 
         return self.max_attempts <= headers.get("retry_attempt", 0)
 
-    def _wait_for_brew_view_if_down(self, request):
-        if self.brew_view_down and not self._shutdown_event.is_set():
+    def _wait_for_beergarden_if_down(self, request):
+        if self.beergarden_down and not self._shutdown_event.is_set():
             self.logger.warning(
-                "Currently unable to communicate with Brew-view, about to wait "
+                "Currently unable to communicate with beergarden, about to wait "
                 "until connection is reestablished to update request %s",
                 request.id,
             )
-            self.brew_view_error_condition.wait()
+            self.beergarden_error_condition.wait()
 
     def _create_connection_poll_thread(self):
         connection_poll_thread = threading.Thread(target=self._connection_poll)
@@ -547,18 +547,18 @@ class HTTPRequestUpdater(RequestUpdater):
 
         while not self._shutdown_event.wait(5):
             try:
-                with self.brew_view_error_condition:
-                    if self.brew_view_down:
+                with self.beergarden_error_condition:
+                    if self.beergarden_down:
                         try:
                             self._ez_client.get_version()
                         except Exception:
-                            self.logger.debug("Brew-view reconnection attempt failure")
+                            self.logger.debug("Beergarden reconnection attempt failure")
                         else:
                             self.logger.info(
-                                "Brew-view connection reestablished, about to "
+                                "Beergarden connection reestablished, about to "
                                 "notify any waiting requests"
                             )
-                            self.brew_view_down = False
-                            self.brew_view_error_condition.notify_all()
+                            self.beergarden_down = False
+                            self.beergarden_error_condition.notify_all()
             except Exception as ex:
                 self.logger.exception("Exception in connection poll thread: %s", ex)

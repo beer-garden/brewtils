@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+3.15.0
+------
+8/31/2022
+
+Other Changes
+^^^^^^^^^^^^^
+- Removed internal references to beer garden v2 naming conventions
+
 3.14.0
 ------
 6/2/2022

@@ -955,7 +955,6 @@ class LoggingConfig(BaseModel):
         return LoggingConfig(level=level, handlers=handlers, formatters=formatters)
 
     def _generate_handlers(self, specific_handlers):
-
         # If we are not given an override for handlers, then we will just
         # assume that we want to use all the handlers given in the current
         # configuration.
@@ -972,7 +971,6 @@ class LoggingConfig(BaseModel):
         return handlers
 
     def _generate_formatters(self, specific_formatters):
-
         # If we are not given an override for formatters, then we will just
         # assume that we want to use the formatters given in the current
         # configuration

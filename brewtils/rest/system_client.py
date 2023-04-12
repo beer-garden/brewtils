@@ -443,7 +443,6 @@ class SystemClient(object):
         delay_time = 0.5
         total_wait_time = 0
         while request.status not in Request.COMPLETED_STATUSES:
-
             if timeout and 0 < timeout < total_wait_time:
                 raise TimeoutExceededError(
                     "Timeout waiting for request '%s' to complete" % str(request)

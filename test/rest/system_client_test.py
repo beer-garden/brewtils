@@ -158,7 +158,6 @@ class TestLoadBgSystem(object):
         )
 
     def test_no_system_kwargs(self):
-
         brewtils.plugin.CONFIG.namespace = "foo"
         brewtils.plugin.CONFIG.name = "foo"
         brewtils.plugin.CONFIG.version = "1.0.0"
@@ -172,7 +171,6 @@ class TestLoadBgSystem(object):
         assert client._default_instance == brewtils.plugin.CONFIG.instance_name
 
     def test_all_system_kwargs(self):
-
         brewtils.plugin.CONFIG.name = "foo"
         brewtils.plugin.CONFIG.version = "1.0.0"
         brewtils.plugin.CONFIG.instance_name = "foo"

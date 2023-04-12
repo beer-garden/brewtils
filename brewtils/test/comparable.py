@@ -194,7 +194,6 @@ assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
-
     return _assert_wrapper(
         obj1,
         obj2,
@@ -218,7 +217,6 @@ def assert_parameter_equal(obj1, obj2, do_raise=False):
 
 
 def assert_event_equal(obj1, obj2, do_raise=False):
-
     _assert(obj1.payload_type == obj2.payload_type, "Payload types were not equal")
 
     comparison_func_name = "_assert_wrapper"
@@ -359,7 +357,6 @@ def assert_job_ids_equal(dict1, dict2, do_raise=False):
 
 
 def assert_operation_equal(obj1, obj2, do_raise=False):
-
     _assert(obj1.model_type == obj2.model_type, "Model types were not equal")
 
     comparison_func_name = "_assert_wrapper"

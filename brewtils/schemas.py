@@ -394,7 +394,6 @@ class LoggingConfigSchema(BaseSchema):
 
 
 class EventSchema(BaseSchema):
-
     name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     garden = fields.Str(allow_none=True)

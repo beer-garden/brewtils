@@ -1093,7 +1093,6 @@ class TestDeprecations(object):
                 assert "command_registrar" in str(w[0].message)
 
     def test_register(self, cmd):
-
         # Just for sanity
         assert not hasattr(cmd, "_command")
 

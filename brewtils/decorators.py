@@ -120,7 +120,6 @@ def command(
     """
 
     if _wrapped is None:
-
         if form is not None:
             _deprecate(
                 "Use of form with @command is now deprecated and will eventually be removed"
@@ -707,7 +706,6 @@ def _initialize_parameters(parameter_list):
     initialized_params = []
 
     for param in parameter_list:
-
         # This is already a Parameter. Only really need to interpret the choices
         # definition and recurse down into nested Parameters
         if isinstance(param, Parameter):
@@ -774,7 +772,6 @@ def _signature_parameters(cmd, method):
     """
     # Now we need to reconcile the parameters with the method signature
     for index, arg in enumerate(signature(method).parameters.values()):
-
         # Don't want to include special parameters
         if (index == 0 and arg.name in ("self", "cls")) or arg.kind in (
             InspectParameter.VAR_KEYWORD,

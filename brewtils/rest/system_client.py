@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing import cpu_count
 from typing import Any, Dict, Iterable, Optional
 
-from packaging.version import parse
+from packaging.version import parse, InvalidVersion
 
 import brewtils.plugin
 from brewtils.errors import (
@@ -443,7 +443,6 @@ class SystemClient(object):
         delay_time = 0.5
         total_wait_time = 0
         while request.status not in Request.COMPLETED_STATUSES:
-
             if timeout and 0 < timeout < total_wait_time:
                 raise TimeoutExceededError(
                     "Timeout waiting for request '%s' to complete" % str(request)
@@ -549,8 +548,26 @@ class SystemClient(object):
     @staticmethod
     def _determine_latest(systems):
         # type: (Iterable[System]) -> Optional[System]
-        return (
-            sorted(systems, key=lambda x: parse(x.version), reverse=True)[0]
-            if systems
-            else None
-        )
+        """Returns the system with the latest version from the provided list of Systems.
+        Any version adhering to PEP440 is treated as "later" than a version that does
+        not adhere to that standard.
+        """
+        versions = []
+        legacy_versions = []
+        system_versions_map = {}
+
+        for system in systems:
+            system_versions_map[system.version] = system
+
+            try:
+                versions.append(parse(system.version))
+            except InvalidVersion:
+                legacy_versions.append(system.version)
+
+        eligible_versions = versions if versions else legacy_versions
+
+        if eligible_versions:
+            latest_version = sorted(eligible_versions, reverse=True)[0]
+            return system_versions_map.get(str(latest_version))
+        else:
+            return None

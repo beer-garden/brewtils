@@ -423,7 +423,6 @@ class HTTPRequestUpdater(RequestUpdater):
             return
 
         with self.beergarden_error_condition:
-
             self._wait_for_beergarden_if_down(request)
 
             try:
@@ -459,7 +458,6 @@ class HTTPRequestUpdater(RequestUpdater):
             self._shutdown_event.wait(time_to_sleep)
 
     def _handle_request_update_failure(self, request, headers, exc):
-
         # If beergarden is down, we always want to try again
         # Yes, even if it is the 'final_attempt'
         if isinstance(exc, (RequestsConnectionError, RestConnectionError)):

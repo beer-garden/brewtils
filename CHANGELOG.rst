@@ -1,6 +1,15 @@
 Brewtils Changelog
 ==================
 
+3.16.0
+------
+4/14/2023
+
+Other Changes
+^^^^^^^^^^^^^
+- Removed version pinning on the packaging and wrapt dependencies
+- Support for python 3.11
+
 3.15.0
 ------
 8/31/2022

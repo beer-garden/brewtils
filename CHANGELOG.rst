@@ -1,6 +1,11 @@
 Brewtils Changelog
 ==================
 
+3.17.0
+------
+10/11/2023
+- Add new command type TEMP
+
 3.16.0
 ------
 4/14/2023

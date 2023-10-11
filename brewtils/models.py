@@ -101,7 +101,7 @@ class BaseModel(object):
 class Command(BaseModel):
     schema = "CommandSchema"
 
-    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN")
+    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP")
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
@@ -619,7 +619,7 @@ class Request(RequestTemplate):
         "INVALID",
     )
     COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR", "INVALID")
-    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN")
+    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP")
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(

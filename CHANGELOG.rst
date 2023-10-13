@@ -1,6 +1,11 @@
 Brewtils Changelog
 ==================
 
+3.18.0
+------
+10/13/2023
+- Add Auto Decorator for class objects
+
 3.17.0
 ------
 10/11/2023

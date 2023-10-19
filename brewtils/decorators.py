@@ -474,9 +474,6 @@ def _initialize_command(method):
     cmd.name = _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
 
-    # if str(inspect.signature(method)._return_annotation) in ["<class 'object'>", "<class 'dict'>"]:
-    #     cmd.output_type = "JSON"
-
     try:
         base_dir = os.path.dirname(inspect.getfile(method))
 
@@ -951,8 +948,9 @@ def _signature_validate(cmd, method):
             method, param.key
         ) and param.type != _parameter_type_hint(method, param.key):
             raise PluginParamError(
-                "Parameter Type assigned in the @parameter(type=?) does not match either the function Type Hint "
-                "or the Doc String definition. Please evaluate your type matching."
+                "Parameter Type assigned in the @parameter(type=?) does not match "
+                "either the function Type Hint or the Doc String definition. "
+                "Please evaluate your type matching."
             )
 
         # Couldn't find the parameter. That's OK if this parameter is meant to be part

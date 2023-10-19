@@ -227,7 +227,7 @@ class RestClient(object):
         try:
             self.session.get(self.config_url, **kwargs)
         except requests.exceptions.ConnectionError as ex:
-            if type(ex) == requests.exceptions.ConnectionError:
+            if isinstance(ex, requests.exceptions.ConnectionError):
                 return False
             raise
 
@@ -831,7 +831,7 @@ class RestClient(object):
             data = fd.read(file_params["chunk_size"])
             if not data:
                 break
-            if type(data) != bytes:
+            if not isinstance(data, bytes):
                 data = bytes(data, "utf-8")
             data = b64encode(data)
             chunk_result = self.session.post(

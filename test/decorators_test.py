@@ -188,8 +188,9 @@ class TestOverall(object):
 
             def test_type_hints_parameter(self):
                 @command
-                def cmd(foo:int):
+                def cmd(foo: int):
                     return foo
+
                 bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
@@ -200,20 +201,20 @@ class TestOverall(object):
 
             def test_type_hints_output(self):
                 @command
-                def cmd(foo:int) -> dict:
+                def cmd(foo: int) -> dict:
                     return foo
+
                 bg_cmd = _parse_method(cmd)
 
                 assert bg_cmd.output_type == "JSON"
-        
-        class TestDocString(object):
 
+        class TestDocString(object):
             def test_cmd_description(self):
                 @command
                 def cmd(foo):
-                    """Default Command Description
-                    """
+                    """Default Command Description"""
                     return foo
+
                 bg_cmd = _parse_method(cmd)
 
                 assert bg_cmd.description == "Default Command Description"
@@ -227,10 +228,11 @@ class TestOverall(object):
                         foo : Parameter Description
                     """
                     return foo
+
                 bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
-                assert bg_cmd.parameters[0].key == "foo"                
+                assert bg_cmd.parameters[0].key == "foo"
                 assert bg_cmd.parameters[0].description == "Parameter Description"
 
             def test_param_type(self):
@@ -242,12 +244,12 @@ class TestOverall(object):
                         foo (int): Parameter Description
                     """
                     return foo
+
                 bg_cmd = _parse_method(cmd)
 
                 assert len(bg_cmd.parameters) == 1
                 assert bg_cmd.parameters[0].key == "foo"
                 assert bg_cmd.parameters[0].type == "Integer"
-
 
     class TestParameterReconciliation(object):
         """Test that the parameters line up correctly"""

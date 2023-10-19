@@ -79,7 +79,7 @@ def command(
     description=None,  # type: Optional[str]
     parameters=None,  # type: Optional[List[Parameter]]
     command_type="ACTION",  # type: str
-    output_type="STRING",  # type: str
+    output_type=None,  # type: str
     schema=None,  # type: Optional[Union[dict, str]]
     form=None,  # type: Optional[Union[dict, list, str]]
     template=None,  # type: Optional[str]
@@ -120,6 +120,8 @@ def command(
     """
 
     if _wrapped is None:
+        if output_type is None:
+            output_type = "STRING"
         if form is not None:
             _deprecate(
                 "Use of form with @command is now deprecated and will eventually be removed"
@@ -149,6 +151,11 @@ def command(
             metadata=metadata,
         )
 
+    if output_type is None:
+        if str(inspect.signature(_wrapped)._return_annotation) in ["<class 'object'>", "<class 'dict'>"]:
+            output_type = "JSON"
+        else:
+            output_type = "STRING"
     new_command = Command(
         description=description,
         parameters=parameters,
@@ -461,8 +468,8 @@ def _initialize_command(method):
     cmd.name = _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
 
-    if cmd.output_type is None and str(inspect.signature(method)._return_annotation) in ["<class 'object'>", "<class 'dict'>"]:
-        cmd.output_type = "JSON"
+    # if str(inspect.signature(method)._return_annotation) in ["<class 'object'>", "<class 'dict'>"]:
+    #     cmd.output_type = "JSON"
 
     try:
         base_dir = os.path.dirname(inspect.getfile(method))
@@ -538,13 +545,14 @@ def _parameter_docstring(method, parameter):
     else:
         docstring = method.__doc__
 
-    delimiters = [":", "--"]
-    for line in docstring.expandtabs().split("\n"):
-        line = line.strip()
-        for delimiter in delimiters:
-            if delimiter in line:
-                if line.startswith(parameter + " ") or line.startswith(parameter + delimiter):
-                    return line.split(delimiter)[1].strip()
+    if docstring:
+        delimiters = [":", "--"]
+        for line in docstring.expandtabs().split("\n"):
+            line = line.strip()
+            for delimiter in delimiters:
+                if delimiter in line:
+                    if line.startswith(parameter + " ") or line.startswith(parameter + delimiter):
+                        return line.split(delimiter)[1].strip()
 
     return None
 
@@ -570,27 +578,27 @@ def _parameter_type_hint(method, cmd_parameter):
         docstring = method.func_doc
     else:
         docstring = method.__doc__
+    if docstring:
+        for line in docstring.expandtabs().split("\n"):
+            line = line.strip()
 
-    for line in docstring.expandtabs().split("\n"):
-        line = line.strip()
+            if line.startswith(cmd_parameter + " ") and line.find(")") > line.find("("):
+                docType = line.split("(")[1].split(")")[0]
 
-        if line.startswith(cmd_parameter + " ") and line.find(")") > line.find("("):
-            docType = line.split("(")[1].split(")")[0]
-
-            if docType in ["str"]:
-                return "String"
-            if docType in ["int"]:
-                return "Integer"
-            if docType in ["float"]:
-                return "Float"
-            if docType in ["bool"]:
-                return "Boolean"
-            if docType in ["obj", "object", "dict"]:
-                return "Dictionary"
-            if docType.lower() in ["datetime"]:
-                return "DateTime"
-            if docType in ["bytes"]:
-                return "Bytes"
+                if docType in ["str"]:
+                    return "String"
+                if docType in ["int"]:
+                    return "Integer"
+                if docType in ["float"]:
+                    return "Float"
+                if docType in ["bool"]:
+                    return "Boolean"
+                if docType in ["obj", "object", "dict"]:
+                    return "Dictionary"
+                if docType.lower() in ["datetime"]:
+                    return "DateTime"
+                if docType in ["bytes"]:
+                    return "Bytes"
     return None
 
 def _sig_info(arg):
@@ -871,7 +879,7 @@ def _signature_parameters(cmd, method):
         if arg.name not in cmd.parameter_keys():
             cmd.parameters.append(
                 _initialize_parameter(
-                    key=arg.name, default=sig_default, optional=sig_optional, type=sig_type, method=method
+                    key=arg.name, default=sig_default, optional=sig_optional, method=method
                 )
             )
 

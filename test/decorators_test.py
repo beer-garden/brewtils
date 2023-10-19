@@ -180,6 +180,75 @@ class TestOverall(object):
 
             assert_parameter_equal(c.parameters[0], Parameter(**basic_param))
 
+    class TestParametersExtract(object):
+        """Test that Type Hints and Doc Strings parse"""
+
+        class TestTypeHint(object):
+            """Type Hint arguments"""
+
+            def test_type_hints_parameter(self):
+                @command
+                def cmd(foo:int):
+                    return foo
+                bg_cmd = _parse_method(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].type == "Integer"
+                assert bg_cmd.parameters[0].default is None
+                assert bg_cmd.parameters[0].optional is False
+
+            def test_type_hints_output(self):
+                @command
+                def cmd(foo:int) -> dict:
+                    return foo
+                bg_cmd = _parse_method(cmd)
+
+                assert bg_cmd.output_type == "JSON"
+        
+        class TestDocString(object):
+
+            def test_cmd_description(self):
+                @command
+                def cmd(foo):
+                    """Default Command Description
+                    """
+                    return foo
+                bg_cmd = _parse_method(cmd)
+
+                assert bg_cmd.description == "Default Command Description"
+
+            def test_param_description(self):
+                @command
+                def cmd(foo):
+                    """Default Command Description
+
+                    Args:
+                        foo : Parameter Description
+                    """
+                    return foo
+                bg_cmd = _parse_method(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"                
+                assert bg_cmd.parameters[0].description == "Parameter Description"
+
+            def test_param_type(self):
+                @command
+                def cmd(foo):
+                    """Default Command Description
+
+                    Args:
+                        foo (int): Parameter Description
+                    """
+                    return foo
+                bg_cmd = _parse_method(cmd)
+
+                assert len(bg_cmd.parameters) == 1
+                assert bg_cmd.parameters[0].key == "foo"
+                assert bg_cmd.parameters[0].type == "Integer"
+
+
     class TestParameterReconciliation(object):
         """Test that the parameters line up correctly"""
 
@@ -962,7 +1031,7 @@ class TestInitializeParameters(object):
 
         assert len(res) == 1
         assert res[0] == init_mock.return_value
-        init_mock.assert_called_once_with(param=param)
+        init_mock.assert_called_once_with(param=param, method=None)
 
     def test_deprecated_model(self, init_mock, nested_1):
         with warnings.catch_warnings(record=True) as w:
@@ -972,7 +1041,7 @@ class TestInitializeParameters(object):
 
             assert len(res) == 1
             assert res[0] == init_mock.return_value
-            init_mock.assert_called_once_with(param=nested_1.parameters[0])
+            init_mock.assert_called_once_with(param=nested_1.parameters[0], method=None)
 
             assert issubclass(w[0].category, DeprecationWarning)
             assert "model class objects" in str(w[0].message)
@@ -982,7 +1051,7 @@ class TestInitializeParameters(object):
 
         assert len(res) == 1
         assert res[0] == init_mock.return_value
-        init_mock.assert_called_once_with(**basic_param)
+        init_mock.assert_called_once_with(**basic_param, method=None)
 
     def test_unknown_type(self):
         with pytest.raises(PluginParamError):

@@ -1,6 +1,23 @@
 Brewtils Changelog
 ==================
 
+3.19.0
+------
+TBD
+- Checks connection status when Plugin is initialized
+- Added SystemClient(system_namespaces=[]) feature that round robins requests across multiple system_namespaces
+- Expanded Auto Generation to support Doc String parameter extraction
+- Plugins will break if Type Hinting and Parameter Type assignment do not matches
+- Expanded Auto Generated parameter Typing from Type Hinting or Doc String to be
+  - str -> String
+  - int -> Integer
+  - float -> Float
+  - bool -> Boolean
+  - object -> Dictionary
+  - dict -> Dictionary
+  - DateTime -> DateTime
+  - bytes -> Bytes
+
 3.18.0
 ------
 10/13/2023

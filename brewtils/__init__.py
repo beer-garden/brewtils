@@ -7,6 +7,7 @@ from brewtils.plugin import Plugin, RemotePlugin  # noqa F401
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.easy_client import get_easy_client, EasyClient
 from brewtils.rest.system_client import SystemClient
+from brewtils.auto_decorator import AutoDecorator
 
 __all__ = [
     "__version__",
@@ -23,6 +24,7 @@ __all__ = [
     "load_config",
     "configure_logging",
     "normalize_url_prefix",
+    "AutoDecorator",
 ]
 
 # Aliased for compatibility

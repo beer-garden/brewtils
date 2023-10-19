@@ -216,6 +216,9 @@ class Plugin(object):
         # Now that the config is loaded we can create the EasyClient
         self._ez_client = EasyClient(logger=self._logger, **self._config)
 
+        if not self._ez_client.can_connect():
+            raise RestConnectionError("Cannot connect to the Beer-garden server")
+
         # With the EasyClient we can determine if this is an old garden
         self._legacy = self._legacy_garden()
 

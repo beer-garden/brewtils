@@ -79,7 +79,7 @@ def command(
     description=None,  # type: Optional[str]
     parameters=None,  # type: Optional[List[Parameter]]
     command_type="ACTION",  # type: str
-    output_type="STRING",  # type: str
+    output_type=None,  # type: str
     schema=None,  # type: Optional[Union[dict, str]]
     form=None,  # type: Optional[Union[dict, list, str]]
     template=None,  # type: Optional[str]
@@ -120,6 +120,8 @@ def command(
     """
 
     if _wrapped is None:
+        if output_type is None:
+            output_type = "STRING"
         if form is not None:
             _deprecate(
                 "Use of form with @command is now deprecated and will eventually be removed"
@@ -149,6 +151,14 @@ def command(
             metadata=metadata,
         )
 
+    if output_type is None:
+        if str(inspect.signature(_wrapped)._return_annotation) in [
+            "<class 'object'>",
+            "<class 'dict'>",
+        ]:
+            output_type = "JSON"
+        else:
+            output_type = "STRING"
     new_command = Command(
         description=description,
         parameters=parameters,
@@ -413,11 +423,19 @@ def _parse_method(method):
             # Need to initialize existing parameters before attempting to add parameters
             # pulled from the method signature.
             method_command.parameters = _initialize_parameters(
-                method_command.parameters + getattr(method, "parameters", [])
+                method_command.parameters + getattr(method, "parameters", []),
+                method=method,
             )
 
             # Add and update parameters based on the method signature
             _signature_parameters(method_command, method)
+
+            # Checks Docstring and Type Hints for undefined properties
+            for cmd_parameter in method_command.parameters:
+                if cmd_parameter.description is None:
+                    cmd_parameter.description = _parameter_docstring(
+                        method, cmd_parameter.key
+                    )
 
             # Verify that all parameters conform to the method signature
             _signature_validate(method_command, method)
@@ -513,6 +531,84 @@ def _method_docstring(method):
     return docstring.split("\n")[0] if docstring else None
 
 
+def _parameter_docstring(method, parameter):
+    # type: (...) -> str
+    """Parse out the description associated with parameter of the docstring from a method
+
+
+    Args:
+        method: Method to inspect
+        parameter: Parameter to extract
+
+    Returns:
+        Description of parameter, if found
+
+    """
+    if hasattr(method, "func_doc"):
+        docstring = method.func_doc
+    else:
+        docstring = method.__doc__
+
+    if docstring:
+        delimiters = [":", "--"]
+        for line in docstring.expandtabs().split("\n"):
+            line = line.strip()
+            for delimiter in delimiters:
+                if delimiter in line:
+                    if line.startswith(parameter + " ") or line.startswith(
+                        parameter + delimiter
+                    ):
+                        return line.split(delimiter)[1].strip()
+
+    return None
+
+
+def _parameter_type_hint(method, cmd_parameter):
+    for _, arg in enumerate(signature(method).parameters.values()):
+        if arg.name == cmd_parameter:
+            if str(arg.annotation) in ["<class 'str'>"]:
+                return "String"
+            if str(arg.annotation) in ["<class 'int'>"]:
+                return "Integer"
+            if str(arg.annotation) in ["<class 'float'>"]:
+                return "Float"
+            if str(arg.annotation) in ["<class 'bool'>"]:
+                return "Boolean"
+            if str(arg.annotation) in ["<class 'object'>", "<class 'dict'>"]:
+                return "Dictionary"
+            if str(arg.annotation).lower() in ["<class 'datetime'>"]:
+                return "DateTime"
+            if str(arg.annotation) in ["<class 'bytes'>"]:
+                return "Bytes"
+
+    if hasattr(method, "func_doc"):
+        docstring = method.func_doc
+    else:
+        docstring = method.__doc__
+    if docstring:
+        for line in docstring.expandtabs().split("\n"):
+            line = line.strip()
+
+            if line.startswith(cmd_parameter + " ") and line.find(")") > line.find("("):
+                docType = line.split("(")[1].split(")")[0]
+
+                if docType in ["str"]:
+                    return "String"
+                if docType in ["int"]:
+                    return "Integer"
+                if docType in ["float"]:
+                    return "Float"
+                if docType in ["bool"]:
+                    return "Boolean"
+                if docType in ["obj", "object", "dict"]:
+                    return "Dictionary"
+                if docType.lower() in ["datetime"]:
+                    return "DateTime"
+                if docType in ["bytes"]:
+                    return "Bytes"
+    return None
+
+
 def _sig_info(arg):
     # type: (InspectParameter) -> Tuple[Any, bool]
     """Get the default and optionality of a method argument
@@ -573,6 +669,7 @@ def _initialize_parameter(
     type_info=None,
     is_kwarg=None,
     model=None,
+    method=None,
 ):
     # type: (...) -> Parameter
     """Initialize a Parameter
@@ -618,6 +715,10 @@ def _initialize_parameter(
     # Every parameter needs a key, so stop that right here
     if param.key is None:
         raise PluginParamError("Attempted to create a parameter without a key")
+
+    # Extract Parameter Type if not present
+    if param.type is None and method is not None:
+        param.type = _parameter_type_hint(method, param.key)
 
     # Type and type info
     # Type info is where type specific information goes. For now, this is specific
@@ -680,8 +781,8 @@ def _format_type(param_type):
         return str(param_type).title()
 
 
-def _initialize_parameters(parameter_list):
-    # type: (Iterable[Parameter, object, dict]) -> List[Parameter]
+def _initialize_parameters(parameter_list, method=None):
+    # type: (Iterable[Parameter, object, dict], obj) -> List[Parameter]
     """Initialize Parameters from a list of parameter definitions
 
     This exists for backwards compatibility with the old way of specifying Models.
@@ -709,7 +810,7 @@ def _initialize_parameters(parameter_list):
         # This is already a Parameter. Only really need to interpret the choices
         # definition and recurse down into nested Parameters
         if isinstance(param, Parameter):
-            initialized_params.append(_initialize_parameter(param=param))
+            initialized_params.append(_initialize_parameter(param=param, method=method))
 
         # This is a model class object. Needed for backwards compatibility
         # See https://github.com/beer-garden/beer-garden/issues/354
@@ -718,11 +819,13 @@ def _initialize_parameters(parameter_list):
                 "Constructing a nested Parameters list using model class objects "
                 "is deprecated. Please pass the model's parameter list directly."
             )
-            initialized_params += _initialize_parameters(param.parameters)
+            initialized_params += _initialize_parameters(
+                param.parameters, method=method
+            )
 
         # This is a dict of Parameter kwargs
         elif isinstance(param, dict):
-            initialized_params.append(_initialize_parameter(**param))
+            initialized_params.append(_initialize_parameter(method=method, **param))
 
         # No clue!
         else:
@@ -786,7 +889,10 @@ def _signature_parameters(cmd, method):
         if arg.name not in cmd.parameter_keys():
             cmd.parameters.append(
                 _initialize_parameter(
-                    key=arg.name, default=sig_default, optional=sig_optional
+                    key=arg.name,
+                    default=sig_default,
+                    optional=sig_optional,
+                    method=method,
                 )
             )
 
@@ -800,6 +906,9 @@ def _signature_parameters(cmd, method):
 
             if param.optional is None:
                 param.optional = sig_optional
+
+            if param.description is None:
+                param.description = _parameter_docstring(method, param.key)
 
     return cmd
 
@@ -834,6 +943,15 @@ def _signature_validate(cmd, method):
                 sig_param = p
             if p.kind == InspectParameter.VAR_KEYWORD:
                 has_kwargs = True
+
+        if _parameter_type_hint(
+            method, param.key
+        ) and param.type != _parameter_type_hint(method, param.key):
+            raise PluginParamError(
+                "Parameter Type assigned in the @parameter(type=?) does not match "
+                "either the function Type Hint or the Doc String definition. "
+                "Please evaluate your type matching."
+            )
 
         # Couldn't find the parameter. That's OK if this parameter is meant to be part
         # of the **kwargs AND the function has a **kwargs parameter.

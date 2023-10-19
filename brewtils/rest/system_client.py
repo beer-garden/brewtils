@@ -60,6 +60,12 @@ class SystemClient(object):
                 If not set the System definition will be loaded when making the first
                 request and will only be reloaded if a Request fails.
 
+            system_namespaces:
+                If the targeted system is stateless and if a collection of systems could
+                handle the Request. This will allow the plugin to round robin the requests
+                to each namespace to help load balance the requests. It will rotate per
+                Request to the target system.
+
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first
         attempt to send a Request. At that point the SystemClient will query Beer-garden
@@ -155,6 +161,8 @@ class SystemClient(object):
     Args:
         system_name (str): Name of the System to make Requests on
         system_namespace (str): Namespace of the System to make Requests on
+        system_namespaces (list): Namespaces of the System to round robin Requests to.
+            The target System should be stateless.
         version_constraint (str): System version to make Requests on. Can be specific
             ('1.0.0') or 'latest'.
         default_instance (str): Name of the Instance to make Requests on
@@ -237,6 +245,20 @@ class SystemClient(object):
             self._system_namespace = kwargs.get(
                 "system_namespace", brewtils.plugin.CONFIG.namespace or ""
             )
+            self._system_namespaces = kwargs.get("system_namespaces", [])
+
+            # if both system namespaces are defined, combine the inputs
+            if len(self._system_namespaces) > 0:
+                self._current_system_namespace = 0
+                if kwargs.get("system_namespace", None):
+                    if self._system_namespace not in self._system_namespaces:
+                        self._system_namespaces.append(self._system_namespace)
+
+                elif len(self._system_namespaces) == 1:
+                    self._system_namespace = self._system_namespaces[0]
+                    self._current_system_namespace = -1
+            else:
+                self._current_system_namespace = -1
 
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
@@ -270,6 +292,18 @@ class SystemClient(object):
     @property
     def bg_default_instance(self):
         return self._default_instance
+
+    def _rotate_namespace(self):
+        if self._current_system_namespace > -1:
+            self._system_namespace = self._system_namespaces[
+                self._current_system_namespace
+            ]
+            self._current_system_namespace += 1
+            if self._current_system_namespace == len(self._system_namespaces):
+                self._current_system_namespace = 0
+
+            # Set loaded to False to force the reload of the System
+            self._loaded = False
 
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial
@@ -305,6 +339,8 @@ class SystemClient(object):
         Raises:
             AttributeError: System does not have a Command with the given command_name
         """
+
+        self._rotate_namespace()
 
         if not self._loaded or self._always_update:
             self.load_bg_system()

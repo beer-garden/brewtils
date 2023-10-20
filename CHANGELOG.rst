@@ -3,13 +3,13 @@ Brewtils Changelog
 
 3.19.0
 ------
-TBD
+10/20/2023
 
 - Checks connection status when Plugin is initialized
 - Added SystemClient(system_namespaces=[]) feature that round robins requests across multiple system_namespaces
 - Expanded Auto Generation to support Doc String parameter extraction
 - Plugins will break if Type Hinting and Parameter Type assignment do not match
-- Expanded Auto Generated parameter Typing from Type Hinting or Doc String to be
+- Expanded Auto Generated parameter Typing from Type Hinting or Doc String to be:
 
   - str -> String
   - int -> Integer

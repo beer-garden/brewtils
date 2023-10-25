@@ -573,7 +573,7 @@ def _choices_type_hint(method, cmd_parameter):
                 if str(arg.annotation).startswith("typing.Literal"):
                     arg_choices = list()
                     for arg_choice in get_args(arg.annotation):
-                        arg_choices.append(str(arg_choice))
+                        arg_choices.append(arg_choice)
                     return arg_choices
 
     return None
@@ -582,19 +582,32 @@ def _choices_type_hint(method, cmd_parameter):
 def _parameter_type_hint(method, cmd_parameter):
     for _, arg in enumerate(signature(method).parameters.values()):
         if arg.name == cmd_parameter:
-            if str(arg.annotation) in ["<class 'str'>"]:
+            type_hint_class = str(arg.annotation)
+            if type_hint_class.startswith("typing.Literal"):
+                if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+                    choice_types = None
+                    for arg_choice in get_args(arg.annotation):
+                        if choice_types == None:
+                            choice_types = type(arg_choice)
+                        elif type(arg_choice) != choice_types:
+                            choice_types = None
+                            break
+
+                    if choice_types is not None:
+                        type_hint_class = str(choice_types)
+            if type_hint_class in ["<class 'str'>"]:
                 return "String"
-            if str(arg.annotation) in ["<class 'int'>"]:
+            if type_hint_class in ["<class 'int'>"]:
                 return "Integer"
-            if str(arg.annotation) in ["<class 'float'>"]:
+            if type_hint_class in ["<class 'float'>"]:
                 return "Float"
-            if str(arg.annotation) in ["<class 'bool'>"]:
+            if type_hint_class in ["<class 'bool'>"]:
                 return "Boolean"
-            if str(arg.annotation) in ["<class 'object'>", "<class 'dict'>"]:
+            if type_hint_class in ["<class 'object'>", "<class 'dict'>"]:
                 return "Dictionary"
-            if str(arg.annotation).lower() in ["<class 'datetime'>"]:
+            if type_hint_class.lower() in ["<class 'datetime'>"]:
                 return "DateTime"
-            if str(arg.annotation) in ["<class 'bytes'>"]:
+            if type_hint_class in ["<class 'bytes'>"]:
                 return "Bytes"
 
     if hasattr(method, "func_doc"):

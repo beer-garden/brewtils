@@ -211,7 +211,23 @@ class TestOverall(object):
 
                 assert bg_cmd.output_type == "JSON"
 
-            def test_type_hints_choices(self):
+            def test_type_hints_choices_any(self):
+                if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+
+                    @command
+                    def cmd(foo: Literal["a", 2] = "a") -> dict:
+                        return foo
+
+                    bg_cmd = _parse_method(cmd)
+
+                    assert len(bg_cmd.parameters) == 1
+                    assert bg_cmd.parameters[0].key == "foo"
+                    assert bg_cmd.parameters[0].type == "Any"
+                    assert bg_cmd.parameters[0].choices.value == ["a", 2]
+                    assert bg_cmd.parameters[0].default == "a"
+                    assert bg_cmd.parameters[0].optional is True
+
+            def test_type_hints_choices_string(self):
                 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
 
                     @command
@@ -222,9 +238,25 @@ class TestOverall(object):
 
                     assert len(bg_cmd.parameters) == 1
                     assert bg_cmd.parameters[0].key == "foo"
-                    assert bg_cmd.parameters[0].type == "Any"
+                    assert bg_cmd.parameters[0].type == "String"
                     assert bg_cmd.parameters[0].choices.value == ["a", "b"]
                     assert bg_cmd.parameters[0].default == "a"
+                    assert bg_cmd.parameters[0].optional is True
+
+            def test_type_hints_choices_integer(self):
+                if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+
+                    @command
+                    def cmd(foo: Literal[1, 2] = 1) -> dict:
+                        return foo
+
+                    bg_cmd = _parse_method(cmd)
+
+                    assert len(bg_cmd.parameters) == 1
+                    assert bg_cmd.parameters[0].key == "foo"
+                    assert bg_cmd.parameters[0].type == "Integer"
+                    assert bg_cmd.parameters[0].choices.value == [1, 2]
+                    assert bg_cmd.parameters[0].default == 1
                     assert bg_cmd.parameters[0].optional is True
 
         class TestDocString(object):

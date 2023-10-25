@@ -587,9 +587,9 @@ def _parameter_type_hint(method, cmd_parameter):
                 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
                     choice_types = None
                     for arg_choice in get_args(arg.annotation):
-                        if choice_types == None:
+                        if choice_types is None:
                             choice_types = type(arg_choice)
-                        elif type(arg_choice) != choice_types:
+                        elif type(arg_choice) is not choice_types:
                             choice_types = None
                             break
 

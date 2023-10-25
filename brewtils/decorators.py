@@ -19,6 +19,9 @@ if sys.version_info.major == 2:
 else:
     from inspect import signature, Parameter as InspectParameter  # noqa
 
+    if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+        from typing import get_args
+
 __all__ = [
     "client",
     "command",
@@ -563,22 +566,48 @@ def _parameter_docstring(method, parameter):
     return None
 
 
+def _choices_type_hint(method, cmd_parameter):
+    if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+        for _, arg in enumerate(signature(method).parameters.values()):
+            if arg.name == cmd_parameter:
+                if str(arg.annotation).startswith("typing.Literal"):
+                    arg_choices = list()
+                    for arg_choice in get_args(arg.annotation):
+                        arg_choices.append(arg_choice)
+                    return arg_choices
+
+    return None
+
+
 def _parameter_type_hint(method, cmd_parameter):
     for _, arg in enumerate(signature(method).parameters.values()):
         if arg.name == cmd_parameter:
-            if str(arg.annotation) in ["<class 'str'>"]:
+            type_hint_class = str(arg.annotation)
+            if type_hint_class.startswith("typing.Literal"):
+                if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+                    choice_types = None
+                    for arg_choice in get_args(arg.annotation):
+                        if choice_types is None:
+                            choice_types = type(arg_choice)
+                        elif type(arg_choice) is not choice_types:
+                            choice_types = None
+                            break
+
+                    if choice_types is not None:
+                        type_hint_class = str(choice_types)
+            if type_hint_class in ["<class 'str'>"]:
                 return "String"
-            if str(arg.annotation) in ["<class 'int'>"]:
+            if type_hint_class in ["<class 'int'>"]:
                 return "Integer"
-            if str(arg.annotation) in ["<class 'float'>"]:
+            if type_hint_class in ["<class 'float'>"]:
                 return "Float"
-            if str(arg.annotation) in ["<class 'bool'>"]:
+            if type_hint_class in ["<class 'bool'>"]:
                 return "Boolean"
-            if str(arg.annotation) in ["<class 'object'>", "<class 'dict'>"]:
+            if type_hint_class in ["<class 'object'>", "<class 'dict'>"]:
                 return "Dictionary"
-            if str(arg.annotation).lower() in ["<class 'datetime'>"]:
+            if type_hint_class.lower() in ["<class 'datetime'>"]:
                 return "DateTime"
-            if str(arg.annotation) in ["<class 'bytes'>"]:
+            if type_hint_class in ["<class 'bytes'>"]:
                 return "Bytes"
 
     if hasattr(method, "func_doc"):
@@ -719,6 +748,9 @@ def _initialize_parameter(
     # Extract Parameter Type if not present
     if param.type is None and method is not None:
         param.type = _parameter_type_hint(method, param.key)
+
+    if param.choices is None and method is not None:
+        param.choices = _choices_type_hint(method, param.key)
 
     # Type and type info
     # Type info is where type specific information goes. For now, this is specific

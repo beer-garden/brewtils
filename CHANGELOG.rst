@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.20.0
+------
+TBD
+
+- Expanded Auto Generation to support Literal Type Hinting, if python version >= 3.8
+
 3.19.0
 ------
 10/20/2023

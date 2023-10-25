@@ -18,6 +18,8 @@ if sys.version_info.major == 2:
     from funcsigs import signature, Parameter as InspectParameter  # noqa
 else:
     from inspect import signature, Parameter as InspectParameter  # noqa
+    if (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+        from typing import get_args
 
 __all__ = [
     "client",
@@ -562,6 +564,17 @@ def _parameter_docstring(method, parameter):
 
     return None
 
+def _choices_type_hint(method, cmd_parameter):
+    if (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+        for _, arg in enumerate(signature(method).parameters.values()):
+            if arg.name == cmd_parameter:
+                if str(arg.annotation).startswith("typing.Literal"):
+                    arg_choices = list()
+                    for arg_choice in get_args(arg.annotation):
+                        arg_choices.append(str(arg_choice))
+                    return arg_choices
+
+    return None
 
 def _parameter_type_hint(method, cmd_parameter):
     for _, arg in enumerate(signature(method).parameters.values()):
@@ -719,6 +732,9 @@ def _initialize_parameter(
     # Extract Parameter Type if not present
     if param.type is None and method is not None:
         param.type = _parameter_type_hint(method, param.key)
+
+    if param.choices is None and method is not None:
+        param.choices = _choices_type_hint(method, param.key)
 
     # Type and type info
     # Type info is where type specific information goes. For now, this is specific

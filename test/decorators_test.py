@@ -6,7 +6,7 @@ import warnings
 import pytest
 from mock import Mock
 
-if (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import Literal
 
 import brewtils.decorators
@@ -212,9 +212,10 @@ class TestOverall(object):
                 assert bg_cmd.output_type == "JSON"
 
             def test_type_hints_choices(self):
-                if (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+                if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+
                     @command
-                    def cmd(foo: Literal["a","b"] = "a") -> dict:
+                    def cmd(foo: Literal["a", "b"] = "a") -> dict:
                         return foo
 
                     bg_cmd = _parse_method(cmd)
@@ -222,8 +223,8 @@ class TestOverall(object):
                     assert len(bg_cmd.parameters) == 1
                     assert bg_cmd.parameters[0].key == "foo"
                     assert bg_cmd.parameters[0].type == "Any"
-                    assert bg_cmd.parameters[0].choices.value == ["a","b"]
-                    assert bg_cmd.parameters[0].default == "a"              
+                    assert bg_cmd.parameters[0].choices.value == ["a", "b"]
+                    assert bg_cmd.parameters[0].default == "a"
                     assert bg_cmd.parameters[0].optional is True
 
         class TestDocString(object):

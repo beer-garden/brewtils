@@ -18,7 +18,8 @@ if sys.version_info.major == 2:
     from funcsigs import signature, Parameter as InspectParameter  # noqa
 else:
     from inspect import signature, Parameter as InspectParameter  # noqa
-    if (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+
+    if sys.version_info.major == 3 and sys.version_info.minor >= 8:
         from typing import get_args
 
 __all__ = [
@@ -564,8 +565,9 @@ def _parameter_docstring(method, parameter):
 
     return None
 
+
 def _choices_type_hint(method, cmd_parameter):
-    if (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+    if sys.version_info.major == 3 and sys.version_info.minor >= 8:
         for _, arg in enumerate(signature(method).parameters.values()):
             if arg.name == cmd_parameter:
                 if str(arg.annotation).startswith("typing.Literal"):
@@ -575,6 +577,7 @@ def _choices_type_hint(method, cmd_parameter):
                     return arg_choices
 
     return None
+
 
 def _parameter_type_hint(method, cmd_parameter):
     for _, arg in enumerate(signature(method).parameters.values()):

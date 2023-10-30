@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Expanded Auto Generation to support Literal Type Hinting, if python version >= 3.8
+- Fixed self reference bug in SystemClient
 
 3.19.0
 ------

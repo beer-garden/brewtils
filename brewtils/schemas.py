@@ -221,6 +221,7 @@ class CommandSchema(BaseSchema):
     icon_name = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    topics = fields.List(fields.Str(), allow_none=True)
 
 
 class InstanceSchema(BaseSchema):
@@ -401,7 +402,7 @@ class EventSchema(BaseSchema):
     timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
 
     payload_type = fields.Str(allow_none=True)
-    payload = ModelField(allow_none=True)
+    payload = ModelField(allow_none=True, type_field="payload_type")
 
     error = fields.Bool(allow_none=True)
     error_message = fields.Str(allow_none=True)

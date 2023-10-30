@@ -529,9 +529,18 @@ class SystemClient(object):
         output_type = kwargs.pop("_output_type", None)
         metadata = kwargs.pop("_metadata", {})
         parent = kwargs.pop("_parent", self._get_parent_for_request())
+        publish = kwargs.pop("_publish", None)
+        topic = kwargs.pop("_topic", None)
+        propagate = kwargs.pop("_propagate", None)
 
         if system_display:
             metadata["system_display_name"] = system_display
+        if publish:
+            metadata["_publish"] = publish
+        if topic:
+            metadata["_topic"] = topic
+        if propagate:
+            metadata["_propagate"] = propagate
 
         # Don't check namespace - https://github.com/beer-garden/beer-garden/issues/827
         if command is None:

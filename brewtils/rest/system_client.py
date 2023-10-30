@@ -203,6 +203,7 @@ class SystemClient(object):
         self._loaded = False
         self._system = None
         self._commands = {}
+        self._current_system_namespace = -1
 
         # Need this for back-compatibility (see #836)
         if len(args) > 2:
@@ -257,8 +258,6 @@ class SystemClient(object):
                 elif len(self._system_namespaces) == 1:
                     self._system_namespace = self._system_namespaces[0]
                     self._current_system_namespace = -1
-            else:
-                self._current_system_namespace = -1
 
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)

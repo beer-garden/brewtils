@@ -6,7 +6,7 @@ from brewtils.models import Request, Event, Events
 from brewtils.rest.easy_client import EasyClient
 
 
-class PublishClient(Object):
+class PublishClient(object):
     """High-level client for publishing requests on Beer-garden topics.
 
     **Topics are internal routing values for Beer Garden. These are not RabbitMQ/Pika topics.**

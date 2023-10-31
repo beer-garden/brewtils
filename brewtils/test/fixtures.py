@@ -121,6 +121,7 @@ def nested_parameter_dict():
         "regex": None,
         "form_input_type": None,
         "type_info": {},
+
     }
 
 
@@ -170,6 +171,7 @@ def command_dict(parameter_dict, system_id):
         "template": "<html></html>",
         "icon_name": "icon!",
         "metadata": {"meta": "data"},
+        "topics": [],
     }
 
 
@@ -287,6 +289,7 @@ def child_request_dict(ts_epoch):
         "namespace": "ns",
         "command": "say",
         "id": "58542eb571afd47ead90d25f",
+        "is_event": False,
         "parameters": {},
         "comment": "bye!",
         "output": "nested output",
@@ -324,6 +327,7 @@ def parent_request_dict(ts_epoch):
         "namespace": "ns",
         "command": "say",
         "id": "58542eb571afd47ead90d25d",
+        "is_event": False,
         "parent": None,
         "parameters": {},
         "comment": "bye!",
@@ -385,6 +389,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "namespace": "ns",
         "command": "speak",
         "id": "58542eb571afd47ead90d25e",
+        "is_event": False,
         "parent": parent_request_dict,
         "children": [child_request_dict],
         "parameters": {"message": "hey!"},

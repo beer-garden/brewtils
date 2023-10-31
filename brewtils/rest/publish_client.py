@@ -69,7 +69,8 @@ class PublishClient(object):
 
         Args:
             _topic (str): The topic to publish to
-            _regex_only (bool): If the request will be resolved against only annotated topics from the @subscribe command
+            _regex_only (bool): If the request will be resolved against only annotated topics 
+            from the @subscribe command
             _propagate (bool): If the request will be pushed up to the parent to be resolved.
             kwargs (dict): All necessary request parameters, including Beer-garden
                 internal parameters

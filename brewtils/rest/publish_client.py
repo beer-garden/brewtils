@@ -81,11 +81,12 @@ class PublishClient(object):
         output_type = kwargs.pop("_output_type", None)
         metadata = kwargs.pop("_metadata", {})
         metadata["_topic"] = _topic
+        parent = kwargs.pop("_parent", self._get_parent_for_request())
 
         request = Request(
             comment=comment,
             output_type=output_type,
-            parent=self._get_parent_for_request(),
+            parent=parent,
             metadata=metadata,
             parameters=kwargs,
         )

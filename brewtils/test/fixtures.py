@@ -121,7 +121,6 @@ def nested_parameter_dict():
         "regex": None,
         "form_input_type": None,
         "type_info": {},
-
     }
 
 

@@ -387,7 +387,7 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
         def returnTrue(self):
             return True
 
-    All commands are automatically subscribe to the topic of 
+    All commands are automatically subscribe to the topic of
     their "{Namespace}.{System Name}.{System Version}.{Instance}.{Command}"
 
     Command will only be triggered once per publish event, even if it matches on multiple topics.

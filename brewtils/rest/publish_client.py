@@ -12,7 +12,7 @@ class PublishClient(Object):
     **Topics are internal routing values for Beer Garden. These are not RabbitMQ/Pika topics.**
 
     PublishClient creation:
-        This class is intended to be the main way to create Beer-garden topic based requestes.
+        This class is intended to be the main way to create Beer-garden topic based requests.
         Create an instance with Beer-garden connection information:
 
             client = PublishClient(
@@ -20,7 +20,7 @@ class PublishClient(Object):
                 bg_port=2337,
             )
 
-        Note: Passing an empty string as the system_namespace parameter will evalutate
+        Note: Passing an empty string as the system_namespace parameter will evaluate
         to the local garden's default namespace.
 
     Making a Request:

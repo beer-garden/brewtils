@@ -329,6 +329,7 @@ class RequestTemplateSchema(BaseSchema):
 
 class RequestSchema(RequestTemplateSchema):
     id = fields.Str(allow_none=True)
+    is_event = fields.Bool(allow_none=True)
     parent = fields.Nested("self", exclude=("children",), allow_none=True)
     children = fields.Nested(
         "self", exclude=("parent", "children"), many=True, default=None, allow_none=True

@@ -633,6 +633,7 @@ class Request(RequestTemplate):
         namespace=None,
         command=None,
         id=None,  # noqa # shadows built-in
+        is_event=None,
         parent=None,
         children=None,
         parameters=None,
@@ -663,6 +664,7 @@ class Request(RequestTemplate):
             output_type=output_type,
         )
         self.id = id
+        self.is_event = is_event or False
         self.parent = parent
         self.children = children
         self.output = output

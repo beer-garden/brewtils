@@ -7,6 +7,8 @@ TBD
 
 - Expanded Auto Generation to support Literal Type Hinting, if python version >= 3.8
 - Fixed self reference bug in SystemClient
+- Add PublishClient for broadcasting requests to Topics
+- Add @subscribe annotation for commands to listen to topics
 
 3.19.0
 ------

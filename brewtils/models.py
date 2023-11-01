@@ -49,6 +49,7 @@ class Events(Enum):
     REQUEST_UPDATED = 22
     REQUEST_COMPLETED = 7
     REQUEST_CANCELED = 42
+    REQUEST_TOPIC_PUBLISH = 51
     INSTANCE_INITIALIZED = 8
     INSTANCE_STARTED = 9
     INSTANCE_UPDATED = 23
@@ -91,7 +92,7 @@ class Events(Enum):
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
 
-    # Next: 51
+    # Next: 52
 
 
 class BaseModel(object):
@@ -117,6 +118,7 @@ class Command(BaseModel):
         icon_name=None,
         hidden=False,
         metadata=None,
+        topics=None,
     ):
         self.name = name
         self.description = description
@@ -129,6 +131,7 @@ class Command(BaseModel):
         self.icon_name = icon_name
         self.hidden = hidden
         self.metadata = metadata or {}
+        self.topics = topics or []
 
     def __str__(self):
         return self.name
@@ -630,6 +633,7 @@ class Request(RequestTemplate):
         namespace=None,
         command=None,
         id=None,  # noqa # shadows built-in
+        is_event=None,
         parent=None,
         children=None,
         parameters=None,
@@ -660,6 +664,7 @@ class Request(RequestTemplate):
             output_type=output_type,
         )
         self.id = id
+        self.is_event = is_event or False
         self.parent = parent
         self.children = children
         self.output = output

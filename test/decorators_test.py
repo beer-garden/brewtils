@@ -536,6 +536,7 @@ class TestCommand(object):
         bg_command.parameters = []
         del command_dict["name"]
         del command_dict["parameters"]
+        del command_dict["topics"]
 
         @command(**command_dict)
         def foo():

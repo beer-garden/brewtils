@@ -27,6 +27,7 @@ __all__ = [
     "command",
     "parameter",
     "parameters",
+    "subscribe",
     "system",
 ]
 
@@ -377,6 +378,42 @@ def parameters(*args, **kwargs):
     return _wrapped
 
 
+def subscribe(_wrapped=None, topic: str = None, topics=[]):
+    """Decorator for specifiying topic to listen to.
+
+    for example::
+
+        @subscribe(topics=["myTopic])
+        def returnTrue(self):
+            return True
+
+    All commands are automatically subscribe to the topic of
+    their "{Namespace}.{System Name}.{System Version}.{Instance}.{Command}"
+
+    Command will only be triggered once per publish event, even if it matches on multiple topics.
+
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+        topic: The topic to subscribe to
+        topics: A list of topics to subscribe to
+    """
+
+    if topic:
+        topics.append(topic)
+
+    if _wrapped is None:
+        return functools.partial(subscribe, topics=topics)
+
+    # Python 2 compatibility
+    if hasattr(_wrapped, "__func__"):
+        _wrapped.__func__.subscribe_topics = topics
+    else:
+        _wrapped.subscribe_topics = topics
+
+    return _wrapped
+
+
 def _parse_client(client):
     # type: (object) -> List[Command]
     """Get a list of Beergarden Commands from a client object
@@ -417,10 +454,13 @@ def _parse_method(method):
         Beergarden Command targeting the given method
     """
     if (inspect.ismethod(method) or inspect.isfunction(method)) and (
-        hasattr(method, "_command") or hasattr(method, "parameters")
+        hasattr(method, "_command")
+        or hasattr(method, "parameters")
+        or hasattr(method, "subscribe_topics")
     ):
         # Create a command object if there isn't one already
         method_command = _initialize_command(method)
+        method_command.topics = getattr(method, "subscribe_topics", [])
 
         try:
             # Need to initialize existing parameters before attempting to add parameters

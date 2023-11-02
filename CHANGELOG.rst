@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Fixed an issue where topics could repeat when using topic in @subscribe
+- Upgraded Brewtils dockerfile for Python 3.12
 
 3.20.0
 ------

@@ -399,17 +399,23 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
         topics: A list of topics to subscribe to
     """
 
-    if topic:
-        topics.append(topic)
+    subscribe_topics = []
+    if topic and topic not in subscribe_topics:
+        subscribe_topics.append(topic)
+
+    if topics:
+        for list_topic in topics:
+            if list_topic not in subscribe_topics:
+                subscribe_topics.append(list_topic)
 
     if _wrapped is None:
-        return functools.partial(subscribe, topics=topics)
+        return functools.partial(subscribe, topics=subscribe_topics)
 
     # Python 2 compatibility
     if hasattr(_wrapped, "__func__"):
-        _wrapped.__func__.subscribe_topics = topics
+        _wrapped.__func__.subscribe_topics = subscribe_topics
     else:
-        _wrapped.subscribe_topics = topics
+        _wrapped.subscribe_topics = subscribe_topics
 
     return _wrapped
 

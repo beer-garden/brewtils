@@ -1,4 +1,4 @@
-FROM python:3.12-alpine as base
+FROM python:3.7-alpine as base
 
 ARG VERSION
 

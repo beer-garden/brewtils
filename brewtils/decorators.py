@@ -402,7 +402,7 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
     subscribe_topics = []
     if topic and topic not in subscribe_topics:
         subscribe_topics.append(topic)
-    
+
     if topics:
         for list_topic in topics:
             if list_topic not in subscribe_topics:

@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.20.1
 ------
-TBD
+11/2/2023
 
 - Fixed an issue where topics could repeat when using topic in @subscribe
 

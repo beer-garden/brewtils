@@ -601,12 +601,12 @@ class SystemClient(object):
         system_versions_map = {}
 
         for system in systems:
-            system_versions_map[system.version] = system
-
             try:
                 versions.append(parse(system.version))
+                system_versions_map[str(parse(system.version))] = system
             except InvalidVersion:
                 legacy_versions.append(system.version)
+                system_versions_map[system.version] = system
 
         eligible_versions = versions if versions else legacy_versions
 

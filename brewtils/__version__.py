@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__version__ = "3.20.1"
+__version__ = "3.20.2"

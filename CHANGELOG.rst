@@ -3,8 +3,7 @@ Brewtils Changelog
 
 3.20.2
 ------
-
-TBD
+11/9/2023
 
 - Fixed SystemClient Latest lookup where "0.0.dev" is parsed to "0.0.0.dev0" but didn't mantain
   the original version to map back to latest system

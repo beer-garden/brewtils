@@ -786,7 +786,7 @@ class TestInitializeCommand(object):
         cmd_kwargs = _initialize_command(cmd_kwargs)
 
         assert cmd_kwargs.name == "cmd"
-        assert cmd_kwargs.allow_any_kwargs == True
+        assert cmd_kwargs.allow_any_kwargs is True
 
     def test_kwarg_command(self, cmd_kwargs_must_define):
         assert hasattr(cmd_kwargs_must_define, "_command")
@@ -794,7 +794,7 @@ class TestInitializeCommand(object):
         cmd_kwargs_must_define = _initialize_command(cmd_kwargs_must_define)
 
         assert cmd_kwargs_must_define.name == "cmd"
-        assert cmd_kwargs_must_define.allow_any_kwargs == False
+        assert cmd_kwargs_must_define.allow_any_kwargs is False
 
     def test_overwrite_docstring(self):
         new_description = "So descriptive"

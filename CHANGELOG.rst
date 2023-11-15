@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Added new paramter to Commands to signal if non defined kwargs can be passed
+- Added Event Type REQUEST_DELETED
 
 
 3.20.2

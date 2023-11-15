@@ -222,6 +222,7 @@ class CommandSchema(BaseSchema):
     hidden = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     topics = fields.List(fields.Str(), allow_none=True)
+    allow_any_kwargs = fields.Boolean(allow_none=True)
 
 
 class InstanceSchema(BaseSchema):

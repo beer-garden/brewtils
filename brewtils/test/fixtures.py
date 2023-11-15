@@ -171,6 +171,7 @@ def command_dict(parameter_dict, system_id):
         "icon_name": "icon!",
         "metadata": {"meta": "data"},
         "topics": [],
+        "allow_any_kwargs": False,
     }
 
 

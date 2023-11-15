@@ -769,6 +769,27 @@ class TestInitializeCommand(object):
         assert cmd.name == "cmd"
         assert cmd.description == "Docstring"
 
+    def test_kwarg_command(self, cmd_kwargs):
+        assert not hasattr(cmd_kwargs, "_command")
+
+        cmd_kwargs = _initialize_command(cmd_kwargs)
+
+        assert cmd_kwargs.name == "cmd"
+        assert cmd_kwargs.allow_any_kwargs is True
+
+    def test_kwarg_command_allow_none(self):
+        @command(allow_any_kwargs=False)
+        def _cmd(self, **kwargs):
+            """Docstring"""
+            pass
+
+        assert hasattr(_cmd, "_command")
+
+        _cmd = _initialize_command(_cmd)
+
+        assert _cmd.name == "_cmd"
+        assert _cmd.allow_any_kwargs is False
+
     def test_overwrite_docstring(self):
         new_description = "So descriptive"
 

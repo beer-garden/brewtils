@@ -777,7 +777,7 @@ class TestInitializeCommand(object):
         assert cmd_kwargs.name == "cmd"
         assert cmd_kwargs.allow_any_kwargs is True
 
-    def test_kwarg_command(self):
+    def test_kwarg_command_allow_none(self):
         @command(allow_any_kwargs=False)
         def _cmd(self, **kwargs):
             """Docstring"""

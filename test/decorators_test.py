@@ -61,6 +61,17 @@ def cmd_kwargs():
 
 
 @pytest.fixture
+def cmd_kwargs_must_define():
+    class Bar(object):
+        @command(allow_any_kwargs=False)
+        def cmd(self, **kwargs):
+            """Docstring"""
+            pass
+
+    return Bar.cmd
+
+
+@pytest.fixture
 def basic_param():
     return {
         "key": "foo",
@@ -768,6 +779,22 @@ class TestInitializeCommand(object):
 
         assert cmd.name == "cmd"
         assert cmd.description == "Docstring"
+
+    def test_kwarg_command(self, cmd_kwargs):
+        assert not hasattr(cmd_kwargs, "_command")
+
+        cmd_kwargs = _initialize_command(cmd_kwargs)
+
+        assert cmd_kwargs.name == "cmd"
+        assert cmd_kwargs.allow_any_kwargs == True
+
+    def test_kwarg_command(self, cmd_kwargs_must_define):
+        assert hasattr(cmd_kwargs_must_define, "_command")
+
+        cmd_kwargs_must_define = _initialize_command(cmd_kwargs_must_define)
+
+        assert cmd_kwargs_must_define.name == "cmd"
+        assert cmd_kwargs_must_define.allow_any_kwargs == False
 
     def test_overwrite_docstring(self):
         new_description = "So descriptive"

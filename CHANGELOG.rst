@@ -1,6 +1,13 @@
 Brewtils Changelog
 ==================
 
+3.21.0
+------
+TBD
+
+- Added new paramter to Commands to signal if non defined kwargs can be passed
+
+
 3.20.2
 ------
 11/9/2023

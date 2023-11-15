@@ -119,6 +119,7 @@ class Command(BaseModel):
         hidden=False,
         metadata=None,
         topics=None,
+        allow_any_kwargs=None,
     ):
         self.name = name
         self.description = description
@@ -132,6 +133,7 @@ class Command(BaseModel):
         self.hidden = hidden
         self.metadata = metadata or {}
         self.topics = topics or []
+        self.allow_any_kwargs = allow_any_kwargs
 
     def __str__(self):
         return self.name

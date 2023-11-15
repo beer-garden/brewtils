@@ -90,6 +90,7 @@ def command(
     icon_name=None,  # type: Optional[str]
     hidden=False,  # type: Optional[bool]
     metadata=None,  # type: Optional[Dict]
+    allow_any_kwargs=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
 
@@ -153,6 +154,7 @@ def command(
             icon_name=icon_name,
             hidden=hidden,
             metadata=metadata,
+            allow_any_kwargs=allow_any_kwargs,
         )
 
     if output_type is None:
@@ -174,6 +176,7 @@ def command(
         icon_name=icon_name,
         hidden=hidden,
         metadata=metadata,
+        allow_any_kwargs=allow_any_kwargs,
     )
 
     # Python 2 compatibility
@@ -519,6 +522,13 @@ def _initialize_command(method):
 
     """
     cmd = getattr(method, "_command", Command())
+
+    if cmd.allow_any_kwargs is None:
+        cmd.allow_any_kwargs = False
+        for p in signature(method).parameters.values():
+            if p.kind == InspectParameter.VAR_KEYWORD:
+                cmd.allow_any_kwargs = True
+                break
 
     cmd.name = _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)

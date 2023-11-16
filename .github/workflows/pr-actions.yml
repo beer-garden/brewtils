@@ -130,4 +130,4 @@ jobs:
       - name: Build Links
         uses: readthedocs/actions/preview@v1
         with:
-          project-slug: "brewtils-preview"
+          project-slug: "brewtils"

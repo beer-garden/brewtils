@@ -10,7 +10,7 @@ class PublishClient(object):
     """High-level client for publishing requests on Beer-garden topics.
 
     Please Note:
-        Topics are internal routing values for Beer Garden. 
+        Topics are internal routing values for Beer Garden.
         These are not RabbitMQ/Pika topics.
 
     PublishClient creation:
@@ -59,6 +59,7 @@ class PublishClient(object):
         access_token (str): Access token for Beer-garden authentication
         refresh_token (str): Refresh token for Beer-garden authentication
     """
+
     def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger(__name__)
         self._easy_client = EasyClient(*args, **kwargs)

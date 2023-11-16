@@ -21,7 +21,7 @@ brewtils.rest.easy\_client module
     :show-inheritance:
 
 brewtils.rest.publish\_client module
------------------------------------
+------------------------------------
 
 .. automodule:: brewtils.rest.publish_client
     :members:

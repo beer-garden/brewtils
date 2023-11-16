@@ -119,6 +119,7 @@ def command(
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
         metadata: Free-form dictionary
+        allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to the Command parameters defined.
 
     Returns:
         The decorated function

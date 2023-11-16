@@ -20,6 +20,14 @@ brewtils.rest.easy\_client module
     :undoc-members:
     :show-inheritance:
 
+brewtils.rest.publish\_client module
+------------------------------------
+
+.. automodule:: brewtils.rest.publish_client
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 brewtils.rest.system\_client module
 -----------------------------------
 
@@ -27,7 +35,6 @@ brewtils.rest.system\_client module
     :members:
     :undoc-members:
     :show-inheritance:
-
 
 Module contents
 ---------------

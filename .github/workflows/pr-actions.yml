@@ -109,3 +109,14 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
+
+  pull-request-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make Deps
+        run: |
+          make docs
+      - name: Build Links
+        uses: readthedocs/actions/preview@v1
+        with:
+          project-slug: "brewtils-preview"

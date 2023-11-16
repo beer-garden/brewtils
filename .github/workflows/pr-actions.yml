@@ -109,25 +109,3 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
-
-  pull-request-links:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: ['3.12']
-        os: ['ubuntu-latest']
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Make Deps
-        run: |
-          make docs
-      - name: Build Links
-        uses: readthedocs/actions/preview@v1
-        with:
-          project-slug: "brewtils"

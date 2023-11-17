@@ -757,7 +757,7 @@ def garden_dict(ts_epoch, system_dict):
         "connection_params": {},
         "parent": None,
         "has_parent": False,
-        "children": []
+        "children": [],
     }
 
 

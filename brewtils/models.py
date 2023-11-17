@@ -1442,9 +1442,9 @@ class Garden(BaseModel):
         self.connection_type = connection_type
         self.connection_params = connection_params
 
-        self.has_parent=has_parent
-        self.parent=parent
-        self.children=children
+        self.has_parent = has_parent
+        self.parent = parent
+        self.children = children
 
     def __str__(self):
         return "%s" % self.name

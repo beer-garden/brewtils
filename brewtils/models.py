@@ -1428,6 +1428,9 @@ class Garden(BaseModel):
         systems=None,
         connection_type=None,
         connection_params=None,
+        has_parent=None,
+        parent=None,
+        children=None,
     ):
         self.id = id
         self.name = name
@@ -1438,6 +1441,10 @@ class Garden(BaseModel):
 
         self.connection_type = connection_type
         self.connection_params = connection_params
+
+        self.has_parent=has_parent
+        self.parent=parent
+        self.children=children
 
     def __str__(self):
         return "%s" % self.name

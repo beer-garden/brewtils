@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.22.0
+------
+TBD
+
+- Expanding Garden model to include children gardens
+
 3.21.0
 ------
 11/16/2023

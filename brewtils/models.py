@@ -119,6 +119,7 @@ class Command(BaseModel):
         icon_name=None,
         hidden=False,
         metadata=None,
+        tags=None,
         topics=None,
         allow_any_kwargs=None,
     ):
@@ -133,6 +134,7 @@ class Command(BaseModel):
         self.icon_name = icon_name
         self.hidden = hidden
         self.metadata = metadata or {}
+        self.tags = tags or []
         self.topics = topics or []
         self.allow_any_kwargs = allow_any_kwargs
 

@@ -90,6 +90,7 @@ def command(
     icon_name=None,  # type: Optional[str]
     hidden=False,  # type: Optional[bool]
     metadata=None,  # type: Optional[Dict]
+    tags=None, # type: Optional[List[str]]
     allow_any_kwargs=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
@@ -119,6 +120,7 @@ def command(
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
         metadata: Free-form dictionary
+        tags: A list of tags that can be used to filter commands
         allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to
             the Command parameters defined.
 
@@ -156,6 +158,7 @@ def command(
             icon_name=icon_name,
             hidden=hidden,
             metadata=metadata,
+            tags=tags,
             allow_any_kwargs=allow_any_kwargs,
         )
 
@@ -178,6 +181,7 @@ def command(
         icon_name=icon_name,
         hidden=hidden,
         metadata=metadata,
+        tags=tags,
         allow_any_kwargs=allow_any_kwargs,
     )
 

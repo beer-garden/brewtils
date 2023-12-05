@@ -747,6 +747,7 @@ class System(BaseModel):
         metadata=None,
         namespace=None,
         local=None,
+        tags=None,
         template=None,
     ):
         self.name = name
@@ -761,6 +762,7 @@ class System(BaseModel):
         self.metadata = metadata or {}
         self.namespace = namespace
         self.local = local
+        self.tags = tags or []
         self.template = template
 
     def __str__(self):
@@ -858,6 +860,22 @@ class System(BaseModel):
                 return command
 
         return None
+    
+    def get_commands_by_tags(self, tag: str):
+        """Retrieve a particular commands from the system by Tag
+        
+        Args:
+            tag (str): The command tag
+
+        Returns:
+            Command: The commands if it exists, empty array otherwise
+        """
+        tag_commands = []
+        for command in self.commands:
+            if tag in command.tags:
+                tag_commands.append(command)
+            
+        return tag_commands
 
     def has_different_commands(self, commands):
         """Check if a set of commands is different than the current commands

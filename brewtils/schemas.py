@@ -251,6 +251,7 @@ class SystemSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
     namespace = fields.Str(allow_none=True)
     local = fields.Bool(allow_none=True)
+    tags = fields.List(fields.Str(), allow_none=True)
     template = fields.Str(allow_none=True)
 
 

@@ -257,6 +257,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "metadata": {"some": "stuff"},
         "namespace": "ns",
         "local": True,
+        "tags": [],
         "template": "<html>template</html>",
     }
 

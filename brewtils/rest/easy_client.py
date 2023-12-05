@@ -419,8 +419,7 @@ class EasyClient(object):
             operations.append(PatchOperation("update", "/metadata", metadata))
 
         tags = kwargs.pop("tags", [])
-        if tags:
-            operations.append(PatchOperation("update", "/tags", tags))
+        operations.append(PatchOperation("replace", "/tags", tags))
 
         # The remaining kwargs are all strings
         # Sending an empty string (instead of None) ensures they're actually cleared

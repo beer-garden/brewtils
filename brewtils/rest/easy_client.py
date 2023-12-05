@@ -419,7 +419,7 @@ class EasyClient(object):
             operations.append(PatchOperation("update", "/metadata", metadata))
 
         tags = kwargs.pop("tags", [])
-        if metadata:
+        if tags:
             operations.append(PatchOperation("update", "/tags", tags))
 
         # The remaining kwargs are all strings

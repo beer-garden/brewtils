@@ -459,7 +459,7 @@ class TestInitializeSystem(object):
         ez_client.find_unique_system.return_value = existing_system
 
         bg_system.commands = [Command("test")]
-        bg_system.tags=["foo"]
+        bg_system.tags = ["foo"]
         ez_client.update_system.return_value = bg_system
 
         plugin._initialize_system()

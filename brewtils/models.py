@@ -860,10 +860,10 @@ class System(BaseModel):
                 return command
 
         return None
-    
+
     def get_commands_by_tags(self, tag: str):
         """Retrieve a particular commands from the system by Tag
-        
+
         Args:
             tag (str): The command tag
 
@@ -874,7 +874,7 @@ class System(BaseModel):
         for command in self.commands:
             if tag in command.tags:
                 tag_commands.append(command)
-            
+
         return tag_commands
 
     def has_different_commands(self, commands):

@@ -36,8 +36,8 @@ def client(
     _wrapped=None,  # type: Type
     bg_name=None,  # type: Optional[str]
     bg_version=None,  # type: Optional[str]
-    tag=None, # type: str
-    tags=None, # type: Optional[List[str]]
+    tag=None,  # type: str
+    tags=None,  # type: Optional[List[str]]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -63,7 +63,7 @@ def client(
             shouldn't be explicitly set.
         bg_name: Optional plugin name
         bg_version: Optional plugin version
-        tag: A tag that can be used to filter commands 
+        tag: A tag that can be used to filter commands
         tags: A list of tags that can be used to filter commands
 
     Returns:
@@ -97,8 +97,8 @@ def command(
     icon_name=None,  # type: Optional[str]
     hidden=False,  # type: Optional[bool]
     metadata=None,  # type: Optional[Dict]
-    tag=None, # type: str
-    tags=None, # type: Optional[List[str]]
+    tag=None,  # type: str
+    tags=None,  # type: Optional[List[str]]
     allow_any_kwargs=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
@@ -128,7 +128,7 @@ def command(
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
         metadata: Free-form dictionary
-        tag: A tag that can be used to filter commands 
+        tag: A tag that can be used to filter commands
         tags: A list of tags that can be used to filter commands
         allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to
             the Command parameters defined.
@@ -139,7 +139,7 @@ def command(
 
     if tags is None:
         tags = []
-    
+
     if tag:
         tags.append(tag)
 

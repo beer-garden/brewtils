@@ -287,6 +287,7 @@ class Plugin(object):
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
             client_clazz._current_request = client_clazz.current_request
+            client_clazz._tags = client_clazz._system.tags
         except TypeError:
             if sys.version_info.major != 2:
                 raise
@@ -509,6 +510,7 @@ class Plugin(object):
             "display_name": self._system.display_name,
             "icon_name": self._system.icon_name,
             "template": self._system.template,
+            "tags": self._system.tags,
         }
 
         # And if this particular instance doesn't exist we want to add it

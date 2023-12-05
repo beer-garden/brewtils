@@ -395,6 +395,7 @@ class EasyClient(object):
             display_name (str): New System display name
             icon_name (str): New System icon name
             template (str): New System template
+            tags (list): New System Tags
 
         Returns:
             System: The updated system
@@ -416,6 +417,10 @@ class EasyClient(object):
         metadata = kwargs.pop("metadata", {})
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))
+
+        tags = kwargs.pop("tags", [])
+        if metadata:
+            operations.append(PatchOperation("update", "/tags", tags))
 
         # The remaining kwargs are all strings
         # Sending an empty string (instead of None) ensures they're actually cleared

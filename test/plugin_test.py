@@ -453,13 +453,11 @@ class TestInitializeSystem(object):
             instances=[bg_instance],
             commands=current_commands,
             metadata={"foo": "bar"},
-            tags=["foo"],
             template=None,
         )
         ez_client.find_unique_system.return_value = existing_system
 
         bg_system.commands = [Command("test")]
-        bg_system.tags = ["foo"]
         ez_client.update_system.return_value = bg_system
 
         plugin._initialize_system()
@@ -471,7 +469,6 @@ class TestInitializeSystem(object):
             description=bg_system.description,
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
-            tags=["foo"],
             template="<html>template</html>",
         )
         # assert ez_client.create_system.return_value == plugin.system
@@ -484,7 +481,6 @@ class TestInitializeSystem(object):
             instances=[bg_instance],
             max_instances=2,
             metadata={"foo": "bar"},
-            tags=["foo"],
             template=None,
         )
         ez_client.find_unique_system.return_value = existing_system
@@ -502,7 +498,6 @@ class TestInitializeSystem(object):
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
             template="<html>template</html>",
-            tags=bg_system.tags,
             add_instance=ANY,
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name

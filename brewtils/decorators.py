@@ -63,8 +63,6 @@ def client(
             shouldn't be explicitly set.
         bg_name: Optional plugin name
         bg_version: Optional plugin version
-        tag: A tag that can be used to filter commands
-        tags: A list of tags that can be used to filter commands
 
     Returns:
         The decorated class
@@ -78,9 +76,6 @@ def client(
     _wrapped._bg_version = bg_version
     _wrapped._bg_commands = []
     _wrapped._current_request = None
-    _wrapped._tags = tags or []
-    if tag:
-        _wrapped._tags.append(tag)
 
     return _wrapped
 

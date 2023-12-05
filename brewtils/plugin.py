@@ -159,6 +159,9 @@ class Plugin(object):
         instance_name (str): Instance name
         namespace (str): Namespace name
 
+        command_tag (str): Single tag to apply to all commands
+        command_tags (list): List of tags to apply to all commands
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
@@ -205,6 +208,12 @@ class Plugin(object):
                 "connection information as kwargs as auto-discovery may be incorrect."
             )
         CONFIG = Box(self._config.to_dict(), default_box=True)
+
+        # Setup Command Tags
+        self._command_tags = kwargs.pop("command_tags", [])
+        command_tag = kwargs.pop("command_tag", None)
+        if command_tag:
+            self._command_tags.append(command_tag)
 
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
@@ -271,9 +280,12 @@ class Plugin(object):
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
 
-        self._system.tags = getattr(new_client, "_tags", [])
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
+
+        for command in self._system.commands:
+            for tag in self._command_tags:
+                command.tags.append(tag)
 
         try:
             # Put some attributes on the Client class
@@ -287,7 +299,6 @@ class Plugin(object):
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
             client_clazz._current_request = client_clazz.current_request
-            client_clazz._tags = self._system.tags
         except TypeError:
             if sys.version_info.major != 2:
                 raise
@@ -510,7 +521,6 @@ class Plugin(object):
             "display_name": self._system.display_name,
             "icon_name": self._system.icon_name,
             "template": self._system.template,
-            "tags": self._system.tags,
         }
 
         # And if this particular instance doesn't exist we want to add it

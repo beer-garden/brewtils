@@ -747,7 +747,6 @@ class System(BaseModel):
         metadata=None,
         namespace=None,
         local=None,
-        tags=None,
         template=None,
     ):
         self.name = name
@@ -762,7 +761,6 @@ class System(BaseModel):
         self.metadata = metadata or {}
         self.namespace = namespace
         self.local = local
-        self.tags = tags or []
         self.template = template
 
     def __str__(self):

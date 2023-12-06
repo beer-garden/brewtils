@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.22.0
+------
+TBD
+
+- Added new KWARG input to @command for tag/tags. This can be utilized for filtering commands.
+
 3.21.0
 ------
 11/16/2023

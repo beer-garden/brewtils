@@ -119,6 +119,7 @@ class Command(BaseModel):
         icon_name=None,
         hidden=False,
         metadata=None,
+        tags=None,
         topics=None,
         allow_any_kwargs=None,
     ):
@@ -133,6 +134,7 @@ class Command(BaseModel):
         self.icon_name = icon_name
         self.hidden = hidden
         self.metadata = metadata or {}
+        self.tags = tags or []
         self.topics = topics or []
         self.allow_any_kwargs = allow_any_kwargs
 
@@ -856,6 +858,22 @@ class System(BaseModel):
                 return command
 
         return None
+
+    def get_commands_by_tag(self, tag: str):
+        """Retrieve a particular commands from the system by Tag
+
+        Args:
+            tag (str): The command tag
+
+        Returns:
+            Command: The commands if it exists, empty array otherwise
+        """
+        tag_commands = []
+        for command in self.commands:
+            if tag in command.tags:
+                tag_commands.append(command)
+
+        return tag_commands
 
     def has_different_commands(self, commands):
         """Check if a set of commands is different than the current commands

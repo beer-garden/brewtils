@@ -159,6 +159,9 @@ class Plugin(object):
         instance_name (str): Instance name
         namespace (str): Namespace name
 
+        command_tag (str): Single tag to apply to all commands
+        command_tags (list): List of tags to apply to all commands
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
@@ -205,6 +208,12 @@ class Plugin(object):
                 "connection information as kwargs as auto-discovery may be incorrect."
             )
         CONFIG = Box(self._config.to_dict(), default_box=True)
+
+        # Setup Command Tags
+        self._command_tags = kwargs.pop("command_tags", [])
+        command_tag = kwargs.pop("command_tag", None)
+        if command_tag:
+            self._command_tags.append(command_tag)
 
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
@@ -273,6 +282,10 @@ class Plugin(object):
 
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
+
+        for command in self._system.commands:
+            for tag in self._command_tags:
+                command.tags.append(tag)
 
         try:
             # Put some attributes on the Client class

@@ -36,6 +36,8 @@ def client(
     _wrapped=None,  # type: Type
     bg_name=None,  # type: Optional[str]
     bg_version=None,  # type: Optional[str]
+    tag=None,  # type: str
+    tags=None,  # type: Optional[List[str]]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -90,6 +92,8 @@ def command(
     icon_name=None,  # type: Optional[str]
     hidden=False,  # type: Optional[bool]
     metadata=None,  # type: Optional[Dict]
+    tag=None,  # type: str
+    tags=None,  # type: Optional[List[str]]
     allow_any_kwargs=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
@@ -119,12 +123,20 @@ def command(
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
         metadata: Free-form dictionary
+        tag: A tag that can be used to filter commands
+        tags: A list of tags that can be used to filter commands
         allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to
             the Command parameters defined.
 
     Returns:
         The decorated function
     """
+
+    if tags is None:
+        tags = []
+
+    if tag:
+        tags.append(tag)
 
     if _wrapped is None:
         if output_type is None:
@@ -156,6 +168,7 @@ def command(
             icon_name=icon_name,
             hidden=hidden,
             metadata=metadata,
+            tags=tags,
             allow_any_kwargs=allow_any_kwargs,
         )
 
@@ -178,6 +191,7 @@ def command(
         icon_name=icon_name,
         hidden=hidden,
         metadata=metadata,
+        tags=tags,
         allow_any_kwargs=allow_any_kwargs,
     )
 

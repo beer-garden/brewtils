@@ -170,6 +170,7 @@ def command_dict(parameter_dict, system_id):
         "template": "<html></html>",
         "icon_name": "icon!",
         "metadata": {"meta": "data"},
+        "tags": [],
         "topics": [],
         "allow_any_kwargs": False,
     }

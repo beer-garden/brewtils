@@ -16,6 +16,7 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
+    LegacyRole,
     LoggingConfig,
     Operation,
     Parameter,
@@ -26,7 +27,6 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Resolvable,
-    LegacyRole,
     Runner,
     System,
 )

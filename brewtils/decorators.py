@@ -15,9 +15,11 @@ from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
 
 if sys.version_info.major == 2:
-    from funcsigs import signature, Parameter as InspectParameter  # noqa
+    from funcsigs import Parameter as InspectParameter  # noqa
+    from funcsigs import signature
 else:
-    from inspect import signature, Parameter as InspectParameter  # noqa
+    from inspect import Parameter as InspectParameter  # noqa
+    from inspect import signature
 
     if sys.version_info.major == 3 and sys.version_info.minor >= 8:
         from typing import get_args

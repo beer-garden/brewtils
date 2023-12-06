@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from brewtils.__version__ import __version__
+from brewtils.auto_decorator import AutoDecorator
 from brewtils.config import get_argument_parser, get_connection_info, load_config
-from brewtils.decorators import client, command, parameter, system, subscribe
+from brewtils.decorators import client, command, parameter, subscribe, system
 from brewtils.log import configure_logging
 from brewtils.plugin import Plugin, RemotePlugin  # noqa F401
 from brewtils.rest import normalize_url_prefix
-from brewtils.rest.easy_client import get_easy_client, EasyClient
-from brewtils.rest.system_client import SystemClient
+from brewtils.rest.easy_client import EasyClient, get_easy_client
 from brewtils.rest.publish_client import PublishClient
-from brewtils.auto_decorator import AutoDecorator
+from brewtils.rest.system_client import SystemClient
 
 __all__ = [
     "__version__",

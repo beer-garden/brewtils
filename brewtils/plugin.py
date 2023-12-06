@@ -6,11 +6,11 @@ import os
 import signal
 import sys
 import threading
+from pathlib import Path
 
 import appdirs
 from box import Box
 from packaging.version import Version
-from pathlib import Path
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils

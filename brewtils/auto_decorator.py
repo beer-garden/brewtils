@@ -1,6 +1,6 @@
 import inspect
 
-from brewtils.models import Parameter, Command
+from brewtils.models import Command, Parameter
 
 
 class AutoDecorator:

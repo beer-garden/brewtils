@@ -7,6 +7,8 @@ from typing import Any, Callable, List, NoReturn, Optional, Type, Union
 
 import six
 import wrapt
+from requests import Response  # noqa # not in requirements file
+
 from brewtils.config import get_connection_info
 from brewtils.errors import (
     BrewtilsException,
@@ -25,7 +27,6 @@ from brewtils.errors import (
 from brewtils.models import BaseModel, Event, Job, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
-from requests import Response  # noqa # not in requirements file
 
 
 def get_easy_client(**kwargs):

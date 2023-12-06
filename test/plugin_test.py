@@ -49,10 +49,11 @@ def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
 def client():
     return MagicMock(
         name="client",
-        spec=["command", "_bg_commands", "_bg_name", "_bg_version"],
+        spec=["command", "_bg_commands", "_bg_name", "_bg_version","_groups"],
         _bg_commands=["command"],
         _bg_name=None,
         _bg_version=None,
+        _groups=[]
     )
 
 
@@ -117,6 +118,23 @@ class TestInit(object):
         assert plugin._config.ssl_enabled is True
         assert plugin._config.ca_verify is True
 
+    def test_groups(self, client):
+        logger = Mock()
+        plugin = Plugin(
+            client,
+            bg_host="host1",
+            bg_port=2338,
+            bg_url_prefix="/beer/",
+            ssl_enabled=False,
+            ca_verify=False,
+            logger=logger,
+            max_concurrent=1,
+            group = "GroupA",
+            groups = ["GroupB"]
+        )
+
+        assert plugin._system.groups == ["GroupB", "GroupA"]
+
     def test_kwargs(self, client, bg_system):
         logger = Mock()
 
@@ -130,6 +148,8 @@ class TestInit(object):
             ca_verify=False,
             logger=logger,
             max_concurrent=1,
+            group = "GroupA",
+            groups = ["GroupB"]
         )
 
         assert plugin._logger == logger
@@ -138,6 +158,9 @@ class TestInit(object):
         assert plugin._config.bg_url_prefix == "/beer/"
         assert plugin._config.ssl_enabled is False
         assert plugin._config.ca_verify is False
+        assert "GroupA" == plugin._config.group
+        assert "GroupB" in plugin._config.groups
+        assert "GroupA" not in plugin._config.groups
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -145,6 +168,7 @@ class TestInit(object):
         os.environ["BG_URL_PREFIX"] = "/beer/"
         os.environ["BG_SSL_ENABLED"] = "False"
         os.environ["BG_CA_VERIFY"] = "False"
+        os.environ["BG_GROUP"] = "GroupA"
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
@@ -153,6 +177,7 @@ class TestInit(object):
         assert plugin._config.bg_url_prefix == "/beer/"
         assert plugin._config.ssl_enabled is False
         assert plugin._config.ca_verify is False
+        assert "GroupA" == plugin._config.group
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -292,6 +317,7 @@ class TestClientSetter(object):
         client._bg_name = "name"
         client._bg_version = "1.0.0"
         client.__doc__ = "Description\nSome more stuff"
+        client._groups = ["GroupC"]
 
         # Don't use plugin fixture as the _system name, version, doc are already set
         p = Plugin(bg_host="localhost")
@@ -300,6 +326,7 @@ class TestClientSetter(object):
         assert p._system.name == "name"
         assert p._system.version == "1.0.0"
         assert p._system.description == "Description"
+        assert p._system.groups == ["GroupC"]
 
 
 class TestStartup(object):
@@ -454,6 +481,7 @@ class TestInitializeSystem(object):
             commands=current_commands,
             metadata={"foo": "bar"},
             template=None,
+            groups=["GroupA"]
         )
         ez_client.find_unique_system.return_value = existing_system
 
@@ -470,6 +498,7 @@ class TestInitializeSystem(object):
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
             template="<html>template</html>",
+            groups=bg_system.groups
         )
         # assert ez_client.create_system.return_value == plugin.system
 
@@ -499,6 +528,7 @@ class TestInitializeSystem(object):
             display_name=bg_system.display_name,
             template="<html>template</html>",
             add_instance=ANY,
+            groups=["GroupB","GroupA"],
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
 

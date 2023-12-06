@@ -150,6 +150,20 @@ _SYSTEM_SPEC = {
         "long_description": "Follows the same rules as @command templates - can be "
         "a URL, path string to a template file, or an actual html string",
     },
+    "group": {
+        "type": "str",
+        "description": "The group this system will be added to",
+        "required": False,
+    },
+    "groups": {
+        "type": "list",
+        "description": "The groups this system will be added to",
+        "items": {
+            "name": {"type": "str"}
+        },
+        "required": False,
+        "default": [],
+    },
 }
 
 _PLUGIN_SPEC = {

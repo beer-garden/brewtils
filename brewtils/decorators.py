@@ -71,7 +71,7 @@ def client(
 
     """
     if _wrapped is None:
-        return functools.partial(client, bg_name=bg_name, bg_version=bg_version)  # noqa
+        return functools.partial(client, bg_name=bg_name, bg_version=bg_version, groups=groups, group=group)  # noqa
 
     # Assign these here so linters don't complain
     _wrapped._bg_name = bg_name

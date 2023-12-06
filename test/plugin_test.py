@@ -49,11 +49,11 @@ def ez_client(monkeypatch, bg_system, bg_instance, bg_logging_config):
 def client():
     return MagicMock(
         name="client",
-        spec=["command", "_bg_commands", "_bg_name", "_bg_version","_groups"],
+        spec=["command", "_bg_commands", "_bg_name", "_bg_version", "_groups"],
         _bg_commands=["command"],
         _bg_name=None,
         _bg_version=None,
-        _groups=[]
+        _groups=[],
     )
 
 
@@ -129,8 +129,8 @@ class TestInit(object):
             ca_verify=False,
             logger=logger,
             max_concurrent=1,
-            group = "GroupA",
-            groups = ["GroupB"]
+            group="GroupA",
+            groups=["GroupB"],
         )
 
         assert plugin._system.groups == ["GroupB", "GroupA"]
@@ -148,8 +148,8 @@ class TestInit(object):
             ca_verify=False,
             logger=logger,
             max_concurrent=1,
-            group = "GroupA",
-            groups = ["GroupB"]
+            group="GroupA",
+            groups=["GroupB"],
         )
 
         assert plugin._logger == logger
@@ -481,7 +481,7 @@ class TestInitializeSystem(object):
             commands=current_commands,
             metadata={"foo": "bar"},
             template=None,
-            groups=["GroupA"]
+            groups=["GroupA"],
         )
         ez_client.find_unique_system.return_value = existing_system
 
@@ -498,7 +498,7 @@ class TestInitializeSystem(object):
             icon_name=bg_system.icon_name,
             display_name=bg_system.display_name,
             template="<html>template</html>",
-            groups=bg_system.groups
+            groups=bg_system.groups,
         )
         # assert ez_client.create_system.return_value == plugin.system
 
@@ -528,7 +528,7 @@ class TestInitializeSystem(object):
             display_name=bg_system.display_name,
             template="<html>template</html>",
             add_instance=ANY,
-            groups=["GroupB","GroupA"],
+            groups=["GroupB", "GroupA"],
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
 

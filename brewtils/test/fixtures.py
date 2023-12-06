@@ -258,7 +258,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "namespace": "ns",
         "local": True,
         "template": "<html>template</html>",
-        "groups": ["GroupB","GroupA"]
+        "groups": ["GroupB", "GroupA"],
     }
 
 

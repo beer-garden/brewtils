@@ -77,7 +77,7 @@ def client(
     _wrapped._bg_commands = []
     _wrapped._current_request = None
     _wrapped._groups = groups or []
-   
+
     if group:
         _wrapped._groups.append(group)
 

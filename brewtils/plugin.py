@@ -293,7 +293,7 @@ class Plugin(object):
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
             client_clazz._groups = self._system.groups
-            client_clazz._current_request = client_clazz.current_request          
+            client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:
                 raise
@@ -818,7 +818,7 @@ class Plugin(object):
             # Commands are not defined here - they're set in the client property setter
             if self._config.group:
                 self._config.groups.append(self._config.group)
-                
+
             system = System(
                 name=self._config.name,
                 version=self._config.version,

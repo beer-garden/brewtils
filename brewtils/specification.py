@@ -158,9 +158,7 @@ _SYSTEM_SPEC = {
     "groups": {
         "type": "list",
         "description": "The groups this system will be added to",
-        "items": {
-            "name": {"type": "str"}
-        },
+        "items": {"name": {"type": "str"}},
         "required": False,
         "default": [],
     },

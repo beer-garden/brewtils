@@ -859,7 +859,7 @@ class System(BaseModel):
 
         return None
 
-    def get_commands_by_tags(self, tag: str):
+    def get_commands_by_tag(self, tag: str):
         """Retrieve a particular commands from the system by Tag
 
         Args:

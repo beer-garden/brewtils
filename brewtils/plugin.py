@@ -277,7 +277,7 @@ class Plugin(object):
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
         if not self._system.groups:
-            self._system.groups = getattr(new_client, "_groups")  # noqa
+            self._system.groups = getattr(new_client, "_groups", [])  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 

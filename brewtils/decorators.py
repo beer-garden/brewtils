@@ -39,7 +39,7 @@ def client(
     bg_name=None,  # type: Optional[str]
     bg_version=None,  # type: Optional[str]
     group=None,  # type: str
-    groups=None,  # type: Optional[List[str]]
+    groups=[],  # type: Optional[List[str]]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -78,7 +78,7 @@ def client(
     _wrapped._bg_version = bg_version
     _wrapped._bg_commands = []
     _wrapped._current_request = None
-    _wrapped._groups = groups or []
+    _wrapped._groups = groups
 
     if group:
         _wrapped._groups.append(group)

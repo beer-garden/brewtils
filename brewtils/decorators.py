@@ -68,7 +68,7 @@ def client(
         bg_version: Optional plugin version
         group: Optional plugin group
         groups: Optional plugin groups
-        
+
     Returns:
         The decorated class
 

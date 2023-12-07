@@ -6,11 +6,11 @@ import os
 import signal
 import sys
 import threading
+from pathlib import Path
 
 import appdirs
 from box import Box
 from packaging.version import Version
-from pathlib import Path
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
@@ -73,6 +73,8 @@ class Plugin(object):
         - ``icon_name``
         - ``metadata``
         - ``display_name``
+        - ``group``
+        - ``groups``
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -97,6 +99,7 @@ class Plugin(object):
             namespace="test plugins",
             description="A Test",
             bg_host="localhost",
+            group="test",
         )
 
     Plugins use `Yapconf <https://github.com/loganasherjones/yapconf>`_ for
@@ -159,8 +162,8 @@ class Plugin(object):
         instance_name (str): Instance name
         namespace (str): Namespace name
 
-        command_tag (str): Single tag to apply to all commands
-        command_tags (list): List of tags to apply to all commands
+        group (str): Grouping label applied to plugin
+        groups (list): Grouping labels applied to plugin
 
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
@@ -208,12 +211,6 @@ class Plugin(object):
                 "connection information as kwargs as auto-discovery may be incorrect."
             )
         CONFIG = Box(self._config.to_dict(), default_box=True)
-
-        # Setup Command Tags
-        self._command_tags = kwargs.pop("command_tags", [])
-        command_tag = kwargs.pop("command_tag", None)
-        if command_tag:
-            self._command_tags.append(command_tag)
 
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
@@ -279,13 +276,10 @@ class Plugin(object):
             self._system.version = getattr(new_client, "_bg_version")  # noqa
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
-
+        if not self._system.groups:
+            self._system.groups = getattr(new_client, "_groups", [])  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
-
-        for command in self._system.commands:
-            for tag in self._command_tags:
-                command.tags.append(tag)
 
         try:
             # Put some attributes on the Client class
@@ -298,6 +292,7 @@ class Plugin(object):
             client_clazz._bg_name = self._system.name
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
+            client_clazz._groups = self._system.groups
             client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:
@@ -521,6 +516,7 @@ class Plugin(object):
             "display_name": self._system.display_name,
             "icon_name": self._system.icon_name,
             "template": self._system.template,
+            "groups": self._system.groups,
         }
 
         # And if this particular instance doesn't exist we want to add it
@@ -820,6 +816,9 @@ class Plugin(object):
 
         else:
             # Commands are not defined here - they're set in the client property setter
+            if self._config.group:
+                self._config.groups.append(self._config.group)
+
             system = System(
                 name=self._config.name,
                 version=self._config.version,
@@ -831,6 +830,7 @@ class Plugin(object):
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
                 template=self._config.template,
+                groups=self._config.groups,
             )
 
         return system

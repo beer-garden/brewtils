@@ -5,16 +5,17 @@ import json
 from base64 import b64encode
 from typing import Any, List
 
-import brewtils.plugin
 import requests.exceptions
 import urllib3
-from brewtils.errors import _deprecate
-from brewtils.rest import normalize_url_prefix
-from brewtils.specification import _CONNECTION_SPEC
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from requests.utils import quote
 from yapconf import YapconfSpec
+
+import brewtils.plugin
+from brewtils.errors import _deprecate
+from brewtils.rest import normalize_url_prefix
+from brewtils.specification import _CONNECTION_SPEC
 
 
 def enable_auth(method):

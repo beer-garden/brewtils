@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing import cpu_count
 from typing import Any, Dict, Iterable, Optional
 
-from packaging.version import parse, InvalidVersion
+from packaging.version import InvalidVersion, parse
 
 import brewtils.plugin
 from brewtils.errors import (

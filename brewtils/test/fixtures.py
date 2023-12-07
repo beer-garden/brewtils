@@ -16,6 +16,7 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
+    LegacyRole,
     LoggingConfig,
     Operation,
     Parameter,
@@ -26,7 +27,6 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     Resolvable,
-    LegacyRole,
     Runner,
     System,
 )
@@ -258,6 +258,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "namespace": "ns",
         "local": True,
         "template": "<html>template</html>",
+        "groups": ["GroupB", "GroupA"],
     }
 
 

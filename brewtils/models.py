@@ -748,6 +748,7 @@ class System(BaseModel):
         namespace=None,
         local=None,
         template=None,
+        groups=None,
     ):
         self.name = name
         self.description = description
@@ -762,6 +763,7 @@ class System(BaseModel):
         self.namespace = namespace
         self.local = local
         self.template = template
+        self.groups = groups or []
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

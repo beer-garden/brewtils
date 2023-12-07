@@ -252,6 +252,7 @@ class SystemSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     local = fields.Bool(allow_none=True)
     template = fields.Str(allow_none=True)
+    groups = fields.List(fields.Str(), allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):

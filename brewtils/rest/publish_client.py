@@ -2,7 +2,7 @@
 import logging
 
 import brewtils.plugin
-from brewtils.models import Request, Event, Events
+from brewtils.models import Event, Events, Request
 from brewtils.rest.easy_client import EasyClient
 
 

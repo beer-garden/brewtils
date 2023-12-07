@@ -7,6 +7,8 @@ from typing import Any, Callable, List, NoReturn, Optional, Type, Union
 
 import six
 import wrapt
+from requests import Response  # noqa # not in requirements file
+
 from brewtils.config import get_connection_info
 from brewtils.errors import (
     BrewtilsException,
@@ -25,7 +27,6 @@ from brewtils.errors import (
 from brewtils.models import BaseModel, Event, Job, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
-from requests import Response  # noqa # not in requirements file
 
 
 def get_easy_client(**kwargs):
@@ -395,6 +396,7 @@ class EasyClient(object):
             display_name (str): New System display name
             icon_name (str): New System icon name
             template (str): New System template
+            groups (list): New System groups
 
         Returns:
             System: The updated system
@@ -416,6 +418,10 @@ class EasyClient(object):
         metadata = kwargs.pop("metadata", {})
         if metadata:
             operations.append(PatchOperation("update", "/metadata", metadata))
+
+        groups = kwargs.pop("groups", [])
+        if groups:
+            operations.append(PatchOperation("replace", "/groups", groups))
 
         # The remaining kwargs are all strings
         # Sending an empty string (instead of None) ensures they're actually cleared

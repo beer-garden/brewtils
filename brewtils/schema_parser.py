@@ -4,10 +4,11 @@ import logging
 import typing
 from typing import Any, Dict, Optional, Union
 
-import brewtils.models
-import brewtils.schemas
 import six  # type: ignore
 from box import Box  # type: ignore
+
+import brewtils.models
+import brewtils.schemas
 from brewtils.models import BaseModel
 
 try:

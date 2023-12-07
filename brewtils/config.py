@@ -8,7 +8,7 @@ from yapconf.exceptions import YapconfItemNotFound
 
 from brewtils.errors import ValidationError, _deprecate
 from brewtils.rest import normalize_url_prefix
-from brewtils.specification import SPECIFICATION, _CONNECTION_SPEC
+from brewtils.specification import _CONNECTION_SPEC, SPECIFICATION
 
 logger = logging.getLogger(__name__)
 

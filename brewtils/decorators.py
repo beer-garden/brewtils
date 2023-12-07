@@ -58,6 +58,7 @@ def client(
       * ``_bg_name``: an optional system name
       * ``_bg_version``: an optional system version
       * ``_bg_commands``: holds all registered commands
+      * ``_groups``: an optional sytem groups
       * ``_current_request``: Reference to the currently executing request
 
     Args:
@@ -65,7 +66,9 @@ def client(
             shouldn't be explicitly set.
         bg_name: Optional plugin name
         bg_version: Optional plugin version
-
+        group: Optional plugin group
+        groups: Optional plugin groups
+        
     Returns:
         The decorated class
 

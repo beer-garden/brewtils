@@ -14,10 +14,10 @@ from pika import (
     SSLOptions,
     URLParameters,
 )
-from pika.exceptions import AMQPError
+from pika.exceptions import AMQPError, ConnectionWrongStateError
 from pika.spec import PERSISTENT_DELIVERY_MODE
 
-from brewtils.errors import DiscardMessageException, RepublishRequestException, ConnectionWrongStateError
+from brewtils.errors import DiscardMessageException, RepublishRequestException
 from brewtils.request_handling import RequestConsumer
 from brewtils.schema_parser import SchemaParser
 

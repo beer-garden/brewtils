@@ -77,7 +77,8 @@ class PublishClient(object):
         Topic is added to request.metadata["_topic"]
 
         Args:
-            _topic (str): The topic to publish to, default is Plugin level topic (Namespace.System.Version.Instance)
+            _topic (str): The topic to publish to, default is Plugin level topic
+                (Namespace.System.Version.Instance)
             _regex_only (bool): If the request will be resolved against only annotated topics
             from the @subscribe command
             _propagate (bool): If the request will be pushed up to the parent to be resolved.
@@ -92,7 +93,12 @@ class PublishClient(object):
                 and brewtils.plugin.CONFIG.version
                 and brewtils.plugin.CONFIG.instance_name
             ):
-                _topic = f'{brewtils.plugin.CONFIG.namespace or ""}.{brewtils.plugin.CONFIG.name}.{brewtils.plugin.CONFIG.version}.{brewtils.plugin.CONFIG.instance_name}'
+                _topic = "{0}.{1}.{2}.{3}".format(
+                    brewtils.plugin.CONFIG.namespace or "",
+                    brewtils.plugin.CONFIG.name,
+                    brewtils.plugin.CONFIG.version,
+                    brewtils.plugin.CONFIG.instance_name,
+                )
             else:
                 raise BrewtilsException("Unable to determine _topic to publish to")
 

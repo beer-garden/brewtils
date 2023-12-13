@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.22.0
 ------
-TBD
+12/13/2023
 
 - Added new KWARG input to @command for tag/tags. This can be utilized for filtering commands.
 - Adding default topic for PublishClient to Plugins {Namespace}.{System}.{Version}.{Instance}

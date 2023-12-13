@@ -66,7 +66,11 @@ class PublishClient(object):
         self._easy_client = EasyClient(*args, **kwargs)
 
     def publish(
-        self, _topic: str = None, _regex_only: bool = False, _propagate: bool = False, **kwargs
+        self,
+        _topic: str = None,
+        _regex_only: bool = False,
+        _propagate: bool = False,
+        **kwargs,
     ) -> bool:
         """Publishes event containing Request to be processed
 
@@ -83,11 +87,15 @@ class PublishClient(object):
         """
 
         if _topic is None:
-            if brewtils.plugin.CONFIG.name and brewtils.plugin.CONFIG.version and brewtils.plugin.CONFIG.instance_name:
+            if (
+                brewtils.plugin.CONFIG.name
+                and brewtils.plugin.CONFIG.version
+                and brewtils.plugin.CONFIG.instance_name
+            ):
                 _topic = f'{brewtils.plugin.CONFIG.namespace or ""}.{brewtils.plugin.CONFIG.name}.{brewtils.plugin.CONFIG.version}.{brewtils.plugin.CONFIG.instance_name}'
             else:
                 raise BrewtilsException("Unable to determine _topic to publish to")
-            
+
         comment = kwargs.pop("_comment", None)
         output_type = kwargs.pop("_output_type", None)
         metadata = kwargs.pop("_metadata", {})

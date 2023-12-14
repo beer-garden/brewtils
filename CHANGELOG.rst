@@ -1,6 +1,13 @@
 Brewtils Changelog
 ==================
 
+3.23.0
+------
+TBD
+
+- Add support to change the Exchange Type for RabbitMQ. Default is 'topic', 
+  but options like 'fanout' can now be supported
+
 3.22.0
 ------
 12/13/2023

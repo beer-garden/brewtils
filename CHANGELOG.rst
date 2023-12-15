@@ -8,6 +8,7 @@ TBD
 - Add support to change the Exchange Type for RabbitMQ. Default is 'topic', 
   but options like 'fanout' can now be supported
 - Better handling of Pika errors
+- Add GroupClient to support tasking Systems that are "grouped" together through the System/Client annotation. 
 
 3.22.0
 ------

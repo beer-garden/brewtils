@@ -308,20 +308,20 @@ class PikaConsumer(RequestConsumer):
             try:
                 self._connection = self.open_connection()
                 self._connection.ioloop.start()
-    
+
                 if not self._panic_event.is_set():
                     if 0 <= self._max_reconnect_attempts <= self._reconnect_attempt:
                         self.logger.warning("Max connection failures, shutting down")
                         self._panic_event.set()
                         return
-    
+
                     self.logger.warning(
                         "%s consumer has died, waiting %i seconds before reconnecting",
                         self._queue_name,
                         self._reconnect_timeout,
                     )
                     self._panic_event.wait(self._reconnect_timeout)
-    
+
                     self._reconnect_attempt += 1
                     self._reconnect_timeout = min(
                         self._reconnect_timeout * 2, self._max_reconnect_timeout

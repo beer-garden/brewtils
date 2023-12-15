@@ -1,11 +1,21 @@
 Brewtils Changelog
 ==================
 
-3.22.0
+3.23.0
 ------
 TBD
 
+- Add support to change the Exchange Type for RabbitMQ. Default is 'topic', 
+  but options like 'fanout' can now be supported
+- Better handling of Pika errors
+
+3.22.0
+------
+12/13/2023
+
 - Added new KWARG input to @command for tag/tags. This can be utilized for filtering commands.
+- Adding default topic for PublishClient to Plugins {Namespace}.{System}.{Version}.{Instance}
+- Removed Python 12 support until we upgrade Marshmallow dependency to 3.15 or greater
 
 3.21.0
 ------

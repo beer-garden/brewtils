@@ -14,7 +14,7 @@ from pika import (
     SSLOptions,
     URLParameters,
 )
-from pika.exceptions import AMQPError
+from pika.exceptions import AMQPError, ConnectionWrongStateError
 from pika.spec import PERSISTENT_DELIVERY_MODE
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
@@ -35,6 +35,7 @@ class PikaClient(object):
         heartbeat_interval: DEPRECATED, use heartbeat
         virtual_host: RabbitMQ virtual host
         exchange: Default exchange that will be used
+        exchange_topic: Exchange topic type to register as, default as 'topic'
         ssl: SSL Options
         blocked_connection_timeout: If not None, the value is a non-negative timeout,
             in seconds, for the connection to remain blocked (triggered by
@@ -55,6 +56,7 @@ class PikaClient(object):
         heartbeat_interval=3600,
         virtual_host="/",
         exchange="beer_garden",
+        exchange_type="topic",
         ssl=None,
         blocked_connection_timeout=None,
         **kwargs
@@ -68,6 +70,7 @@ class PikaClient(object):
         self._blocked_connection_timeout = blocked_connection_timeout
         self._virtual_host = virtual_host
         self._exchange = exchange
+        self._exchange_type = exchange_type
 
         ssl = ssl or {}
         self._ssl_options = None
@@ -163,7 +166,7 @@ class TransientPikaClient(PikaClient):
     def declare_exchange(self):
         with BlockingConnection(self._conn_params) as conn:
             conn.channel().exchange_declare(
-                exchange=self._exchange, exchange_type="topic", durable=True
+                exchange=self._exchange, exchange_type=self._exchange_type, durable=True
             )
 
     def setup_queue(self, queue_name, queue_args, routing_keys):
@@ -302,26 +305,29 @@ class PikaConsumer(RequestConsumer):
             None
         """
         while not self._panic_event.is_set():
-            self._connection = self.open_connection()
-            self._connection.ioloop.start()
+            try:
+                self._connection = self.open_connection()
+                self._connection.ioloop.start()
 
-            if not self._panic_event.is_set():
-                if 0 <= self._max_reconnect_attempts <= self._reconnect_attempt:
-                    self.logger.warning("Max connection failures, shutting down")
-                    self._panic_event.set()
-                    return
+                if not self._panic_event.is_set():
+                    if 0 <= self._max_reconnect_attempts <= self._reconnect_attempt:
+                        self.logger.warning("Max connection failures, shutting down")
+                        self._panic_event.set()
+                        return
 
-                self.logger.warning(
-                    "%s consumer has died, waiting %i seconds before reconnecting",
-                    self._queue_name,
-                    self._reconnect_timeout,
-                )
-                self._panic_event.wait(self._reconnect_timeout)
+                    self.logger.warning(
+                        "%s consumer has died, waiting %i seconds before reconnecting",
+                        self._queue_name,
+                        self._reconnect_timeout,
+                    )
+                    self._panic_event.wait(self._reconnect_timeout)
 
-                self._reconnect_attempt += 1
-                self._reconnect_timeout = min(
-                    self._reconnect_timeout * 2, self._max_reconnect_timeout
-                )
+                    self._reconnect_attempt += 1
+                    self._reconnect_timeout = min(
+                        self._reconnect_timeout * 2, self._max_reconnect_timeout
+                    )
+            except ConnectionWrongStateError as ex:
+                self.logger.error("Error running consumer IO-loop: %s", ex)
 
     def stop(self):
         """Cleanly shutdown
@@ -563,7 +569,10 @@ class PikaConsumer(RequestConsumer):
     def open_channel(self):
         """Open a channel"""
         self.logger.debug("Opening a new channel")
-        self._connection.channel(on_open_callback=self.on_channel_open)
+        try:
+            self._connection.channel(on_open_callback=self.on_channel_open)
+        except ConnectionWrongStateError as ex:
+            self.logger.error("Failure opening channel to consume messages: %s", ex)
 
     def on_channel_open(self, channel):
         """Channel open success callback

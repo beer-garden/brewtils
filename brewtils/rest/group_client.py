@@ -342,7 +342,7 @@ class GroupClient(object):
         # type: () -> None
         """Query beer-garden for a System definition
 
-        This method will make the query to beer-garden for a System matching the name
+        This method will make the query to beer-garden for Systems matching the group, name
         and version constraints specified during GroupClient instance creation.
 
         If this method completes successfully the GroupClient will be ready to create
@@ -508,35 +508,8 @@ class GroupClient(object):
             request.parameters, self._commands[command].parameters, upload=True
         )
 
-    @staticmethod
-    def _determine_latest_groups(systems):
-        # type: (Iterable[System]) -> Iterable[System]
-        """Returns the list of system with the latest version from the provided list of Systems.
-        Any version adhering to PEP440 is treated as "later" than a version that does
-        not adhere to that standard.
-        """
-        unique_systems = {}
-
-        for system in systems:
-            key = f"{system.namespace}-{system.name}"
-            if key not in unique_systems:
-                unique_systems[key] = [system]
-            else:
-                unique_systems[key].append(system)
-
-        latest_systems = []
-
-        for key in unique_systems:
-            if len(unique_systems[key]) == 1:
-                latest_systems.append(unique_systems[key][0])
-            else:
-                latest_systems.append(_determine_latest(unique_systems[key]))
-
-        return latest_systems
-
-
-    @staticmethod
-    def _determine_latest(systems):
+    
+    def _determine_latest(self, systems):
         # type: (Iterable[System]) -> Optional[System]
         """Returns the system with the latest version from the provided list of Systems.
         Any version adhering to PEP440 is treated as "later" than a version that does
@@ -561,3 +534,28 @@ class GroupClient(object):
             return system_versions_map.get(str(latest_version))
         else:
             return None
+
+    def _determine_latest_groups(self, systems):
+        # type: (Iterable[System]) -> Iterable[System]
+        """Returns the list of system with the latest version from the provided list of Systems.
+        Any version adhering to PEP440 is treated as "later" than a version that does
+        not adhere to that standard.
+        """
+        unique_systems = {}
+
+        for system in systems:
+            key = f"{system.namespace}-{system.name}"
+            if key not in unique_systems:
+                unique_systems[key] = [system]
+            else:
+                unique_systems[key].append(system)
+
+        latest_systems = []
+
+        for key in unique_systems:
+            if len(unique_systems[key]) == 1:
+                latest_systems.append(unique_systems[key][0])
+            else:
+                latest_systems.append(self._determine_latest(unique_systems[key]))
+
+        return latest_systems

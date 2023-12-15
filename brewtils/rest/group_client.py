@@ -43,7 +43,7 @@ class GroupClient(object):
             version_constraint:
                 Allows specifying a particular system version. Can be a version literal
                 ('1.0.0') or the special value 'latest.' Using 'latest' will allow the
-                SystemClient to retry a request if it fails due to a missing system
+                GroupClient to retry a request if it fails due to a missing system
                 (see Creating Requests).
 
             default_instance:
@@ -228,12 +228,12 @@ class GroupClient(object):
         # type: (str, **Any) -> partial
         """Create a callable that will execute a Beer-garden request when called.
 
-        Normally you interact with the SystemClient by accessing attributes, but there
+        Normally you interact with the GroupClient by accessing attributes, but there
         could be certain cases where you want to create a request without sending it.
 
         Example::
 
-            client = SystemClient(host, port, 'system', blocking=False)
+            client = GroupClient(host, port, 'system', blocking=False)
 
             # Create two callables - one with a parameter and one without
             uncreated_requests = [
@@ -242,7 +242,7 @@ class GroupClient(object):
             ]
 
             # Calling creates and sends the request
-            # The result of each is a future because blocking=False on the SystemClient
+            # The result of each is a future because blocking=False on the GroupClient
             futures = [req() for req in uncreated_requests]
 
             # Wait for all the futures to complete
@@ -343,9 +343,9 @@ class GroupClient(object):
         """Query beer-garden for a System definition
 
         This method will make the query to beer-garden for a System matching the name
-        and version constraints specified during SystemClient instance creation.
+        and version constraints specified during GroupClient instance creation.
 
-        If this method completes successfully the SystemClient will be ready to create
+        If this method completes successfully the GroupClient will be ready to create
         and send Requests.
 
         Returns:

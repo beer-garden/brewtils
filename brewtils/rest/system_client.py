@@ -215,7 +215,7 @@ class SystemClient(object):
 
         # Now need to determine if the intended target is the current running plugin.
         # Start by ensuring there's a valid Plugin context active
-        target_self = bool(brewtils.plugin.CONFIG)
+        self.target_self = bool(brewtils.plugin.CONFIG)
 
         # If ANY of the target specification arguments don't match the current plugin
         # then the target is different
@@ -230,11 +230,11 @@ class SystemClient(object):
                 kwargs.get(key) is not None
                 and kwargs.get(key) != brewtils.plugin.CONFIG[value]
             ):
-                target_self = False
+                self.target_self = False
                 break
 
         # Now assign self._system_name, etc based on the value of target_self
-        if target_self:
+        if self.target_self:
             self._system_name = brewtils.plugin.CONFIG.name
             self._version_constraint = brewtils.plugin.CONFIG.version
             self._default_instance = brewtils.plugin.CONFIG.instance_name
@@ -279,6 +279,8 @@ class SystemClient(object):
     def __getattr__(self, item):
         # type: (str) -> partial
         """Standard way to create and send beer-garden requests"""
+        if self.target_self:
+            return self.create_self_bg_request(item)
         return self.create_bg_request(item)
 
     def __str__(self):
@@ -303,6 +305,36 @@ class SystemClient(object):
 
             # Set loaded to False to force the reload of the System
             self._loaded = False
+
+    def create_self_bg_request(self, command_name, **kwrags):
+        
+        if brewtils.plugin.request_context.target.hasattr(command_name):
+            uuid = "UUID"
+            
+
+            if brewtils.plugin.request_context.current_parent_request_id:
+                parent_id = deepcopy(brewtils.plugin.request_context.current_parent_request_id)
+            else:
+                parent_id = brewtils.plugin.request_context.current_request.id
+
+            brewtils.plugin.request_context.current_self_requests[uuid] = {parent_id : {}}
+            
+            # Remove these items
+            kwargs.pop("_raise_on_error", self._raise_on_error)
+            kwargs.pop("_blocking", self._blocking)
+            kwargs.pop("_timeout", self._timeout)
+
+            results = getattr(brewtils.plugin.request_context.target, command_name)(**kwrags)
+
+            request = self._construct_bg_request(**kwargs)
+            request.output = results
+            
+            request.status = "SUCCESS"
+            brewtils.plugin.request_context.current_self_requests[uuid]  = {parent_id : request}
+
+
+        else:
+            return self.create_bg_request(item)
 
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial

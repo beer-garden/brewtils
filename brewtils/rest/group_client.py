@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from multiprocessing import cpu_count
 from typing import Any, Dict, Iterable, Optional
@@ -53,16 +53,18 @@ class GroupClient(object):
                 instance for each request.
 
             system_name:
-                If
+                The system name to use when creaitng the request, if none is provided,
+                then this field is treated as a wild card.
             
             system_version:
-                If
+                The system version to use when creaitng the request, if none is provided,
+                then this field is treated as a wild card.
 
             system_namespaces:
                 If the targeted system is stateless and if a collection of systems could
-                handle the Request. This will allow the plugin to round robin the requests
-                to each namespace to help load balance the requests. It will rotate per
-                Request to the target system.
+                handle the Request. This will allow the plugin to broadcast the request to
+                all namespaces. If none is provided, then this field is treated as a wild 
+                card.
 
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first
@@ -73,9 +75,10 @@ class GroupClient(object):
     Making a Request:
         The standard way to create and send requests is by calling object attributes::
 
-            futures = client.example_command(param_1='example_param')
-            for future in as_completed(futures):
-                completed_request = future.result()
+            results = client.example_command(param_1='example_param')
+            for result in results:
+                if result.status == "SUCCESS":
+                    payload = result.output
 
         If the request creation process fails (e.g. the command failed validation) and
         version_constraint is 'latest' then the GroupClient will check to see if a
@@ -100,13 +103,13 @@ class GroupClient(object):
 
         Sending to another instance::
 
-            request = client.example_command(
+            requests = group_client.example_command(
                 _instance_name="instance_2", param_1="example_param"
             )
 
         Request with a comment::
 
-            request = client.example_command(
+            requests = group_client.example_command(
                 _comment="I'm a beer-garden comment!", param_1="example_param"
             )
 
@@ -169,20 +172,6 @@ class GroupClient(object):
 
         self._systems = None
         self._commands = {}
-
-        # Now need to determine if the intended target is the current running plugin.
-        # Start by ensuring there's a valid Plugin context active
-        target_self = bool(brewtils.plugin.CONFIG)
-
-        # If ANY of the target specification arguments don't match the current plugin
-        # then the target is different
-        config_map = {
-            "group": "group"
-            "system_name": "name",
-            "version_constraint": "version",
-            "default_instance": "instance_name",
-            "system_namespace": "namespace",
-        }
 
         self._system_name = kwargs.get("system_name")
         self._version_constraint = kwargs.get("version_constraint", "latest")
@@ -270,10 +259,7 @@ class GroupClient(object):
             AttributeError: System does not have a Command with the given command_name
         """
 
-        self._rotate_namespace()
-
-        if not self._loaded or self._always_update:
-            self.load_bg_system()
+        self.load_bg_system()
 
         future_requests = {}
 
@@ -301,8 +287,15 @@ class GroupClient(object):
                 raise AttributeError(
                     "System '%s' has no command named '%s'" % (self._system, command_name)
                 )
+            
+        if not self.blocking:
+            return future_requests
+        
+        results = []
+        for future in as_completed(future_requests):
+                results.append(future.result())
 
-        return future_requests
+        return results
 
     def send_bg_request(self, *args, **kwargs):
         """Actually create a Request and send it to Beer-garden
@@ -340,7 +333,7 @@ class GroupClient(object):
 
         request = self._construct_bg_request(**kwargs)
         request = self._easy_client.create_request(
-            request, blocking=blocking, timeout=timeout
+            request, blocking=self.blocking, timeout=timeout
         )
 
         return self._wait_for_request(request, raise_on_error, timeout)
@@ -374,11 +367,11 @@ class GroupClient(object):
             if self._system_name:
                 filter_kwargs["namespace"] = namespace
 
-            if self._version_constraint and self._version_constraint != "latest"
+            if self._version_constraint and self._version_constraint != "latest":
                 filter_kwargs["version"] = self._version_constraint
 
             if self._version_constraint == "latest":
-                self._system.extend(_determine_latest_groups(self._easy_client.find_systems(**filter_kwargs)))
+                self._system.extend(self._determine_latest_groups(self._easy_client.find_systems(**filter_kwargs)))
             else:
                 self._system.extend(self._easy_client.find_systems(**filter_kwargs))
 

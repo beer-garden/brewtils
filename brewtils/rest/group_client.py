@@ -55,7 +55,7 @@ class GroupClient(object):
             system_name:
                 The system name to use when creaitng the request, if none is provided,
                 then this field is treated as a wild card.
-            
+
             system_version:
                 The system version to use when creaitng the request, if none is provided,
                 then this field is treated as a wild card.
@@ -63,13 +63,13 @@ class GroupClient(object):
             system_namespaces:
                 If the targeted system is stateless and if a collection of systems could
                 handle the Request. This will allow the plugin to broadcast the request to
-                all namespaces. If none is provided, then this field is treated as a wild 
+                all namespaces. If none is provided, then this field is treated as a wild
                 card.
 
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first
         attempt to send a Request. At that point the GroupClient will query Beer-garden
-        to get the system definitions that matches the group. If no matching System can 
+        to get the system definitions that matches the group. If no matching System can
         be found a FetchError will be raised.
 
     Making a Request:
@@ -85,7 +85,7 @@ class GroupClient(object):
         newer version is available, and if so it will attempt to make the request on
         that version. This is so users of the GroupClient that don't necessarily care
         about the target system version don't need to be restarted every time the target
-        system is updated. 
+        system is updated.
 
         It's also possible to control what happens when a Request results in an ERROR.
         If the ``raise_on_error`` parameter is set to False (the default) then Requests
@@ -189,7 +189,6 @@ class GroupClient(object):
         else:
             self._system_namespaces = [self._system_namespace]
 
-
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
         self._max_delay = kwargs.get("max_delay", 30)
@@ -222,7 +221,6 @@ class GroupClient(object):
     @property
     def bg_default_instance(self):
         return self._default_instance
-
 
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial
@@ -276,8 +274,8 @@ class GroupClient(object):
                             _system_display=system.display_name,
                             _output_type=system.commands[command_name].output_type,
                             _instance_name=self._default_instance,
-                            **kwargs
-                        ) : {
+                            **kwargs,
+                        ): {
                             "system": system,
                             "command_name": command_name,
                         }
@@ -285,15 +283,16 @@ class GroupClient(object):
                 )
             else:
                 raise AttributeError(
-                    "System '%s' has no command named '%s'" % (self._system, command_name)
+                    "System '%s' has no command named '%s'"
+                    % (self._system, command_name)
                 )
-            
+
         if not self.blocking:
             return future_requests
-        
+
         results = []
         for future in as_completed(future_requests):
-                results.append(future.result())
+            results.append(future.result())
 
         return results
 
@@ -357,9 +356,7 @@ class GroupClient(object):
         self._system = []
 
         for namespace in self._system_namespaces:
-            filter_kwargs = {
-                "groups": [self._group]
-            }
+            filter_kwargs = {"groups": [self._group]}
 
             if self._system_name:
                 filter_kwargs["name"] = self._system_name
@@ -371,10 +368,13 @@ class GroupClient(object):
                 filter_kwargs["version"] = self._version_constraint
 
             if self._version_constraint == "latest":
-                self._system.extend(self._determine_latest_groups(self._easy_client.find_systems(**filter_kwargs)))
+                self._system.extend(
+                    self._determine_latest_groups(
+                        self._easy_client.find_systems(**filter_kwargs)
+                    )
+                )
             else:
                 self._system.extend(self._easy_client.find_systems(**filter_kwargs))
-
 
         if len(self._systems) == 0:
             raise FetchError(
@@ -508,7 +508,6 @@ class GroupClient(object):
             request.parameters, self._commands[command].parameters, upload=True
         )
 
-    
     def _determine_latest(self, systems):
         # type: (Iterable[System]) -> Optional[System]
         """Returns the system with the latest version from the provided list of Systems.

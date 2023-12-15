@@ -35,6 +35,7 @@ class PikaClient(object):
         heartbeat_interval: DEPRECATED, use heartbeat
         virtual_host: RabbitMQ virtual host
         exchange: Default exchange that will be used
+        exchange_topic: Exchange topic type to register as, default as 'topic'
         ssl: SSL Options
         blocked_connection_timeout: If not None, the value is a non-negative timeout,
             in seconds, for the connection to remain blocked (triggered by
@@ -55,6 +56,7 @@ class PikaClient(object):
         heartbeat_interval=3600,
         virtual_host="/",
         exchange="beer_garden",
+        exchange_type="topic",
         ssl=None,
         blocked_connection_timeout=None,
         **kwargs
@@ -68,6 +70,7 @@ class PikaClient(object):
         self._blocked_connection_timeout = blocked_connection_timeout
         self._virtual_host = virtual_host
         self._exchange = exchange
+        self._exchange_type = exchange_type
 
         ssl = ssl or {}
         self._ssl_options = None
@@ -163,7 +166,7 @@ class TransientPikaClient(PikaClient):
     def declare_exchange(self):
         with BlockingConnection(self._conn_params) as conn:
             conn.channel().exchange_declare(
-                exchange=self._exchange, exchange_type="topic", durable=True
+                exchange=self._exchange, exchange_type=self._exchange_type, durable=True
             )
 
     def setup_queue(self, queue_name, queue_args, routing_keys):

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import abc
+import copy
 import json
 import logging
 import sys
 import threading
+import uuid
 from concurrent.futures.thread import ThreadPoolExecutor
 
 import six
@@ -22,8 +24,6 @@ from brewtils.errors import (
 )
 from brewtils.models import Request
 from brewtils.schema_parser import SchemaParser
-import copy
-import uuid
 
 
 class LocalRequestProcessor(object):
@@ -62,7 +62,6 @@ class LocalRequestProcessor(object):
 
         current_uuid = str(uuid.uuid4())
         brewtils.plugin.request_context.parent_request_id = current_uuid
-
 
         try:
             output = self._invoke_command(brewtils.plugin.CLIENT, request)

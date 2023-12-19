@@ -719,9 +719,7 @@ class EasyClient(object):
             Request: The created Request
 
         """
-        return self.client.put_request(
-            SchemaParser.serialize_request(request)
-        )
+        return self.client.put_request(SchemaParser.serialize_request(request))
 
     @wrap_response(return_boolean=True)
     def publish_event(self, *args, **kwargs):

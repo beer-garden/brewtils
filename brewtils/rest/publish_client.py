@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from brewtils.errors import BrewtilsException
 import brewtils.plugin
+from brewtils.errors import BrewtilsException
 from brewtils.models import Event, Events, Request
 from brewtils.rest.easy_client import EasyClient
 

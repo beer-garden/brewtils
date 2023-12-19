@@ -18,9 +18,9 @@ from brewtils.errors import (
     _deprecate,
 )
 from brewtils.models import Request, System
+from brewtils.request_handling import LocalRequestProcessor
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
-from brewtils.request_handling import LocalRequestProcessor
 
 
 class SystemClient(object):
@@ -407,7 +407,7 @@ class SystemClient(object):
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
         try:
-            request = self._construct_bg_request(**kwargs)    
+            request = self._construct_bg_request(**kwargs)
         except ValidationError:
             if self._system and self._version_constraint == "latest":
                 old_version = self._system.version
@@ -423,7 +423,7 @@ class SystemClient(object):
             request = self._easy_client.create_request(
                 request, blocking=blocking, timeout=timeout
             )
-              
+
         # If not blocking just return the future
         if not blocking:
             if not self.target_self:
@@ -439,7 +439,7 @@ class SystemClient(object):
         # the request is actually complete before returning
         if not self.target_self:
             return self._wait_for_request(request, raise_on_error, timeout)
-        
+
         return self.local_request_handler.process_command(request)
 
     def load_bg_system(self):

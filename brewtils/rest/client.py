@@ -542,7 +542,7 @@ class RestClient(object):
         return self.session.post(
             self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
         )
-    
+
     @enable_auth
     def put_requests(self, payload, **kwargs):
         # type: (str, **Any) -> Response

@@ -41,6 +41,8 @@ from brewtils.specification import _CONNECTION_SPEC
 # This is what enables request nesting to work easily
 request_context = threading.local()
 request_context.current_request = None
+request_context.parent_request_id = None
+request_context.child_request_map = {}
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
@@ -189,7 +191,6 @@ class Plugin(object):
     """
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
-        self._client = None
         self._instance = None
         self._admin_processor = None
         self._request_processor = None
@@ -215,9 +216,12 @@ class Plugin(object):
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
+        global CLIENT
         # Make sure this is set after self._system
         if client:
-            self.client = client
+            CLIENT = client
+        else:
+            CLIENT = None
 
         # Now that the config is loaded we can create the EasyClient
         self._ez_client = EasyClient(logger=self._logger, **self._config)
@@ -236,7 +240,7 @@ class Plugin(object):
             self._initialize_logging()
 
     def run(self):
-        if not self._client:
+        if not CLIENT:
             raise AttributeError(
                 "Unable to start a Plugin without a Client. Please set the 'client' "
                 "attribute to an instance of a class decorated with @brewtils.system"
@@ -259,11 +263,11 @@ class Plugin(object):
 
     @property
     def client(self):
-        return self._client
+        return CLIENT
 
     @client.setter
     def client(self, new_client):
-        if self._client:
+        if CLIENT:
             raise AttributeError("Sorry, you can't change a plugin's client once set")
 
         if new_client is None:
@@ -304,7 +308,7 @@ class Plugin(object):
                 "it's recommended to switch to new-style if possible."
             )
 
-        self._client = new_client
+        CLIENT = new_client
 
     @property
     def system(self):
@@ -594,7 +598,7 @@ class Plugin(object):
             max_workers=1,
         )
         request_processor = RequestProcessor(
-            target=self._client,
+            target=CLIENT,
             updater=updater,
             consumer=request_consumer,
             validation_funcs=[self._correct_system, self._is_running],
@@ -843,14 +847,14 @@ class Plugin(object):
         if not self._system.version:
             raise ValidationError("Plugin system must have a version")
 
-        client_name = getattr(self._client, "_bg_name", None)
+        client_name = getattr(CLIENT, "_bg_name", None)
         if client_name and client_name != self._system.name:
             raise ValidationError(
                 "System name '%s' doesn't match name from client decorator: "
                 "@system(bg_name=%s)" % (self._system.name, client_name)
             )
 
-        client_version = getattr(self._client, "_bg_version", None)
+        client_version = getattr(CLIENT, "_bg_version", None)
         if client_version and client_version != self._system.version:
             raise ValidationError(
                 "System version '%s' doesn't match version from client decorator: "

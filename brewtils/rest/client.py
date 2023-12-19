@@ -542,6 +542,21 @@ class RestClient(object):
         return self.session.post(
             self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
         )
+    
+    @enable_auth
+    def put_requests(self, payload, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a PUT on the Request URL
+
+        Args:
+            payload: Completed Request definition
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.put(
+            self.request_url, data=payload, headers=self.JSON_HEADERS
+        )
 
     @enable_auth
     def patch_request(self, request_id, payload):

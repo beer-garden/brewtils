@@ -22,6 +22,137 @@ from brewtils.errors import (
 )
 from brewtils.models import Request
 from brewtils.schema_parser import SchemaParser
+import copy
+import uuid
+
+
+class LocalRequestProcessor(object):
+    """ """
+
+    def __init__(
+        self,
+        logger=None,
+        system=None,
+        resolver=None,
+    ):
+        self.logger = logger or logging.getLogger(__name__)
+        self._system = system
+        self._resolver = resolver
+
+    def process_command(self, command_name, **kwargs):
+        """Process a command locally.
+
+        Will update the child request map with the generated Request object to be
+        sent to Beer Garden
+
+        Args:
+            command_name: the command to be processed
+
+        Returns:
+            Any
+        """
+
+        if brewtils.plugin.request_context.parent_request_id:
+            parent_id = copy.deepcopy(brewtils.plugin.request_context.parent_request_id)
+        else:
+            parent_id = brewtils.plugin.request_context.current_request.id
+
+        if parent_id not in brewtils.plugin.request_context.child_request_map:
+            brewtils.plugin.request_context.child_request_map[parent_id] = []
+
+        current_uuid = str(uuid.uuid4())
+        brewtils.plugin.request_context.parent_request_id = current_uuid
+
+        # Remove these items
+        kwargs.pop("_raise_on_error", self._raise_on_error)
+        kwargs.pop("_blocking", self._blocking)
+        kwargs.pop("_timeout", self._timeout)
+
+        request = self._construct_bg_request(**kwargs)
+
+        try:
+            output = self._invoke_command(brewtils.plugin.CLIENT, request)
+        except Exception as exc:
+            self._handle_invoke_failure(request, exc)
+            brewtils.plugin.request_context.current_self_requests[parent_id].append(
+                (current_uuid, request)
+            )
+            raise exc
+        else:
+            self._handle_invoke_success(request, output)
+            brewtils.plugin.request_context.current_self_requests[parent_id].append(
+                (current_uuid, request)
+            )
+            return output
+
+    def _invoke_command(self, target, request):
+        """Invoke the function named in request.command
+
+        Args:
+            target: The object to search for the function implementation.
+            request: The request to process
+
+        Returns:
+            The output of the function call
+
+        Raises:
+            RequestProcessingError: The specified target does not define a
+                callable implementation of request.command
+        """
+        if not callable(getattr(target, request.command, None)):
+            raise RequestProcessingError(
+                "Could not find an implementation of command '%s'" % request.command
+            )
+
+        # Get the command to use the parameter definitions when resolving
+        command = None
+        if self._system:
+            command = self._system.get_command_by_name(request.command)
+
+        # Now resolve parameters, if necessary
+        if request.is_ephemeral or not command:
+            parameters = request.parameters or {}
+        else:
+            parameters = self._resolver.resolve(
+                request.parameters,
+                definitions=command.parameters,
+                upload=False,
+            )
+
+        return getattr(target, request.command)(**parameters)
+
+    def _handle_invoke_success(self, request, output):
+        request.status = "SUCCESS"
+        request.output = self._format_output(output)
+
+    def _handle_invoke_failure(self, request, exc):
+        self.logger.log(
+            getattr(exc, "_bg_error_log_level", logging.ERROR),
+            "Raised an exception while processing request %s: %s",
+            str(request),
+            exc,
+            exc_info=not getattr(exc, "_bg_suppress_stacktrace", False),
+        )
+        request.status = "ERROR"
+        request.output = self._format_error_output(request, exc)
+        request.error_class = type(exc).__name__
+
+    @staticmethod
+    def _format_error_output(request, exc):
+        if request.is_json:
+            return parse_exception_as_json(exc)
+        else:
+            return str(exc)
+
+    @staticmethod
+    def _format_output(output):
+        if isinstance(output, six.string_types):
+            return output
+
+        try:
+            return json.dumps(output)
+        except (TypeError, ValueError):
+            return str(output)
 
 
 class RequestProcessor(object):
@@ -425,6 +556,7 @@ class HTTPRequestUpdater(RequestUpdater):
         with self.beergarden_error_condition:
             self._wait_for_beergarden_if_down(request)
 
+            self.upload_local_children(request, request.id)
             try:
                 if not self._should_be_final_attempt(headers):
                     self._wait_if_not_first_attempt(headers)
@@ -449,6 +581,34 @@ class HTTPRequestUpdater(RequestUpdater):
                 self._handle_request_update_failure(request, headers, ex)
             finally:
                 sys.stdout.flush()
+
+    def upload_local_children(self, parent_request, parent_uuid_id):
+        """Sends any locally generated requests to Beer Garden
+
+        Args:
+            parent_request: The Parent request object of any children match to UUID
+            parent_uuid_id: The UUID utilized to map requests, prior to being created
+                in Beer Garden
+
+        Returns:
+            None
+        """
+
+        if (
+            brewtils.plugin.request_context.child_request_map
+            and parent_uuid_id in brewtils.plugin.request_context.child_request_map
+        ):
+            for child_id, request in brewtils.plugin.request_context.child_request_map[
+                parent_uuid_id
+            ]:
+                request.has_parent = True
+                request.parent = parent_request
+
+                # Upload Request to Beer Garden, if it hasn't been created
+                if request.id is None:
+                    request = self._ez_client.put_request(request)
+
+                self.upload_local_children(request, child_id)
 
     def _wait_if_not_first_attempt(self, headers):
         if headers.get("retry_attempt", 0) > 0:

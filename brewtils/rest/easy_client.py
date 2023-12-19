@@ -707,6 +707,22 @@ class EasyClient(object):
             request_id, SchemaParser.serialize_patch(operations, many=True)
         )
 
+    @wrap_response(
+        parse_method="parse_request", parse_many=False, default_exc=SaveError
+    )
+    def put_request(self, request):
+        """Creates or Updates Request with a completed requests
+
+        Args:
+            request: Completed Request
+        Returns:
+            Request: The created Request
+
+        """
+        return self.client.put_request(
+            SchemaParser.serialize_request(request)
+        )
+
     @wrap_response(return_boolean=True)
     def publish_event(self, *args, **kwargs):
         """Publish a new event

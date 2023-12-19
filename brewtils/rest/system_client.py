@@ -20,6 +20,7 @@ from brewtils.errors import (
 from brewtils.models import Request, System
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
+from brewtils.request_handling import LocalRequestProcessor
 
 
 class SystemClient(object):
@@ -275,6 +276,10 @@ class SystemClient(object):
 
         self._easy_client = EasyClient(*args, **kwargs)
         self._resolver = ResolutionManager(easy_client=self._easy_client)
+        self.local_request_handler = LocalRequestProcessor(
+            system=self._system,
+            resolver=ResolutionManager(easy_client=self._easy_client),
+        )
 
     def __getattr__(self, item):
         # type: (str) -> partial
@@ -306,35 +311,11 @@ class SystemClient(object):
             # Set loaded to False to force the reload of the System
             self._loaded = False
 
-    def create_self_bg_request(self, command_name, **kwrags):
-        
-        if brewtils.plugin.request_context.target.hasattr(command_name):
-            uuid = "UUID"
-            
-
-            if brewtils.plugin.request_context.current_parent_request_id:
-                parent_id = deepcopy(brewtils.plugin.request_context.current_parent_request_id)
-            else:
-                parent_id = brewtils.plugin.request_context.current_request.id
-
-            brewtils.plugin.request_context.current_self_requests[uuid] = {parent_id : {}}
-            
-            # Remove these items
-            kwargs.pop("_raise_on_error", self._raise_on_error)
-            kwargs.pop("_blocking", self._blocking)
-            kwargs.pop("_timeout", self._timeout)
-
-            results = getattr(brewtils.plugin.request_context.target, command_name)(**kwrags)
-
-            request = self._construct_bg_request(**kwargs)
-            request.output = results
-            
-            request.status = "SUCCESS"
-            brewtils.plugin.request_context.current_self_requests[uuid]  = {parent_id : request}
-
-
-        else:
-            return self.create_bg_request(item)
+    def create_self_bg_request(self, command_name, **kwargs):
+        try:
+            return self.local_request_handler.process_command(command_name, **kwargs)
+        except:
+            return self.create_bg_request(command_name, **kwargs)
 
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial

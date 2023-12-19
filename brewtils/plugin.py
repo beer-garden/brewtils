@@ -219,9 +219,10 @@ class Plugin(object):
         global CLIENT
         # Make sure this is set after self._system
         if client:
+            self._client = client
             CLIENT = client
         else:
-            CLIENT = None
+            self._client = None
 
         # Now that the config is loaded we can create the EasyClient
         self._ez_client = EasyClient(logger=self._logger, **self._config)
@@ -240,7 +241,7 @@ class Plugin(object):
             self._initialize_logging()
 
     def run(self):
-        if not CLIENT:
+        if not self._client:
             raise AttributeError(
                 "Unable to start a Plugin without a Client. Please set the 'client' "
                 "attribute to an instance of a class decorated with @brewtils.system"
@@ -263,11 +264,11 @@ class Plugin(object):
 
     @property
     def client(self):
-        return CLIENT
+        return self._client
 
     @client.setter
     def client(self, new_client):
-        if CLIENT:
+        if self._client:
             raise AttributeError("Sorry, you can't change a plugin's client once set")
 
         if new_client is None:
@@ -308,7 +309,8 @@ class Plugin(object):
                 "it's recommended to switch to new-style if possible."
             )
 
-        CLIENT = new_client
+        self._client = new_client
+        brewtils.plugin.CLIENT = new_client
 
     @property
     def system(self):

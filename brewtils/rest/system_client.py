@@ -311,12 +311,6 @@ class SystemClient(object):
             # Set loaded to False to force the reload of the System
             self._loaded = False
 
-    def create_self_bg_request(self, command_name, **kwargs):
-        try:
-            return self.local_request_handler.process_command(command_name, **kwargs)
-        except:
-            return self.create_bg_request(command_name, **kwargs)
-
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial
         """Create a callable that will execute a Beer-garden request when called.
@@ -413,10 +407,7 @@ class SystemClient(object):
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
         try:
-            request = self._construct_bg_request(**kwargs)
-            request = self._easy_client.create_request(
-                request, blocking=blocking, timeout=timeout
-            )
+            request = self._construct_bg_request(**kwargs)    
         except ValidationError:
             if self._system and self._version_constraint == "latest":
                 old_version = self._system.version
@@ -428,15 +419,28 @@ class SystemClient(object):
                     return self.send_bg_request(**kwargs)
             raise
 
+        if not self.target_self:
+            request = self._easy_client.create_request(
+                request, blocking=blocking, timeout=timeout
+            )
+              
         # If not blocking just return the future
         if not blocking:
-            return self._thread_pool.submit(
-                self._wait_for_request, request, raise_on_error, timeout
-            )
+            if not self.target_self:
+                return self._thread_pool.submit(
+                    self._wait_for_request, request, raise_on_error, timeout
+                )
+            else:
+                return self._thread_pool.submit(
+                    self.local_request_handler.process_command, request
+                )
 
         # Brew-view before 2.4 doesn't support the blocking flag, so make sure
         # the request is actually complete before returning
-        return self._wait_for_request(request, raise_on_error, timeout)
+        if not self.target_self:
+            return self._wait_for_request(request, raise_on_error, timeout)
+        
+        return self.local_request_handler.process_command(request)
 
     def load_bg_system(self):
         # type: () -> None

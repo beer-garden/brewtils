@@ -39,7 +39,7 @@ class LocalRequestProcessor(object):
         self._system = system
         self._resolver = resolver
 
-    def process_command(self, command_name, **kwargs):
+    def process_command(self, request):
         """Process a command locally.
 
         Will update the child request map with the generated Request object to be
@@ -63,12 +63,6 @@ class LocalRequestProcessor(object):
         current_uuid = str(uuid.uuid4())
         brewtils.plugin.request_context.parent_request_id = current_uuid
 
-        # Remove these items
-        kwargs.pop("_raise_on_error", self._raise_on_error)
-        kwargs.pop("_blocking", self._blocking)
-        kwargs.pop("_timeout", self._timeout)
-
-        request = self._construct_bg_request(**kwargs)
 
         try:
             output = self._invoke_command(brewtils.plugin.CLIENT, request)

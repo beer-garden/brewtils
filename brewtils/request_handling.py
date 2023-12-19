@@ -67,15 +67,17 @@ class LocalRequestProcessor(object):
             output = self._invoke_command(brewtils.plugin.CLIENT, request)
         except Exception as exc:
             self._handle_invoke_failure(request, exc)
-            brewtils.plugin.request_context.current_self_requests[parent_id].append(
+            brewtils.plugin.request_context.child_request_map[parent_id].append(
                 (current_uuid, request)
             )
+            brewtils.plugin.request_context.parent_request_id = parent_id
             raise exc
         else:
             self._handle_invoke_success(request, output)
-            brewtils.plugin.request_context.current_self_requests[parent_id].append(
+            brewtils.plugin.request_context.child_request_map[parent_id].append(
                 (current_uuid, request)
             )
+            brewtils.plugin.request_context.parent_request_id = parent_id
             return output
 
     def _invoke_command(self, target, request):

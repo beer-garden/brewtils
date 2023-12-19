@@ -8,6 +8,7 @@ import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
 
+import brewtils.plugin
 from brewtils.errors import (
     DiscardMessageException,
     ErrorLogLevelCritical,
@@ -21,8 +22,12 @@ from brewtils.errors import (
     SuppressStacktrace,
     TooLargeError,
 )
-from brewtils.models import Request
-from brewtils.request_handling import HTTPRequestUpdater, RequestProcessor
+from brewtils.models import Command, Request, System
+from brewtils.request_handling import (
+    HTTPRequestUpdater,
+    LocalRequestProcessor,
+    RequestProcessor,
+)
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import assert_request_equal
 
@@ -496,3 +501,57 @@ class TestHTTPRequestUpdater(object):
         shutdown_event.set()
         updater.connection_poll_thread.join()
         assert not updater.connection_poll_thread.is_alive()
+
+
+class TestLocalRequestProcessor(object):
+    @pytest.fixture
+    def client(self):
+        class ClientTest(object):
+            def command_one(self):
+                return True
+
+            def command_two(self):
+                return False
+
+        return ClientTest()
+
+    @pytest.fixture
+    def system_client(self):
+        return System(
+            commands=[Command(name="command_one"), Command(name="command_two")]
+        )
+
+    @pytest.fixture
+    def resolver_mock(self):
+        def resolve(values, **_):
+            return values
+
+        resolver = Mock()
+        resolver.resolve.side_effect = resolve
+
+        return resolver
+
+    @pytest.fixture
+    def local_request_processor(self, resolver_mock, system_client, client):
+        brewtils.plugin.CLIENT = client
+
+        return LocalRequestProcessor(system=system_client, resolver=resolver_mock)
+
+    def setup_request_context(self):
+        brewtils.plugin.request_context = threading.local()
+        brewtils.plugin.request_context.current_request = None
+        brewtils.plugin.request_context.parent_request_id = None
+        brewtils.plugin.request_context.child_request_map = {}
+
+    def test_process_command(self, local_request_processor):
+        self.setup_request_context()
+        brewtils.plugin.request_context.current_request = Request(id="1")
+
+        assert local_request_processor.process_command(
+            Request(command="command_one", parameters={})
+        )
+        assert not local_request_processor.process_command(
+            Request(command="command_two", parameters={})
+        )
+
+        assert len(brewtils.plugin.request_context.child_request_map["1"]) == 2

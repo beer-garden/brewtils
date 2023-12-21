@@ -251,6 +251,7 @@ class RequestProcessor(object):
             #  the current plugin. We currently don't support parent/child
             # requests across different servers.
             brewtils.plugin.request_context.current_request = request
+            brewtils.plugin.request_context.child_request_map = {}
 
             output = self._invoke_command(target, request, headers)
         except Exception as exc:

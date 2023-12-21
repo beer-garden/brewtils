@@ -42,7 +42,7 @@ from brewtils.specification import _CONNECTION_SPEC
 request_context = threading.local()
 request_context.current_request = None
 request_context.parent_request_id = None
-request_context.child_request_map = {}
+request_context.child_request_map = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)

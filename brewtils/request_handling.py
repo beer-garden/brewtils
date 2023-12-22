@@ -243,7 +243,7 @@ class RequestProcessor(object):
         Returns:
             None
         """
-        
+
         request.status = "IN_PROGRESS"
         self._updater.update_request(request, headers)
 
@@ -257,12 +257,12 @@ class RequestProcessor(object):
             brewtils.plugin.request_context.child_request_map = {}
 
             output = self._invoke_command(target, request, headers)
-            
+
         except Exception as exc:
             self._handle_invoke_failure(request, exc)
         else:
             self._handle_invoke_success(request, output)
-        
+
         self._updater.upload_local_children(request, request.id)
         self._updater.update_request(request, headers)
 

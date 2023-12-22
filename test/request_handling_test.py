@@ -299,6 +299,20 @@ class TestRequestProcessor(object):
         def test_format(self, processor, output, expected):
             assert processor._format_output(output) == expected
 
+        def test_process_children(
+            self, processor, target_mock, updater_mock, invoke_mock, format_mock
+        ):
+            request_mock = Mock()
+            
+
+            processor.process_message(target_mock, request_mock, {})
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
+            format_mock.assert_called_once_with(invoke_mock.return_value)
+            assert updater_mock.upload_local_children.call_count == 1
+            assert updater_mock.update_request.call_count == 2
+            assert request_mock.status == "SUCCESS"
+            assert request_mock.output == format_mock.return_value
+
     class TestParse(object):
         def test_success(self, processor, bg_request):
             serialized = SchemaParser.serialize_request(bg_request)
@@ -392,6 +406,21 @@ class TestHTTPRequestUpdater(object):
             Mock(return_value=conn_poll_thread),
         )
         return HTTPRequestUpdater(client, shutdown_event)
+
+    class TestUploadLocalChildren(object):
+
+        def test_upload(self, updater, client, bg_request):
+            client.put_request = Mock(return_value=Mock())
+
+            brewtils.plugin.request_context.child_request_map["1"] = [("2", Request())]
+            brewtils.plugin.request_context.child_request_map["2"] = [("3", Request()), ("4", Request())]
+            brewtils.plugin.request_context.child_request_map["4"] = [("5", Request())]
+
+            updater._ez_client = client
+            updater.upload_local_children(bg_request, "1")
+
+            assert client.put_request.call_count == 4
+
 
     class TestUpdateRequest(object):
         @pytest.mark.parametrize("ephemeral", [False, True])

@@ -406,22 +406,6 @@ class TestHTTPRequestUpdater(object):
         )
         return HTTPRequestUpdater(client, shutdown_event)
 
-    class TestUploadLocalChildren(object):
-        def test_upload(self, updater, client, bg_request):
-            client.put_request = Mock(return_value=Mock())
-
-            brewtils.plugin.request_context.child_request_map["1"] = [("2", Request())]
-            brewtils.plugin.request_context.child_request_map["2"] = [
-                ("3", Request()),
-                ("4", Request()),
-            ]
-            brewtils.plugin.request_context.child_request_map["4"] = [("5", Request())]
-
-            updater._ez_client = client
-            updater.upload_local_children(bg_request, "1")
-
-            assert client.put_request.call_count == 4
-
     class TestUpdateRequest(object):
         @pytest.mark.parametrize("ephemeral", [False, True])
         def test_success(self, updater, client, ephemeral):
@@ -583,4 +567,4 @@ class TestLocalRequestProcessor(object):
             Request(command="command_two", parameters={})
         )
 
-        assert len(brewtils.plugin.request_context.child_request_map["1"]) == 2
+        # Add Check

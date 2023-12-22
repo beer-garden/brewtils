@@ -41,8 +41,6 @@ from brewtils.specification import _CONNECTION_SPEC
 # This is what enables request nesting to work easily
 request_context = threading.local()
 request_context.current_request = None
-request_context.parent_request_id = None
-request_context.child_request_map = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
@@ -172,7 +170,7 @@ class Plugin(object):
             logging configuration.
 
         worker_shutdown_timeout (int): Time to wait during shutdown to finish processing
-        max_concurrent (int): Maximum number of requests to process concurrently
+        max_concurrent (int): Maximum number of requests to process concurrently from RabbitMQ
         max_attempts (int): Number of times to attempt updating of a Request
             before giving up. Negative numbers are interpreted as no maximum.
         max_timeout (int): Maximum amount of time to wait between Request update

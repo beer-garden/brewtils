@@ -34,10 +34,12 @@ class LocalRequestProcessor(object):
         logger=None,
         system=None,
         resolver=None,
+        ez_client=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
         self._system = system
         self._resolver = resolver
+        self._ez_client = ez_client
 
     def process_command(self, request):
         """Process a command locally.
@@ -52,32 +54,26 @@ class LocalRequestProcessor(object):
             Any
         """
 
-        if brewtils.plugin.request_context.parent_request_id:
-            parent_id = copy.deepcopy(brewtils.plugin.request_context.parent_request_id)
-        else:
-            parent_id = brewtils.plugin.request_context.current_request.id
+        parent_request = copy.deepcopy(brewtils.plugin.request_context.current_request)
 
-        if parent_id not in brewtils.plugin.request_context.child_request_map:
-            brewtils.plugin.request_context.child_request_map[parent_id] = []
+        request.parent = Request(id=str(parent_request.id))
+        request.has_parent = True
+        
+        request.status = "IN_PROGRESS"
 
-        current_uuid = str(uuid.uuid4())
-        brewtils.plugin.request_context.parent_request_id = current_uuid
+        request = self._ez_client.put_request(request)
 
         try:
             output = self._invoke_command(brewtils.plugin.CLIENT, request)
         except Exception as exc:
             self._handle_invoke_failure(request, exc)
-            brewtils.plugin.request_context.child_request_map[parent_id].append(
-                (current_uuid, request)
-            )
-            brewtils.plugin.request_context.parent_request_id = parent_id
+            request = self._ez_client.put_request(request)
+            brewtils.plugin.request_context.current_request = parent_request
             raise exc
         else:
             self._handle_invoke_success(request, output)
-            brewtils.plugin.request_context.child_request_map[parent_id].append(
-                (current_uuid, request)
-            )
-            brewtils.plugin.request_context.parent_request_id = parent_id
+            request = self._ez_client.put_request(request)
+            brewtils.plugin.request_context.current_request = parent_request
             return output
 
     def _invoke_command(self, target, request):
@@ -253,8 +249,6 @@ class RequestProcessor(object):
             #  the current plugin. We currently don't support parent/child
             # requests across different servers.
             brewtils.plugin.request_context.current_request = request
-            brewtils.plugin.request_context.parent_request_id = request.id
-            brewtils.plugin.request_context.child_request_map = {}
 
             output = self._invoke_command(target, request, headers)
 
@@ -581,34 +575,6 @@ class HTTPRequestUpdater(RequestUpdater):
                 self._handle_request_update_failure(request, headers, ex)
             finally:
                 sys.stdout.flush()
-
-    def upload_local_children(self, parent_request, parent_uuid_id):
-        """Sends any locally generated requests to Beer Garden
-
-        Args:
-            parent_request: The Parent request object of any children match to UUID
-            parent_uuid_id: The UUID utilized to map requests, prior to being created
-                in Beer Garden
-
-        Returns:
-            None
-        """
-
-        if (
-            brewtils.plugin.request_context.child_request_map
-            and parent_uuid_id in brewtils.plugin.request_context.child_request_map
-        ):
-            for child_id, request in brewtils.plugin.request_context.child_request_map[
-                parent_uuid_id
-            ]:
-                request.has_parent = True
-                request.parent = parent_request
-
-                # Upload Request to Beer Garden, if it hasn't been created
-                if request.id is None:
-                    request = self._ez_client.put_request(request)
-
-                self.upload_local_children(request, child_id)
 
     def _wait_if_not_first_attempt(self, headers):
         if headers.get("retry_attempt", 0) > 0:

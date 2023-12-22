@@ -8,6 +8,8 @@ TBD
 - Add support to change the Exchange Type for RabbitMQ. Default is 'topic', 
   but options like 'fanout' can now be supported
 - Better handling of Pika errors
+- When SystemClient is self referencing to the Plugin, child requests will be generated 
+  locally, then uploaded to Beer-Garden once the request is completed.
 
 3.22.0
 ------

@@ -284,8 +284,6 @@ class SystemClient(object):
     def __getattr__(self, item):
         # type: (str) -> partial
         """Standard way to create and send beer-garden requests"""
-        if self.target_self:
-            return self.create_self_bg_request(item)
         return self.create_bg_request(item)
 
     def __str__(self):

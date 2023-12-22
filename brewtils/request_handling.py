@@ -215,6 +215,7 @@ class RequestProcessor(object):
             DiscardMessageException: The request failed to parse correctly
             RequestProcessException: Validation failures should raise a subclass of this
         """
+
         request = self._parse(message)
 
         for func in self._validation_funcs:
@@ -242,6 +243,7 @@ class RequestProcessor(object):
         Returns:
             None
         """
+        
         request.status = "IN_PROGRESS"
         self._updater.update_request(request, headers)
 
@@ -251,14 +253,17 @@ class RequestProcessor(object):
             #  the current plugin. We currently don't support parent/child
             # requests across different servers.
             brewtils.plugin.request_context.current_request = request
+            brewtils.plugin.request_context.parent_request_id = request.id
             brewtils.plugin.request_context.child_request_map = {}
 
             output = self._invoke_command(target, request, headers)
+            
         except Exception as exc:
             self._handle_invoke_failure(request, exc)
         else:
             self._handle_invoke_success(request, output)
-
+        
+        self._updater.upload_local_children(request, request.id)
         self._updater.update_request(request, headers)
 
     def startup(self):
@@ -552,7 +557,6 @@ class HTTPRequestUpdater(RequestUpdater):
         with self.beergarden_error_condition:
             self._wait_for_beergarden_if_down(request)
 
-            self.upload_local_children(request, request.id)
             try:
                 if not self._should_be_final_attempt(headers):
                     self._wait_if_not_first_attempt(headers)

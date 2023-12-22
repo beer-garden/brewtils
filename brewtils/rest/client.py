@@ -544,7 +544,7 @@ class RestClient(object):
         )
 
     @enable_auth
-    def put_requests(self, payload, **kwargs):
+    def put_request(self, payload):
         # type: (str, **Any) -> Response
         """Performs a PUT on the Request URL
 

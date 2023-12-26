@@ -5,7 +5,6 @@ import json
 import logging
 import sys
 import threading
-import uuid
 from concurrent.futures.thread import ThreadPoolExecutor
 
 import six
@@ -23,6 +22,7 @@ from brewtils.errors import (
     parse_exception_as_json,
 )
 from brewtils.models import Request
+from brewtils.resolvers.manager import ResolutionManager
 from brewtils.schema_parser import SchemaParser
 
 
@@ -33,13 +33,12 @@ class LocalRequestProcessor(object):
         self,
         logger=None,
         system=None,
-        resolver=None,
-        ez_client=None,
+        easy_client=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
         self._system = system
-        self._resolver = resolver
-        self._ez_client = ez_client
+        self._resolver = (ResolutionManager(easy_client=easy_client),)
+        self._ez_client = easy_client
 
     def process_command(self, request):
         """Process a command locally.
@@ -58,7 +57,7 @@ class LocalRequestProcessor(object):
 
         request.parent = Request(id=str(parent_request.id))
         request.has_parent = True
-        
+
         request.status = "IN_PROGRESS"
 
         request = self._ez_client.put_request(request)

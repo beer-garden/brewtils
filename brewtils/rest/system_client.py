@@ -278,9 +278,9 @@ class SystemClient(object):
         self._easy_client = EasyClient(*args, **kwargs)
         self._resolver = ResolutionManager(easy_client=self._easy_client)
         self.local_request_handler = LocalRequestProcessor(
-                system=self._system,
-                easy_client=self._easy_client,
-            )
+            system=self._system,
+            easy_client=self._easy_client,
+        )
 
     def __getattr__(self, item):
         # type: (str) -> partial

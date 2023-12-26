@@ -34,10 +34,11 @@ class LocalRequestProcessor(object):
         logger=None,
         system=None,
         easy_client=None,
+        resolver=None,
     ):
         self.logger = logger or logging.getLogger(__name__)
         self._system = system
-        self._resolver = (ResolutionManager(easy_client=easy_client),)
+        self._resolver = resolver or ResolutionManager(easy_client=easy_client)
         self._ez_client = easy_client
 
     def process_command(self, request):

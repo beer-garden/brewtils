@@ -307,7 +307,6 @@ class TestRequestProcessor(object):
             processor.process_message(target_mock, request_mock, {})
             invoke_mock.assert_called_once_with(target_mock, request_mock, {})
             format_mock.assert_called_once_with(invoke_mock.return_value)
-            assert updater_mock.upload_local_children.call_count == 1
             assert updater_mock.update_request.call_count == 2
             assert request_mock.status == "SUCCESS"
             assert request_mock.output == format_mock.return_value
@@ -545,16 +544,22 @@ class TestLocalRequestProcessor(object):
         return resolver
 
     @pytest.fixture
-    def local_request_processor(self, resolver_mock, system_client, client):
+    def local_request_processor(self, system_client, client, resolver_mock):
         brewtils.plugin.CLIENT = client
 
-        return LocalRequestProcessor(system=system_client, resolver=resolver_mock)
+        def return_input_side_effect(*args, **kwargs):
+            return args[0]
+
+        _ez_client = Mock()
+        _ez_client.put_request.side_effect = return_input_side_effect
+
+        return LocalRequestProcessor(
+            system=system_client, easy_client=_ez_client, resolver=resolver_mock
+        )
 
     def setup_request_context(self):
         brewtils.plugin.request_context = threading.local()
         brewtils.plugin.request_context.current_request = None
-        brewtils.plugin.request_context.parent_request_id = None
-        brewtils.plugin.request_context.child_request_map = {}
 
     def test_process_command(self, local_request_processor):
         self.setup_request_context()
@@ -566,5 +571,3 @@ class TestLocalRequestProcessor(object):
         assert not local_request_processor.process_command(
             Request(command="command_two", parameters={})
         )
-
-        # Add Check

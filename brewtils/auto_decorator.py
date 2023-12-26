@@ -23,7 +23,7 @@ class AutoDecorator:
 
     def addFunctions(self, client):
         for func in dir(client):
-            if callable(getattr(client, func)):                      
+            if callable(getattr(client, func)):
                 _wrapped = getattr(client, func)
                 if not hasattr(_wrapped, "_command") and not func.startswith("__"):
                     # decorators.py will handle all of the markings

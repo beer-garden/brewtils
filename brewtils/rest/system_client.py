@@ -417,9 +417,7 @@ class SystemClient(object):
                     kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
             raise
-        self._logger.error("Prepping Request")
         if not self.target_self:
-            self._logger.error("Create Child Request")
             request = self._easy_client.create_request(
                 request, blocking=blocking, timeout=timeout
             )
@@ -427,12 +425,10 @@ class SystemClient(object):
         # If not blocking just return the future
         if not blocking:
             if not self.target_self:
-                self._logger.error("Run Remote Request")
                 return self._thread_pool.submit(
                     self._wait_for_request, request, raise_on_error, timeout
                 )
             else:
-                self._logger.error("Run Local Request")
                 return self._thread_pool.submit(
                     self.local_request_handler.process_command, request
                 )

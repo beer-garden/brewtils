@@ -241,10 +241,6 @@ class SystemClient(object):
             self._default_instance = brewtils.plugin.CONFIG.instance_name
             self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
 
-            self.local_request_handler = LocalRequestProcessor(
-                system=self._system,
-                easy_client=self._easy_client,
-            )
         else:
             self._system_name = kwargs.get("system_name")
             self._version_constraint = kwargs.get("version_constraint", "latest")
@@ -281,6 +277,10 @@ class SystemClient(object):
 
         self._easy_client = EasyClient(*args, **kwargs)
         self._resolver = ResolutionManager(easy_client=self._easy_client)
+        self.local_request_handler = LocalRequestProcessor(
+                system=self._system,
+                easy_client=self._easy_client,
+            )
 
     def __getattr__(self, item):
         # type: (str) -> partial

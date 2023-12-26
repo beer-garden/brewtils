@@ -8,6 +8,7 @@ TBD
 - Add support to change the Exchange Type for RabbitMQ. Default is 'topic', 
   but options like 'fanout' can now be supported
 - Better handling of Pika errors
+- Updated how AutoBrewtils maps functions, and will skip auto marking commands with annotations
 
 3.22.0
 ------

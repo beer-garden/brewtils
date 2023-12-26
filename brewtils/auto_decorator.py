@@ -27,7 +27,7 @@ class AutoDecorator:
                 _wrapped = getattr(client, func)
                 if not hasattr(_wrapped, "_command") and not func.startswith("__"):
                     # decorators.py will handle all of the markings
-                    if not func.startswith("_"):
+                    if func.startswith("_"):
                         _wrapped._command = Command(hidden=True)
                     else:
                         _wrapped._command = Command()

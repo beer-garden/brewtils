@@ -257,7 +257,6 @@ class RequestProcessor(object):
         else:
             self._handle_invoke_success(request, output)
 
-        self._updater.upload_local_children(request, request.id)
         self._updater.update_request(request, headers)
 
     def startup(self):

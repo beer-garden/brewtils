@@ -8,6 +8,7 @@ import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
 
+import brewtils.plugin
 from brewtils.errors import (
     DiscardMessageException,
     ErrorLogLevelCritical,
@@ -21,8 +22,12 @@ from brewtils.errors import (
     SuppressStacktrace,
     TooLargeError,
 )
-from brewtils.models import Request
-from brewtils.request_handling import HTTPRequestUpdater, RequestProcessor
+from brewtils.models import Command, Request, System
+from brewtils.request_handling import (
+    HTTPRequestUpdater,
+    LocalRequestProcessor,
+    RequestProcessor,
+)
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import assert_request_equal
 
@@ -294,6 +299,18 @@ class TestRequestProcessor(object):
         def test_format(self, processor, output, expected):
             assert processor._format_output(output) == expected
 
+        def test_process_children(
+            self, processor, target_mock, updater_mock, invoke_mock, format_mock
+        ):
+            request_mock = Mock()
+
+            processor.process_message(target_mock, request_mock, {})
+            invoke_mock.assert_called_once_with(target_mock, request_mock, {})
+            format_mock.assert_called_once_with(invoke_mock.return_value)
+            assert updater_mock.update_request.call_count == 2
+            assert request_mock.status == "SUCCESS"
+            assert request_mock.output == format_mock.return_value
+
     class TestParse(object):
         def test_success(self, processor, bg_request):
             serialized = SchemaParser.serialize_request(bg_request)
@@ -496,3 +513,61 @@ class TestHTTPRequestUpdater(object):
         shutdown_event.set()
         updater.connection_poll_thread.join()
         assert not updater.connection_poll_thread.is_alive()
+
+
+class TestLocalRequestProcessor(object):
+    @pytest.fixture
+    def client(self):
+        class ClientTest(object):
+            def command_one(self):
+                return True
+
+            def command_two(self):
+                return False
+
+        return ClientTest()
+
+    @pytest.fixture
+    def system_client(self):
+        return System(
+            commands=[Command(name="command_one"), Command(name="command_two")]
+        )
+
+    @pytest.fixture
+    def resolver_mock(self):
+        def resolve(values, **_):
+            return values
+
+        resolver = Mock()
+        resolver.resolve.side_effect = resolve
+
+        return resolver
+
+    @pytest.fixture
+    def local_request_processor(self, system_client, client, resolver_mock):
+        brewtils.plugin.CLIENT = client
+
+        def return_input_side_effect(*args, **kwargs):
+            return args[0]
+
+        _ez_client = Mock()
+        _ez_client.put_request.side_effect = return_input_side_effect
+
+        return LocalRequestProcessor(
+            system=system_client, easy_client=_ez_client, resolver=resolver_mock
+        )
+
+    def setup_request_context(self):
+        brewtils.plugin.request_context = threading.local()
+        brewtils.plugin.request_context.current_request = None
+
+    def test_process_command(self, local_request_processor):
+        self.setup_request_context()
+        brewtils.plugin.request_context.current_request = Request(id="1")
+
+        assert local_request_processor.process_command(
+            Request(command="command_one", parameters={})
+        )
+        assert not local_request_processor.process_command(
+            Request(command="command_two", parameters={})
+        )

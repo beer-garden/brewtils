@@ -170,7 +170,7 @@ class Plugin(object):
             logging configuration.
 
         worker_shutdown_timeout (int): Time to wait during shutdown to finish processing
-        max_concurrent (int): Maximum number of requests to process concurrently
+        max_concurrent (int): Maximum number of requests to process concurrently from RabbitMQ
         max_attempts (int): Number of times to attempt updating of a Request
             before giving up. Negative numbers are interpreted as no maximum.
         max_timeout (int): Maximum amount of time to wait between Request update
@@ -189,7 +189,6 @@ class Plugin(object):
     """
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
-        self._client = None
         self._instance = None
         self._admin_processor = None
         self._request_processor = None
@@ -215,9 +214,13 @@ class Plugin(object):
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
+        global CLIENT
         # Make sure this is set after self._system
         if client:
-            self.client = client
+            self._client = client
+            CLIENT = client
+        else:
+            self._client = None
 
         # Now that the config is loaded we can create the EasyClient
         self._ez_client = EasyClient(logger=self._logger, **self._config)
@@ -305,6 +308,7 @@ class Plugin(object):
             )
 
         self._client = new_client
+        brewtils.plugin.CLIENT = new_client
 
     @property
     def system(self):
@@ -594,7 +598,7 @@ class Plugin(object):
             max_workers=1,
         )
         request_processor = RequestProcessor(
-            target=self._client,
+            target=CLIENT,
             updater=updater,
             consumer=request_consumer,
             validation_funcs=[self._correct_system, self._is_running],
@@ -843,14 +847,14 @@ class Plugin(object):
         if not self._system.version:
             raise ValidationError("Plugin system must have a version")
 
-        client_name = getattr(self._client, "_bg_name", None)
+        client_name = getattr(CLIENT, "_bg_name", None)
         if client_name and client_name != self._system.name:
             raise ValidationError(
                 "System name '%s' doesn't match name from client decorator: "
                 "@system(bg_name=%s)" % (self._system.name, client_name)
             )
 
-        client_version = getattr(self._client, "_bg_version", None)
+        client_version = getattr(CLIENT, "_bg_version", None)
         if client_version and client_version != self._system.version:
             raise ValidationError(
                 "System version '%s' doesn't match version from client decorator: "

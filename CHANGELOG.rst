@@ -9,6 +9,10 @@ TBD
   but options like 'fanout' can now be supported
 - Better handling of Pika errors
 - Updated how AutoBrewtils maps functions, and will skip auto marking commands with annotations
+- When SystemClient is self referencing to the Plugin, child requests will be generated 
+  locally, then uploaded to Beer-Garden once the request is completed.
+- Must upgrade to a minimum version of Beer Garden 3.23.0 to support new APIs
+
 
 3.22.0
 ------

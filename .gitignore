@@ -72,3 +72,6 @@ target/
 
 # Vim
 *.swp
+
+# VScode
+.vscode/

@@ -6,11 +6,11 @@ import os
 import signal
 import sys
 import threading
+from pathlib import Path
 
 import appdirs
 from box import Box
 from packaging.version import Version
-from pathlib import Path
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
@@ -73,6 +73,8 @@ class Plugin(object):
         - ``icon_name``
         - ``metadata``
         - ``display_name``
+        - ``group``
+        - ``groups``
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -97,6 +99,7 @@ class Plugin(object):
             namespace="test plugins",
             description="A Test",
             bg_host="localhost",
+            group="test",
         )
 
     Plugins use `Yapconf <https://github.com/loganasherjones/yapconf>`_ for
@@ -159,12 +162,15 @@ class Plugin(object):
         instance_name (str): Instance name
         namespace (str): Namespace name
 
+        group (str): Grouping label applied to plugin
+        groups (list): Grouping labels applied to plugin
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
 
         worker_shutdown_timeout (int): Time to wait during shutdown to finish processing
-        max_concurrent (int): Maximum number of requests to process concurrently
+        max_concurrent (int): Maximum number of requests to process concurrently from RabbitMQ
         max_attempts (int): Number of times to attempt updating of a Request
             before giving up. Negative numbers are interpreted as no maximum.
         max_timeout (int): Maximum amount of time to wait between Request update
@@ -183,7 +189,6 @@ class Plugin(object):
     """
 
     def __init__(self, client=None, system=None, logger=None, **kwargs):
-        self._client = None
         self._instance = None
         self._admin_processor = None
         self._request_processor = None
@@ -209,9 +214,13 @@ class Plugin(object):
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
+        global CLIENT
         # Make sure this is set after self._system
         if client:
-            self.client = client
+            self._client = client
+            CLIENT = client
+        else:
+            self._client = None
 
         # Now that the config is loaded we can create the EasyClient
         self._ez_client = EasyClient(logger=self._logger, **self._config)
@@ -270,7 +279,8 @@ class Plugin(object):
             self._system.version = getattr(new_client, "_bg_version")  # noqa
         if not self._system.description and new_client.__doc__:
             self._system.description = new_client.__doc__.split("\n")[0]
-
+        if not self._system.groups:
+            self._system.groups = getattr(new_client, "_groups", [])  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
@@ -285,6 +295,7 @@ class Plugin(object):
             client_clazz._bg_name = self._system.name
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
+            client_clazz._groups = self._system.groups
             client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:
@@ -297,6 +308,7 @@ class Plugin(object):
             )
 
         self._client = new_client
+        brewtils.plugin.CLIENT = new_client
 
     @property
     def system(self):
@@ -508,6 +520,7 @@ class Plugin(object):
             "display_name": self._system.display_name,
             "icon_name": self._system.icon_name,
             "template": self._system.template,
+            "groups": self._system.groups,
         }
 
         # And if this particular instance doesn't exist we want to add it
@@ -585,7 +598,7 @@ class Plugin(object):
             max_workers=1,
         )
         request_processor = RequestProcessor(
-            target=self._client,
+            target=CLIENT,
             updater=updater,
             consumer=request_consumer,
             validation_funcs=[self._correct_system, self._is_running],
@@ -807,6 +820,9 @@ class Plugin(object):
 
         else:
             # Commands are not defined here - they're set in the client property setter
+            if self._config.group:
+                self._config.groups.append(self._config.group)
+
             system = System(
                 name=self._config.name,
                 version=self._config.version,
@@ -818,6 +834,7 @@ class Plugin(object):
                 icon_name=self._config.icon_name,
                 display_name=self._config.display_name,
                 template=self._config.template,
+                groups=self._config.groups,
             )
 
         return system
@@ -830,14 +847,14 @@ class Plugin(object):
         if not self._system.version:
             raise ValidationError("Plugin system must have a version")
 
-        client_name = getattr(self._client, "_bg_name", None)
+        client_name = getattr(CLIENT, "_bg_name", None)
         if client_name and client_name != self._system.name:
             raise ValidationError(
                 "System name '%s' doesn't match name from client decorator: "
                 "@system(bg_name=%s)" % (self._system.name, client_name)
             )
 
-        client_version = getattr(self._client, "_bg_version", None)
+        client_version = getattr(CLIENT, "_bg_version", None)
         if client_version and client_version != self._system.version:
             raise ValidationError(
                 "System version '%s' doesn't match version from client decorator: "

@@ -221,6 +221,7 @@ class CommandSchema(BaseSchema):
     icon_name = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    tags = fields.List(fields.Str(), allow_none=True)
     topics = fields.List(fields.Str(), allow_none=True)
     allow_any_kwargs = fields.Boolean(allow_none=True)
 
@@ -251,6 +252,7 @@ class SystemSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     local = fields.Bool(allow_none=True)
     template = fields.Str(allow_none=True)
+    groups = fields.List(fields.Str(), allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):

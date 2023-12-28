@@ -355,11 +355,12 @@ class TestExecute(object):
         client.load_bg_system()
 
         easy_client.find_systems.return_value = [bg_system_2]
-        easy_client.create_request.side_effect = [ValidationError, mock_success]
+        client._construct_bg_request = Mock(side_effect=[ValidationError, mock_success])
+        easy_client.create_request.return_value = mock_success
 
         client.speak()
         assert client._system.version == "2.0.0"
-        assert easy_client.create_request.call_count == 2
+        assert easy_client.create_request.call_count == 1
 
 
 class TestExecuteNonBlocking(object):

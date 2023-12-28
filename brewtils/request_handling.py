@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import abc
+import copy
 import json
 import logging
 import sys
@@ -21,7 +22,128 @@ from brewtils.errors import (
     parse_exception_as_json,
 )
 from brewtils.models import Request
+from brewtils.resolvers.manager import ResolutionManager
 from brewtils.schema_parser import SchemaParser
+
+
+class LocalRequestProcessor(object):
+    """ """
+
+    def __init__(
+        self,
+        logger=None,
+        system=None,
+        easy_client=None,
+        resolver=None,
+    ):
+        self.logger = logger or logging.getLogger(__name__)
+        self._system = system
+        self._resolver = resolver or ResolutionManager(easy_client=easy_client)
+        self._ez_client = easy_client
+
+    def process_command(self, request):
+        """Process a command locally.
+
+        Will update the child request map with the generated Request object to be
+        sent to Beer Garden
+
+        Args:
+            command_name: the command to be processed
+
+        Returns:
+            Any
+        """
+
+        parent_request = copy.deepcopy(brewtils.plugin.request_context.current_request)
+
+        request.parent = Request(id=str(parent_request.id))
+        request.has_parent = True
+
+        request.status = "IN_PROGRESS"
+
+        request = self._ez_client.put_request(request)
+
+        try:
+            output = self._invoke_command(brewtils.plugin.CLIENT, request)
+        except Exception as exc:
+            self._handle_invoke_failure(request, exc)
+            request = self._ez_client.put_request(request)
+            brewtils.plugin.request_context.current_request = parent_request
+            raise exc
+        else:
+            self._handle_invoke_success(request, output)
+            request = self._ez_client.put_request(request)
+            brewtils.plugin.request_context.current_request = parent_request
+            return output
+
+    def _invoke_command(self, target, request):
+        """Invoke the function named in request.command
+
+        Args:
+            target: The object to search for the function implementation.
+            request: The request to process
+
+        Returns:
+            The output of the function call
+
+        Raises:
+            RequestProcessingError: The specified target does not define a
+                callable implementation of request.command
+        """
+        if not callable(getattr(target, request.command, None)):
+            raise RequestProcessingError(
+                "Could not find an implementation of command '%s'" % request.command
+            )
+
+        # Get the command to use the parameter definitions when resolving
+        command = None
+        if self._system:
+            command = self._system.get_command_by_name(request.command)
+
+        # Now resolve parameters, if necessary
+        if request.is_ephemeral or not command:
+            parameters = request.parameters or {}
+        else:
+            parameters = self._resolver.resolve(
+                request.parameters,
+                definitions=command.parameters,
+                upload=False,
+            )
+
+        return getattr(target, request.command)(**parameters)
+
+    def _handle_invoke_success(self, request, output):
+        request.status = "SUCCESS"
+        request.output = self._format_output(output)
+
+    def _handle_invoke_failure(self, request, exc):
+        self.logger.log(
+            getattr(exc, "_bg_error_log_level", logging.ERROR),
+            "Raised an exception while processing request %s: %s",
+            str(request),
+            exc,
+            exc_info=not getattr(exc, "_bg_suppress_stacktrace", False),
+        )
+        request.status = "ERROR"
+        request.output = self._format_error_output(request, exc)
+        request.error_class = type(exc).__name__
+
+    @staticmethod
+    def _format_error_output(request, exc):
+        if request.is_json:
+            return parse_exception_as_json(exc)
+        else:
+            return str(exc)
+
+    @staticmethod
+    def _format_output(output):
+        if isinstance(output, six.string_types):
+            return output
+
+        try:
+            return json.dumps(output)
+        except (TypeError, ValueError):
+            return str(output)
 
 
 class RequestProcessor(object):
@@ -89,6 +211,7 @@ class RequestProcessor(object):
             DiscardMessageException: The request failed to parse correctly
             RequestProcessException: Validation failures should raise a subclass of this
         """
+
         request = self._parse(message)
 
         for func in self._validation_funcs:
@@ -116,6 +239,7 @@ class RequestProcessor(object):
         Returns:
             None
         """
+
         request.status = "IN_PROGRESS"
         self._updater.update_request(request, headers)
 
@@ -127,6 +251,7 @@ class RequestProcessor(object):
             brewtils.plugin.request_context.current_request = request
 
             output = self._invoke_command(target, request, headers)
+
         except Exception as exc:
             self._handle_invoke_failure(request, exc)
         else:

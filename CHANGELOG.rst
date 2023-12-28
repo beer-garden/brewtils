@@ -1,11 +1,35 @@
 Brewtils Changelog
 ==================
 
-3.22.0
+
+3.24.0
 ------
 TBD
 
 - Expanding Garden model to include children gardens
+
+
+3.23.0
+------
+12/27/2023
+
+- Add support to change the Exchange Type for RabbitMQ. Default is 'topic', 
+  but options like 'fanout' can now be supported
+- Better handling of Pika errors
+- Updated how AutoBrewtils maps functions, and will skip auto marking commands with annotations
+- When SystemClient is self referencing to the Plugin, child requests will be generated 
+  locally, then uploaded to Beer-Garden once the request is completed.
+- Must upgrade to a minimum version of Beer Garden 3.23.0 to support new APIs
+
+
+3.22.0
+------
+12/13/2023
+
+- Added new KWARG input to @command for tag/tags. This can be utilized for filtering commands.
+- Adding default topic for PublishClient to Plugins {Namespace}.{System}.{Version}.{Instance}
+- Removed Python 12 support until we upgrade Marshmallow dependency to 3.15 or greater
+
 
 3.21.0
 ------

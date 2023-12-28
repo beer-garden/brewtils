@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing import cpu_count
 from typing import Any, Dict, Iterable, Optional
 
-from packaging.version import parse, InvalidVersion
+from packaging.version import InvalidVersion, parse
 
 import brewtils.plugin
 from brewtils.errors import (
@@ -18,6 +18,7 @@ from brewtils.errors import (
     _deprecate,
 )
 from brewtils.models import Request, System
+from brewtils.request_handling import LocalRequestProcessor
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 
@@ -215,7 +216,7 @@ class SystemClient(object):
 
         # Now need to determine if the intended target is the current running plugin.
         # Start by ensuring there's a valid Plugin context active
-        target_self = bool(brewtils.plugin.CONFIG)
+        self.target_self = bool(brewtils.plugin.CONFIG)
 
         # If ANY of the target specification arguments don't match the current plugin
         # then the target is different
@@ -230,15 +231,16 @@ class SystemClient(object):
                 kwargs.get(key) is not None
                 and kwargs.get(key) != brewtils.plugin.CONFIG[value]
             ):
-                target_self = False
+                self.target_self = False
                 break
 
         # Now assign self._system_name, etc based on the value of target_self
-        if target_self:
+        if self.target_self:
             self._system_name = brewtils.plugin.CONFIG.name
             self._version_constraint = brewtils.plugin.CONFIG.version
             self._default_instance = brewtils.plugin.CONFIG.instance_name
             self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
+
         else:
             self._system_name = kwargs.get("system_name")
             self._version_constraint = kwargs.get("version_constraint", "latest")
@@ -275,6 +277,10 @@ class SystemClient(object):
 
         self._easy_client = EasyClient(*args, **kwargs)
         self._resolver = ResolutionManager(easy_client=self._easy_client)
+        self.local_request_handler = LocalRequestProcessor(
+            system=self._system,
+            easy_client=self._easy_client,
+        )
 
     def __getattr__(self, item):
         # type: (str) -> partial
@@ -401,9 +407,6 @@ class SystemClient(object):
         # check for a new version and retry
         try:
             request = self._construct_bg_request(**kwargs)
-            request = self._easy_client.create_request(
-                request, blocking=blocking, timeout=timeout
-            )
         except ValidationError:
             if self._system and self._version_constraint == "latest":
                 old_version = self._system.version
@@ -414,16 +417,28 @@ class SystemClient(object):
                     kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
             raise
+        if not self.target_self:
+            request = self._easy_client.create_request(
+                request, blocking=blocking, timeout=timeout
+            )
 
         # If not blocking just return the future
         if not blocking:
-            return self._thread_pool.submit(
-                self._wait_for_request, request, raise_on_error, timeout
-            )
+            if not self.target_self:
+                return self._thread_pool.submit(
+                    self._wait_for_request, request, raise_on_error, timeout
+                )
+            else:
+                return self._thread_pool.submit(
+                    self.local_request_handler.process_command, request
+                )
 
         # Brew-view before 2.4 doesn't support the blocking flag, so make sure
         # the request is actually complete before returning
-        return self._wait_for_request(request, raise_on_error, timeout)
+        if not self.target_self:
+            return self._wait_for_request(request, raise_on_error, timeout)
+
+        return self.local_request_handler.process_command(request)
 
     def load_bg_system(self):
         # type: () -> None

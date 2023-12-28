@@ -2,7 +2,8 @@
 import logging
 
 import brewtils.plugin
-from brewtils.models import Request, Event, Events
+from brewtils.errors import BrewtilsException
+from brewtils.models import Event, Events, Request
 from brewtils.rest.easy_client import EasyClient
 
 
@@ -65,12 +66,19 @@ class PublishClient(object):
         self._easy_client = EasyClient(*args, **kwargs)
 
     def publish(
-        self, _topic: str, _regex_only: bool = False, _propagate: bool = False, **kwargs
+        self,
+        _topic: str = None,
+        _regex_only: bool = False,
+        _propagate: bool = False,
+        **kwargs,
     ) -> bool:
         """Publishes event containing Request to be processed
 
+        Topic is added to request.metadata["_topic"]
+
         Args:
-            _topic (str): The topic to publish to
+            _topic (str): The topic to publish to, default is Plugin level topic
+                {Namespace}.{System}.{Version}.{Instance}
             _regex_only (bool): If the request will be resolved against only annotated topics
             from the @subscribe command
             _propagate (bool): If the request will be pushed up to the parent to be resolved.
@@ -78,6 +86,22 @@ class PublishClient(object):
                 internal parameters
 
         """
+
+        if _topic is None:
+            if (
+                brewtils.plugin.CONFIG.name
+                and brewtils.plugin.CONFIG.version
+                and brewtils.plugin.CONFIG.instance_name
+                and brewtils.plugin.CONFIG.namespace
+            ):
+                _topic = "{0}.{1}.{2}.{3}".format(
+                    brewtils.plugin.CONFIG.namespace,
+                    brewtils.plugin.CONFIG.name,
+                    brewtils.plugin.CONFIG.version,
+                    brewtils.plugin.CONFIG.instance_name,
+                )
+            else:
+                raise BrewtilsException("Unable to determine _topic to publish to")
 
         comment = kwargs.pop("_comment", None)
         output_type = kwargs.pop("_output_type", None)

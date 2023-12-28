@@ -27,12 +27,11 @@ Example:
 
 import copy
 import json
+import logging.config
 import os
 import re
 import string
 import warnings
-
-import logging.config
 
 import brewtils
 

@@ -510,9 +510,10 @@ class TestClient(object):
         assert hasattr(ClientClass, "_bg_version")
         assert hasattr(ClientClass, "_bg_commands")
         assert hasattr(ClientClass, "_current_request")
+        assert hasattr(ClientClass, "_groups")
 
     def test_with_args(self):
-        @client(bg_name="sys", bg_version="1.0.0")
+        @client(bg_name="sys", bg_version="1.0.0", groups=["GroupA"])
         class ClientClass(object):
             @command
             def foo(self):
@@ -522,9 +523,45 @@ class TestClient(object):
         assert hasattr(ClientClass, "_bg_version")
         assert hasattr(ClientClass, "_bg_commands")
         assert hasattr(ClientClass, "_current_request")
+        assert hasattr(ClientClass, "_groups")
 
         assert ClientClass._bg_name == "sys"
         assert ClientClass._bg_version == "1.0.0"
+        assert ClientClass._groups == ["GroupA"]
+
+    def test_group(self):
+        @client(bg_name="sys", bg_version="1.0.0", group="GroupB")
+        class ClientClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
+        assert hasattr(ClientClass, "_groups")
+
+        assert ClientClass._bg_name == "sys"
+        assert ClientClass._bg_version == "1.0.0"
+        assert ClientClass._groups == ["GroupB"]
+
+    def test_group_combine(self):
+        @client(bg_name="sys", bg_version="1.0.0", groups=["GroupA"], group="GroupB")
+        class ClientClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
+        assert hasattr(ClientClass, "_groups")
+
+        assert ClientClass._bg_name == "sys"
+        assert ClientClass._bg_version == "1.0.0"
+        assert ClientClass._groups == ["GroupA", "GroupB"]
 
 
 class TestCommand(object):

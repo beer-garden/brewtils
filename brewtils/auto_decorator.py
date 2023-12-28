@@ -1,6 +1,6 @@
 import inspect
 
-from brewtils.models import Parameter, Command
+from brewtils.models import Command, Parameter
 
 
 class AutoDecorator:
@@ -24,10 +24,12 @@ class AutoDecorator:
     def addFunctions(self, client):
         for func in dir(client):
             if callable(getattr(client, func)):
-                if not func.startswith("_"):
-                    _wrapped = getattr(client, func)
-
+                _wrapped = getattr(client, func)
+                if not hasattr(_wrapped, "_command") and not func.startswith("__"):
                     # decorators.py will handle all of the markings
-                    _wrapped._command = Command()
+                    if func.startswith("_"):
+                        _wrapped._command = Command(hidden=True)
+                    else:
+                        _wrapped._command = Command()
 
         return client

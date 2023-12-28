@@ -5,16 +5,17 @@ import json
 from base64 import b64encode
 from typing import Any, List
 
-import brewtils.plugin
 import requests.exceptions
 import urllib3
-from brewtils.errors import _deprecate
-from brewtils.rest import normalize_url_prefix
-from brewtils.specification import _CONNECTION_SPEC
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from requests.utils import quote
 from yapconf import YapconfSpec
+
+import brewtils.plugin
+from brewtils.errors import _deprecate
+from brewtils.rest import normalize_url_prefix
+from brewtils.specification import _CONNECTION_SPEC
 
 
 def enable_auth(method):
@@ -540,6 +541,21 @@ class RestClient(object):
         """
         return self.session.post(
             self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
+        )
+
+    @enable_auth
+    def put_request(self, payload):
+        # type: (str, **Any) -> Response
+        """Performs a PUT on the Request URL
+
+        Args:
+            payload: Completed Request definition
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.put(
+            self.request_url, data=payload, headers=self.JSON_HEADERS
         )
 
     @enable_auth

@@ -15,9 +15,11 @@ from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
 
 if sys.version_info.major == 2:
-    from funcsigs import signature, Parameter as InspectParameter  # noqa
+    from funcsigs import Parameter as InspectParameter  # noqa
+    from funcsigs import signature
 else:
-    from inspect import signature, Parameter as InspectParameter  # noqa
+    from inspect import Parameter as InspectParameter  # noqa
+    from inspect import signature
 
     if sys.version_info.major == 3 and sys.version_info.minor >= 8:
         from typing import get_args
@@ -36,6 +38,8 @@ def client(
     _wrapped=None,  # type: Type
     bg_name=None,  # type: Optional[str]
     bg_version=None,  # type: Optional[str]
+    group=None,  # type: str
+    groups=[],  # type: Optional[List[str]]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -54,6 +58,7 @@ def client(
       * ``_bg_name``: an optional system name
       * ``_bg_version``: an optional system version
       * ``_bg_commands``: holds all registered commands
+      * ``_groups``: an optional sytem groups
       * ``_current_request``: Reference to the currently executing request
 
     Args:
@@ -61,19 +66,27 @@ def client(
             shouldn't be explicitly set.
         bg_name: Optional plugin name
         bg_version: Optional plugin version
+        group: Optional plugin group
+        groups: Optional plugin groups
 
     Returns:
         The decorated class
 
     """
     if _wrapped is None:
-        return functools.partial(client, bg_name=bg_name, bg_version=bg_version)  # noqa
+        return functools.partial(
+            client, bg_name=bg_name, bg_version=bg_version, groups=groups, group=group
+        )  # noqa
 
     # Assign these here so linters don't complain
     _wrapped._bg_name = bg_name
     _wrapped._bg_version = bg_version
     _wrapped._bg_commands = []
     _wrapped._current_request = None
+    _wrapped._groups = groups
+
+    if group:
+        _wrapped._groups.append(group)
 
     return _wrapped
 
@@ -90,6 +103,8 @@ def command(
     icon_name=None,  # type: Optional[str]
     hidden=False,  # type: Optional[bool]
     metadata=None,  # type: Optional[Dict]
+    tag=None,  # type: str
+    tags=None,  # type: Optional[List[str]]
     allow_any_kwargs=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
@@ -119,12 +134,20 @@ def command(
         icon_name: The icon name. Should be either a FontAwesome or a Glyphicon name.
         hidden: Flag controlling whether the command is visible on the user interface.
         metadata: Free-form dictionary
+        tag: A tag that can be used to filter commands
+        tags: A list of tags that can be used to filter commands
         allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to
             the Command parameters defined.
 
     Returns:
         The decorated function
     """
+
+    if tags is None:
+        tags = []
+
+    if tag:
+        tags.append(tag)
 
     if _wrapped is None:
         if output_type is None:
@@ -156,6 +179,7 @@ def command(
             icon_name=icon_name,
             hidden=hidden,
             metadata=metadata,
+            tags=tags,
             allow_any_kwargs=allow_any_kwargs,
         )
 
@@ -178,6 +202,7 @@ def command(
         icon_name=icon_name,
         hidden=hidden,
         metadata=metadata,
+        tags=tags,
         allow_any_kwargs=allow_any_kwargs,
     )
 

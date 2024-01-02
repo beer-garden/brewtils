@@ -567,7 +567,8 @@ class TestLocalRequestProcessor(object):
 
         assert local_request_processor.process_command(
             Request(command="command_one", parameters={})
-        )
-        assert not local_request_processor.process_command(
+        ).output == 'true'
+
+        assert local_request_processor.process_command(
             Request(command="command_two", parameters={})
-        )
+        ).output == 'false'

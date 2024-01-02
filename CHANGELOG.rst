@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.23.1
+------
+TBD
+
+- Fixed self reference bug that was returning back output instead of Request object.
+
 3.23.0
 ------
 12/27/2023

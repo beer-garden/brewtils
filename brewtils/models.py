@@ -1470,7 +1470,7 @@ class Garden(BaseModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Garden: garden_name=%s, status=%s>" % (self.name, self.status)
+        return "<Garden: garden_name=%s, status=%s, parent=%s, systems=%s, children=%s>" % (self.name, self.status, self.parent, self.systems, self.children)
 
 
 class Operation(BaseModel):

@@ -497,6 +497,11 @@ class GardenSchema(BaseSchema):
     connection_params = fields.Dict(allow_none=True)
     namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
+    has_parent = fields.Bool(allow_none=True)
+    parent = fields.Str(allow_none=True)
+    children = fields.Nested(
+        "self", exclude=("parent"), many=True, default=None, allow_none=True
+    )
 
 
 class GardenDomainIdentifierSchema(BaseSchema):

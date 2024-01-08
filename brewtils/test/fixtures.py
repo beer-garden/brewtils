@@ -763,6 +763,9 @@ def garden_dict(ts_epoch, system_dict):
         "systems": [system_dict],
         "connection_type": "http",
         "connection_params": {},
+        "parent": None,
+        "has_parent": False,
+        "children": [],
     }
 
 

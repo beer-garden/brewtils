@@ -306,6 +306,8 @@ def child_request_dict(ts_epoch):
         "metadata": {"child": "stuff"},
         "has_parent": True,
         "requester": "user",
+        "source_garden": "parent",
+        "target_garden": "child",
     }
 
 
@@ -345,6 +347,8 @@ def parent_request_dict(ts_epoch):
         "metadata": {"parent": "stuff"},
         "has_parent": False,
         "requester": "user",
+        "source_garden": "parent",
+        "target_garden": "child",
     }
 
 
@@ -408,6 +412,8 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "metadata": {"request": "stuff"},
         "has_parent": True,
         "requester": "user",
+        "source_garden": "parent",
+        "target_garden": "child",
     }
 
 

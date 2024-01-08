@@ -1,13 +1,18 @@
 Brewtils Changelog
 ==================
 
-
 3.24.0
 ------
 TBD
 
 - Expanding Garden model to include children gardens
+- Added Source/Target Garden labels on Request model
 
+3.23.1
+------
+TBD
+
+- Fixed self reference bug that was returning back output instead of Request object.
 
 3.23.0
 ------

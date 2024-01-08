@@ -348,6 +348,8 @@ class RequestSchema(RequestTemplateSchema):
     )
     has_parent = fields.Bool(allow_none=True)
     requester = fields.String(allow_none=True)
+    source_garden = fields.String(allow_none=True)
+    target_garden = fields.String(allow_none=True)
 
 
 class StatusInfoSchema(BaseSchema):

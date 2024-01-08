@@ -655,6 +655,8 @@ class Request(RequestTemplate):
         status_updated_at=None,
         has_parent=None,
         requester=None,
+        source_garden=None,
+        target_garden=None,
     ):
         super(Request, self).__init__(
             system=system,
@@ -681,6 +683,8 @@ class Request(RequestTemplate):
         self.error_class = error_class
         self.has_parent = has_parent
         self.requester = requester
+        self.source_garden = source_garden
+        self.target_garden = target_garden
 
     @classmethod
     def from_template(cls, template, **kwargs):

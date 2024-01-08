@@ -74,7 +74,7 @@ class LocalRequestProcessor(object):
             self._handle_invoke_success(request, output)
             request = self._ez_client.put_request(request)
             brewtils.plugin.request_context.current_request = parent_request
-            return output
+            return request
 
     def _invoke_command(self, target, request):
         """Invoke the function named in request.command

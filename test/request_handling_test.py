@@ -565,9 +565,16 @@ class TestLocalRequestProcessor(object):
         self.setup_request_context()
         brewtils.plugin.request_context.current_request = Request(id="1")
 
-        assert local_request_processor.process_command(
-            Request(command="command_one", parameters={})
+        assert (
+            local_request_processor.process_command(
+                Request(command="command_one", parameters={})
+            ).output
+            == "true"
         )
-        assert not local_request_processor.process_command(
-            Request(command="command_two", parameters={})
+
+        assert (
+            local_request_processor.process_command(
+                Request(command="command_two", parameters={})
+            ).output
+            == "false"
         )

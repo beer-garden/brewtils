@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Fixed self reference bug that was returning back output instead of Request object.
+- Added Source/Target Garden labels on Request model
 
 3.23.0
 ------

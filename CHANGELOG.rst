@@ -7,6 +7,7 @@ TBD
 
 - Expanding Garden model to include children gardens
 - Added Source/Target Garden labels on Request model
+- Added Metadata to Garden model
 
 3.23.1
 ------

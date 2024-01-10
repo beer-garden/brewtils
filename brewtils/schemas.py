@@ -502,6 +502,7 @@ class GardenSchema(BaseSchema):
     children = fields.Nested(
         "self", exclude=("parent"), many=True, default=None, allow_none=True
     )
+    metadata = fields.Dict(allow_none=True)
 
 
 class GardenDomainIdentifierSchema(BaseSchema):

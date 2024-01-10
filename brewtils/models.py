@@ -1455,6 +1455,7 @@ class Garden(BaseModel):
         has_parent=None,
         parent=None,
         children=None,
+        metadata=None,
     ):
         self.id = id
         self.name = name
@@ -1469,6 +1470,7 @@ class Garden(BaseModel):
         self.has_parent = has_parent
         self.parent = parent
         self.children = children
+        self.metadata = metadata or {}
 
     def __str__(self):
         return "%s" % self.name

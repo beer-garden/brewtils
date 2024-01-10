@@ -766,6 +766,7 @@ def garden_dict(ts_epoch, system_dict):
         "parent": None,
         "has_parent": False,
         "children": [],
+        "metadata": {}
     }
 
 

@@ -64,6 +64,7 @@ class Events(Enum):
     DB_UPDATE = 17
     DB_DELETE = 18
     GARDEN_CREATED = 19
+    GARDEN_CONFIGURED = 53
     GARDEN_UPDATED = 20
     GARDEN_REMOVED = 21
     FILE_CREATED = 24
@@ -93,7 +94,7 @@ class Events(Enum):
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
 
-    # Next: 53
+    # Next: 54
 
 
 class BaseModel(object):
@@ -1452,6 +1453,7 @@ class Garden(BaseModel):
         systems=None,
         connection_type=None,
         connection_params=None,
+        connection_params_enabled=None,
         has_parent=None,
         parent=None,
         children=None,
@@ -1464,8 +1466,9 @@ class Garden(BaseModel):
         self.namespaces = namespaces or []
         self.systems = systems or []
 
-        self.connection_type = connection_type
+        self.connection_type = connection_type        
         self.connection_params = connection_params
+        self.connection_params_enabled = connection_params_enabled or {}
 
         self.has_parent = has_parent
         self.parent = parent

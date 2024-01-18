@@ -495,6 +495,7 @@ class GardenSchema(BaseSchema):
     status_info = fields.Nested("StatusInfoSchema", allow_none=True)
     connection_type = fields.Str(allow_none=True)
     connection_params = fields.Dict(allow_none=True)
+    connection_params_enabled = fields.Dict(allow_none=True)
     namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
     has_parent = fields.Bool(allow_none=True)

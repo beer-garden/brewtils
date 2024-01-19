@@ -750,6 +750,7 @@ def bg_request_file(request_file_dict):
     """A request file as a model"""
     return RequestFile(**request_file_dict)
 
+
 @pytest.fixture
 def connection_dict():
     """A connection as a dictionary."""
@@ -760,11 +761,13 @@ def connection_dict():
         "enabled": True,
     }
 
+
 @pytest.fixture
 def bg_connection(connection_dict):
     """An connection as a model."""
     dict_copy = copy.deepcopy(connection_dict)
     return Connection(**dict_copy)
+
 
 @pytest.fixture
 def garden_dict(ts_epoch, system_dict, connection_dict):
@@ -783,7 +786,7 @@ def garden_dict(ts_epoch, system_dict, connection_dict):
         "parent": None,
         "has_parent": False,
         "children": [],
-        "metadata": {}
+        "metadata": {},
     }
 
 

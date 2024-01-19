@@ -381,6 +381,10 @@ def assert_garden_equal(obj1, obj2, do_raise=False):
         obj1,
         obj2,
         expected_type=Garden,
-        deep_fields={"systems": partial(assert_system_equal, do_raise=True), "receiving_connections": partial(assert_connection_equal, do_raise=True), "publishing_connections": partial(assert_connection_equal, do_raise=True)},
+        deep_fields={
+            "systems": partial(assert_system_equal, do_raise=True),
+            "receiving_connections": partial(assert_connection_equal, do_raise=True),
+            "publishing_connections": partial(assert_connection_equal, do_raise=True),
+        },
         do_raise=do_raise,
     )

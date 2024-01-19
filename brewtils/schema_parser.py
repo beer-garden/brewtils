@@ -102,7 +102,7 @@ class SchemaParser(object):
         return cls.parse(
             command, brewtils.models.Command, from_string=from_string, **kwargs
         )
-    
+
     @classmethod
     def parse_connection(cls, connection, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a command model object
@@ -512,7 +512,7 @@ class SchemaParser(object):
             schema_name=brewtils.models.Command.schema,
             **kwargs
         )
-    
+
     @classmethod
     def serialize_connection(cls, connection, to_string=True, **kwargs):
         """Convert a connection model into serialized form

@@ -1454,8 +1454,8 @@ class Garden(BaseModel):
         systems=None,
         connection_type=None,
         connection_params=None,
-        receiving_connections=None, 
-        publishing_connections = None,
+        receiving_connections=None,
+        publishing_connections=None,
         has_parent=None,
         parent=None,
         children=None,
@@ -1468,7 +1468,7 @@ class Garden(BaseModel):
         self.namespaces = namespaces or []
         self.systems = systems or []
 
-        self.connection_type = connection_type        
+        self.connection_type = connection_type
         self.receiving_connections = receiving_connections or []
         self.publishing_connections = publishing_connections or []
 
@@ -1494,14 +1494,15 @@ class Garden(BaseModel):
             )
         )
 
+
 class Connection(BaseModel):
     schema = "ConnectionSchema"
 
     def __init__(
         self,
-        api = None,
-        enabled = False,
-        config = None,
+        api=None,
+        enabled=False,
+        config=None,
     ):
         self.api = api
         self.enabled = enabled
@@ -1509,16 +1510,14 @@ class Connection(BaseModel):
 
     def __str__(self):
         return "%s %s" % (self.api, "ENABLED" if self.enabled else "DISABLED")
-    
+
     def __repr__(self):
-        return (
-            "<Connection: api=%s, enabled=%s, config=%s>"
-            % (
-                self.api,
-                self.enabled,
-                self.config,
-            )
+        return "<Connection: api=%s, enabled=%s, config=%s>" % (
+            self.api,
+            self.enabled,
+            self.config,
         )
+
 
 class Operation(BaseModel):
     schema = "OperationSchema"

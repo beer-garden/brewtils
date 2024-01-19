@@ -488,6 +488,7 @@ class FileTriggerSchema(BaseSchema):
     recursive = fields.Bool(allow_none=True)
     callbacks = fields.Dict(fields.Bool(), allow_none=True)
 
+
 class ConnectionSchema(BaseSchema):
     api = fields.Str(allow_none=True)
     enabled = fields.Boolean(allow_none=True)
@@ -500,8 +501,12 @@ class GardenSchema(BaseSchema):
     status = fields.Str(allow_none=True)
     status_info = fields.Nested("StatusInfoSchema", allow_none=True)
     connection_type = fields.Str(allow_none=True)
-    receiving_connections = fields.Nested("ConnectionSchema", many=True, allow_none=True)
-    publishing_connections = fields.Nested("ConnectionSchema", many=True, allow_none=True)
+    receiving_connections = fields.Nested(
+        "ConnectionSchema", many=True, allow_none=True
+    )
+    publishing_connections = fields.Nested(
+        "ConnectionSchema", many=True, allow_none=True
+    )
     namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
     has_parent = fields.Bool(allow_none=True)
@@ -556,6 +561,7 @@ class JobExportSchema(JobSchema):
 class JobExportListSchema(BaseSchema):
     jobs = fields.List(fields.Nested(JobExportSchema, allow_none=True))
 
+
 class OperationSchema(BaseSchema):
     model_type = fields.Str(allow_none=True)
     model = ModelField(allow_none=True, type_field="model_type")
@@ -566,7 +572,7 @@ class OperationSchema(BaseSchema):
     target_garden_name = fields.Str(allow_none=True)
     source_garden_name = fields.Str(allow_none=True)
     source_api = fields.Str(allow_none=True)
-    
+
     operation_type = fields.Str(allow_none=True)
 
 

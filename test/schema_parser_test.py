@@ -11,6 +11,7 @@ from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
     assert_command_equal,
+    assert_connection_equal,
     assert_event_equal,
     assert_garden_equal,
     assert_instance_equal,

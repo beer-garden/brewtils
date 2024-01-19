@@ -9,6 +9,7 @@ import pytz
 from brewtils.models import (
     Choices,
     Command,
+    Connection,
     CronTrigger,
     DateTrigger,
     Event,
@@ -787,10 +788,12 @@ def garden_dict(ts_epoch, system_dict, connection_dict):
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system):
+def bg_garden(garden_dict, bg_system, bg_connection):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
+    dict_copy["receiving_connections"] = [bg_connection]
+    dict_copy["publishing_connections"] = [bg_connection]
     return Garden(**dict_copy)
 
 

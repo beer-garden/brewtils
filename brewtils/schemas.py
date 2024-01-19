@@ -35,6 +35,7 @@ __all__ = [
     "IntervalTriggerSchema",
     "CronTriggerSchema",
     "FileTriggerSchema",
+    "ConnectionSchema",
     "GardenSchema",
     "OperationSchema",
     "UserSchema",
@@ -627,6 +628,7 @@ model_schema_map.update(
     {
         "Choices": ChoicesSchema,
         "Command": CommandSchema,
+        "Connection": ConnectionSchema,
         "CronTrigger": CronTriggerSchema,
         "DateTrigger": DateTriggerSchema,
         "Event": EventSchema,

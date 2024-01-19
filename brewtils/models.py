@@ -12,6 +12,7 @@ __all__ = [
     "System",
     "Instance",
     "Command",
+    "Connection",
     "Parameter",
     "Request",
     "PatchOperation",
@@ -1497,6 +1498,7 @@ class Connection(BaseModel):
     schema = "ConnectionSchema"
 
     def __init__(
+        self,
         api = None,
         enabled = False,
         config = None,

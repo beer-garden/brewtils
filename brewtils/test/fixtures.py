@@ -790,6 +790,7 @@ def operation_dict(ts_epoch, request_dict):
         "kwargs": {"extra": "kwargs"},
         "target_garden_name": "child",
         "source_garden_name": "parent",
+        "source_api": "HTTP",
         "operation_type": "REQUEST_CREATE",
     }
 

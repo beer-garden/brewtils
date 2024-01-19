@@ -749,9 +749,24 @@ def bg_request_file(request_file_dict):
     """A request file as a model"""
     return RequestFile(**request_file_dict)
 
+@pytest.fixture
+def connection_dict():
+    """A connection as a dictionary."""
+
+    return {
+        "api": "HTTP",
+        "config": {},
+        "enabled": True,
+    }
 
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict):
+def bg_connection(connection_dict):
+    """An connection as a model."""
+    dict_copy = copy.deepcopy(connection_dict)
+    return Connection(**dict_copy)
+
+@pytest.fixture
+def garden_dict(ts_epoch, system_dict, connection_dict):
     """A garden as a dictionary."""
 
     return {
@@ -762,8 +777,8 @@ def garden_dict(ts_epoch, system_dict):
         "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
-        "connection_params": {},
-        "connection_params_enabled": {"http":True},
+        "receiving_connections": [connection_dict],
+        "publishing_connections": [connection_dict],
         "parent": None,
         "has_parent": False,
         "children": [],

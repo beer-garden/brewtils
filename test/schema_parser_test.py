@@ -150,6 +150,12 @@ class TestParse(object):
                 lazy_fixture("bg_request_file"),
             ),
             (
+                brewtils.models.Connection,
+                lazy_fixture("connection_dict"),
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
+            ),
+            (
                 brewtils.models.Garden,
                 lazy_fixture("garden_dict"),
                 assert_garden_equal,

@@ -1453,7 +1453,8 @@ class Garden(BaseModel):
         systems=None,
         connection_type=None,
         connection_params=None,
-        connection_params_enabled=None,
+        receiving_connections=None, 
+        publishing_connections = None,
         has_parent=None,
         parent=None,
         children=None,
@@ -1467,8 +1468,8 @@ class Garden(BaseModel):
         self.systems = systems or []
 
         self.connection_type = connection_type        
-        self.connection_params = connection_params
-        self.connection_params_enabled = connection_params_enabled or {}
+        self.receiving_connections = receiving_connections or []
+        self.publishing_connections = publishing_connections or []
 
         self.has_parent = has_parent
         self.parent = parent
@@ -1480,16 +1481,42 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, connection_type=%s>"
+            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
                 self.status,
                 self.parent,
                 self.has_parent,
                 self.connection_type,
+                self.receiving_connections,
+                self.publishing_connections,
             )
         )
 
+class Connection(BaseModel):
+    schema = "ConnectionSchema"
+
+    def __init__(
+        api = None,
+        enabled = False,
+        config = None,
+    ):
+        self.api = api
+        self.enabled = enabled
+        self.config = config or {}
+
+    def __str__(self):
+        return "%s %s" % (self.api, "ENABLED" if self.enabled else "DISABLED")
+    
+    def __repr__(self):
+        return (
+            "<Connection: api=%s, enabled=%s, config=%s>"
+            % (
+                self.api,
+                self.enabled,
+                self.config,
+            )
+        )
 
 class Operation(BaseModel):
     schema = "OperationSchema"

@@ -560,6 +560,8 @@ class OperationSchema(BaseSchema):
 
     target_garden_name = fields.Str(allow_none=True)
     source_garden_name = fields.Str(allow_none=True)
+    source_api = fields.Str(allow_none=True)
+    
     operation_type = fields.Str(allow_none=True)
 
 

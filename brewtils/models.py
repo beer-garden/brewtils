@@ -1502,6 +1502,7 @@ class Operation(BaseModel):
         kwargs=None,
         target_garden_name=None,
         source_garden_name=None,
+        source_api=None,
         operation_type=None,
     ):
         self.model = model
@@ -1510,6 +1511,7 @@ class Operation(BaseModel):
         self.kwargs = kwargs or {}
         self.target_garden_name = target_garden_name
         self.source_garden_name = source_garden_name
+        self.source_api = source_api
         self.operation_type = operation_type
 
     def __str__(self):

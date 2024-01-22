@@ -781,7 +781,6 @@ def garden_dict(ts_epoch, system_dict, connection_dict):
         "status_info": {},
         "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
-        "connection_type": "http",
         "receiving_connections": [connection_dict],
         "publishing_connections": [connection_dict],
         "parent": None,

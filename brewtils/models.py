@@ -1498,6 +1498,16 @@ class Garden(BaseModel):
 class Connection(BaseModel):
     schema = "ConnectionSchema"
 
+    CONNECTION_STATUSES = {
+        "ENABLED", # Sending
+        "DISABLED" # Stopped via config or API
+        "NOT_CONFIGURED", # Not enabled in configuration file
+        "MISSING_CONFIGURATION", # Missing configuration file
+        "UNREACHABLE", # Unable to send message
+        "ERROR", # Error occured, outside of unreachable
+        "UNKNOWN", 
+    }
+
     def __init__(
         self,
         api=None,

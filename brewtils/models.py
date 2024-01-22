@@ -1481,7 +1481,8 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
+            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, " \
+            "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
                 self.status,

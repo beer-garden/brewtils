@@ -1499,11 +1499,13 @@ class Connection(BaseModel):
     schema = "ConnectionSchema"
 
     CONNECTION_STATUSES = {
-        "ENABLED", # Sending
+        "PUBLISHING",
+        "RECEIVING",
         "DISABLED" # Stopped via config or API
         "NOT_CONFIGURED", # Not enabled in configuration file
         "MISSING_CONFIGURATION", # Missing configuration file
         "UNREACHABLE", # Unable to send message
+        "UNRESPONSIVE", # Haven't seen a message in N timeframe
         "ERROR", # Error occured, outside of unreachable
         "UNKNOWN", 
     }

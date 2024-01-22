@@ -758,7 +758,8 @@ def connection_dict():
     return {
         "api": "HTTP",
         "config": {},
-        "enabled": True,
+        "status": "RUNNING",
+        "status_info": {},
     }
 
 

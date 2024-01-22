@@ -1453,7 +1453,6 @@ class Garden(BaseModel):
         namespaces=None,
         systems=None,
         connection_type=None,
-        connection_params=None,
         receiving_connections=None,
         publishing_connections=None,
         has_parent=None,
@@ -1501,20 +1500,22 @@ class Connection(BaseModel):
     def __init__(
         self,
         api=None,
-        enabled=False,
+        status=None,
+        status_info=None,
         config=None,
     ):
         self.api = api
-        self.enabled = enabled
+        self.status = status
+        self.status_info = status_info or {}
         self.config = config or {}
 
     def __str__(self):
-        return "%s %s" % (self.api, "ENABLED" if self.enabled else "DISABLED")
+        return "%s %s" % (self.api, self.status)
 
     def __repr__(self):
-        return "<Connection: api=%s, enabled=%s, config=%s>" % (
+        return "<Connection: api=%s, status=%s, config=%s>" % (
             self.api,
-            self.enabled,
+            self.status,
             self.config,
         )
 

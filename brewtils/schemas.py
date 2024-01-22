@@ -491,7 +491,8 @@ class FileTriggerSchema(BaseSchema):
 
 class ConnectionSchema(BaseSchema):
     api = fields.Str(allow_none=True)
-    enabled = fields.Boolean(allow_none=True)
+    status = fields.Str(allow_none=True)
+    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
     config = fields.Dict(allow_none=True)
 
 

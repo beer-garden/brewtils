@@ -425,7 +425,9 @@ class SystemClient(object):
         # If not blocking just return the future
         if not blocking:
             # TODO: Investigate if self targeting requests with no parents can be processed locally
-            if not self.target_self or not getattr(brewtils.plugin.request_context, "current_request", None):
+            if not self.target_self or not getattr(
+                brewtils.plugin.request_context, "current_request", None
+            ):
                 return self._thread_pool.submit(
                     self._wait_for_request, request, raise_on_error, timeout
                 )

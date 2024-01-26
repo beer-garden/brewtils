@@ -428,6 +428,7 @@ class SystemClient(object):
                 return self._thread_pool.submit(
                     self._wait_for_request, request, raise_on_error, timeout
                 )
+
             else:
                 return self._thread_pool.submit(
                     self.local_request_handler.process_command, request

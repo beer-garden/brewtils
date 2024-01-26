@@ -54,10 +54,13 @@ class LocalRequestProcessor(object):
             Any
         """
 
-        parent_request = copy.deepcopy(brewtils.plugin.request_context.current_request)
+        parent_request = copy.deepcopy(getattr(
+                brewtils.plugin.request_context, "current_request", None
+            ))
 
-        request.parent = Request(id=str(parent_request.id))
-        request.has_parent = True
+        if parent_request:
+            request.parent = Request(id=str(parent_request.id))
+            request.has_parent = True
 
         request.status = "IN_PROGRESS"
 

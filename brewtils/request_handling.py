@@ -54,9 +54,9 @@ class LocalRequestProcessor(object):
             Any
         """
 
-        parent_request = copy.deepcopy(getattr(
-                brewtils.plugin.request_context, "current_request", None
-            ))
+        parent_request = copy.deepcopy(
+            getattr(brewtils.plugin.request_context, "current_request", None)
+        )
 
         if parent_request:
             request.parent = Request(id=str(parent_request.id))

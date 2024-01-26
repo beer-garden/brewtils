@@ -424,13 +424,11 @@ class SystemClient(object):
 
         # If not blocking just return the future
         if not blocking:
-            # TODO: Investigate if self targeting requests with no parents can be processed locally
-            if not self.target_self or not getattr(
-                brewtils.plugin.request_context, "current_request", None
-            ):
+            if not self.target_self:
                 return self._thread_pool.submit(
                     self._wait_for_request, request, raise_on_error, timeout
                 )
+
             else:
                 return self._thread_pool.submit(
                     self.local_request_handler.process_command, request
@@ -480,9 +478,11 @@ class SystemClient(object):
                 % (
                     self._system_name,
                     self._version_constraint,
-                    self._system_namespace
-                    if self._system_namespace
-                    else "<garden default>",
+                    (
+                        self._system_namespace
+                        if self._system_namespace
+                        else "<garden default>"
+                    ),
                 )
             )
 

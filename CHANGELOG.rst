@@ -6,8 +6,6 @@ Brewtils Changelog
 TBD
 
 - Fixed self reference bug that was returning back output instead of Request object.
-- Fixed self reference bug, when SystemClient calls itself but doesn't have a current request it 
-  now sends it to Beer Garden instead of attempting to process it locally. 
 
 3.23.0
 ------

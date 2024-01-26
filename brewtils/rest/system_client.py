@@ -478,9 +478,11 @@ class SystemClient(object):
                 % (
                     self._system_name,
                     self._version_constraint,
-                    self._system_namespace
-                    if self._system_namespace
-                    else "<garden default>",
+                    (
+                        self._system_namespace
+                        if self._system_namespace
+                        else "<garden default>",
+                    )
                 )
             )
 

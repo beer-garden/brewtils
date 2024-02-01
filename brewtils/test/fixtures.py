@@ -618,7 +618,14 @@ def job_ids_dict(job_dict):
 def job_dict_for_import(job_dict):
     """A job dict but some keys and values are missing."""
     dict_copy = copy.deepcopy(job_dict)
-    for field in ["id", "next_run_time", "success_count", "error_count","canceled_count","skip_count"]:
+    for field in [
+        "id",
+        "next_run_time",
+        "success_count",
+        "error_count",
+        "canceled_count",
+        "skip_count",
+    ]:
         dict_copy.pop(field, None)
     return dict_copy
 

@@ -531,7 +531,14 @@ class JobExportSchema(JobSchema):
     def __init__(self, *args, **kwargs):
         # exclude fields from a Job that we don't want when we later go to import
         # the Job definition
-        self.opts.exclude += ("id", "next_run_time", "success_count", "error_count", "canceled_count", "skip_count")
+        self.opts.exclude += (
+            "id",
+            "next_run_time",
+            "success_count",
+            "error_count",
+            "canceled_count",
+            "skip_count",
+        )
         super(JobExportSchema, self).__init__(*args, **kwargs)
 
     @post_load

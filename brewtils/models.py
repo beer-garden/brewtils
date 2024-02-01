@@ -1192,6 +1192,8 @@ class Job(BaseModel):
         next_run_time=None,
         success_count=None,
         error_count=None,
+        canceled_count=None,
+        skip_count=None,
         status=None,
         max_instances=None,
         timeout=None,
@@ -1206,6 +1208,8 @@ class Job(BaseModel):
         self.next_run_time = next_run_time
         self.success_count = success_count
         self.error_count = error_count
+        self.canceled_count = canceled_count
+        self.skip_count = skip_count
         self.status = status
         self.max_instances = max_instances
         self.timeout = timeout

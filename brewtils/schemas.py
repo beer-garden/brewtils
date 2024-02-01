@@ -516,6 +516,8 @@ class JobSchema(BaseSchema):
     next_run_time = DateTime(allow_none=True, format="epoch", example="1500065932000")
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
+    canceled_count = fields.Int(allow_none=True)
+    skip_count = fields.Int(allow_none=True)
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
     timeout = fields.Int(allow_none=True)
@@ -529,7 +531,14 @@ class JobExportSchema(JobSchema):
     def __init__(self, *args, **kwargs):
         # exclude fields from a Job that we don't want when we later go to import
         # the Job definition
-        self.opts.exclude += ("id", "next_run_time", "success_count", "error_count")
+        self.opts.exclude += (
+            "id",
+            "next_run_time",
+            "success_count",
+            "error_count",
+            "canceled_count",
+            "skip_count",
+        )
         super(JobExportSchema, self).__init__(*args, **kwargs)
 
     @post_load

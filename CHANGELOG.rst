@@ -8,6 +8,7 @@ TBD
 - Fixed self reference bug that was returning back output instead of Request object.
 - Fixed self reference bug, when SystemClient calls itself but doesn't have a current request. This
   allows for support to run SystemClient in a sub-thread to the plugin.
+- Expand Job model to include Skipped and Canceled counters
 
 3.23.0
 ------

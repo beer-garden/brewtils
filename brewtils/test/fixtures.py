@@ -569,6 +569,8 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         "next_run_time": ts_epoch,
         "success_count": 0,
         "error_count": 0,
+        "canceled_count": 0,
+        "skip_count": 0,
         "status": "RUNNING",
         "max_instances": 3,
         "timeout": 30,
@@ -616,7 +618,7 @@ def job_ids_dict(job_dict):
 def job_dict_for_import(job_dict):
     """A job dict but some keys and values are missing."""
     dict_copy = copy.deepcopy(job_dict)
-    for field in ["id", "next_run_time", "success_count", "error_count"]:
+    for field in ["id", "next_run_time", "success_count", "error_count","canceled_count","skip_count"]:
         dict_copy.pop(field, None)
     return dict_copy
 

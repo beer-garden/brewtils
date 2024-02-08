@@ -1439,6 +1439,7 @@ class Garden(BaseModel):
         "BLOCKED",
         "STOPPED",
         "NOT_CONFIGURED",
+        "CONFIGURATION_ERROR",
         "UNREACHABLE",
         "ERROR",
         "UNKNOWN",
@@ -1504,6 +1505,7 @@ class Connection(BaseModel):
         "DISABLED" # Stopped via config or API
         "NOT_CONFIGURED", # Not enabled in configuration file
         "MISSING_CONFIGURATION", # Missing configuration file
+        "CONFIGURATION_ERROR", # Unable to load configuration file
         "UNREACHABLE", # Unable to send message
         "UNRESPONSIVE", # Haven't seen a message in N timeframe
         "ERROR", # Error occured, outside of unreachable

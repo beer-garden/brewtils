@@ -758,7 +758,18 @@ def connection_dict():
     return {
         "api": "HTTP",
         "config": {},
-        "status": "RUNNING",
+        "status": "RECEIVING",
+        "status_info": {},
+    }
+
+@pytest.fixture
+def connection_publishing_dict():
+    """A connection as a dictionary."""
+
+    return {
+        "api": "HTTP",
+        "config": {},
+        "status": "PUBLISHING",
         "status_info": {},
     }
 
@@ -771,7 +782,14 @@ def bg_connection(connection_dict):
 
 
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict, connection_dict):
+def bg_connection_publishing(connection_publishing_dict):
+    """An connection as a model."""
+    dict_copy = copy.deepcopy(connection_publishing_dict)
+    return Connection(**dict_copy)
+
+
+@pytest.fixture
+def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_dict):
     """A garden as a dictionary."""
 
     return {
@@ -783,7 +801,7 @@ def garden_dict(ts_epoch, system_dict, connection_dict):
         "systems": [system_dict],
         "connection_type": "http",
         "receiving_connections": [connection_dict],
-        "publishing_connections": [connection_dict],
+        "publishing_connections": [connection_publishing_dict],
         "parent": None,
         "has_parent": False,
         "children": [],
@@ -792,12 +810,12 @@ def garden_dict(ts_epoch, system_dict, connection_dict):
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system, bg_connection):
+def bg_garden(garden_dict, bg_system, bg_connection, bg_connection_publishing):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
-    dict_copy["publishing_connections"] = [bg_connection]
+    dict_copy["publishing_connections"] = [bg_connection_publishing]
     return Garden(**dict_copy)
 
 

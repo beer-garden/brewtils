@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+3.24.0
+------
+TBD
+
+- Expanding Garden model to include children gardens
+- Added Source/Target Garden labels on Request model
+- Added Metadata to Garden model
+
 3.23.1
 ------
 TBD
@@ -30,6 +38,7 @@ TBD
 - Added new KWARG input to @command for tag/tags. This can be utilized for filtering commands.
 - Adding default topic for PublishClient to Plugins {Namespace}.{System}.{Version}.{Instance}
 - Removed Python 12 support until we upgrade Marshmallow dependency to 3.15 or greater
+
 
 3.21.0
 ------

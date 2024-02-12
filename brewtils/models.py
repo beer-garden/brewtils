@@ -12,6 +12,7 @@ __all__ = [
     "System",
     "Instance",
     "Command",
+    "Connection",
     "Parameter",
     "Request",
     "PatchOperation",
@@ -64,6 +65,7 @@ class Events(Enum):
     DB_UPDATE = 17
     DB_DELETE = 18
     GARDEN_CREATED = 19
+    GARDEN_CONFIGURED = 53
     GARDEN_UPDATED = 20
     GARDEN_REMOVED = 21
     FILE_CREATED = 24
@@ -93,7 +95,7 @@ class Events(Enum):
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
 
-    # Next: 53
+    # Next: 54
 
 
 class BaseModel(object):
@@ -655,6 +657,8 @@ class Request(RequestTemplate):
         status_updated_at=None,
         has_parent=None,
         requester=None,
+        source_garden=None,
+        target_garden=None,
     ):
         super(Request, self).__init__(
             system=system,
@@ -681,6 +685,8 @@ class Request(RequestTemplate):
         self.error_class = error_class
         self.has_parent = has_parent
         self.requester = requester
+        self.source_garden = source_garden
+        self.target_garden = target_garden
 
     @classmethod
     def from_template(cls, template, **kwargs):
@@ -1437,6 +1443,7 @@ class Garden(BaseModel):
         "BLOCKED",
         "STOPPED",
         "NOT_CONFIGURED",
+        "CONFIGURATION_ERROR",
         "UNREACHABLE",
         "ERROR",
         "UNKNOWN",
@@ -1451,7 +1458,12 @@ class Garden(BaseModel):
         namespaces=None,
         systems=None,
         connection_type=None,
-        connection_params=None,
+        receiving_connections=None,
+        publishing_connections=None,
+        has_parent=None,
+        parent=None,
+        children=None,
+        metadata=None,
     ):
         self.id = id
         self.name = name
@@ -1461,13 +1473,70 @@ class Garden(BaseModel):
         self.systems = systems or []
 
         self.connection_type = connection_type
-        self.connection_params = connection_params
+        self.receiving_connections = receiving_connections or []
+        self.publishing_connections = publishing_connections or []
+
+        self.has_parent = has_parent
+        self.parent = parent
+        self.children = children
+        self.metadata = metadata or {}
 
     def __str__(self):
         return "%s" % self.name
 
     def __repr__(self):
-        return "<Garden: garden_name=%s, status=%s>" % (self.name, self.status)
+        return (
+            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, "
+            "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
+            % (
+                self.name,
+                self.status,
+                self.parent,
+                self.has_parent,
+                self.connection_type,
+                self.receiving_connections,
+                self.publishing_connections,
+            )
+        )
+
+
+class Connection(BaseModel):
+    schema = "ConnectionSchema"
+
+    CONNECTION_STATUSES = {
+        "PUBLISHING",
+        "RECEIVING",
+        "DISABLED"  # Stopped via config or API
+        "NOT_CONFIGURED",  # Not enabled in configuration file
+        "MISSING_CONFIGURATION",  # Missing configuration file
+        "CONFIGURATION_ERROR",  # Unable to load configuration file
+        "UNREACHABLE",  # Unable to send message
+        "UNRESPONSIVE",  # Haven't seen a message in N timeframe
+        "ERROR",  # Error occured, outside of unreachable
+        "UNKNOWN",
+    }
+
+    def __init__(
+        self,
+        api=None,
+        status=None,
+        status_info=None,
+        config=None,
+    ):
+        self.api = api
+        self.status = status
+        self.status_info = status_info or {}
+        self.config = config or {}
+
+    def __str__(self):
+        return "%s %s" % (self.api, self.status)
+
+    def __repr__(self):
+        return "<Connection: api=%s, status=%s, config=%s>" % (
+            self.api,
+            self.status,
+            self.config,
+        )
 
 
 class Operation(BaseModel):
@@ -1481,6 +1550,7 @@ class Operation(BaseModel):
         kwargs=None,
         target_garden_name=None,
         source_garden_name=None,
+        source_api=None,
         operation_type=None,
     ):
         self.model = model
@@ -1489,6 +1559,7 @@ class Operation(BaseModel):
         self.kwargs = kwargs or {}
         self.target_garden_name = target_garden_name
         self.source_garden_name = source_garden_name
+        self.source_api = source_api
         self.operation_type = operation_type
 
     def __str__(self):

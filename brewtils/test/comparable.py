@@ -16,6 +16,7 @@ import brewtils.test
 from brewtils.models import (
     Choices,
     Command,
+    Connection,
     CronTrigger,
     DateTrigger,
     Event,
@@ -191,6 +192,7 @@ assert_trigger_equal = partial(
 assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
+assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
@@ -379,6 +381,10 @@ def assert_garden_equal(obj1, obj2, do_raise=False):
         obj1,
         obj2,
         expected_type=Garden,
-        deep_fields={"systems": partial(assert_system_equal, do_raise=True)},
+        deep_fields={
+            "systems": partial(assert_system_equal, do_raise=True),
+            "receiving_connections": partial(assert_connection_equal, do_raise=True),
+            "publishing_connections": partial(assert_connection_equal, do_raise=True),
+        },
         do_raise=do_raise,
     )

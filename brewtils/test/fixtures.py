@@ -9,6 +9,7 @@ import pytz
 from brewtils.models import (
     Choices,
     Command,
+    Connection,
     CronTrigger,
     DateTrigger,
     Event,
@@ -306,6 +307,8 @@ def child_request_dict(ts_epoch):
         "metadata": {"child": "stuff"},
         "has_parent": True,
         "requester": "user",
+        "source_garden": "parent",
+        "target_garden": "child",
     }
 
 
@@ -345,6 +348,8 @@ def parent_request_dict(ts_epoch):
         "metadata": {"parent": "stuff"},
         "has_parent": False,
         "requester": "user",
+        "source_garden": "parent",
+        "target_garden": "child",
     }
 
 
@@ -408,6 +413,8 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "metadata": {"request": "stuff"},
         "has_parent": True,
         "requester": "user",
+        "source_garden": "parent",
+        "target_garden": "child",
     }
 
 
@@ -754,7 +761,45 @@ def bg_request_file(request_file_dict):
 
 
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict):
+def connection_dict():
+    """A connection as a dictionary."""
+
+    return {
+        "api": "HTTP",
+        "config": {},
+        "status": "RECEIVING",
+        "status_info": {},
+    }
+
+
+@pytest.fixture
+def connection_publishing_dict():
+    """A connection as a dictionary."""
+
+    return {
+        "api": "HTTP",
+        "config": {},
+        "status": "PUBLISHING",
+        "status_info": {},
+    }
+
+
+@pytest.fixture
+def bg_connection(connection_dict):
+    """An connection as a model."""
+    dict_copy = copy.deepcopy(connection_dict)
+    return Connection(**dict_copy)
+
+
+@pytest.fixture
+def bg_connection_publishing(connection_publishing_dict):
+    """An connection as a model."""
+    dict_copy = copy.deepcopy(connection_publishing_dict)
+    return Connection(**dict_copy)
+
+
+@pytest.fixture
+def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_dict):
     """A garden as a dictionary."""
 
     return {
@@ -765,15 +810,22 @@ def garden_dict(ts_epoch, system_dict):
         "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
-        "connection_params": {},
+        "receiving_connections": [connection_dict],
+        "publishing_connections": [connection_publishing_dict],
+        "parent": None,
+        "has_parent": False,
+        "children": [],
+        "metadata": {},
     }
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system):
+def bg_garden(garden_dict, bg_system, bg_connection, bg_connection_publishing):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
+    dict_copy["receiving_connections"] = [bg_connection]
+    dict_copy["publishing_connections"] = [bg_connection_publishing]
     return Garden(**dict_copy)
 
 
@@ -788,6 +840,7 @@ def operation_dict(ts_epoch, request_dict):
         "kwargs": {"extra": "kwargs"},
         "target_garden_name": "child",
         "source_garden_name": "parent",
+        "source_api": "HTTP",
         "operation_type": "REQUEST_CREATE",
     }
 

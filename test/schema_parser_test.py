@@ -11,6 +11,7 @@ from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
     assert_command_equal,
+    assert_connection_equal,
     assert_event_equal,
     assert_garden_equal,
     assert_instance_equal,
@@ -82,6 +83,12 @@ class TestParse(object):
                 lazy_fixture("command_dict"),
                 assert_command_equal,
                 lazy_fixture("bg_command"),
+            ),
+            (
+                brewtils.models.Connection,
+                lazy_fixture("connection_dict"),
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
             ),
             (
                 brewtils.models.Parameter,
@@ -204,6 +211,12 @@ class TestParse(object):
                 lazy_fixture("command_dict"),
                 assert_command_equal,
                 lazy_fixture("bg_command"),
+            ),
+            (
+                "parse_connection",
+                lazy_fixture("connection_dict"),
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
             ),
             (
                 "parse_parameter",
@@ -333,6 +346,12 @@ class TestParse(object):
                 lazy_fixture("bg_command"),
             ),
             (
+                brewtils.models.Connection,
+                lazy_fixture("connection_dict"),
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
+            ),
+            (
                 brewtils.models.Parameter,
                 lazy_fixture("parameter_dict"),
                 assert_parameter_equal,
@@ -451,6 +470,12 @@ class TestParse(object):
                 lazy_fixture("command_dict"),
                 assert_command_equal,
                 lazy_fixture("bg_command"),
+            ),
+            (
+                "parse_connection",
+                lazy_fixture("connection_dict"),
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
             ),
             (
                 "parse_parameter",
@@ -573,6 +598,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_system"), lazy_fixture("system_dict")),
             (lazy_fixture("bg_instance"), lazy_fixture("instance_dict")),
             (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
+            (lazy_fixture("bg_connection"), lazy_fixture("connection_dict")),
             (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
             (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
             (lazy_fixture("bg_patch"), lazy_fixture("patch_dict_no_envelop")),
@@ -610,6 +636,11 @@ class TestSerialize(object):
                 "serialize_command",
                 lazy_fixture("bg_command"),
                 lazy_fixture("command_dict"),
+            ),
+            (
+                "serialize_connection",
+                lazy_fixture("bg_connection"),
+                lazy_fixture("connection_dict"),
             ),
             (
                 "serialize_parameter",
@@ -696,6 +727,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_system"), lazy_fixture("system_dict")),
             (lazy_fixture("bg_instance"), lazy_fixture("instance_dict")),
             (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
+            (lazy_fixture("bg_connection"), lazy_fixture("connection_dict")),
             (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
             (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
             (lazy_fixture("bg_patch"), lazy_fixture("patch_dict_no_envelop")),
@@ -761,6 +793,11 @@ class TestRoundTrip(object):
             ),
             (brewtils.models.Command, assert_command_equal, lazy_fixture("bg_command")),
             (
+                brewtils.models.Connection,
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
+            ),
+            (
                 brewtils.models.Parameter,
                 assert_parameter_equal,
                 lazy_fixture("bg_parameter"),
@@ -810,6 +847,7 @@ class TestRoundTrip(object):
             (brewtils.models.System, lazy_fixture("system_dict")),
             (brewtils.models.Instance, lazy_fixture("instance_dict")),
             (brewtils.models.Command, lazy_fixture("command_dict")),
+            (brewtils.models.Connection, lazy_fixture("connection_dict")),
             (brewtils.models.Parameter, lazy_fixture("parameter_dict")),
             (brewtils.models.Request, lazy_fixture("request_dict")),
             (brewtils.models.LoggingConfig, lazy_fixture("logging_config_dict")),

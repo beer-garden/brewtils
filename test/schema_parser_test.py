@@ -792,7 +792,11 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_instance"),
             ),
             (brewtils.models.Command, assert_command_equal, lazy_fixture("bg_command")),
-            (brewtils.models.Connection, assert_connection_equal, lazy_fixture("bg_connection")),
+            (
+                brewtils.models.Connection,
+                assert_connection_equal,
+                lazy_fixture("bg_connection"),
+            ),
             (
                 brewtils.models.Parameter,
                 assert_parameter_equal,

@@ -1482,7 +1482,7 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, " \
+            "<Garden: garden_name=%s, status=%s, parent=%s, has_parent=%s, "
             "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
@@ -1502,14 +1502,14 @@ class Connection(BaseModel):
     CONNECTION_STATUSES = {
         "PUBLISHING",
         "RECEIVING",
-        "DISABLED" # Stopped via config or API
-        "NOT_CONFIGURED", # Not enabled in configuration file
-        "MISSING_CONFIGURATION", # Missing configuration file
-        "CONFIGURATION_ERROR", # Unable to load configuration file
-        "UNREACHABLE", # Unable to send message
-        "UNRESPONSIVE", # Haven't seen a message in N timeframe
-        "ERROR", # Error occured, outside of unreachable
-        "UNKNOWN", 
+        "DISABLED"  # Stopped via config or API
+        "NOT_CONFIGURED",  # Not enabled in configuration file
+        "MISSING_CONFIGURATION",  # Missing configuration file
+        "CONFIGURATION_ERROR",  # Unable to load configuration file
+        "UNREACHABLE",  # Unable to send message
+        "UNRESPONSIVE",  # Haven't seen a message in N timeframe
+        "ERROR",  # Error occured, outside of unreachable
+        "UNKNOWN",
     }
 
     def __init__(

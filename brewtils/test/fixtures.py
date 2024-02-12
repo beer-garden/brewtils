@@ -762,6 +762,7 @@ def connection_dict():
         "status_info": {},
     }
 
+
 @pytest.fixture
 def connection_publishing_dict():
     """A connection as a dictionary."""

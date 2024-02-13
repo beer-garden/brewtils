@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.24.0
 ------
-TBD
+2/13/2024
 
 - Expanding Garden model to include children gardens
 - Added Source/Target Garden labels on Request model

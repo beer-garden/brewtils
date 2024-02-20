@@ -535,7 +535,7 @@ class TestUser(object):
         return User(
             username="admin",
             roles=["bg-admin"],
-            assigned_roles=[Role(name="foo", permission="ADMIN")],
+            remote_roles=[Role(name="foo", permission="ADMIN")],
         )
 
     def test_str(self, user):
@@ -556,8 +556,8 @@ class TestRole(object):
     def test_repr(self, role):
         assert repr(role) == (
             "<Role: id=None, name=bg-admin, permission=ADMIN, "
-            "is_remote=False, scope_garden=[], scope_namespaces=[], "
-            "scope_systems=[], scope_instances=[], scope_versions=[], scope_commands=[]>"
+            "scope_garden=[], scope_namespaces=[], scope_systems=[], "
+            "scope_instances=[], scope_versions=[], scope_commands=[]>"
         )
 
 

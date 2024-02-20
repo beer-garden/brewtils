@@ -22,6 +22,7 @@ from brewtils.models import (
     Parameter,
     PatchOperation,
     Queue,
+    RemoteUserMap,
     Request,
     RequestFile,
     RequestTemplate,
@@ -528,13 +529,25 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
+def remote_user_map_dict():
+    return {
+        "target_garden": "test",
+        "username": "user",
+    }
+
+
+@pytest.fixture
+def bg_remote_user_map(remote_user_map_dict):
+    return RemoteUserMap(**remote_user_map_dict)
+
+
+@pytest.fixture
 def role_dict():
     return {
         "permission": "ADMIN",
         "description": "ADMIN ROLE",
         "id": "1",
         "name": "ADMIN_ROLE",
-        "is_remote": False,
         "scope_gardens": ["FOO"],
         "scope_namespaces": [],
         "scope_systems": [],
@@ -550,21 +563,23 @@ def bg_role(role_dict):
 
 
 @pytest.fixture
-def user_dict(role_dict):
+def user_dict(role_dict, remote_user_map_dict):
     return {
         "username": "USERNAME",
         "password": "HASH",
         "roles": ["ADMIN_ROLE"],
-        "assigned_roles": [role_dict],
+        "remote_roles": [role_dict],
+        "remote_user_mapping": [remote_user_map_dict],
         "is_remote": False,
         "metadata": {},
     }
 
 
 @pytest.fixture
-def bg_user(user_dict, bg_role):
+def bg_user(user_dict, bg_role, bg_remote_user_map):
     dict_copy = copy.deepcopy(user_dict)
-    dict_copy["assigned_roles"] = [bg_role]
+    dict_copy["remote_roles"] = [bg_role]
+    dict_copy["remote_user_mapping"] = [bg_remote_user_map]
     return User(**dict_copy)
 
 

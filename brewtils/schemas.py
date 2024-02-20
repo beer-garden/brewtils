@@ -38,8 +38,7 @@ __all__ = [
     "OperationSchema",
     "UserSchema",
     "RoleSchema",
-    "GardenDomainIdentifierSchema",
-    "SystemDomainIdentifierSchema",
+    "RemoteUserMapSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -66,26 +65,6 @@ def _deserialize_model(_, data, type_field=None, allowed_types=None):
         raise TypeError("Invalid payload type %s" % data[type_field])
 
     return model_schema_map.get(data[type_field])()
-
-
-def _domain_identifier_schema_selector(_, role_assignment_domain):
-    scope_schema_map = {
-        "Garden": GardenDomainIdentifierSchema,
-        "System": SystemDomainIdentifierSchema,
-        "Global": Schema,
-    }
-
-    if isinstance(role_assignment_domain, dict):
-        scope = role_assignment_domain.get("scope")
-    else:
-        scope = role_assignment_domain.scope
-
-    schema = scope_schema_map.get(scope)
-
-    if schema is None:
-        raise TypeError("Invalid scope: %s" % scope)
-
-    return schema()
 
 
 class ModelField(PolyField):
@@ -495,10 +474,6 @@ class GardenSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
 
 
-class GardenDomainIdentifierSchema(BaseSchema):
-    name = fields.Str(required=True)
-
-
 class JobSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
@@ -585,7 +560,6 @@ class RoleSchema(BaseSchema):
     name = fields.Str()
     description = fields.Str(allow_none=True)
     permission = fields.Str()
-    is_remote = fields.Boolean(allow_none=True)
     scope_gardens = fields.List(fields.Str(), allow_none=True)
     scope_namespaces = fields.List(fields.Str(), allow_none=True)
     scope_systems = fields.List(fields.Str(), allow_none=True)
@@ -594,23 +568,20 @@ class RoleSchema(BaseSchema):
     scope_commands = fields.List(fields.Str(), allow_none=True)
 
 
+class RemoteUserMapSchema(BaseSchema):
+    target_garden = fields.Str()
+    username = fields.Str()
+
+
 class UserSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     username = fields.Str()
     password = fields.Str()
     roles = fields.List(fields.Str(), allow_none=True)
-    assigned_roles = fields.List(fields.Nested(RoleSchema()))
+    remote_roles = fields.List(fields.Nested(RoleSchema()))
+    remote_user_mapping = fields.List(fields.Nested(RemoteUserMapSchema()))
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
-
-
-# class UserCreateSchema(BaseSchema):
-#     username = fields.Str(required=True)
-#     password = fields.Str(required=True, load_only=True)
-
-
-# class UserListSchema(BaseSchema):
-#     users = fields.List(fields.Nested(UserSchema()))
 
 
 model_schema_map.update(
@@ -644,6 +615,7 @@ model_schema_map.update(
         "Resolvable": ResolvableSchema,
         "Role": RoleSchema,
         "User": UserSchema,
+        "RemoteUserMap": RemoteUserMapSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

@@ -1607,15 +1607,17 @@ class User(BaseModel):
         username,
         password=None,
         roles=None,
-        assigned_roles=None,
+        remote_roles=None,
         is_remote=False,
+        remote_user_mapping=None,
         metadata=None,
     ):
         self.username = username
         self.password = password
         self.roles = roles or []
-        self.assigned_roles = assigned_roles or []
+        self.remote_roles = remote_roles or []
         self.is_remote = is_remote
+        self.remote_user_mapping = remote_user_mapping or []
         self.metadata = metadata
 
     def __str__(self):
@@ -1643,7 +1645,6 @@ class Role(BaseModel):
         permission=None,
         description=None,
         id=None,
-        is_remote=False,
         scope_gardens=None,
         scope_namespaces=None,
         scope_systems=None,
@@ -1655,7 +1656,6 @@ class Role(BaseModel):
         self.description = description
         self.id = id
         self.name = name
-        self.is_remote = is_remote
         self.scope_gardens = scope_gardens or []
         self.scope_namespaces = scope_namespaces or []
         self.scope_systems = scope_systems or []
@@ -1668,14 +1668,13 @@ class Role(BaseModel):
 
     def __repr__(self):
         return (
-            "<Role: id=%s, name=%s, permission=%s, is_remote=%s, scope_garden=%s, "
+            "<Role: id=%s, name=%s, permission=%s, scope_garden=%s, "
             "scope_namespaces=%s, scope_systems=%s, scope_instances=%s, "
             "scope_versions=%s, scope_commands=%s>"
         ) % (
             self.id,
             self.name,
             self.permission,
-            self.is_remote,
             self.scope_gardens,
             self.scope_namespaces,
             self.scope_systems,
@@ -1683,3 +1682,11 @@ class Role(BaseModel):
             self.scope_verisons,
             self.scope_commands,
         )
+
+
+class RemoteUserMap(BaseModel):
+    schema = "RemoteUserMapSchema"
+
+    def __init__(self, target_garden, username):
+        self.target_garden = target_garden
+        self.username = username

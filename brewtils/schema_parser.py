@@ -37,7 +37,6 @@ class SchemaParser(object):
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
         "PatchSchema": brewtils.models.PatchOperation,
-        "UserSchema": brewtils.models.User,
         "RefreshTokenSchema": brewtils.models.RefreshToken,
         "RequestSchema": brewtils.models.Request,
         "RequestFileSchema": brewtils.models.RequestFile,

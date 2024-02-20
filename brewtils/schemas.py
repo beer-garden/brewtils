@@ -37,8 +37,6 @@ __all__ = [
     "GardenSchema",
     "OperationSchema",
     "UserSchema",
-    "UserCreateSchema",
-    "UserListSchema",
     "RoleSchema",
     "GardenDomainIdentifierSchema",
     "SystemDomainIdentifierSchema",

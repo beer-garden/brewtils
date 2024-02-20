@@ -17,12 +17,10 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
-    LegacyRole,
     LoggingConfig,
     Operation,
     Parameter,
     PatchOperation,
-    Principal,
     Queue,
     Request,
     RequestFile,
@@ -30,6 +28,8 @@ from brewtils.models import (
     Resolvable,
     Runner,
     System,
+    User,
+    Role,
 )
 
 
@@ -528,38 +528,44 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def principal_dict(legacy_role_dict):
+def role_dict():
     return {
-        "id": "58542eb571afd47ead90d24f",
-        "username": "admin",
-        "roles": [legacy_role_dict],
-        "permissions": ["bg-all"],
-        "preferences": {"theme": "dark"},
-        "metadata": {"foo": "bar"},
+        "permission": "ADMIN",
+        "description": "ADMIN ROLE",
+        "id": "1",
+        "name": "ADMIN_ROLE",
+        "is_remote": False,
+        "scope_gardens": ["FOO"],
+        "scope_namespaces": [],
+        "scope_systems": [],
+        "scope_instances": [],
+        "scope_verisons": [],
+        "scope_commands": [],
     }
 
 
 @pytest.fixture
-def bg_principal(principal_dict, bg_role):
-    dict_copy = copy.deepcopy(principal_dict)
-    dict_copy["roles"] = [bg_role]
-    return Principal(**dict_copy)
+def bg_role(role_dict):
+    return Role(**role_dict)
 
 
 @pytest.fixture
-def legacy_role_dict():
+def user_dict(role_dict):
     return {
-        "id": "58542eb571afd47ead90d26f",
-        "name": "bg-admin",
-        "description": "The admin role",
-        "permissions": ["bg-all"],
+        "username": "USERNAME",
+        "password": "HASH",
+        "roles": ["ADMIN_ROLE"],
+        "assigned_roles": [role_dict],
+        "is_remote": False,
+        "metadata": {},
     }
 
 
 @pytest.fixture
-def bg_role(legacy_role_dict):
-    dict_copy = copy.deepcopy(legacy_role_dict)
-    return LegacyRole(**dict_copy)
+def bg_user(user_dict, bg_role):
+    dict_copy = copy.deepcopy(user_dict)
+    dict_copy["assigned_roles"] = [bg_role]
+    return User(**dict_copy)
 
 
 @pytest.fixture

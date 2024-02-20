@@ -24,12 +24,12 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
-    LegacyRole,
+    Role,
     LoggingConfig,
     Operation,
     Parameter,
     PatchOperation,
-    Principal,
+    User,
     Queue,
     Request,
     RequestFile,
@@ -50,7 +50,7 @@ __all__ = [
     "assert_trigger_equal",
     "assert_command_equal",
     "assert_parameter_equal",
-    "assert_principal_equal",
+    "assert_user_equal",
     "assert_request_equal",
     "assert_role_equal",
     "assert_system_equal",
@@ -236,12 +236,12 @@ def assert_event_equal(obj1, obj2, do_raise=False):
     )
 
 
-def assert_principal_equal(obj1, obj2, do_raise=False):
+def assert_user_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
         obj2,
-        expected_type=Principal,
-        deep_fields={"roles": partial(assert_role_equal, do_raise=True)},
+        expected_type=User,
+        deep_fields={"assigned_roles": partial(assert_role_equal, do_raise=True)},
         do_raise=do_raise,
     )
 
@@ -298,8 +298,7 @@ def assert_role_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
         obj2,
-        expected_type=LegacyRole,
-        deep_fields={"roles": partial(assert_role_equal, do_raise=True)},
+        expected_type=Role,
         do_raise=do_raise,
     )
 

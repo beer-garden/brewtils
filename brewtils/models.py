@@ -21,8 +21,6 @@ __all__ = [
     "Event",
     "Events",
     "Queue",
-    "Principal",
-    "LegacyRole",
     "RefreshToken",
     "Job",
     "RequestFile",
@@ -37,6 +35,8 @@ __all__ = [
     "Garden",
     "Operation",
     "Resolvable",
+    "Role",
+    "User",
 ]
 
 
@@ -1103,58 +1103,6 @@ class Queue(BaseModel):
         return "<Queue: name=%s, size=%s>" % (self.name, self.size)
 
 
-class Principal(BaseModel):
-    schema = "PrincipalSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        username=None,
-        roles=None,
-        permissions=None,
-        preferences=None,
-        metadata=None,
-    ):
-        self.id = id
-        self.username = username
-        self.roles = roles
-        self.permissions = permissions
-        self.preferences = preferences
-        self.metadata = metadata
-
-    def __str__(self):
-        return "%s" % self.username
-
-    def __repr__(self):
-        return "<Principal: username=%s, roles=%s, permissions=%s>" % (
-            self.username,
-            self.roles,
-            self.permissions,
-        )
-
-
-class LegacyRole(BaseModel):
-    schema = "LegacyRoleSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        name=None,
-        description=None,
-        permissions=None,
-    ):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.permissions = permissions
-
-    def __str__(self):
-        return "%s" % self.name
-
-    def __repr__(self):
-        return "<LegacyRole: name=%s, permissions=%s>" % (self.name, self.permissions)
-
-
 class RefreshToken(BaseModel):
     schema = "RefreshTokenSchema"
 
@@ -1648,4 +1596,89 @@ class Resolvable(BaseModel):
             self.type,
             self.storage,
             self.details,
+        )
+
+
+class User(BaseModel):
+    schema = "UserSchema"
+
+    def __init__(
+        self,
+        username,
+        password=None,
+        roles=None,
+        assigned_roles=None,
+        is_remote=False,
+        metadata=None,
+    ):
+        self.username = username
+        self.password = password
+        self.roles = roles or []
+        self.assigned_roles = assigned_roles or []
+        self.is_remote = is_remote
+        self.metadata = metadata
+
+    def __str__(self):
+        return "%s: %s" % (self.username, self.roles)
+
+    def __repr__(self):
+        return "<User: username=%s, roles=%s>" % (
+            self.username,
+            self.roles,
+        )
+
+
+class Role(BaseModel):
+    schema = "RoleSchema"
+
+    PERMISSION_TYPES = {
+        "ADMIN",
+        "OPERATOR",
+        "READ_ONLY",  # Default value if not role is provided
+    }
+
+    def __init__(
+        self,
+        name,
+        permission=None,
+        description=None,
+        id=None,
+        is_remote=False,
+        scope_gardens=None,
+        scope_namespaces=None,
+        scope_systems=None,
+        scope_instances=None,
+        scope_verisons=None,
+        scope_commands=None,
+    ):
+        self.permission = permission or "READ_ONLY"
+        self.description = description
+        self.id = id
+        self.name = name
+        self.is_remote = is_remote
+        self.scope_gardens = scope_gardens or []
+        self.scope_namespaces = scope_namespaces or []
+        self.scope_systems = scope_systems or []
+        self.scope_instances = scope_instances or []
+        self.scope_verisons = scope_verisons or []
+        self.scope_commands = scope_commands or []
+
+    def __str__(self):
+        return "%s" % (self.name)
+
+    def __repr__(self):
+        return (
+            "<Role: id=%s, name=%s, permission=%s, is_remote=%s, scope_garden=%s, scope_namespaces=%s, "
+            "scope_systems=%s, scope_instances=%s, scope_versions=%s, scope_commands=%s>"
+        ) % (
+            self.id,
+            self.name,
+            self.permission,
+            self.is_remote,
+            self.scope_gardens,
+            self.scope_namespaces,
+            self.scope_systems,
+            self.scope_instances,
+            self.scope_verisons,
+            self.scope_commands,
         )

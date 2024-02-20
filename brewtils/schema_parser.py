@@ -37,7 +37,7 @@ class SchemaParser(object):
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
         "PatchSchema": brewtils.models.PatchOperation,
-        "PrincipalSchema": brewtils.models.Principal,
+        "UserSchema": brewtils.models.User,
         "RefreshTokenSchema": brewtils.models.RefreshToken,
         "RequestSchema": brewtils.models.Request,
         "RequestFileSchema": brewtils.models.RequestFile,
@@ -45,11 +45,12 @@ class SchemaParser(object):
         "FileChunkSchema": brewtils.models.FileChunk,
         "FileStatusSchema": brewtils.models.FileStatus,
         "RequestTemplateSchema": brewtils.models.RequestTemplate,
-        "LegacyRoleSchema": brewtils.models.LegacyRole,
         "SystemSchema": brewtils.models.System,
         "OperationSchema": brewtils.models.Operation,
         "RunnerSchema": brewtils.models.Runner,
         "ResolvableSchema": brewtils.models.Resolvable,
+        "RoleSchema": brewtils.models.Role,
+        "UserSchema": brewtils.models.User,
     }
 
     logger = logging.getLogger(__name__)
@@ -253,20 +254,18 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def parse_principal(cls, principal, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a principal model object
+    def parse_user(cls, user, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a user model object
 
         Args:
-            principal: The raw input
+            user: The raw input
             from_string: True if input is a JSON string, False if a dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A Principal object
+            A User object
         """
-        return cls.parse(
-            principal, brewtils.models.Principal, from_string=from_string, **kwargs
-        )
+        return cls.parse(user, brewtils.models.User, from_string=from_string, **kwargs)
 
     @classmethod
     def parse_role(cls, role, from_string=False, **kwargs):
@@ -280,9 +279,7 @@ class SchemaParser(object):
         Returns:
             A Role object
         """
-        return cls.parse(
-            role, brewtils.models.LegacyRole, from_string=from_string, **kwargs
-        )
+        return cls.parse(role, brewtils.models.Role, from_string=from_string, **kwargs)
 
     @classmethod
     def parse_refresh_token(cls, refresh_token, from_string=False, **kwargs):
@@ -674,11 +671,11 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def serialize_principal(cls, principal, to_string=True, **kwargs):
-        """Convert a principal model into serialized form
+    def serialize_user(cls, user, to_string=True, **kwargs):
+        """Convert a user model into serialized form
 
         Args:
-            principal: The principal object(s) to be serialized
+            user: The user object(s) to be serialized
             to_string: True to generate a JSON-formatted string, False to generate a
                 dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
@@ -687,10 +684,7 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            principal,
-            to_string=to_string,
-            schema_name=brewtils.models.Principal.schema,
-            **kwargs
+            user, to_string=to_string, schema_name=brewtils.models.User.schema, **kwargs
         )
 
     @classmethod
@@ -707,10 +701,7 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            role,
-            to_string=to_string,
-            schema_name=brewtils.models.LegacyRole.schema,
-            **kwargs
+            role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
         )
 
     @classmethod

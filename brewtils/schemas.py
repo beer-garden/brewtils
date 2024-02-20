@@ -24,8 +24,6 @@ __all__ = [
     "LoggingConfigSchema",
     "EventSchema",
     "QueueSchema",
-    "PrincipalSchema",
-    "LegacyRoleSchema",
     "RefreshTokenSchema",
     "JobSchema",
     "JobExportSchema",
@@ -42,8 +40,6 @@ __all__ = [
     "UserCreateSchema",
     "UserListSchema",
     "RoleSchema",
-    "RoleAssignmentSchema",
-    "RoleAssignmentDomainSchema",
     "GardenDomainIdentifierSchema",
     "SystemDomainIdentifierSchema",
 ]
@@ -425,23 +421,6 @@ class QueueSchema(BaseSchema):
     size = fields.Integer(allow_none=True)
 
 
-class PrincipalSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
-    username = fields.Str(allow_none=True)
-    roles = fields.Nested("LegacyRoleSchema", many=True, allow_none=True)
-    permissions = fields.List(fields.Str(), allow_none=True)
-    preferences = fields.Dict(allow_none=True)
-    metadata = fields.Dict(allow_none=True)
-
-
-class LegacyRoleSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
-    name = fields.Str(allow_none=True)
-    description = fields.Str(allow_none=True)
-    roles = fields.Nested("self", many=True, allow_none=True)
-    permissions = fields.List(fields.Str(), allow_none=True)
-
-
 class RefreshTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
@@ -604,40 +583,36 @@ class ResolvableSchema(BaseSchema):
 
 
 class RoleSchema(BaseSchema):
-    id = fields.Str()
+    id = fields.Str(allow_none=True)
     name = fields.Str()
     description = fields.Str(allow_none=True)
-    permissions = fields.List(fields.Str())
-
-
-class RoleAssignmentDomainSchema(BaseSchema):
-    scope = fields.Str()
-    identifiers = PolyField(
-        serialization_schema_selector=_domain_identifier_schema_selector,
-        deserialization_schema_selector=_domain_identifier_schema_selector,
-        required=False,
-    )
-
-
-class RoleAssignmentSchema(BaseSchema):
-    domain = fields.Nested(RoleAssignmentDomainSchema, required=True)
-    role = fields.Nested(RoleSchema())
+    permission = fields.Str()
+    is_remote = fields.Boolean(allow_none=True)
+    scope_gardens = fields.List(fields.Str(), allow_none=True)
+    scope_namespaces = fields.List(fields.Str(), allow_none=True)
+    scope_systems = fields.List(fields.Str(), allow_none=True)
+    scope_instances = fields.List(fields.Str(), allow_none=True)
+    scope_verisons = fields.List(fields.Str(), allow_none=True)
+    scope_commands = fields.List(fields.Str(), allow_none=True)
 
 
 class UserSchema(BaseSchema):
-    id = fields.Str()
+    id = fields.Str(allow_none=True)
     username = fields.Str()
-    role_assignments = fields.List(fields.Nested(RoleAssignmentSchema()))
-    permissions = fields.Dict()
+    password = fields.Str()
+    roles = fields.List(fields.Str(), allow_none=True)
+    assigned_roles = fields.List(fields.Nested(RoleSchema()))
+    is_remote = fields.Boolean(allow_none=True)
+    metadata = fields.Dict(allow_none=True)
 
 
-class UserCreateSchema(BaseSchema):
-    username = fields.Str(required=True)
-    password = fields.Str(required=True, load_only=True)
+# class UserCreateSchema(BaseSchema):
+#     username = fields.Str(required=True)
+#     password = fields.Str(required=True, load_only=True)
 
 
-class UserListSchema(BaseSchema):
-    users = fields.List(fields.Nested(UserSchema()))
+# class UserListSchema(BaseSchema):
+#     users = fields.List(fields.Nested(UserSchema()))
 
 
 model_schema_map.update(
@@ -658,7 +633,6 @@ model_schema_map.update(
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,
         "PatchOperation": PatchSchema,
-        "Principal": PrincipalSchema,
         "RefreshToken": RefreshTokenSchema,
         "Request": RequestSchema,
         "RequestFile": RequestFileSchema,
@@ -666,11 +640,12 @@ model_schema_map.update(
         "FileChunk": FileChunkSchema,
         "FileStatus": FileStatusSchema,
         "RequestTemplate": RequestTemplateSchema,
-        "LegacyRole": LegacyRoleSchema,
         "System": SystemSchema,
         "Operation": OperationSchema,
         "Runner": RunnerSchema,
         "Resolvable": ResolvableSchema,
+        "Role": RoleSchema,
+        "User": UserSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

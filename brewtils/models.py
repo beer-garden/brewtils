@@ -21,7 +21,7 @@ __all__ = [
     "Event",
     "Events",
     "Queue",
-    "RefreshToken",
+    "UserToken",
     "Job",
     "RequestFile",
     "File",
@@ -1103,8 +1103,8 @@ class Queue(BaseModel):
         return "<Queue: name=%s, size=%s>" % (self.name, self.size)
 
 
-class RefreshToken(BaseModel):
-    schema = "RefreshTokenSchema"
+class UserToken(BaseModel):
+    schema = "UserTokenSchema"
 
     def __init__(
         self,
@@ -1122,7 +1122,7 @@ class RefreshToken(BaseModel):
         return "%s" % self.payload
 
     def __repr__(self):
-        return "<RefreshToken: issued=%s, expires=%s, payload=%s>" % (
+        return "<UserToken: issued=%s, expires=%s, payload=%s>" % (
             self.issued,
             self.expires,
             self.payload,

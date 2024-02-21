@@ -37,7 +37,7 @@ class SchemaParser(object):
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
         "PatchSchema": brewtils.models.PatchOperation,
-        "RefreshTokenSchema": brewtils.models.RefreshToken,
+        "UserTokenSchema": brewtils.models.UserToken,
         "RequestSchema": brewtils.models.Request,
         "RequestFileSchema": brewtils.models.RequestFile,
         "FileSchema": brewtils.models.File,
@@ -301,20 +301,20 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def parse_refresh_token(cls, refresh_token, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a refresh token object
+    def parse_user_token(cls, user_token, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a user token object
 
         Args:
-            refresh_token: The raw input
+            user_token: The raw input
             from_string: True if input is a JSON string, False if a dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A RefreshToken object
+            A UserToken object
         """
         return cls.parse(
             refresh_token,
-            brewtils.models.RefreshToken,
+            brewtils.models.UserToken,
             from_string=from_string,
             **kwargs
         )
@@ -744,11 +744,11 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def serialize_refresh_token(cls, refresh_token, to_string=True, **kwargs):
+    def serialize_user_token(cls, user_token, to_string=True, **kwargs):
         """Convert a role model into serialized form
 
         Args:
-            refresh_token: The token object(s) to be serialized
+            user_token: The token object(s) to be serialized
             to_string: True to generate a JSON-formatted string, False to generate a
                 dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
@@ -757,9 +757,9 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            refresh_token,
+            user_token,
             to_string=to_string,
-            schema_name=brewtils.models.RefreshToken.schema,
+            schema_name=brewtils.models.UserToken.schema,
             **kwargs
         )
 

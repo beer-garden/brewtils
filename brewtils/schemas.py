@@ -24,7 +24,7 @@ __all__ = [
     "LoggingConfigSchema",
     "EventSchema",
     "QueueSchema",
-    "RefreshTokenSchema",
+    "UserTokenSchema",
     "JobSchema",
     "JobExportSchema",
     "JobExportInputSchema",
@@ -398,11 +398,11 @@ class QueueSchema(BaseSchema):
     size = fields.Integer(allow_none=True)
 
 
-class RefreshTokenSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
+class UserTokenSchema(BaseSchema):
+    uuid = fields.Str(allow_none=True)
     issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
     expires = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    payload = fields.Dict(allow_none=True)
+    user = fields.Nested("UserSchema")
 
 
 class DateTriggerSchema(BaseSchema):
@@ -602,7 +602,7 @@ model_schema_map.update(
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,
         "PatchOperation": PatchSchema,
-        "RefreshToken": RefreshTokenSchema,
+        "UserToken": UserTokenSchema,
         "Request": RequestSchema,
         "RequestFile": RequestFileSchema,
         "File": FileSchema,

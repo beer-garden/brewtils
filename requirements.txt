@@ -10,6 +10,6 @@ black ; python_version > "3.5"
 coverage < 6
 flake8 < 4
 mock < 5
-pytest < 7
+pytest < 8
 pytest-lazy-fixture < 1
 requests-mock < 2

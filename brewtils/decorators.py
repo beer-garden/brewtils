@@ -408,7 +408,7 @@ def parameters(*args, **kwargs):
     return _wrapped
 
 
-def subscribe(_wrapped=None, topic: str = None, topics=[]):
+def subscribe(_wrapped=None, topic: str = None, topics=[], dynamic_topics: dict=None):
     """Decorator for specifiying topic to listen to.
 
     for example::
@@ -427,6 +427,7 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
             shouldn't be explicitly set.
         topic: The topic to subscribe to
         topics: A list of topics to subscribe to
+        dynamic_topics: Dictionary containing dynamic topics specification
     """
 
     subscribe_topics = []
@@ -437,6 +438,86 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
         for list_topic in topics:
             if list_topic not in subscribe_topics:
                 subscribe_topics.append(list_topic)
+
+    if callable(dynamic_topics):
+        dynamic_topics = dynamic_topics()
+        for dynamic_topic in dynamic_topics:
+            if dynamic_topic not in subscribe_topics:
+                subscribe_topics.append(dynamic_topic)
+
+    if isinstance(dynamic_topics, dict):
+        if not dynamic_topics.get("value"):
+            raise PluginParamError(
+                "No 'value' provided for topics. You must at least "
+                "provide valid values."
+            )
+
+        # Again, if value is a Callable, call it
+        value = dynamic_topics.get("value")
+        if callable(value):
+            value = value()
+
+        # Determine type of value
+        topic_type = dynamic_topics.get("type")
+
+        # TODO
+        topic_types = ["static", "url", "command"]
+        if topic_type not in topic_types:
+            raise PluginParamError(
+                "Invalid topic type '%s' - Valid type options are %s"
+                % (topic_type, topic_types)
+            )
+        else:
+            if (
+                (
+                    topic_type == "command"
+                    and not isinstance(value, (six.string_types, dict))
+                )
+                or (topic_type == "url" and not isinstance(value, six.string_types))
+                or (topic_type == "static" and not isinstance(value, (list, dict)))
+            ):
+                allowed_types = {
+                    "command": "('string', 'dictionary')",
+                    "url": "('string')",
+                    "static": "('list', 'dictionary)",
+                }
+                raise PluginParamError(
+                    "Invalid topics value type '%s' - Valid value types for "
+                    "topic type '%s' are %s"
+                    % (type(value), topic_type, allowed_types[topic_type])
+                )
+
+    # TODO: Is this needed?
+    # Now parse out type-specific aspects
+    unparsed_value = ""
+    try:
+        if choice_type == "command":
+            if isinstance(value, six.string_types):
+                unparsed_value = value
+            else:
+                unparsed_value = value["command"]
+
+            details = parse(unparsed_value, parse_as="func")
+        elif choice_type == "url":
+            unparsed_value = value
+            details = parse(unparsed_value, parse_as="url")
+        else:
+            if isinstance(value, dict):
+                unparsed_value = choices.get("key_reference")
+                if unparsed_value is None:
+                    raise PluginParamError(
+                        "Specifying a static choices dictionary requires a "
+                        '"key_reference" field with a reference to another '
+                        'parameter ("key_reference": "${param_key}")'
+                    )
+
+                details = {"key_reference": parse(unparsed_value, parse_as="reference")}
+            else:
+                details = {}
+    except ParseError:
+        raise PluginParamError(
+            "Invalid choices definition - Unable to parse '%s'" % unparsed_value
+        )
 
     if _wrapped is None:
         return functools.partial(subscribe, topics=subscribe_topics)

@@ -533,7 +533,14 @@ class TestLocalRequestProcessor(object):
     @pytest.fixture
     def system_client(self):
         return System(
-            commands=[Command(name="command_one"), Command(name="command_two"), Command(name="command_three", parameters=[Parameter(is_kwarg=True, key="key", default="value")])]
+            commands=[
+                Command(name="command_one"),
+                Command(name="command_two"),
+                Command(
+                    name="command_three",
+                    parameters=[Parameter(is_kwarg=True, key="key", default="value")],
+                ),
+            ]
         )
 
     @pytest.fixture

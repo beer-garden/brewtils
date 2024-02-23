@@ -62,6 +62,14 @@ class LocalRequestProcessor(object):
             request.parent = Request(id=str(parent_request.id))
             request.has_parent = True
 
+        # check for kwargs on the target command
+        for command in self._system.commands:
+            if command.name == request.command:
+                for parameter in command.parameters:
+                    if parameter.is_kwarg:
+                        if parameter.key not in request.parameters:
+                            request.parameters[parameter.key] = parameter.default
+        
         request.status = "IN_PROGRESS"
 
         request = self._ez_client.put_request(request)

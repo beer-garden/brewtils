@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.24.1
+------
+TBD
+
+- Self Referecing SystemClient now supports kwargs provided through the Parameter annotation
+
 3.24.0
 ------
 2/13/2024

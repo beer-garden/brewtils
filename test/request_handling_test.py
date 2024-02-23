@@ -22,7 +22,7 @@ from brewtils.errors import (
     SuppressStacktrace,
     TooLargeError,
 )
-from brewtils.models import Command, Request, System
+from brewtils.models import Command, Request, System, Parameter
 from brewtils.request_handling import (
     HTTPRequestUpdater,
     LocalRequestProcessor,
@@ -525,12 +525,15 @@ class TestLocalRequestProcessor(object):
             def command_two(self):
                 return False
 
+            def command_three(self, **kwargs):
+                return kwargs
+
         return ClientTest()
 
     @pytest.fixture
     def system_client(self):
         return System(
-            commands=[Command(name="command_one"), Command(name="command_two")]
+            commands=[Command(name="command_one"), Command(name="command_two"), Command(name="command_three", parameters=[Parameter(is_kwarg=True, key="key", default="value")])]
         )
 
     @pytest.fixture
@@ -577,4 +580,11 @@ class TestLocalRequestProcessor(object):
                 Request(command="command_two", parameters={})
             ).output
             == "false"
+        )
+
+        assert (
+            local_request_processor.process_command(
+                Request(command="command_three", parameters={})
+            ).output
+            == '{"key": "value"}'
         )

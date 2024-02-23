@@ -1656,11 +1656,7 @@ class Resolvable(BaseModel):
 class TopicSubscribers:
     schema = "TopicSubscribersSchema"
 
-    def __init__(
-        self,
-        topic=None,
-        subscribers=[]
-    ):
+    def __init__(self, topic=None, subscribers=[]):
         self.topic = topic
         self.subscribers = subscribers
 
@@ -1668,7 +1664,10 @@ class TopicSubscribers:
         return "%s: %s" % (self.topic, [str(s) for s in self.subscribers])
 
     def __repr__(self):
-        return "<Topic Subscribers: topic=%s, subscribers=%s>" % (self.topic, self.subscribers)
+        return "<Topic Subscribers: topic=%s, subscribers=%s>" % (
+            self.topic,
+            self.subscribers,
+        )
 
 
 class Subscriber:
@@ -1681,7 +1680,7 @@ class Subscriber:
         system=None,
         version=None,
         instance=None,
-        command=None
+        command=None,
     ):
         self.garden = garden
         self.namespace = namespace
@@ -1699,7 +1698,13 @@ class Subscriber:
     def __repr__(self):
         return (
             "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
-            "command=%s>" % (
-                self.garden, self.namespace, self.system, self.version, self.instance, self.command
+            "command=%s>"
+            % (
+                self.garden,
+                self.namespace,
+                self.system,
+                self.version,
+                self.instance,
+                self.command,
             )
         )

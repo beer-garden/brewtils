@@ -681,7 +681,9 @@ class TestResolvable(object):
 
 @pytest.fixture
 def subscriber1():
-    return Subscriber(garden="g", namespace="n", system="s", version="v", instance="i", command="c")
+    return Subscriber(
+        garden="g", namespace="n", system="s", version="v", instance="i", command="c"
+    )
 
 
 @pytest.fixture
@@ -702,7 +704,7 @@ class TestSubscriber(object):
         assert "c" in repr(subscriber1)
 
 
-class TestTopicSubscribers():
+class TestTopicSubscribers:
     def test_str(self, topic_subscribers1, subscriber1):
         print(str(topic_subscribers1))
         assert str(topic_subscribers1) == "foo.*: ['g.n.s.v.i.c']"

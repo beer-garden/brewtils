@@ -47,7 +47,7 @@ __all__ = [
     "GardenDomainIdentifierSchema",
     "SystemDomainIdentifierSchema",
     "TopicSubscribersSchema",
-    "SubscriberSchema"
+    "SubscriberSchema",
 ]
 
 # This will be updated after all the schema classes are defined

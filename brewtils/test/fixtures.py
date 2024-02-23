@@ -916,14 +916,11 @@ def subscriber_dict():
         "system": "system",
         "version": "1.0.0",
         "instance": None,
-        "command": None
+        "command": None,
     }
 
 
 @pytest.fixture
 def topic_subscriber_dict(subscriber_dict):
     """Topic subscribers as dict"""
-    return {
-        "topic": "foo",
-        "subscribers": [subscriber_dict]
-    }
+    return {"topic": "foo", "subscribers": [subscriber_dict]}

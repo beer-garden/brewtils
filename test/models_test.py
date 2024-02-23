@@ -19,6 +19,8 @@ from brewtils.models import (
     RequestFile,
     RequestTemplate,
     LegacyRole,
+    Subscriber,
+    TopicSubscribers,
 )
 from pytest_lazyfixture import lazy_fixture
 
@@ -675,3 +677,32 @@ class TestResolvable(object):
             bg_resolvable.storage,
             bg_resolvable.details,
         )
+
+
+@pytest.fixture
+def subscriber1():
+    return Subscriber(garden="g", namespace="n", system="s", version="v", instance="i", command="c")
+
+
+@pytest.fixture
+def topic_subscribers1(subscriber1):
+    return TopicSubscribers(topic="foo.*", subscribers=[subscriber1])
+
+
+class TestSubscriber(object):
+    def test_str(self, subscriber1):
+        assert "g.n.s.v.i.c" == str(subscriber1)
+
+    def test_repr(self, subscriber1):
+        assert "g" in repr(subscriber1)
+        assert "n" in repr(subscriber1)
+        assert "s" in repr(subscriber1)
+        assert "v" in repr(subscriber1)
+        assert "i" in repr(subscriber1)
+        assert "c" in repr(subscriber1)
+
+
+class TestTopicSubscribers():
+    def test_str(self, topic_subscribers1, subscriber1):
+        print(str(topic_subscribers1))
+        assert str(topic_subscribers1) == "foo.*: ['g.n.s.v.i.c']"

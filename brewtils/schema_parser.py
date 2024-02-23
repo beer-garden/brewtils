@@ -50,6 +50,8 @@ class SchemaParser(object):
         "OperationSchema": brewtils.models.Operation,
         "RunnerSchema": brewtils.models.Runner,
         "ResolvableSchema": brewtils.models.Resolvable,
+        "SubscriberSchema": brewtils.models.Subscriber,
+        "TopicSubscribersSchema": brewtils.models.TopicSubscribers,
     }
 
     logger = logging.getLogger(__name__)

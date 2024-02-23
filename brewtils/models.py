@@ -37,6 +37,8 @@ __all__ = [
     "Garden",
     "Operation",
     "Resolvable",
+    "TopicSubscribers",
+    "Subscriber",
 ]
 
 
@@ -1648,4 +1650,56 @@ class Resolvable(BaseModel):
             self.type,
             self.storage,
             self.details,
+        )
+
+
+class TopicSubscribers:
+    schema = "TopicSubscribersSchema"
+
+    def __init__(
+        self,
+        topic=None,
+        subscribers=[]
+    ):
+        self.topic = topic
+        self.subscribers = subscribers
+
+    def __str__(self):
+        return "%s: %s" % (self.topic, [str(s) for s in self.subscribers])
+
+    def __repr__(self):
+        return "<Topic Subscribers: topic=%s, subscribers=%s>" % (self.topic, self.subscribers)
+
+
+class Subscriber:
+    schema = "SubscriberSchema"
+
+    def __init__(
+        self,
+        garden=None,
+        namespace=None,
+        system=None,
+        version=None,
+        instance=None,
+        command=None
+    ):
+        self.garden = garden
+        self.namespace = namespace
+        self.system = system
+        self.version = version
+        self.instance = instance
+        self.command = command
+
+    def __str__(self):
+        return (
+            f"{self.garden}.{self.namespace}.{self.system}.{self.version}.{self.instance}."
+            f"{self.command}"
+        )
+
+    def __repr__(self):
+        return (
+            "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
+            "command=%s>" % (
+                self.garden, self.namespace, self.system, self.version, self.instance, self.command
+            )
         )

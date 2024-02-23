@@ -30,6 +30,8 @@ from brewtils.models import (
     Resolvable,
     Runner,
     System,
+    Subscriber,
+    TopicSubscribers,
 )
 
 
@@ -903,3 +905,25 @@ def resolvable_chunk_dict():
 @pytest.fixture
 def bg_resolvable_chunk(resolvable_chunk_dict):
     return Resolvable(**resolvable_chunk_dict)
+
+
+@pytest.fixture
+def subscriber_dict():
+    """Subscribers as a dictionary."""
+    return {
+        "garden": "garden",
+        "namespace": "ns",
+        "system": "system",
+        "version": "1.0.0",
+        "instance": None,
+        "command": None
+    }
+
+
+@pytest.fixture
+def topic_subscriber_dict(subscriber_dict):
+    """Topic subscribers as dict"""
+    return {
+        "topic": "foo",
+        "subscribers": [subscriber_dict]
+    }

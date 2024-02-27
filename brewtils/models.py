@@ -37,8 +37,8 @@ __all__ = [
     "Garden",
     "Operation",
     "Resolvable",
-    "TopicSubscribers",
     "Subscriber",
+    "Topic",
 ]
 
 
@@ -1653,24 +1653,7 @@ class Resolvable(BaseModel):
         )
 
 
-class TopicSubscribers:
-    schema = "TopicSubscribersSchema"
-
-    def __init__(self, topic=None, subscribers=[]):
-        self.topic = topic
-        self.subscribers = subscribers
-
-    def __str__(self):
-        return "%s: %s" % (self.topic, [str(s) for s in self.subscribers])
-
-    def __repr__(self):
-        return "<Topic Subscribers: topic=%s, subscribers=%s>" % (
-            self.topic,
-            self.subscribers,
-        )
-
-
-class Subscriber:
+class Subscriber(BaseModel):
     schema = "SubscriberSchema"
 
     def __init__(
@@ -1690,10 +1673,7 @@ class Subscriber:
         self.command = command
 
     def __str__(self):
-        return (
-            f"{self.garden}.{self.namespace}.{self.system}.{self.version}.{self.instance}."
-            f"{self.command}"
-        )
+        return "%s" % self.__dict__
 
     def __repr__(self):
         return (
@@ -1707,4 +1687,21 @@ class Subscriber:
                 self.instance,
                 self.command,
             )
+        )
+
+
+class Topic(BaseModel):
+    schema = "TopicSchema"
+
+    def __init__(self, name=None, subscribers=None):
+        self.name = name
+        self.subscribers = subscribers or []
+
+    def __str__(self):
+        return "%s: %s" % (self.name, [str(s) for s in self.subscribers])
+
+    def __repr__(self):
+        return "<Topic: name=%s, subscribers=%s>" % (
+            self.name,
+            self.subscribers,
         )

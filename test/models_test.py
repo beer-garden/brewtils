@@ -20,7 +20,7 @@ from brewtils.models import (
     RequestTemplate,
     LegacyRole,
     Subscriber,
-    TopicSubscribers,
+    Topic,
 )
 from pytest_lazyfixture import lazy_fixture
 
@@ -687,13 +687,13 @@ def subscriber1():
 
 
 @pytest.fixture
-def topic_subscribers1(subscriber1):
-    return TopicSubscribers(topic="foo.*", subscribers=[subscriber1])
+def topic1(subscriber1):
+    return Topic(name="foo.*", subscribers=[subscriber1])
 
 
 class TestSubscriber(object):
     def test_str(self, subscriber1):
-        assert "g.n.s.v.i.c" == str(subscriber1)
+        assert str(subscriber1) == "%s" % subscriber1.__dict__
 
     def test_repr(self, subscriber1):
         assert "g" in repr(subscriber1)
@@ -704,7 +704,12 @@ class TestSubscriber(object):
         assert "c" in repr(subscriber1)
 
 
-class TestTopicSubscribers:
-    def test_str(self, topic_subscribers1, subscriber1):
-        print(str(topic_subscribers1))
-        assert str(topic_subscribers1) == "foo.*: ['g.n.s.v.i.c']"
+class TestTopic:
+    def test_str(self, topic1, subscriber1):
+        assert str(topic1) == "%s: %s" % (topic1.name, [str(subscriber1)])
+
+    def test_repr(self, topic1, subscriber1):
+        assert repr(topic1) == "<Topic: name=%s, subscribers=%s>" % (
+            topic1.name,
+            [subscriber1],
+        )

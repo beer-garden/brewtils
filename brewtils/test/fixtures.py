@@ -31,7 +31,7 @@ from brewtils.models import (
     Runner,
     System,
     Subscriber,
-    TopicSubscribers,
+    Topic,
 )
 
 
@@ -915,12 +915,24 @@ def subscriber_dict():
         "namespace": "ns",
         "system": "system",
         "version": "1.0.0",
-        "instance": None,
-        "command": None,
+        "instance": "inst",
+        "command": "run",
     }
 
 
 @pytest.fixture
-def topic_subscriber_dict(subscriber_dict):
-    """Topic subscribers as dict"""
-    return {"topic": "foo", "subscribers": [subscriber_dict]}
+def bg_subscriber(subscriber_dict):
+    return Subscriber(**subscriber_dict)
+
+
+@pytest.fixture
+def topic_dict(subscriber_dict):
+    """Topic as dict"""
+    return {"name": "foo", "subscribers": [subscriber_dict]}
+
+
+@pytest.fixture
+def bg_topic(topic_dict, bg_subscriber):
+    dict_copy = copy.deepcopy(topic_dict)
+    dict_copy["subscribers"] = [bg_subscriber]
+    return Topic(**dict_copy)

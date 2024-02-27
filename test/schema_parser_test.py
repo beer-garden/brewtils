@@ -28,7 +28,9 @@ from brewtils.test.comparable import (
     assert_resolvable_equal,
     assert_role_equal,
     assert_runner_equal,
+    assert_subscriber_equal,
     assert_system_equal,
+    assert_topic_equal,
 )
 from marshmallow.exceptions import MarshmallowError
 from pytest_lazyfixture import lazy_fixture
@@ -180,6 +182,18 @@ class TestParse(object):
                 assert_resolvable_equal,
                 lazy_fixture("bg_resolvable"),
             ),
+            (
+                brewtils.models.Subscriber,
+                lazy_fixture("subscriber_dict"),
+                assert_subscriber_equal,
+                lazy_fixture("bg_subscriber"),
+            ),
+            (
+                brewtils.models.Topic,
+                lazy_fixture("topic_dict"),
+                assert_topic_equal,
+                lazy_fixture("bg_topic"),
+            ),
         ],
     )
     def test_single(self, model, data, assertion, expected):
@@ -314,6 +328,18 @@ class TestParse(object):
                 assert_resolvable_equal,
                 lazy_fixture("bg_resolvable"),
             ),
+            (
+                "parse_subscriber",
+                lazy_fixture("subscriber_dict"),
+                assert_subscriber_equal,
+                lazy_fixture("bg_subscriber"),
+            ),
+            (
+                "parse_topic",
+                lazy_fixture("topic_dict"),
+                assert_topic_equal,
+                lazy_fixture("bg_topic"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, assertion, expected):
@@ -441,6 +467,18 @@ class TestParse(object):
                 assert_resolvable_equal,
                 lazy_fixture("bg_resolvable"),
             ),
+            (
+                brewtils.models.Subscriber,
+                lazy_fixture("subscriber_dict"),
+                assert_subscriber_equal,
+                lazy_fixture("bg_subscriber"),
+            ),
+            (
+                brewtils.models.Topic,
+                lazy_fixture("topic_dict"),
+                assert_topic_equal,
+                lazy_fixture("bg_topic"),
+            ),
         ],
     )
     def test_many(self, model, data, assertion, expected):
@@ -561,6 +599,18 @@ class TestParse(object):
                 assert_resolvable_equal,
                 lazy_fixture("bg_resolvable"),
             ),
+            (
+                "parse_subscriber",
+                lazy_fixture("subscriber_dict"),
+                assert_subscriber_equal,
+                lazy_fixture("bg_subscriber"),
+            ),
+            (
+                "parse_topic",
+                lazy_fixture("topic_dict"),
+                assert_topic_equal,
+                lazy_fixture("bg_topic"),
+            ),
         ],
     )
     def test_many_specific(self, method, data, assertion, expected):
@@ -614,6 +664,8 @@ class TestSerialize(object):
             (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
             (lazy_fixture("bg_runner"), lazy_fixture("runner_dict")),
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
+            (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
+            (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
         ],
     )
     def test_single(self, model, expected):
@@ -715,6 +767,16 @@ class TestSerialize(object):
                 lazy_fixture("bg_resolvable"),
                 lazy_fixture("resolvable_dict"),
             ),
+            (
+                "serialize_subscriber",
+                lazy_fixture("bg_subscriber"),
+                lazy_fixture("subscriber_dict"),
+            ),
+            (
+                "serialize_topic",
+                lazy_fixture("bg_topic"),
+                lazy_fixture("topic_dict"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, expected):
@@ -743,6 +805,8 @@ class TestSerialize(object):
             (lazy_fixture("bg_operation"), lazy_fixture("operation_dict")),
             (lazy_fixture("bg_runner"), lazy_fixture("runner_dict")),
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
+            (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
+            (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
         ],
     )
     def test_many(self, model, expected):
@@ -831,6 +895,12 @@ class TestRoundTrip(object):
                 assert_resolvable_equal,
                 lazy_fixture("bg_resolvable"),
             ),
+            (
+                brewtils.models.Subscriber,
+                assert_subscriber_equal,
+                lazy_fixture("bg_subscriber"),
+            ),
+            (brewtils.models.Topic, assert_topic_equal, lazy_fixture("bg_topic")),
         ],
     )
     def test_parsed_start(self, model, assertion, data):

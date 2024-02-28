@@ -564,7 +564,7 @@ class RoleSchema(BaseSchema):
     scope_namespaces = fields.List(fields.Str(), allow_none=True)
     scope_systems = fields.List(fields.Str(), allow_none=True)
     scope_instances = fields.List(fields.Str(), allow_none=True)
-    scope_verisons = fields.List(fields.Str(), allow_none=True)
+    scope_versions = fields.List(fields.Str(), allow_none=True)
     scope_commands = fields.List(fields.Str(), allow_none=True)
 
 

@@ -1649,7 +1649,7 @@ class Role(BaseModel):
         scope_namespaces=None,
         scope_systems=None,
         scope_instances=None,
-        scope_verisons=None,
+        scope_versions=None,
         scope_commands=None,
     ):
         self.permission = permission or "READ_ONLY"
@@ -1660,7 +1660,7 @@ class Role(BaseModel):
         self.scope_namespaces = scope_namespaces or []
         self.scope_systems = scope_systems or []
         self.scope_instances = scope_instances or []
-        self.scope_verisons = scope_verisons or []
+        self.scope_versions = scope_versions or []
         self.scope_commands = scope_commands or []
 
     def __str__(self):
@@ -1679,7 +1679,7 @@ class Role(BaseModel):
             self.scope_namespaces,
             self.scope_systems,
             self.scope_instances,
-            self.scope_verisons,
+            self.scope_versions,
             self.scope_commands,
         )
 

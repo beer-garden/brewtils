@@ -580,6 +580,7 @@ class UserSchema(BaseSchema):
     username = fields.Str()
     password = fields.Str()
     roles = fields.List(fields.Str(), allow_none=True)
+    local_roles = fields.List(fields.Nested(RoleSchema()))
     remote_roles = fields.List(fields.Nested(RoleSchema()))
     remote_user_mapping = fields.List(fields.Nested(RemoteUserMapSchema()))
     is_remote = fields.Boolean(allow_none=True)

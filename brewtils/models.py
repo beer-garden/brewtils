@@ -1612,6 +1612,7 @@ class User(BaseModel):
         username,
         password=None,
         roles=None,
+        local_roles=None,
         remote_roles=None,
         is_remote=False,
         remote_user_mapping=None,
@@ -1620,6 +1621,7 @@ class User(BaseModel):
         self.username = username
         self.password = password
         self.roles = roles or []
+        self.local_roles = local_roles or []
         self.remote_roles = remote_roles or []
         self.is_remote = is_remote
         self.remote_user_mapping = remote_user_mapping or []

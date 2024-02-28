@@ -568,6 +568,7 @@ def user_dict(role_dict, remote_user_map_dict):
         "username": "USERNAME",
         "password": "HASH",
         "roles": ["ADMIN_ROLE"],
+        "local_roles": [role_dict],
         "remote_roles": [role_dict],
         "remote_user_mapping": [remote_user_map_dict],
         "is_remote": False,
@@ -579,6 +580,7 @@ def user_dict(role_dict, remote_user_map_dict):
 def bg_user(user_dict, bg_role, bg_remote_user_map):
     dict_copy = copy.deepcopy(user_dict)
     dict_copy["remote_roles"] = [bg_role]
+    dict_copy["local_roles"] = [bg_role]
     dict_copy["remote_user_mapping"] = [bg_remote_user_map]
     return User(**dict_copy)
 

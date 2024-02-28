@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.24.1
 ------
-TBD
+2/28/2024
 
 - Self Referencing SystemClient now supports default values provided through the Parameter annotation
 

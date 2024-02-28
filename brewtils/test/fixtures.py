@@ -552,7 +552,7 @@ def role_dict():
         "scope_namespaces": [],
         "scope_systems": [],
         "scope_instances": [],
-        "scope_verisons": [],
+        "scope_versions": [],
         "scope_commands": [],
     }
 
@@ -837,6 +837,8 @@ def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_di
         "has_parent": False,
         "children": [],
         "metadata": {},
+        "default_user": None,
+        "shared_users":True,
     }
 
 

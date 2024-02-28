@@ -1412,6 +1412,8 @@ class Garden(BaseModel):
         parent=None,
         children=None,
         metadata=None,
+        default_user=None,
+        shared_users=None
     ):
         self.id = id
         self.name = name
@@ -1428,6 +1430,9 @@ class Garden(BaseModel):
         self.parent = parent
         self.children = children
         self.metadata = metadata or {}
+
+        self.default_user = default_user
+        self.shared_users = shared_users
 
     def __str__(self):
         return "%s" % self.name

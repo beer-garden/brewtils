@@ -5,7 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
-- Self Referecing SystemClient now supports kwargs provided through the Parameter annotation
+- Self Referencing SystemClient now supports default values provided through the Parameter annotation
 
 3.24.0
 ------

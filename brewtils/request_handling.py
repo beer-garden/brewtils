@@ -66,7 +66,7 @@ class LocalRequestProcessor(object):
         for command in self._system.commands:
             if command.name == request.command:
                 for parameter in command.parameters:
-                    if parameter.is_kwarg:
+                    if parameter.default:
                         if parameter.key not in request.parameters:
                             request.parameters[parameter.key] = parameter.default
 

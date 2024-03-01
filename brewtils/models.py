@@ -1689,6 +1689,20 @@ class Subscriber(BaseModel):
             )
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, Subscriber):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.garden == other.garden
+            and self.namespace == other.namespace
+            and self.system == other.system
+            and self.version == other.version
+            and self.instance == other.instance
+            and self.command == other.command
+        )
+
 
 class Topic(BaseModel):
     schema = "TopicSchema"

@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.24.2
+------
+TBD
+
+- Fixed bug where Self Referencing SystemClients did not inspect the command properly for default parameters
+
 3.24.1
 ------
 2/28/2024

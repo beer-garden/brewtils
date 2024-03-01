@@ -10,6 +10,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 import six
 from requests import ConnectionError as RequestsConnectionError
 
+from brewtils.decorators import _parse_method
 import brewtils.plugin
 from brewtils.errors import (
     BGGivesUpError,
@@ -63,12 +64,12 @@ class LocalRequestProcessor(object):
             request.has_parent = True
 
         # check for kwargs on the target command
-        for command in self._system.commands:
-            if command.name == request.command:
-                for parameter in command.parameters:
-                    if parameter.default:
-                        if parameter.key not in request.parameters:
-                            request.parameters[parameter.key] = parameter.default
+        command = _parse_method(getattr(brewtils.plugin.CLIENT, request.command, None))
+        if command:
+            for parameter in command.parameters:
+                if parameter.default:
+                    if parameter.key not in request.parameters:
+                        request.parameters[parameter.key] = parameter.default
 
         request.status = "IN_PROGRESS"
 

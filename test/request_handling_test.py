@@ -552,9 +552,7 @@ class TestLocalRequestProcessor(object):
         _ez_client = Mock()
         _ez_client.put_request.side_effect = return_input_side_effect
 
-        return LocalRequestProcessor(
-            easy_client=_ez_client, resolver=resolver_mock
-        )
+        return LocalRequestProcessor(easy_client=_ez_client, resolver=resolver_mock)
 
     def setup_request_context(self):
         brewtils.plugin.request_context = threading.local()

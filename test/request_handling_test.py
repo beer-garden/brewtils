@@ -8,6 +8,7 @@ import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
 
+from brewtils.decorators import parameter
 import brewtils.plugin
 from brewtils.errors import (
     DiscardMessageException,
@@ -22,7 +23,7 @@ from brewtils.errors import (
     SuppressStacktrace,
     TooLargeError,
 )
-from brewtils.models import Command, Request, System
+from brewtils.models import Command, Request, System, Parameter
 from brewtils.request_handling import (
     HTTPRequestUpdater,
     LocalRequestProcessor,
@@ -525,13 +526,11 @@ class TestLocalRequestProcessor(object):
             def command_two(self):
                 return False
 
-        return ClientTest()
+            @parameter(key="key", default="value", is_kwarg=True)
+            def command_three(self, **kwargs):
+                return kwargs
 
-    @pytest.fixture
-    def system_client(self):
-        return System(
-            commands=[Command(name="command_one"), Command(name="command_two")]
-        )
+        return ClientTest()
 
     @pytest.fixture
     def resolver_mock(self):
@@ -544,7 +543,7 @@ class TestLocalRequestProcessor(object):
         return resolver
 
     @pytest.fixture
-    def local_request_processor(self, system_client, client, resolver_mock):
+    def local_request_processor(self, client, resolver_mock):
         brewtils.plugin.CLIENT = client
 
         def return_input_side_effect(*args, **kwargs):
@@ -553,9 +552,7 @@ class TestLocalRequestProcessor(object):
         _ez_client = Mock()
         _ez_client.put_request.side_effect = return_input_side_effect
 
-        return LocalRequestProcessor(
-            system=system_client, easy_client=_ez_client, resolver=resolver_mock
-        )
+        return LocalRequestProcessor(easy_client=_ez_client, resolver=resolver_mock)
 
     def setup_request_context(self):
         brewtils.plugin.request_context = threading.local()
@@ -577,4 +574,11 @@ class TestLocalRequestProcessor(object):
                 Request(command="command_two", parameters={})
             ).output
             == "false"
+        )
+
+        assert (
+            local_request_processor.process_command(
+                Request(command="command_three", parameters={})
+            ).output
+            == '{"key": "value"}'
         )

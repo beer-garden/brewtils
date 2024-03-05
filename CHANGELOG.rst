@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+3.24.2
+------
+3/1/24
+
+- Fixed bug where Self Referencing SystemClients did not inspect the command properly for default parameters
+
+3.24.1
+------
+2/28/2024
+
+- Self Referencing SystemClient now supports default values provided through the Parameter annotation
+
 3.24.0
 ------
 2/13/2024

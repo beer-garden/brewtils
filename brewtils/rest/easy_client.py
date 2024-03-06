@@ -1156,3 +1156,58 @@ class EasyClient(object):
             return True, metadata_json
         else:
             return False, metadata_json
+
+    @wrap_response(parse_method="parse_topic", parse_many=False, default_exc=FetchError)
+    def get_topic(self, topic_name):
+        """Get a topic
+
+        Args:
+            topic_name: Topic name
+
+        Returns:
+            The Topic
+
+        """
+        return self.client.get_topic(topic_name)
+
+    @wrap_response(parse_method="parse_topic", parse_many=True, default_exc=FetchError)
+    def find_topics(self, **kwargs):
+        """Find Topics using keyword arguments as search parameters
+
+        Args:
+            **kwargs: Search parameters
+
+        Returns:
+            List[Topics]: List of Topics matching the search parameters
+
+        """
+        return self.client.get_topics(**kwargs)
+
+    @wrap_response(parse_method="parse_topic", parse_many=False, default_exc=SaveError)
+    def create_topic(self, topic):
+        """Create a new Topic
+
+        Args:
+            system (Topic): The Topic to create
+
+        Returns:
+            Topic: The newly-created topic
+
+        """
+        return self.client.post_topics(SchemaParser.serialize_topic(topic))
+
+    @wrap_response(return_boolean=True, raise_404=True)
+    def remove_topic(self, topic_name):
+        """Remove a unique Topic
+
+        Args:
+            topic_name: Topic name
+
+        Returns:
+            bool: True if removal was successful
+
+        Raises:
+            NotFoundError: Couldn't find a Topic matching given parameters
+
+        """
+        return self.client.delete_topic(topic_name)

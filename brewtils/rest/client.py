@@ -153,6 +153,7 @@ class RestClient(object):
             self.user_url = self.base_url + "api/v1/users/"
             self.admin_url = self.base_url + "api/v1/admin/"
             self.forward_url = self.base_url + "api/v1/forward"
+            self.topic_url = self.base_url + "api/v1/topic/"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
@@ -943,3 +944,74 @@ class RestClient(object):
             self.session.headers["Authorization"] = "Bearer " + self.access_token
 
         return response
+
+    @enable_auth
+    def get_topic(self, topic_name, **kwargs):
+        # type: (str, **Any) -> Response
+        """Performs a GET on the Topic URL
+
+        Args:
+            topic_name: Topic Name
+            **kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.get(self.topic_url + quote(topic_name), params=kwargs)
+
+    @enable_auth
+    def get_topics(self, **kwargs):
+        # type: (**Any) -> Response
+        """Perform a GET on the Topic URL
+
+        Args:
+            **kwargs: Query parameters to be used in the GET request
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.get(self.topic_url, params=kwargs)
+
+    @enable_auth
+    def post_topics(self, payload):
+        # type: (str) -> Response
+        """Performs a POST on the Topic URL
+
+        Args:
+            payload: New Topic definition
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.post(
+            self.topic_url, data=payload, headers=self.JSON_HEADERS
+        )
+
+    @enable_auth
+    def patch_topic(self, topic_name, payload):
+        # type: (str, str) -> Response
+        """Performs a PATCH on a Topic URL
+
+        Args:
+            topic_name: Topic name
+            payload: Serialized PatchOperation
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.patch(
+            self.topic_url + str(topic_name), data=payload, headers=self.JSON_HEADERS
+        )
+
+    @enable_auth
+    def delete_topic(self, topic_name):
+        # type: (str) -> Response
+        """Performs a DELETE on a Topic URL
+
+        Args:
+            topic_name: Topic name
+
+        Returns:
+            Requests Response object
+        """
+        return self.session.delete(self.topic_url + quote(topic_name))

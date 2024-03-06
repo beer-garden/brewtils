@@ -602,3 +602,48 @@ class TestChunked(object):
         rest_client.post_chunked_file.return_value = server_error
         with pytest.raises(SaveError):
             assert client.upload_chunked_file(target_file, "desired_name")
+
+
+class TestTopics(object):
+    class TestGet(object):
+        def test_success(self, client, rest_client, bg_topic, success, parser):
+            rest_client.get_topic.return_value = success
+            parser.parse_topic.return_value = bg_topic
+
+            assert client.get_topic(bg_topic.name) == bg_topic
+
+        def test_404(self, client, rest_client, bg_topic, not_found):
+            rest_client.get_topic.return_value = not_found
+
+            with pytest.raises(NotFoundError):
+                client.get_topic(bg_topic.name)
+
+    class TestFind(object):
+        def test_success(self, client, rest_client, success):
+            rest_client.get_topics.return_value = success
+            client.find_topics()
+            assert rest_client.get_topics.called is True
+
+        def test_with_params(self, client, rest_client, success):
+            rest_client.get_topics.return_value = success
+            client.find_topics(name="foo")
+            rest_client.get_topics.assert_called_once_with(name="foo")
+
+    def test_create(self, client, rest_client, success, bg_topic):
+        rest_client.create_topic.return_value = success
+        client.create_topic(bg_topic)
+        assert rest_client.post_topics.called is True
+
+    class TestRemove(object):
+        def test_not_found(self, monkeypatch, client, rest_client, not_found, bg_topic):
+            monkeypatch.setattr(
+                rest_client, "delete_topic", Mock(return_value=not_found)
+            )
+
+            with pytest.raises(NotFoundError):
+                client.remove_topic(bg_topic.name)
+
+        def test_name(self, client, rest_client, success, bg_topic):
+            rest_client.delete_topic.return_value = success
+
+            assert client.remove_topic(bg_topic.name)

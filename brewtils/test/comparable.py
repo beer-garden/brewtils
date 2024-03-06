@@ -396,9 +396,6 @@ def assert_garden_equal(obj1, obj2, do_raise=False):
 
 
 def assert_topic_equal(obj1, obj2, do_raise=False):
-    print(f"OBJ1: {obj1}")
-    print(f"OBJ2: {obj2}")
-
     return _assert_wrapper(
         obj1,
         obj2,

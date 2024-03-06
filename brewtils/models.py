@@ -1707,7 +1707,8 @@ class Subscriber(BaseModel):
 class Topic(BaseModel):
     schema = "TopicSchema"
 
-    def __init__(self, name=None, subscribers=None):
+    def __init__(self, id=None, name=None, subscribers=None):  # noqa # shadows built-in
+        self.id = id
         self.name = name
         self.subscribers = subscribers or []
 

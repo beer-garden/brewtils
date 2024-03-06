@@ -928,7 +928,7 @@ def bg_subscriber(subscriber_dict):
 @pytest.fixture
 def topic_dict(subscriber_dict):
     """Topic as dict"""
-    return {"name": "foo", "subscribers": [subscriber_dict]}
+    return {"id": "5d174df1", "name": "foo", "subscribers": [subscriber_dict]}
 
 
 @pytest.fixture

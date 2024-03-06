@@ -636,6 +636,7 @@ class SubscriberSchema(BaseSchema):
 
 
 class TopicSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
 

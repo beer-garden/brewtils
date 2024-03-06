@@ -67,7 +67,7 @@ class LocalRequestProcessor(object):
         command = _parse_method(getattr(brewtils.plugin.CLIENT, request.command, None))
         if command:
             for parameter in command.parameters:
-                if parameter.default:
+                if parameter.default is not None:
                     if parameter.key not in request.parameters:
                         request.parameters[parameter.key] = parameter.default
 

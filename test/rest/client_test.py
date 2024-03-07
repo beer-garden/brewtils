@@ -152,7 +152,6 @@ class TestRestClient(object):
                 "logging_url",
             ),
             ("get_systems", {"key": "value"}, "get", "system_url"),
-            ("get_topics", {"key": "value"}, "get", "topic_url"),
         ],
     )
     def test_version_1_gets(self, client, session_mock, method, params, verb, url):

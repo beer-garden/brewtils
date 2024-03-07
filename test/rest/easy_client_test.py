@@ -618,21 +618,19 @@ class TestTopics(object):
             with pytest.raises(NotFoundError):
                 client.get_topic(bg_topic.id)
 
-    class TestFind(object):
-        def test_success(self, client, rest_client, success):
-            rest_client.get_topics.return_value = success
-            client.find_topics()
-            assert rest_client.get_topics.called is True
-
-        def test_with_params(self, client, rest_client, success):
-            rest_client.get_topics.return_value = success
-            client.find_topics(name="foo")
-            rest_client.get_topics.assert_called_once_with(name="foo")
-
     def test_create(self, client, rest_client, success, bg_topic):
         rest_client.create_topic.return_value = success
         client.create_topic(bg_topic)
         assert rest_client.post_topics.called is True
+
+    def test_get_all(self, client, rest_client, bg_topic, success, parser):
+        second_topic = copy.deepcopy(bg_topic)
+        second_topic.name = "topic2"
+        both_topics = [bg_topic, second_topic]
+        rest_client.get_topics.return_value = success
+        parser.parse_topic.return_value = both_topics
+
+        assert client.get_topics() == both_topics
 
     class TestRemove(object):
         def test_not_found(self, monkeypatch, client, rest_client, not_found, bg_topic):

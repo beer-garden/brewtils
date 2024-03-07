@@ -1171,17 +1171,14 @@ class EasyClient(object):
         return self.client.get_topic(topic_id)
 
     @wrap_response(parse_method="parse_topic", parse_many=True, default_exc=FetchError)
-    def find_topics(self, **kwargs):
-        """Find Topics using keyword arguments as search parameters
-
-        Args:
-            **kwargs: Search parameters
+    def get_topics(self):
+        """Get all Topics
 
         Returns:
-            List[Topics]: List of Topics matching the search parameters
+            List[Topics]: List of Topics
 
         """
-        return self.client.get_topics(**kwargs)
+        return self.client.get_topics()
 
     @wrap_response(parse_method="parse_topic", parse_many=False, default_exc=SaveError)
     def create_topic(self, topic):

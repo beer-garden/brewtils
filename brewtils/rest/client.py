@@ -153,7 +153,7 @@ class RestClient(object):
             self.user_url = self.base_url + "api/v1/users/"
             self.admin_url = self.base_url + "api/v1/admin/"
             self.forward_url = self.base_url + "api/v1/forward"
-            self.topic_url = self.base_url + "api/v1/topic/"
+            self.topic_url = self.base_url + "api/v1/topics/"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
@@ -946,18 +946,18 @@ class RestClient(object):
         return response
 
     @enable_auth
-    def get_topic(self, topic_name, **kwargs):
+    def get_topic(self, topic_id, **kwargs):
         # type: (str, **Any) -> Response
         """Performs a GET on the Topic URL
 
         Args:
-            topic_name: Topic Name
+            topic_id: Topic id
             **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
         """
-        return self.session.get(self.topic_url + quote(topic_name), params=kwargs)
+        return self.session.get(self.topic_url + topic_id, params=kwargs)
 
     @enable_auth
     def get_topics(self, **kwargs):
@@ -988,30 +988,30 @@ class RestClient(object):
         )
 
     @enable_auth
-    def patch_topic(self, topic_name, payload):
+    def patch_topic(self, topic_id, payload):
         # type: (str, str) -> Response
         """Performs a PATCH on a Topic URL
 
         Args:
-            topic_name: Topic name
+            topic_id: Topic id
             payload: Serialized PatchOperation
 
         Returns:
             Requests Response object
         """
         return self.session.patch(
-            self.topic_url + str(topic_name), data=payload, headers=self.JSON_HEADERS
+            self.topic_url + topic_id, data=payload, headers=self.JSON_HEADERS
         )
 
     @enable_auth
-    def delete_topic(self, topic_name):
+    def delete_topic(self, topic_id):
         # type: (str) -> Response
         """Performs a DELETE on a Topic URL
 
         Args:
-            topic_name: Topic name
+            topic_id: Topic id
 
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.topic_url + quote(topic_name))
+        return self.session.delete(self.topic_url + topic_id)

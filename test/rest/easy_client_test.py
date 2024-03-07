@@ -610,13 +610,13 @@ class TestTopics(object):
             rest_client.get_topic.return_value = success
             parser.parse_topic.return_value = bg_topic
 
-            assert client.get_topic(bg_topic.name) == bg_topic
+            assert client.get_topic(bg_topic.id) == bg_topic
 
         def test_404(self, client, rest_client, bg_topic, not_found):
             rest_client.get_topic.return_value = not_found
 
             with pytest.raises(NotFoundError):
-                client.get_topic(bg_topic.name)
+                client.get_topic(bg_topic.id)
 
     class TestFind(object):
         def test_success(self, client, rest_client, success):
@@ -641,9 +641,9 @@ class TestTopics(object):
             )
 
             with pytest.raises(NotFoundError):
-                client.remove_topic(bg_topic.name)
+                client.remove_topic(bg_topic.id)
 
-        def test_name(self, client, rest_client, success, bg_topic):
+        def test_id(self, client, rest_client, success, bg_topic):
             rest_client.delete_topic.return_value = success
 
-            assert client.remove_topic(bg_topic.name)
+            assert client.remove_topic(bg_topic.id)

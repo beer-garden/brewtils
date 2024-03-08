@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.24.3
 ------
-3/6/24
+3/8/2024
 
 - Fixed bug where Self Referencing SystemClients did not support `false` as default value when not provided
 

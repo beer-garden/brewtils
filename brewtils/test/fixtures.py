@@ -840,7 +840,6 @@ def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_di
         "children": [],
         "metadata": {},
         "default_user": None,
-        "shared_users":True,
     }
 
 

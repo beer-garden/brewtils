@@ -5,7 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
-- Fixed bug client passed into Plugin would not initalize the commands for Remote Plugins
+- Fixed bug client passed into Plugin would not initialize the commands for Remote Plugins
 
 3.24.3
 ------

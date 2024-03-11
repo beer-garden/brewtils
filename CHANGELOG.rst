@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.24.4
+------
+TBD
+
+- Fixed bug client passed into Plugin would not initialize the commands for Remote Plugins
+
 3.24.3
 ------
 3/8/2024

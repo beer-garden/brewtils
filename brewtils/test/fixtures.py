@@ -567,7 +567,7 @@ def user_dict(role_dict, remote_user_map_dict):
     return {
         "username": "USERNAME",
         "password": "HASH",
-        "roles": ["ADMIN_ROLE"],
+        "roles": ["PLUGIN_ADMIN_ROLE"],
         "local_roles": [role_dict],
         "remote_roles": [role_dict],
         "remote_user_mapping": [remote_user_map_dict],

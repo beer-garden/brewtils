@@ -1641,7 +1641,8 @@ class Role(BaseModel):
     schema = "RoleSchema"
 
     PERMISSION_TYPES = {
-        "ADMIN",
+        "GARDEN_ADMIN",
+        "PLUGIN_ADMIN",
         "OPERATOR",
         "READ_ONLY",  # Default value if not role is provided
     }

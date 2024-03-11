@@ -270,7 +270,7 @@ class Plugin(object):
 
         if new_client is None:
             return
-        
+
         self._set_client(new_client)
 
     def _set_client(self, new_client):

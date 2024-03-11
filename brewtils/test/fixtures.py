@@ -544,10 +544,10 @@ def bg_remote_user_map(remote_user_map_dict):
 @pytest.fixture
 def role_dict():
     return {
-        "permission": "ADMIN",
-        "description": "ADMIN ROLE",
+        "permission": "PLUGIN_ADMIN",
+        "description": "PLUGIN ADMIN ROLE",
         "id": "1",
-        "name": "ADMIN_ROLE",
+        "name": "PLUGIN_ADMIN_ROLE",
         "scope_gardens": ["FOO"],
         "scope_namespaces": [],
         "scope_systems": [],

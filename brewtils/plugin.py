@@ -217,8 +217,7 @@ class Plugin(object):
         global CLIENT
         # Make sure this is set after self._system
         if client:
-            self._client = client
-            CLIENT = client
+            self._set_client(client)
         else:
             self._client = None
 
@@ -271,7 +270,10 @@ class Plugin(object):
 
         if new_client is None:
             return
+        
+        self._set_client(new_client)
 
+    def _set_client(self, new_client):
         # Several _system properties can come from the client, so update if needed
         if not self._system.name:
             self._system.name = getattr(new_client, "_bg_name")  # noqa

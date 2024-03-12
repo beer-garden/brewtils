@@ -946,18 +946,17 @@ class RestClient(object):
         return response
 
     @enable_auth
-    def get_topic(self, topic_id, **kwargs):
+    def get_topic(self, topic_id):
         # type: (str, **Any) -> Response
         """Performs a GET on the Topic URL
 
         Args:
             topic_id: Topic id
-            **kwargs: Query parameters to be used in the GET request
 
         Returns:
             Requests Response object
         """
-        return self.session.get(self.topic_url + topic_id, params=kwargs)
+        return self.session.get(self.topic_url + topic_id)
 
     @enable_auth
     def get_topics(self):

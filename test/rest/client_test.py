@@ -475,7 +475,7 @@ class TestRestClient(object):
 
     def test_get_topic(self, client, session_mock):
         client.get_topic("id")
-        session_mock.get.assert_called_with(client.topic_url + "id", params={})
+        session_mock.get.assert_called_with(client.topic_url + "id")
 
     def test_get_topics(self, client, session_mock):
         client.get_topics()

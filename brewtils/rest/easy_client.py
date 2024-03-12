@@ -1208,3 +1208,29 @@ class EasyClient(object):
 
         """
         return self.client.delete_topic(topic_id)
+
+    @wrap_response(
+        parse_method="parse_topic", parse_many=False, default_exc=SaveError
+    )
+    def update_topic(self, topic_id, add=None, remove=None):
+        """Update a Topic
+
+        Args:
+            topic_id (str): The Topic ID
+            add (Optional[str]): Add subscriber
+            remove (Optional[str]): Remove subscriber
+
+        Returns:
+            Topic: The updated topic
+
+        """
+        operations = []
+
+        if add:
+            operations.append(PatchOperation("add_subscriber", add))
+        if remove:
+            operations.append(PatchOperation("remove_subscriber", remove))
+
+        return self.client.patch_topic(
+            topic_id, SchemaParser.serialize_patch(operations, many=True)
+        )

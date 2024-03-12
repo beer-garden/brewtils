@@ -645,3 +645,29 @@ class TestTopics(object):
             rest_client.delete_topic.return_value = success
 
             assert client.remove_topic(bg_topic.id)
+
+    class TestPatch(object):
+        def test_add_subscriber(self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber):
+            monkeypatch.setattr(
+                rest_client, "patch_topic", Mock(return_value=success)
+            )
+
+            assert client.update_topic(bg_topic.id, add=bg_subscriber)
+            assert rest_client.patch_topic.called is True
+
+        def test_remove_subscriber(self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber):
+            monkeypatch.setattr(
+                rest_client, "patch_topic", Mock(return_value=success)
+            )
+
+            assert client.update_topic(bg_topic.id, remove=bg_subscriber)
+            assert rest_client.patch_topic.called is True
+
+        def test_remove_subscriber_not_found(self, monkeypatch, client, rest_client, not_found, bg_topic, bg_subscriber):
+            monkeypatch.setattr(
+                rest_client, "patch_topic", Mock(return_value=not_found)
+            )
+
+            with pytest.raises(NotFoundError):
+                assert client.update_topic(bg_topic.id, remove=bg_subscriber)
+                assert rest_client.patch_topic.called is True

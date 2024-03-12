@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+3.24.4
+------
+3/11/2024
+
+- Fixed bug client passed into Plugin would not initialize the commands for Remote Plugins
+
+3.24.3
+------
+3/8/2024
+
+- Fixed bug where Self Referencing SystemClients did not support `false` as default value when not provided
+
 3.24.2
 ------
 3/1/24

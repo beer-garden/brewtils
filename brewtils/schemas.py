@@ -558,10 +558,10 @@ class ResolvableSchema(BaseSchema):
 
 
 class RoleSchema(BaseSchema):
+    permission = fields.Str()
+    description = fields.Str(allow_none=True)
     id = fields.Str(allow_none=True)
     name = fields.Str()
-    description = fields.Str(allow_none=True)
-    permission = fields.Str()
     scope_gardens = fields.List(fields.Str(), allow_none=True)
     scope_namespaces = fields.List(fields.Str(), allow_none=True)
     scope_systems = fields.List(fields.Str(), allow_none=True)

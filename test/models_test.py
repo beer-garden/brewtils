@@ -548,14 +548,14 @@ class TestUser(object):
 class TestRole(object):
     @pytest.fixture
     def role(self):
-        return Role(name="bg-admin", permission="ADMIN")
+        return Role(name="bg-admin", permission="PLUGIN_ADMIN")
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
         assert repr(role) == (
-            "<Role: id=None, name=bg-admin, permission=ADMIN, "
+            "<Role: id=None, name=bg-admin, description=None, permission=PLUGIN_ADMIN, "
             "scope_garden=[], scope_namespaces=[], scope_systems=[], "
             "scope_instances=[], scope_versions=[], scope_commands=[]>"
         )

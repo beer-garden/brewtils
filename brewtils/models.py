@@ -1676,12 +1676,13 @@ class Role(BaseModel):
 
     def __repr__(self):
         return (
-            "<Role: id=%s, name=%s, permission=%s, scope_garden=%s, "
+            "<Role: id=%s, name=%s, description=%s, permission=%s, scope_garden=%s, "
             "scope_namespaces=%s, scope_systems=%s, scope_instances=%s, "
             "scope_versions=%s, scope_commands=%s>"
         ) % (
             self.id,
             self.name,
+            self.description,
             self.permission,
             self.scope_gardens,
             self.scope_namespaces,

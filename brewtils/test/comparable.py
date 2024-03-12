@@ -245,6 +245,7 @@ def assert_user_equal(obj1, obj2, do_raise=False):
         obj2,
         expected_type=User,
         deep_fields={
+            "local_roles": partial(assert_role_equal, do_raise=True),
             "remote_roles": partial(assert_role_equal, do_raise=True),
             "remote_user_mapping": partial(assert_remote_user_map_equal, do_raise=True),
         },

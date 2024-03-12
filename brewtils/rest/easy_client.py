@@ -1209,9 +1209,7 @@ class EasyClient(object):
         """
         return self.client.delete_topic(topic_id)
 
-    @wrap_response(
-        parse_method="parse_topic", parse_many=False, default_exc=SaveError
-    )
+    @wrap_response(parse_method="parse_topic", parse_many=False, default_exc=SaveError)
     def update_topic(self, topic_id, add=None, remove=None):
         """Update a Topic
 

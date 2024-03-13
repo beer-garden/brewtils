@@ -1225,9 +1225,9 @@ class EasyClient(object):
         operations = []
 
         if add:
-            operations.append(PatchOperation("add", add))
+            operations.append(PatchOperation("add", value=add))
         if remove:
-            operations.append(PatchOperation("remove", remove))
+            operations.append(PatchOperation("remove", value=remove))
 
         return self.client.patch_topic(
             topic_id, SchemaParser.serialize_patch(operations, many=True)

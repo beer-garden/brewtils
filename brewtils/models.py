@@ -1110,7 +1110,7 @@ class UserToken(BaseModel):
         self,
         id=None,  # noqa # shadows built-in
         uuid=None,
-        issued=None,
+        issued_at=None,
         expires_at=None,
         user=None,
     ):

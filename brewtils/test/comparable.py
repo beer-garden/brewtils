@@ -30,6 +30,7 @@ from brewtils.models import (
     Parameter,
     PatchOperation,
     User,
+    UserToken,
     Queue,
     RemoteUserMap,
     Request,
@@ -51,6 +52,7 @@ __all__ = [
     "assert_trigger_equal",
     "assert_command_equal",
     "assert_parameter_equal",
+    "assert_user_token_equal",
     "assert_user_equal",
     "assert_remote_user_map_equal",
     "assert_request_equal",
@@ -238,7 +240,6 @@ def assert_event_equal(obj1, obj2, do_raise=False):
         do_raise=do_raise,
     )
 
-
 def assert_user_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
@@ -248,6 +249,17 @@ def assert_user_equal(obj1, obj2, do_raise=False):
             "local_roles": partial(assert_role_equal, do_raise=True),
             "remote_roles": partial(assert_role_equal, do_raise=True),
             "remote_user_mapping": partial(assert_remote_user_map_equal, do_raise=True),
+        },
+        do_raise=do_raise,
+    )
+
+def assert_user_token_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=UserToken,
+        deep_fields={
+            "user": partial(assert_user_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

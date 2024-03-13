@@ -22,6 +22,7 @@ from brewtils.test.comparable import (
     assert_parameter_equal,
     assert_patch_equal,
     assert_user_equal,
+    assert_user_token_equal,
     assert_queue_equal,
     assert_remote_user_map_equal,
     assert_request_equal,
@@ -126,6 +127,12 @@ class TestParse(object):
                 lazy_fixture("user_dict"),
                 assert_user_equal,
                 lazy_fixture("bg_user"),
+            ),
+            (
+                brewtils.models.UserToken,
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
             ),
             (
                 brewtils.models.RemoteUserMap,
@@ -260,6 +267,12 @@ class TestParse(object):
                 lazy_fixture("user_dict"),
                 assert_user_equal,
                 lazy_fixture("bg_user"),
+            ),
+            (
+                "parse_user_token",
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
             ),
             (
                 "parse_remote_user_map",
@@ -401,6 +414,12 @@ class TestParse(object):
                 lazy_fixture("bg_user"),
             ),
             (
+                brewtils.models.UserToken,
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
                 brewtils.models.RemoteUserMap,
                 lazy_fixture("remote_user_map_dict"),
                 assert_remote_user_map_equal,
@@ -533,6 +552,12 @@ class TestParse(object):
                 lazy_fixture("bg_user"),
             ),
             (
+                "parse_user_token",
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
                 "parse_remote_user_map",
                 lazy_fixture("remote_user_map_dict"),
                 assert_remote_user_map_equal,
@@ -631,6 +656,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
             (lazy_fixture("bg_user"), lazy_fixture("user_dict")),
+            (lazy_fixture("bg_user_token"), lazy_fixture("user_token_dict")),
             (lazy_fixture("bg_remote_user_map"), lazy_fixture("remote_user_map_dict")),
             (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
@@ -694,6 +720,11 @@ class TestSerialize(object):
                 "serialize_user",
                 lazy_fixture("bg_user"),
                 lazy_fixture("user_dict"),
+            ),
+            (
+                "serialize_user_token",
+                lazy_fixture("bg_user_token"),
+                lazy_fixture("user_token_dict"),
             ),
             (
                 "serialize_remote_user_map",
@@ -766,6 +797,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
             (lazy_fixture("bg_user"), lazy_fixture("user_dict")),
+            (lazy_fixture("bg_user_token"), lazy_fixture("user_token_dict")),
             (lazy_fixture("bg_remote_user_map"), lazy_fixture("remote_user_map_dict")),
             (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
@@ -848,6 +880,11 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_user"),
             ),
             (
+                brewtils.models.UserToken,
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
                 brewtils.models.RemoteUserMap,
                 assert_remote_user_map_equal,
                 lazy_fixture("bg_remote_user_map"),
@@ -891,6 +928,7 @@ class TestRoundTrip(object):
             (brewtils.models.Event, lazy_fixture("event_dict")),
             (brewtils.models.Queue, lazy_fixture("queue_dict")),
             (brewtils.models.User, lazy_fixture("user_dict")),
+            (brewtils.models.UserToken, lazy_fixture("user_token_dict")),
             (brewtils.models.Role, lazy_fixture("role_dict")),
             (brewtils.models.Job, lazy_fixture("job_dict")),
             (brewtils.models.Job, lazy_fixture("cron_job_dict")),

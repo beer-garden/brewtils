@@ -30,6 +30,7 @@ from brewtils.models import (
     Runner,
     System,
     User,
+    UserToken,
     Role,
 )
 
@@ -539,6 +540,25 @@ def remote_user_map_dict():
 @pytest.fixture
 def bg_remote_user_map(remote_user_map_dict):
     return RemoteUserMap(**remote_user_map_dict)
+
+@pytest.fixture
+def user_token_dict(user_dict, ts_epoch):
+    return {
+        "id": "1",
+        "uuid": "11111111-2222-4444-5555-66666666666",
+        "issued": ts_epoch,
+        "expires_at": ts_epoch,
+        "user": user_dict,
+    }
+
+
+@pytest.fixture
+def bg_user_token(user_token_dict, bg_user, ts_dt):
+    dict_copy = copy.deepcopy(user_token_dict)
+    dict_copy["user"] = bg_user
+    dict_copy["issued"] = ts_dt
+    dict_copy["expires_at"] = ts_dt
+    return UserToken(**dict_copy)
 
 
 @pytest.fixture

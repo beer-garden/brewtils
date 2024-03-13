@@ -313,7 +313,7 @@ class SchemaParser(object):
             A UserToken object
         """
         return cls.parse(
-            refresh_token,
+            user_token,
             brewtils.models.UserToken,
             from_string=from_string,
             **kwargs

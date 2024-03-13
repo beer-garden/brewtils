@@ -1109,23 +1109,26 @@ class UserToken(BaseModel):
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
+        uuid=None,
         issued=None,
-        expires=None,
-        payload=None,
+        expires_at=None,
+        user=None,
     ):
         self.id = id
+        self.uuid = uuid
         self.issued = issued
-        self.expires = expires
-        self.payload = payload or {}
+        self.expires_at = expires_at
+        self.user = user or {}
 
     def __str__(self):
-        return "%s" % self.payload
+        return "%s" % self.user
 
     def __repr__(self):
-        return "<UserToken: issued=%s, expires=%s, payload=%s>" % (
+        return "<UserToken: uuid=%s, issued=%s, expires_at=%s, user=%s>" % (
+            self.uuid,
             self.issued,
-            self.expires,
-            self.payload,
+            self.expires_at,
+            self.user,
         )
 
 

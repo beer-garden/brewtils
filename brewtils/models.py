@@ -1612,8 +1612,8 @@ class User(BaseModel):
 
     def __init__(
         self,
-        id,
         username,
+        id = None,
         password=None,
         roles=None,
         local_roles=None,

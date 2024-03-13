@@ -1124,9 +1124,9 @@ class UserToken(BaseModel):
         return "%s" % self.user
 
     def __repr__(self):
-        return "<UserToken: uuid=%s, issued=%s, expires_at=%s, user=%s>" % (
+        return "<UserToken: uuid=%s, issued_at=%s, expires_at=%s, user=%s>" % (
             self.uuid,
-            self.issued,
+            self.issued_at,
             self.expires_at,
             self.user,
         )

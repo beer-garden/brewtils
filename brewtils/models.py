@@ -1612,6 +1612,7 @@ class User(BaseModel):
 
     def __init__(
         self,
+        id,
         username,
         password=None,
         roles=None,
@@ -1621,6 +1622,7 @@ class User(BaseModel):
         remote_user_mapping=None,
         metadata=None,
     ):
+        self.id = id
         self.username = username
         self.password = password
         self.roles = roles or []

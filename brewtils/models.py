@@ -1116,7 +1116,7 @@ class UserToken(BaseModel):
     ):
         self.id = id
         self.uuid = uuid
-        self.issued = issued
+        self.issued_at = issued
         self.expires_at = expires_at
         self.user = user or {}
 

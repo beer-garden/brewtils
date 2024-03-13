@@ -546,7 +546,7 @@ def user_token_dict(user_dict, ts_epoch):
     return {
         "id": "1",
         "uuid": "11111111-2222-4444-5555-66666666666",
-        "issued": ts_epoch,
+        "issued_at": ts_epoch,
         "expires_at": ts_epoch,
         "user": user_dict,
     }
@@ -556,7 +556,7 @@ def user_token_dict(user_dict, ts_epoch):
 def bg_user_token(user_token_dict, bg_user, ts_dt):
     dict_copy = copy.deepcopy(user_token_dict)
     dict_copy["user"] = bg_user
-    dict_copy["issued"] = ts_dt
+    dict_copy["issued_at"] = ts_dt
     dict_copy["expires_at"] = ts_dt
     return UserToken(**dict_copy)
 

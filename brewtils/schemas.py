@@ -401,7 +401,7 @@ class QueueSchema(BaseSchema):
 class UserTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     uuid = fields.Str(allow_none=True)
-    issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    issued_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     user = fields.Nested("UserSchema")
 

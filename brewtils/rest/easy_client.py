@@ -1088,9 +1088,7 @@ class EasyClient(object):
             SchemaParser.serialize_operation(operation), **kwargs
         )
 
-    @wrap_response(
-        parse_method="parse_principal", parse_many=False, default_exc=FetchError
-    )
+    @wrap_response(parse_method="parse_user", parse_many=False, default_exc=FetchError)
     def get_user(self, user_identifier):
         """Find a user
 
@@ -1098,7 +1096,7 @@ class EasyClient(object):
             user_identifier (str): User ID or username
 
         Returns:
-            Principal: The User
+            User: The User
 
         """
         return self.client.get_user(user_identifier)
@@ -1107,7 +1105,7 @@ class EasyClient(object):
         """Find user using the current set of credentials
 
         Returns:
-            Principal: The User
+            User: The User
 
         """
         return self.get_user(self.client.username or "anonymous")

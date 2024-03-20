@@ -21,9 +21,7 @@ __all__ = [
     "Event",
     "Events",
     "Queue",
-    "Principal",
-    "LegacyRole",
-    "RefreshToken",
+    "UserToken",
     "Job",
     "RequestFile",
     "File",
@@ -37,6 +35,8 @@ __all__ = [
     "Garden",
     "Operation",
     "Resolvable",
+    "Role",
+    "User",
 ]
 
 
@@ -1103,81 +1103,32 @@ class Queue(BaseModel):
         return "<Queue: name=%s, size=%s>" % (self.name, self.size)
 
 
-class Principal(BaseModel):
-    schema = "PrincipalSchema"
+class UserToken(BaseModel):
+    schema = "UserTokenSchema"
 
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
+        uuid=None,
+        issued_at=None,
+        expires_at=None,
         username=None,
-        roles=None,
-        permissions=None,
-        preferences=None,
-        metadata=None,
     ):
         self.id = id
+        self.uuid = uuid
+        self.issued_at = issued_at
+        self.expires_at = expires_at
         self.username = username
-        self.roles = roles
-        self.permissions = permissions
-        self.preferences = preferences
-        self.metadata = metadata
 
     def __str__(self):
         return "%s" % self.username
 
     def __repr__(self):
-        return "<Principal: username=%s, roles=%s, permissions=%s>" % (
+        return "<UserToken: uuid=%s, issued_at=%s, expires_at=%s, username=%s>" % (
+            self.uuid,
+            self.issued_at,
+            self.expires_at,
             self.username,
-            self.roles,
-            self.permissions,
-        )
-
-
-class LegacyRole(BaseModel):
-    schema = "LegacyRoleSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        name=None,
-        description=None,
-        permissions=None,
-    ):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.permissions = permissions
-
-    def __str__(self):
-        return "%s" % self.name
-
-    def __repr__(self):
-        return "<LegacyRole: name=%s, permissions=%s>" % (self.name, self.permissions)
-
-
-class RefreshToken(BaseModel):
-    schema = "RefreshTokenSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        issued=None,
-        expires=None,
-        payload=None,
-    ):
-        self.id = id
-        self.issued = issued
-        self.expires = expires
-        self.payload = payload or {}
-
-    def __str__(self):
-        return "%s" % self.payload
-
-    def __repr__(self):
-        return "<RefreshToken: issued=%s, expires=%s, payload=%s>" % (
-            self.issued,
-            self.expires,
-            self.payload,
         )
 
 
@@ -1464,6 +1415,8 @@ class Garden(BaseModel):
         parent=None,
         children=None,
         metadata=None,
+        default_user=None,
+        shared_users=None,
     ):
         self.id = id
         self.name = name
@@ -1480,6 +1433,9 @@ class Garden(BaseModel):
         self.parent = parent
         self.children = children
         self.metadata = metadata or {}
+
+        self.default_user = default_user
+        self.shared_users = shared_users
 
     def __str__(self):
         return "%s" % self.name
@@ -1649,3 +1605,104 @@ class Resolvable(BaseModel):
             self.storage,
             self.details,
         )
+
+
+class User(BaseModel):
+    schema = "UserSchema"
+
+    def __init__(
+        self,
+        username = None,
+        id = None,
+        password=None,
+        roles=None,
+        local_roles=None,
+        remote_roles=None,
+        is_remote=False,
+        remote_user_mapping=None,
+        metadata=None,
+    ):
+        self.id = id
+        self.username = username
+        self.password = password
+        self.roles = roles or []
+        self.local_roles = local_roles or []
+        self.remote_roles = remote_roles or []
+        self.is_remote = is_remote
+        self.remote_user_mapping = remote_user_mapping or []
+        self.metadata = metadata
+
+    def __str__(self):
+        return "%s: %s" % (self.username, self.roles)
+
+    def __repr__(self):
+        return "<User: username=%s, roles=%s>" % (
+            self.username,
+            self.roles,
+        )
+
+
+class Role(BaseModel):
+    schema = "RoleSchema"
+
+    PERMISSION_TYPES = {
+        "GARDEN_ADMIN",
+        "PLUGIN_ADMIN",
+        "OPERATOR",
+        "READ_ONLY",  # Default value if not role is provided
+    }
+
+    def __init__(
+        self,
+        name,
+        permission=None,
+        description=None,
+        id=None,
+        scope_gardens=None,
+        scope_namespaces=None,
+        scope_systems=None,
+        scope_instances=None,
+        scope_versions=None,
+        scope_commands=None,
+    ):
+        self.permission = permission or "READ_ONLY"
+        self.description = description
+        self.id = id
+        self.name = name
+        self.scope_gardens = scope_gardens or []
+        self.scope_namespaces = scope_namespaces or []
+        self.scope_systems = scope_systems or []
+        self.scope_instances = scope_instances or []
+        self.scope_versions = scope_versions or []
+        self.scope_commands = scope_commands or []
+
+    def __str__(self):
+        return "%s" % (self.name)
+
+    def __repr__(self):
+        return (
+            "<Role: id=%s, name=%s, description=%s, permission=%s, scope_garden=%s, "
+            "scope_namespaces=%s, scope_systems=%s, scope_instances=%s, "
+            "scope_versions=%s, scope_commands=%s>"
+        ) % (
+            self.id,
+            self.name,
+            self.description,
+            self.permission,
+            self.scope_gardens,
+            self.scope_namespaces,
+            self.scope_systems,
+            self.scope_instances,
+            self.scope_versions,
+            self.scope_commands,
+        )
+
+class RemoteRole(Role):
+    pass
+
+class RemoteUserMap(BaseModel):
+    schema = "RemoteUserMapSchema"
+
+    def __init__(self, target_garden, username):
+        self.target_garden = target_garden
+        self.username = username

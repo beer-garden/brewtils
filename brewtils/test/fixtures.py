@@ -17,19 +17,21 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
-    LegacyRole,
     LoggingConfig,
     Operation,
     Parameter,
     PatchOperation,
-    Principal,
     Queue,
+    RemoteUserMap,
     Request,
     RequestFile,
     RequestTemplate,
     Resolvable,
     Runner,
     System,
+    User,
+    UserToken,
+    Role,
 )
 
 
@@ -528,38 +530,78 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def principal_dict(legacy_role_dict):
+def remote_user_map_dict():
     return {
-        "id": "58542eb571afd47ead90d24f",
-        "username": "admin",
-        "roles": [legacy_role_dict],
-        "permissions": ["bg-all"],
-        "preferences": {"theme": "dark"},
-        "metadata": {"foo": "bar"},
+        "target_garden": "test",
+        "username": "user",
     }
 
 
 @pytest.fixture
-def bg_principal(principal_dict, bg_role):
-    dict_copy = copy.deepcopy(principal_dict)
-    dict_copy["roles"] = [bg_role]
-    return Principal(**dict_copy)
-
+def bg_remote_user_map(remote_user_map_dict):
+    return RemoteUserMap(**remote_user_map_dict)
 
 @pytest.fixture
-def legacy_role_dict():
+def user_token_dict(user_dict, ts_epoch):
     return {
-        "id": "58542eb571afd47ead90d26f",
-        "name": "bg-admin",
-        "description": "The admin role",
-        "permissions": ["bg-all"],
+        "id": "1",
+        "uuid": "11111111-2222-4444-5555-66666666666",
+        "issued_at": ts_epoch,
+        "expires_at": ts_epoch,
+        "username": "USERNAME",
     }
 
 
 @pytest.fixture
-def bg_role(legacy_role_dict):
-    dict_copy = copy.deepcopy(legacy_role_dict)
-    return LegacyRole(**dict_copy)
+def bg_user_token(user_token_dict, ts_dt):
+    dict_copy = copy.deepcopy(user_token_dict)
+    dict_copy["issued_at"] = ts_dt
+    dict_copy["expires_at"] = ts_dt
+    return UserToken(**dict_copy)
+
+
+@pytest.fixture
+def role_dict():
+    return {
+        "permission": "PLUGIN_ADMIN",
+        "description": "PLUGIN ADMIN ROLE",
+        "id": "1",
+        "name": "PLUGIN_ADMIN_ROLE",
+        "scope_gardens": ["FOO"],
+        "scope_namespaces": [],
+        "scope_systems": [],
+        "scope_instances": [],
+        "scope_versions": [],
+        "scope_commands": [],
+    }
+
+
+@pytest.fixture
+def bg_role(role_dict):
+    return Role(**role_dict)
+
+
+@pytest.fixture
+def user_dict(role_dict, remote_user_map_dict):
+    return {
+        "username": "USERNAME",
+        "password": "HASH",
+        "roles": ["PLUGIN_ADMIN_ROLE"],
+        "local_roles": [role_dict],
+        "remote_roles": [role_dict],
+        "remote_user_mapping": [remote_user_map_dict],
+        "is_remote": False,
+        "metadata": {},
+    }
+
+
+@pytest.fixture
+def bg_user(user_dict, bg_role, bg_remote_user_map):
+    dict_copy = copy.deepcopy(user_dict)
+    dict_copy["remote_roles"] = [bg_role]
+    dict_copy["local_roles"] = [bg_role]
+    dict_copy["remote_user_mapping"] = [bg_remote_user_map]
+    return User(**dict_copy)
 
 
 @pytest.fixture
@@ -816,6 +858,8 @@ def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_di
         "has_parent": False,
         "children": [],
         "metadata": {},
+        "default_user": None,
+        "shared_users": True,
     }
 
 

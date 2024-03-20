@@ -515,11 +515,11 @@ def test_forward(client, rest_client, success, bg_operation):
     assert rest_client.post_forward.called is True
 
 
-def test_get_user(client, rest_client, success, bg_principal):
+def test_get_user(client, rest_client, success, bg_user):
     rest_client.get_user.return_value = success
 
-    client.get_user(bg_principal.username)
-    rest_client.get_user.assert_called_once_with(bg_principal.username)
+    client.get_user(bg_user.username)
+    rest_client.get_user.assert_called_once_with(bg_user.username)
 
 
 class TestWhoAmI(object):

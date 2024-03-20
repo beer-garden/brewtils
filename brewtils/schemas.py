@@ -24,9 +24,7 @@ __all__ = [
     "LoggingConfigSchema",
     "EventSchema",
     "QueueSchema",
-    "PrincipalSchema",
-    "LegacyRoleSchema",
-    "RefreshTokenSchema",
+    "UserTokenSchema",
     "JobSchema",
     "JobExportSchema",
     "JobExportInputSchema",
@@ -39,13 +37,8 @@ __all__ = [
     "GardenSchema",
     "OperationSchema",
     "UserSchema",
-    "UserCreateSchema",
-    "UserListSchema",
     "RoleSchema",
-    "RoleAssignmentSchema",
-    "RoleAssignmentDomainSchema",
-    "GardenDomainIdentifierSchema",
-    "SystemDomainIdentifierSchema",
+    "RemoteUserMapSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -72,26 +65,6 @@ def _deserialize_model(_, data, type_field=None, allowed_types=None):
         raise TypeError("Invalid payload type %s" % data[type_field])
 
     return model_schema_map.get(data[type_field])()
-
-
-def _domain_identifier_schema_selector(_, role_assignment_domain):
-    scope_schema_map = {
-        "Garden": GardenDomainIdentifierSchema,
-        "System": SystemDomainIdentifierSchema,
-        "Global": Schema,
-    }
-
-    if isinstance(role_assignment_domain, dict):
-        scope = role_assignment_domain.get("scope")
-    else:
-        scope = role_assignment_domain.scope
-
-    schema = scope_schema_map.get(scope)
-
-    if schema is None:
-        raise TypeError("Invalid scope: %s" % scope)
-
-    return schema()
 
 
 class ModelField(PolyField):
@@ -425,28 +398,12 @@ class QueueSchema(BaseSchema):
     size = fields.Integer(allow_none=True)
 
 
-class PrincipalSchema(BaseSchema):
+class UserTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
+    uuid = fields.Str(allow_none=True)
+    issued_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     username = fields.Str(allow_none=True)
-    roles = fields.Nested("LegacyRoleSchema", many=True, allow_none=True)
-    permissions = fields.List(fields.Str(), allow_none=True)
-    preferences = fields.Dict(allow_none=True)
-    metadata = fields.Dict(allow_none=True)
-
-
-class LegacyRoleSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
-    name = fields.Str(allow_none=True)
-    description = fields.Str(allow_none=True)
-    roles = fields.Nested("self", many=True, allow_none=True)
-    permissions = fields.List(fields.Str(), allow_none=True)
-
-
-class RefreshTokenSchema(BaseSchema):
-    id = fields.Str(allow_none=True)
-    issued = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    expires = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    payload = fields.Dict(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):
@@ -516,10 +473,8 @@ class GardenSchema(BaseSchema):
         "self", exclude=("parent"), many=True, default=None, allow_none=True
     )
     metadata = fields.Dict(allow_none=True)
-
-
-class GardenDomainIdentifierSchema(BaseSchema):
-    name = fields.Str(required=True)
+    default_user = fields.Str(allow_none=True)
+    shared_users = fields.Bool(allow_none=True)
 
 
 class JobSchema(BaseSchema):
@@ -604,40 +559,36 @@ class ResolvableSchema(BaseSchema):
 
 
 class RoleSchema(BaseSchema):
-    id = fields.Str()
-    name = fields.Str()
+    permission = fields.Str()
     description = fields.Str(allow_none=True)
-    permissions = fields.List(fields.Str())
+    id = fields.Str(allow_none=True)
+    name = fields.Str()
+    scope_gardens = fields.List(fields.Str(), allow_none=True)
+    scope_namespaces = fields.List(fields.Str(), allow_none=True)
+    scope_systems = fields.List(fields.Str(), allow_none=True)
+    scope_instances = fields.List(fields.Str(), allow_none=True)
+    scope_versions = fields.List(fields.Str(), allow_none=True)
+    scope_commands = fields.List(fields.Str(), allow_none=True)
 
 
-class RoleAssignmentDomainSchema(BaseSchema):
-    scope = fields.Str()
-    identifiers = PolyField(
-        serialization_schema_selector=_domain_identifier_schema_selector,
-        deserialization_schema_selector=_domain_identifier_schema_selector,
-        required=False,
-    )
-
-
-class RoleAssignmentSchema(BaseSchema):
-    domain = fields.Nested(RoleAssignmentDomainSchema, required=True)
-    role = fields.Nested(RoleSchema())
+class RemoteUserMapSchema(BaseSchema):
+    target_garden = fields.Str()
+    username = fields.Str()
 
 
 class UserSchema(BaseSchema):
-    id = fields.Str()
-    username = fields.Str()
-    role_assignments = fields.List(fields.Nested(RoleAssignmentSchema()))
-    permissions = fields.Dict()
+    id = fields.Str(allow_none=True)
+    username = fields.Str(allow_none=True)
+    password = fields.Str(allow_none=True)
+    roles = fields.List(fields.Str(), allow_none=True)
+    local_roles = fields.List(fields.Nested(RoleSchema()), allow_none=True)
+    remote_roles = fields.List(fields.Nested(RoleSchema()), allow_none=True)
+    remote_user_mapping = fields.List(fields.Nested(RemoteUserMapSchema()))
+    is_remote = fields.Boolean(allow_none=True)
+    metadata = fields.Dict(allow_none=True)
 
-
-class UserCreateSchema(BaseSchema):
-    username = fields.Str(required=True)
-    password = fields.Str(required=True, load_only=True)
-
-
-class UserListSchema(BaseSchema):
-    users = fields.List(fields.Nested(UserSchema()))
+class RemoteUserSchema(UserSchema):
+    pass
 
 
 model_schema_map.update(
@@ -658,19 +609,21 @@ model_schema_map.update(
         "Queue": QueueSchema,
         "Parameter": ParameterSchema,
         "PatchOperation": PatchSchema,
-        "Principal": PrincipalSchema,
-        "RefreshToken": RefreshTokenSchema,
+        "UserToken": UserTokenSchema,
         "Request": RequestSchema,
         "RequestFile": RequestFileSchema,
         "File": FileSchema,
         "FileChunk": FileChunkSchema,
         "FileStatus": FileStatusSchema,
         "RequestTemplate": RequestTemplateSchema,
-        "LegacyRole": LegacyRoleSchema,
         "System": SystemSchema,
         "Operation": OperationSchema,
         "Runner": RunnerSchema,
         "Resolvable": ResolvableSchema,
+        "Role": RoleSchema,
+        "RemoteRole": RemoteRoleSchema,
+        "User": UserSchema,
+        "RemoteUserMap": RemoteUserMapSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

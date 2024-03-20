@@ -1612,7 +1612,7 @@ class User(BaseModel):
 
     def __init__(
         self,
-        username,
+        username = None,
         id = None,
         password=None,
         roles=None,

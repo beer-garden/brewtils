@@ -578,8 +578,8 @@ class RemoteUserMapSchema(BaseSchema):
 
 class UserSchema(BaseSchema):
     id = fields.Str(allow_none=True)
-    username = fields.Str()
-    password = fields.Str()
+    username = fields.Str(allow_none=True)
+    password = fields.Str(allow_none=True)
     roles = fields.List(fields.Str(), allow_none=True)
     local_roles = fields.List(fields.Nested(RoleSchema()))
     remote_roles = fields.List(fields.Nested(RoleSchema()))

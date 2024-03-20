@@ -403,7 +403,7 @@ class UserTokenSchema(BaseSchema):
     uuid = fields.Str(allow_none=True)
     issued_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    user = fields.Nested("UserSchema")
+    username = fields.Str(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):

@@ -1112,23 +1112,23 @@ class UserToken(BaseModel):
         uuid=None,
         issued_at=None,
         expires_at=None,
-        user=None,
+        username=None,
     ):
         self.id = id
         self.uuid = uuid
         self.issued_at = issued_at
         self.expires_at = expires_at
-        self.user = user or {}
+        self.username = username
 
     def __str__(self):
-        return "%s" % self.user
+        return "%s" % self.username
 
     def __repr__(self):
-        return "<UserToken: uuid=%s, issued_at=%s, expires_at=%s, user=%s>" % (
+        return "<UserToken: uuid=%s, issued_at=%s, expires_at=%s, username=%s>" % (
             self.uuid,
             self.issued_at,
             self.expires_at,
-            self.user,
+            self.username,
         )
 
 

@@ -1697,6 +1697,8 @@ class Role(BaseModel):
             self.scope_commands,
         )
 
+class RemoteRole(Role):
+    pass
 
 class RemoteUserMap(BaseModel):
     schema = "RemoteUserMapSchema"

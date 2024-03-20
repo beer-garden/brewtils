@@ -587,6 +587,9 @@ class UserSchema(BaseSchema):
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
 
+class RemoteUserSchema(UserSchema):
+    pass
+
 
 model_schema_map.update(
     {
@@ -618,6 +621,7 @@ model_schema_map.update(
         "Runner": RunnerSchema,
         "Resolvable": ResolvableSchema,
         "Role": RoleSchema,
+        "RemoteRole": RemoteRoleSchema,
         "User": UserSchema,
         "RemoteUserMap": RemoteUserMapSchema,
         # Compatibility for the Job trigger types

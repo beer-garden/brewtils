@@ -49,6 +49,7 @@ class SchemaParser(object):
         "RunnerSchema": brewtils.models.Runner,
         "ResolvableSchema": brewtils.models.Resolvable,
         "RoleSchema": brewtils.models.Role,
+        "RemoteRoleSchema": brewtils.models.RemoteRole,
         "UserSchema": brewtils.models.User,
         "RemoteUserMapSchema": brewtils.models.RemoteUserMap,
     }
@@ -280,6 +281,20 @@ class SchemaParser(object):
             A Role object
         """
         return cls.parse(role, brewtils.models.Role, from_string=from_string, **kwargs)
+    
+    @classmethod
+    def parse_remote_role(cls, role, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a role model object
+
+        Args:
+            role: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Role object
+        """
+        return cls.parse(role, brewtils.models.RemoteRole, from_string=from_string, **kwargs)
 
     @classmethod
     def parse_remote_user_map(cls, remote_user_map, from_string=False, **kwargs):
@@ -721,6 +736,23 @@ class SchemaParser(object):
         """
         return cls.serialize(
             role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
+        )
+    
+    @classmethod
+    def serialize_remote_role(cls, role, to_string=True, **kwargs):
+        """Convert a role model into serialized form
+
+        Args:
+            role: The role object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation
+        """
+        return cls.serialize(
+            role, to_string=to_string, schema_name=brewtils.models.RemoteRole.schema, **kwargs
         )
 
     @classmethod

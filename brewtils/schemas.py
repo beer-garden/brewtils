@@ -570,6 +570,8 @@ class RoleSchema(BaseSchema):
     scope_versions = fields.List(fields.Str(), allow_none=True)
     scope_commands = fields.List(fields.Str(), allow_none=True)
 
+class RemoteRoleSchema(RoleSchema):
+    pass
 
 class RemoteUserMapSchema(BaseSchema):
     target_garden = fields.Str()
@@ -582,13 +584,12 @@ class UserSchema(BaseSchema):
     password = fields.Str(allow_none=True)
     roles = fields.List(fields.Str(), allow_none=True)
     local_roles = fields.List(fields.Nested(RoleSchema()), allow_none=True)
-    remote_roles = fields.List(fields.Nested(RoleSchema()), allow_none=True)
+    remote_roles = fields.List(fields.Nested(RemoteRoleSchema()), allow_none=True)
     remote_user_mapping = fields.List(fields.Nested(RemoteUserMapSchema()))
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
 
-class RemoteUserSchema(UserSchema):
-    pass
+
 
 
 model_schema_map.update(

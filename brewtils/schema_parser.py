@@ -50,6 +50,8 @@ class SchemaParser(object):
         "OperationSchema": brewtils.models.Operation,
         "RunnerSchema": brewtils.models.Runner,
         "ResolvableSchema": brewtils.models.Resolvable,
+        "SubscriberSchema": brewtils.models.Subscriber,
+        "TopicSchema": brewtils.models.Topic,
     }
 
     logger = logging.getLogger(__name__)
@@ -401,6 +403,38 @@ class SchemaParser(object):
         """
         return cls.parse(
             resolvable, brewtils.models.Resolvable, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_subscriber(cls, subscriber, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a subscriber model object
+
+        Args:
+            subscriber: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Subscriber object
+        """
+        return cls.parse(
+            subscriber, brewtils.models.Subscriber, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_topic(cls, topic, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a subscriber model object
+
+        Args:
+            topic: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Topic object
+        """
+        return cls.parse(
+            topic, brewtils.models.Topic, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -866,6 +900,46 @@ class SchemaParser(object):
             resolvable,
             to_string=to_string,
             schema_name=brewtils.models.Resolvable.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_subscriber(cls, subscriber, to_string=True, **kwargs):
+        """Convert a subscriber model into serialized form
+
+        Args:
+            subscriber: The subscriber object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of subscriber
+        """
+        return cls.serialize(
+            subscriber,
+            to_string=to_string,
+            schema_name=brewtils.models.Subscriber.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_topic(cls, topic, to_string=True, **kwargs):
+        """Convert a topic model into serialized form
+
+        Args:
+            topic: The topic object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of topic
+        """
+        return cls.serialize(
+            topic,
+            to_string=to_string,
+            schema_name=brewtils.models.Topic.schema,
             **kwargs
         )
 

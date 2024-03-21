@@ -112,6 +112,7 @@ class TestRestClient(object):
             ("logging_config_url", "http://host:80%sapi/v1/config/logging/"),
             ("job_url", "http://host:80%sapi/v1/jobs/"),
             ("token_url", "http://host:80%sapi/v1/token/"),
+            ("topic_url", "http://host:80%sapi/v1/topics/"),
             ("user_url", "http://host:80%sapi/v1/users/"),
             ("admin_url", "http://host:80%sapi/v1/admin/"),
         ],
@@ -131,6 +132,7 @@ class TestRestClient(object):
             ("logging_config_url", "https://host:80%sapi/v1/config/logging/"),
             ("job_url", "https://host:80%sapi/v1/jobs/"),
             ("token_url", "https://host:80%sapi/v1/token/"),
+            ("topic_url", "https://host:80%sapi/v1/topics/"),
             ("user_url", "https://host:80%sapi/v1/users/"),
             ("admin_url", "https://host:80%sapi/v1/admin/"),
         ],
@@ -470,3 +472,29 @@ class TestRestClient(object):
         client.get_garden("somegarden")
 
         assert get_tokens_mock.called is True
+
+    def test_get_topic(self, client, session_mock):
+        client.get_topic("id")
+        session_mock.get.assert_called_with(client.topic_url + "id")
+
+    def test_get_topics(self, client, session_mock):
+        client.get_topics()
+        session_mock.get_assert_called_with(client.topic_url, params={})
+
+    def test_post_topics(self, client, session_mock):
+        client.post_topics(payload="payload")
+        session_mock.post.assert_called_with(
+            client.topic_url, data="payload", headers=client.JSON_HEADERS
+        )
+
+    def test_patch_topic(self, client, session_mock):
+        client.patch_topic("id", "payload")
+        session_mock.patch.assert_called_with(
+            client.topic_url + "id",
+            data="payload",
+            headers=client.JSON_HEADERS,
+        )
+
+    def test_delete_topic(self, client, session_mock):
+        client.delete_topic("id")
+        session_mock.delete.assert_called_with(client.topic_url + "id")

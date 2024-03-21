@@ -46,6 +46,8 @@ __all__ = [
     "RoleAssignmentDomainSchema",
     "GardenDomainIdentifierSchema",
     "SystemDomainIdentifierSchema",
+    "SubscriberSchema",
+    "TopicSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -624,6 +626,21 @@ class RoleAssignmentSchema(BaseSchema):
     role = fields.Nested(RoleSchema())
 
 
+class SubscriberSchema(BaseSchema):
+    garden = fields.Str(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    system = fields.Str(allow_none=True)
+    version = fields.Str(allow_none=True)
+    instance = fields.Str(allow_none=True)
+    command = fields.Str(allow_none=True)
+
+
+class TopicSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
+
+
 class UserSchema(BaseSchema):
     id = fields.Str()
     username = fields.Str()
@@ -671,6 +688,8 @@ model_schema_map.update(
         "Operation": OperationSchema,
         "Runner": RunnerSchema,
         "Resolvable": ResolvableSchema,
+        "Subscriber": SubscriberSchema,
+        "Topic": TopicSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

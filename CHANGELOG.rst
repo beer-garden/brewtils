@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.25.0
+------
+TBD
+
+- Added Topic and Subscriber models and related access methods to easy client
+
 3.24.4
 ------
 3/11/2024

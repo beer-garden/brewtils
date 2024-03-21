@@ -602,3 +602,74 @@ class TestChunked(object):
         rest_client.post_chunked_file.return_value = server_error
         with pytest.raises(SaveError):
             assert client.upload_chunked_file(target_file, "desired_name")
+
+
+class TestTopics(object):
+    class TestGet(object):
+        def test_success(self, client, rest_client, bg_topic, success, parser):
+            rest_client.get_topic.return_value = success
+            parser.parse_topic.return_value = bg_topic
+
+            assert client.get_topic(bg_topic.id) == bg_topic
+
+        def test_404(self, client, rest_client, bg_topic, not_found):
+            rest_client.get_topic.return_value = not_found
+
+            with pytest.raises(NotFoundError):
+                client.get_topic(bg_topic.id)
+
+    def test_create(self, client, rest_client, success, bg_topic):
+        rest_client.create_topic.return_value = success
+        client.create_topic(bg_topic)
+        assert rest_client.post_topics.called is True
+
+    def test_get_all(self, client, rest_client, bg_topic, success, parser):
+        second_topic = copy.deepcopy(bg_topic)
+        second_topic.name = "topic2"
+        both_topics = [bg_topic, second_topic]
+        rest_client.get_topics.return_value = success
+        parser.parse_topic.return_value = both_topics
+
+        assert client.get_topics() == both_topics
+
+    class TestRemove(object):
+        def test_not_found(self, monkeypatch, client, rest_client, not_found, bg_topic):
+            monkeypatch.setattr(
+                rest_client, "delete_topic", Mock(return_value=not_found)
+            )
+
+            with pytest.raises(NotFoundError):
+                client.remove_topic(bg_topic.id)
+
+        def test_id(self, client, rest_client, success, bg_topic):
+            rest_client.delete_topic.return_value = success
+
+            assert client.remove_topic(bg_topic.id)
+
+    class TestPatch(object):
+        def test_add_subscriber(
+            self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber
+        ):
+            monkeypatch.setattr(rest_client, "patch_topic", Mock(return_value=success))
+
+            assert client.update_topic(bg_topic.id, add=bg_subscriber)
+            assert rest_client.patch_topic.called is True
+
+        def test_remove_subscriber(
+            self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber
+        ):
+            monkeypatch.setattr(rest_client, "patch_topic", Mock(return_value=success))
+
+            assert client.update_topic(bg_topic.id, remove=bg_subscriber)
+            assert rest_client.patch_topic.called is True
+
+        def test_remove_subscriber_not_found(
+            self, monkeypatch, client, rest_client, not_found, bg_topic, bg_subscriber
+        ):
+            monkeypatch.setattr(
+                rest_client, "patch_topic", Mock(return_value=not_found)
+            )
+
+            with pytest.raises(NotFoundError):
+                assert client.update_topic(bg_topic.id, remove=bg_subscriber)
+                assert rest_client.patch_topic.called is True

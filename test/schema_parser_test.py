@@ -25,6 +25,7 @@ from brewtils.test.comparable import (
     assert_user_token_equal,
     assert_queue_equal,
     assert_remote_user_map_equal,
+    assert_remote_role_equal,
     assert_request_equal,
     assert_request_file_equal,
     assert_resolvable_equal,
@@ -147,6 +148,12 @@ class TestParse(object):
                 lazy_fixture("role_dict"),
                 assert_role_equal,
                 lazy_fixture("bg_role"),
+            ),
+            (
+                brewtils.models.RemoteRole,
+                lazy_fixture("remote_role_dict"),
+                assert_remote_role_equal,
+                lazy_fixture("bg_remote_role"),
             ),
             (
                 brewtils.models.Job,
@@ -299,6 +306,12 @@ class TestParse(object):
                 lazy_fixture("role_dict"),
                 assert_role_equal,
                 lazy_fixture("bg_role"),
+            ),
+            (
+                "parse_remote_role",
+                lazy_fixture("remote_role_dict"),
+                assert_remote_role_equal,
+                lazy_fixture("bg_remote_role"),
             ),
             (
                 "parse_job",
@@ -458,6 +471,12 @@ class TestParse(object):
                 lazy_fixture("bg_role"),
             ),
             (
+                brewtils.models.RemoteRole,
+                lazy_fixture("remote_role_dict"),
+                assert_remote_role_equal,
+                lazy_fixture("bg_remote_role"),
+            ),
+            (
                 brewtils.models.Job,
                 lazy_fixture("job_dict"),
                 assert_job_equal,
@@ -608,6 +627,12 @@ class TestParse(object):
                 lazy_fixture("bg_role"),
             ),
             (
+                "parse_remote_role",
+                lazy_fixture("remote_role_dict"),
+                assert_remote_role_equal,
+                lazy_fixture("bg_remote_role"),
+            ),
+            (
                 "parse_job",
                 lazy_fixture("job_dict"),
                 assert_job_equal,
@@ -709,6 +734,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_user_token"), lazy_fixture("user_token_dict")),
             (lazy_fixture("bg_remote_user_map"), lazy_fixture("remote_user_map_dict")),
             (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            (lazy_fixture("bg_remote_role"), lazy_fixture("remote_role_dict")),
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
@@ -788,6 +814,11 @@ class TestSerialize(object):
                 lazy_fixture("bg_role"),
                 lazy_fixture("role_dict"),
             ),
+            (
+                "serialize_remote_role",
+                lazy_fixture("bg_remote_role"),
+                lazy_fixture("remote_role_dict"),
+            ),
             ("serialize_job", lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (
                 "serialize_job",
@@ -862,6 +893,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_user_token"), lazy_fixture("user_token_dict")),
             (lazy_fixture("bg_remote_user_map"), lazy_fixture("remote_user_map_dict")),
             (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            (lazy_fixture("bg_remote_role"), lazy_fixture("remote_role_dict")),
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
@@ -954,6 +986,7 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_remote_user_map"),
             ),
             (brewtils.models.Role, assert_role_equal, lazy_fixture("bg_role")),
+            (brewtils.models.RemoteRole, assert_remote_role_equal, lazy_fixture("bg_remote_role")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_cron_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_interval_job")),
@@ -1000,6 +1033,7 @@ class TestRoundTrip(object):
             (brewtils.models.User, lazy_fixture("user_dict")),
             (brewtils.models.UserToken, lazy_fixture("user_token_dict")),
             (brewtils.models.Role, lazy_fixture("role_dict")),
+            (brewtils.models.RemoteRole, lazy_fixture("remote_role_dict")),
             (brewtils.models.Job, lazy_fixture("job_dict")),
             (brewtils.models.Job, lazy_fixture("cron_job_dict")),
             (brewtils.models.Job, lazy_fixture("interval_job_dict")),

@@ -1703,7 +1703,7 @@ class Role(BaseModel):
         )
 
 class RemoteRole(Role):
-    pass
+    schema = "RemoteRoleSchema"
 
 class RemoteUserMap(BaseModel):
     schema = "RemoteUserMapSchema"

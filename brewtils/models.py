@@ -37,6 +37,8 @@ __all__ = [
     "Resolvable",
     "Role",
     "User",
+    "Subscriber",
+    "Topic",
 ]
 
 
@@ -94,8 +96,11 @@ class Events(Enum):
     COMMAND_PUBLISHING_BLOCKLIST_SYNC = 48
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
+    TOPIC_CREATED = 54
+    TOPIC_UPDATED = 55
+    TOPIC_REMOVED = 56
 
-    # Next: 54
+    # Next: 57
 
 
 class BaseModel(object):
@@ -1706,3 +1711,71 @@ class RemoteUserMap(BaseModel):
     def __init__(self, target_garden, username):
         self.target_garden = target_garden
         self.username = username
+
+class Subscriber(BaseModel):
+    schema = "SubscriberSchema"
+
+    def __init__(
+        self,
+        garden=None,
+        namespace=None,
+        system=None,
+        version=None,
+        instance=None,
+        command=None,
+    ):
+        self.garden = garden
+        self.namespace = namespace
+        self.system = system
+        self.version = version
+        self.instance = instance
+        self.command = command
+
+    def __str__(self):
+        return "%s" % self.__dict__
+
+    def __repr__(self):
+        return (
+            "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
+            "command=%s>"
+            % (
+                self.garden,
+                self.namespace,
+                self.system,
+                self.version,
+                self.instance,
+                self.command,
+            )
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Subscriber):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.garden == other.garden
+            and self.namespace == other.namespace
+            and self.system == other.system
+            and self.version == other.version
+            and self.instance == other.instance
+            and self.command == other.command
+        )
+
+
+class Topic(BaseModel):
+    schema = "TopicSchema"
+
+    def __init__(self, id=None, name=None, subscribers=None):  # noqa # shadows built-in
+        self.id = id
+        self.name = name
+        self.subscribers = subscribers or []
+
+    def __str__(self):
+        return "%s: %s" % (self.name, [str(s) for s in self.subscribers])
+
+    def __repr__(self):
+        return "<Topic: name=%s, subscribers=%s>" % (
+            self.name,
+            self.subscribers,
+        )

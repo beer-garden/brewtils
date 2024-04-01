@@ -39,6 +39,8 @@ __all__ = [
     "UserSchema",
     "RoleSchema",
     "RemoteUserMapSchema",
+    "SubscriberSchema",
+    "TopicSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -577,6 +579,20 @@ class RemoteUserMapSchema(BaseSchema):
     target_garden = fields.Str()
     username = fields.Str()
 
+class SubscriberSchema(BaseSchema):
+    garden = fields.Str(allow_none=True)
+    namespace = fields.Str(allow_none=True)
+    system = fields.Str(allow_none=True)
+    version = fields.Str(allow_none=True)
+    instance = fields.Str(allow_none=True)
+    command = fields.Str(allow_none=True)
+
+
+class TopicSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    name = fields.Str(allow_none=True)
+    subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
+
 
 class UserSchema(BaseSchema):
     id = fields.Str(allow_none=True)
@@ -625,6 +641,8 @@ model_schema_map.update(
         "RemoteRole": RemoteRoleSchema,
         "User": UserSchema,
         "RemoteUserMap": RemoteUserMapSchema,
+        "Subscriber": SubscriberSchema,
+        "Topic": TopicSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

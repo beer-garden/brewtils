@@ -1,6 +1,36 @@
 Brewtils Changelog
 ==================
 
+3.25.0
+------
+TBD
+
+- Added Topic and Subscriber models and related access methods to easy client
+
+3.24.4
+------
+3/11/2024
+
+- Fixed bug client passed into Plugin would not initialize the commands for Remote Plugins
+
+3.24.3
+------
+3/8/2024
+
+- Fixed bug where Self Referencing SystemClients did not support `false` as default value when not provided
+
+3.24.2
+------
+3/1/24
+
+- Fixed bug where Self Referencing SystemClients did not inspect the command properly for default parameters
+
+3.24.1
+------
+2/28/2024
+
+- Self Referencing SystemClient now supports default values provided through the Parameter annotation
+
 3.24.0
 ------
 2/13/2024

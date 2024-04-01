@@ -39,6 +39,8 @@ from brewtils.models import (
     Resolvable,
     Runner,
     System,
+    Subscriber,
+    Topic,
 )
 
 __all__ = [
@@ -62,6 +64,8 @@ __all__ = [
     "assert_request_file_equal",
     "assert_operation_equal",
     "assert_runner_equal",
+    "assert_subscriber_equal",
+    "assert_topic_equal",
 ]
 
 
@@ -198,6 +202,7 @@ assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
 assert_remote_user_map_equal = partial(_assert_wrapper, expected_type=RemoteUserMap)
+assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
@@ -403,6 +408,18 @@ def assert_garden_equal(obj1, obj2, do_raise=False):
             "systems": partial(assert_system_equal, do_raise=True),
             "receiving_connections": partial(assert_connection_equal, do_raise=True),
             "publishing_connections": partial(assert_connection_equal, do_raise=True),
+        },
+        do_raise=do_raise,
+    )
+
+
+def assert_topic_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Topic,
+        deep_fields={
+            "subscribers": partial(assert_subscriber_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

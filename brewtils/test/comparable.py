@@ -33,6 +33,7 @@ from brewtils.models import (
     UserToken,
     Queue,
     RemoteUserMap,
+    RemoteRole,
     Request,
     RequestFile,
     RequestTemplate,
@@ -252,7 +253,7 @@ def assert_user_equal(obj1, obj2, do_raise=False):
         expected_type=User,
         deep_fields={
             "local_roles": partial(assert_role_equal, do_raise=True),
-            "remote_roles": partial(assert_role_equal, do_raise=True),
+            "remote_roles": partial(assert_remote_role_equal, do_raise=True),
             "remote_user_mapping": partial(assert_remote_user_map_equal, do_raise=True),
         },
         do_raise=do_raise,
@@ -323,6 +324,14 @@ def assert_role_equal(obj1, obj2, do_raise=False):
         obj1,
         obj2,
         expected_type=Role,
+        do_raise=do_raise,
+    )
+
+def assert_remote_role_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=RemoteRole,
         do_raise=do_raise,
     )
 

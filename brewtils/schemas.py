@@ -573,16 +573,7 @@ class RoleSchema(BaseSchema):
     scope_commands = fields.List(fields.Str(), allow_none=True)
 
 class RemoteRoleSchema(RoleSchema):
-    permission = fields.Str()
-    description = fields.Str(allow_none=True)
-    id = fields.Str(allow_none=True)
-    name = fields.Str()
-    scope_gardens = fields.List(fields.Str(), allow_none=True)
-    scope_namespaces = fields.List(fields.Str(), allow_none=True)
-    scope_systems = fields.List(fields.Str(), allow_none=True)
-    scope_instances = fields.List(fields.Str(), allow_none=True)
-    scope_versions = fields.List(fields.Str(), allow_none=True)
-    scope_commands = fields.List(fields.Str(), allow_none=True)
+    pass
 
 
 class RemoteUserMapSchema(BaseSchema):

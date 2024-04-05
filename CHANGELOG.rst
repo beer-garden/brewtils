@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.25.0
 ------
-TBD
+4/5/2024
 
 - Added Topic and Subscriber models and related access methods to easy client
 
@@ -21,7 +21,7 @@ TBD
 
 3.24.2
 ------
-3/1/24
+3/1/2024
 
 - Fixed bug where Self Referencing SystemClients did not inspect the command properly for default parameters
 

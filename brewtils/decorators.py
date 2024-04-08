@@ -688,7 +688,7 @@ def _parameter_type_hint(method, cmd_parameter):
                 return "Boolean"
             if type_hint_class in ["<class 'object'>", "<class 'dict'>"]:
                 return "Dictionary"
-            if type_hint_class.lower() in ["<class 'datetime'>"]:
+            if type_hint_class.lower() in ["<class 'datetime.datetime'>"]:
                 return "DateTime"
             if type_hint_class in ["<class 'bytes'>"]:
                 return "Bytes"

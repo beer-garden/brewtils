@@ -360,7 +360,7 @@ class SystemClient(object):
                 _system_display=self._system.display_name,
                 _output_type=self._commands[command_name].output_type,
                 _instance_name=self._default_instance,
-                **kwargs
+                **kwargs,
             )
         else:
             raise AttributeError(
@@ -510,6 +510,24 @@ class SystemClient(object):
         if raise_on_error and request.status == "ERROR":
             raise RequestFailedError(request)
 
+        # Support cross-server parent/child requests by adding parent if request has different namespace from plugin that created it.
+        if (
+            request.parent is None
+            and request.namespace != brewtils.plugin.CONFIG.namespace
+        ):
+            self._logger.info(
+                f"Adding parent {brewtils.plugin.CONFIG.name}:{brewtils.plugin.CONFIG.namespace} to child request {request.system}:{request.namespace}"
+            )
+            request.parent = getattr(
+                brewtils.plugin.request_context, "current_request", None
+            )
+            request.has_parent = True
+            ec = EasyClient(
+                bg_host=brewtils.plugin.CONFIG.bg_host,
+                bg_port=brewtils.plugin.CONFIG.bg_port,
+            )
+            ec.put_request(request)
+
         return request
 
     def _get_parent_for_request(self):
@@ -526,8 +544,7 @@ class SystemClient(object):
             self._logger.warning(
                 "A parent request was found, but the destination beer-garden "
                 "appears to be different than the beer-garden to which this plugin "
-                "is assigned. Cross-server parent/child requests are not supported "
-                "at this time. Removing the parent context so the request doesn't fail."
+                "is assigned. Removing the parent context so the request doesn't fail."
             )
             return None
 

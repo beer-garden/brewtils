@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.25.1
+------
+TBD
+
+- Add support for cross-server parent/child requests
+
 3.25.0
 ------
 4/5/2024

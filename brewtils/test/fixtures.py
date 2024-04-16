@@ -9,6 +9,7 @@ import pytz
 from brewtils.models import (
     Choices,
     Command,
+    CommandPublishingBlocklist,
     Connection,
     CronTrigger,
     DateTrigger,
@@ -201,6 +202,21 @@ def bg_command_2(command_dict_2, bg_parameter, system_id):
     dict_copy = copy.deepcopy(command_dict_2)
     dict_copy["parameters"] = [bg_parameter]
     return Command(**dict_copy)
+
+@pytest.fixture
+def command_publishing_blocklist_dict():
+    """A Command Publishing Blocklist represented as a dictionary."""
+
+    return {
+        "namespace":"namespace",
+        "system": "system",
+        "command":"command",
+        "status":"status",
+    }
+
+@pytest.fixture
+def bg_command_publishing_blocklist(command_publishing_blocklist_dict):
+    return CommandPublishingBlocklist(**command_publishing_blocklist_dict)
 
 
 @pytest.fixture

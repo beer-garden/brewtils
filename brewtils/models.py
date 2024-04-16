@@ -214,6 +214,36 @@ class Command(BaseModel):
 
         return False
 
+class CommandPublishingBlocklist(BaseModel):
+    schema = "CommandPublishingBlocklistSchema"
+
+    def __init__(
+            self,
+            namespace,
+            system,
+            command,
+            status
+    ):
+        self.namespace = namespace
+        self.system = system
+        self.command = command
+        self.status = status
+
+    def __str__(self):
+        return "%s_%s_%s_%s" % (
+            self.namespace,
+            self.system,
+            self.command,
+            self.status
+        )
+
+    def __repr__(self):
+        return "<CommandPublishingBlocklist: namespace=%s, system=%s, command=%s, status=%s>" % (
+            self.namespace,
+            self.system,
+            self.command,
+            self.status
+        )
 
 class Instance(BaseModel):
     schema = "InstanceSchema"

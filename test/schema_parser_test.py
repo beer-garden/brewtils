@@ -11,6 +11,7 @@ from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
     assert_command_equal,
+    assert_command_publishing_blocklist_equal,
     assert_connection_equal,
     assert_event_equal,
     assert_garden_equal,
@@ -79,12 +80,18 @@ class TestParse(object):
                 lazy_fixture("instance_dict"),
                 assert_instance_equal,
                 lazy_fixture("bg_instance"),
-            ),
+            ),        
             (
                 brewtils.models.Command,
                 lazy_fixture("command_dict"),
                 assert_command_equal,
                 lazy_fixture("bg_command"),
+            ),
+            (
+                brewtils.models.CommandPublishingBlocklist,
+                lazy_fixture("command_publishing_blocklist_dict"),
+                assert_command_publishing_blocklist_equal,
+                lazy_fixture("bg_command_publishing_blocklist"),
             ),
             (
                 brewtils.models.Connection,
@@ -219,6 +226,12 @@ class TestParse(object):
                 lazy_fixture("instance_dict"),
                 assert_instance_equal,
                 lazy_fixture("bg_instance"),
+            ),
+            (
+                "parse_command_publishing_blocklist",
+                lazy_fixture("command_publishing_blocklist_dict"),
+                assert_command_publishing_blocklist_equal,
+                lazy_fixture("bg_command_publishing_blocklist"),
             ),
             (
                 "parse_command",
@@ -372,6 +385,12 @@ class TestParse(object):
                 lazy_fixture("bg_command"),
             ),
             (
+                brewtils.models.CommandPublishingBlocklist,
+                lazy_fixture("command_publishing_blocklist_dict"),
+                assert_command_publishing_blocklist_equal,
+                lazy_fixture("bg_command_publishing_blocklist"),
+            ),
+            (
                 brewtils.models.Connection,
                 lazy_fixture("connection_dict"),
                 assert_connection_equal,
@@ -508,6 +527,12 @@ class TestParse(object):
                 lazy_fixture("command_dict"),
                 assert_command_equal,
                 lazy_fixture("bg_command"),
+            ),
+            (
+                "parse_command_publishing_blocklist",
+                lazy_fixture("command_publishing_blocklist_dict"),
+                assert_command_publishing_blocklist_equal,
+                lazy_fixture("bg_command_publishing_blocklist"),
             ),
             (
                 "parse_connection",
@@ -648,6 +673,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_system"), lazy_fixture("system_dict")),
             (lazy_fixture("bg_instance"), lazy_fixture("instance_dict")),
             (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
+            (lazy_fixture("bg_command_publishing_blocklist"), lazy_fixture("command_publishing_blocklist_dict")),
             (lazy_fixture("bg_connection"), lazy_fixture("connection_dict")),
             (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
             (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
@@ -688,6 +714,11 @@ class TestSerialize(object):
                 "serialize_command",
                 lazy_fixture("bg_command"),
                 lazy_fixture("command_dict"),
+            ),
+            (
+                "serialize_command_publishing_blocklist",
+                lazy_fixture("bg_command_publishing_blocklist"),
+                lazy_fixture("command_publishing_blocklist_dict"),
             ),
             (
                 "serialize_connection",
@@ -789,6 +820,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_system"), lazy_fixture("system_dict")),
             (lazy_fixture("bg_instance"), lazy_fixture("instance_dict")),
             (lazy_fixture("bg_command"), lazy_fixture("command_dict")),
+            (lazy_fixture("bg_command_publishing_blocklist"), lazy_fixture("command_publishing_blocklist_dict")),
             (lazy_fixture("bg_connection"), lazy_fixture("connection_dict")),
             (lazy_fixture("bg_parameter"), lazy_fixture("parameter_dict")),
             (lazy_fixture("bg_request"), lazy_fixture("request_dict")),
@@ -856,6 +888,7 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_instance"),
             ),
             (brewtils.models.Command, assert_command_equal, lazy_fixture("bg_command")),
+            (brewtils.models.CommandPublishingBlocklist, assert_command_publishing_blocklist_equal, lazy_fixture("bg_command_publishing_blocklist")),
             (
                 brewtils.models.Connection,
                 assert_connection_equal,
@@ -917,6 +950,7 @@ class TestRoundTrip(object):
             (brewtils.models.System, lazy_fixture("system_dict")),
             (brewtils.models.Instance, lazy_fixture("instance_dict")),
             (brewtils.models.Command, lazy_fixture("command_dict")),
+            (brewtils.models.CommandPublishingBlocklist, lazy_fixture("command_publishing_blocklist_dict")),
             (brewtils.models.Connection, lazy_fixture("connection_dict")),
             (brewtils.models.Parameter, lazy_fixture("parameter_dict")),
             (brewtils.models.Request, lazy_fixture("request_dict")),

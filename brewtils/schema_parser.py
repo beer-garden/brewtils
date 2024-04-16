@@ -23,6 +23,7 @@ class SchemaParser(object):
     _models = {
         "ChoicesSchema": brewtils.models.Choices,
         "CommandSchema": brewtils.models.Command,
+        "CommandPublishingBlocklistSchema": brewtils.models.CommandPublishingBlocklist,
         "ConnectionSchema": brewtils.models.Connection,
         "CronTriggerSchema": brewtils.models.CronTrigger,
         "DateTriggerSchema": brewtils.models.DateTrigger,
@@ -103,6 +104,22 @@ class SchemaParser(object):
         """
         return cls.parse(
             command, brewtils.models.Command, from_string=from_string, **kwargs
+        )
+    
+    @classmethod
+    def parse_command_publishing_blocklist(cls, command_publishing_blocklist, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a command_publishing_blocklist model object
+
+        Args:
+            command_publishing_blocklist: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A CommandPublishingBlocklist object
+        """
+        return cls.parse(
+            command_publishing_blocklist, brewtils.models.CommandPublishingBlocklist, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -544,6 +561,26 @@ class SchemaParser(object):
             command,
             to_string=to_string,
             schema_name=brewtils.models.Command.schema,
+            **kwargs
+        )
+    
+    @classmethod
+    def serialize_command_publishing_blocklist(cls, command_publishing_blocklist, to_string=True, **kwargs):
+        """Convert a commandcommand_publishing_blocklist into serialized form
+
+        Args:
+            command_publishing_blocklist: The command object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of command_publishing_blocklist
+        """
+        return cls.serialize(
+            command_publishing_blocklist,
+            to_string=to_string,
+            schema_name=brewtils.models.CommandPublishingBlocklist.schema,
             **kwargs
         )
 

@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.0
+------
+TBD
+
+- Added new model for CommandPublishingBlocklist
+
 3.25.0
 ------
 4/5/2024

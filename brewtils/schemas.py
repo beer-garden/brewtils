@@ -14,6 +14,7 @@ __all__ = [
     "SystemSchema",
     "InstanceSchema",
     "CommandSchema",
+    "CommandPublishingBlocklistSchema",
     "ParameterSchema",
     "RequestSchema",
     "RequestFileSchema",
@@ -228,6 +229,11 @@ class CommandSchema(BaseSchema):
     topics = fields.List(fields.Str(), allow_none=True)
     allow_any_kwargs = fields.Boolean(allow_none=True)
 
+class CommandPublishingBlocklistSchema(BaseSchema):
+    namespace = fields.Str(allow_none=True)
+    system = fields.Str(allow_none=True)
+    command = fields.Str(allow_none=True)
+    status = fields.Str(allow_none=True)
 
 class InstanceSchema(BaseSchema):
     id = fields.Str(allow_none=True)
@@ -661,6 +667,7 @@ model_schema_map.update(
     {
         "Choices": ChoicesSchema,
         "Command": CommandSchema,
+        "CommandPublishingBlocklist": CommandPublishingBlocklistSchema,
         "Connection": ConnectionSchema,
         "CronTrigger": CronTriggerSchema,
         "DateTrigger": DateTriggerSchema,

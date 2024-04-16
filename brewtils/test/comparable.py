@@ -16,6 +16,7 @@ import brewtils.test
 from brewtils.models import (
     Choices,
     Command,
+    CommandPublishingBlocklist,
     Connection,
     CronTrigger,
     DateTrigger,
@@ -198,6 +199,7 @@ assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
+assert_command_publishing_blocklist_equal = partial(_assert_wrapper, expected_type=CommandPublishingBlocklist)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):

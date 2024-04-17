@@ -240,7 +240,8 @@ class CommandPublishingBlocklist(BaseModel):
         )
 
     def __repr__(self):
-        return "<CommandPublishingBlocklist: namespace=%s, system=%s, command=%s, status=%s>" % (
+        return "<CommandPublishingBlocklist: id=%s, namespace=%s, system=%s, command=%s, status=%s>" % (
+            self.id,
             self.namespace,
             self.system,
             self.command,

@@ -511,13 +511,12 @@ class SystemClient(object):
             raise RequestFailedError(request)
 
         # Support cross-server parent/child requests by adding parent if request has different namespace from plugin that created it.
-        if (
-            request.parent is None
-            and request.namespace != brewtils.plugin.CONFIG.namespace
+        if request.parent is None and (
+            brewtils.plugin.CONFIG.bg_host.upper()
+            != self._easy_client.client.bg_host.upper()
+            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_url_prefix
+            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_url_prefix
         ):
-            self._logger.info(
-                f"Adding parent {brewtils.plugin.CONFIG.name}:{brewtils.plugin.CONFIG.namespace} to child request {request.system}:{request.namespace}"
-            )
             request.parent = getattr(
                 brewtils.plugin.request_context, "current_request", None
             )
@@ -525,6 +524,7 @@ class SystemClient(object):
             ec = EasyClient(
                 bg_host=brewtils.plugin.CONFIG.bg_host,
                 bg_port=brewtils.plugin.CONFIG.bg_port,
+                bg_url_prefix=brewtils.plugin.CONFIG.bg_url_prefix,
             )
             ec.put_request(request)
 

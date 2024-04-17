@@ -230,6 +230,7 @@ class CommandSchema(BaseSchema):
     allow_any_kwargs = fields.Boolean(allow_none=True)
 
 class CommandPublishingBlocklistSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     system = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)

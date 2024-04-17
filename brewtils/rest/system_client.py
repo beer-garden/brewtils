@@ -510,7 +510,7 @@ class SystemClient(object):
         if raise_on_error and request.status == "ERROR":
             raise RequestFailedError(request)
 
-        # Support cross-server parent/child requests by adding parent if request has different namespace from plugin that created it.
+        # Support cross-server parent/child requests. Add parent if request has different host.
         if request.parent is None and (
             brewtils.plugin.CONFIG.bg_host.upper()
             != self._easy_client.client.bg_host.upper()

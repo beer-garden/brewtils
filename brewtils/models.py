@@ -219,10 +219,10 @@ class CommandPublishingBlocklist(BaseModel):
 
     def __init__(
             self,
-            namespace,
-            system,
-            command,
-            status
+            namespace=None,
+            system=None,
+            command=None,
+            status=None,
     ):
         self.namespace = namespace
         self.system = system

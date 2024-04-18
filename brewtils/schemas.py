@@ -571,6 +571,7 @@ class RoleSchema(BaseSchema):
     scope_instances = fields.List(fields.Str(), allow_none=True)
     scope_versions = fields.List(fields.Str(), allow_none=True)
     scope_commands = fields.List(fields.Str(), allow_none=True)
+    protected = fields.Boolean(allow_none=True)
 
 class RemoteRoleSchema(RoleSchema):
     pass

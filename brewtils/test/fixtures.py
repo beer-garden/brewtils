@@ -576,6 +576,7 @@ def role_dict():
         "scope_instances": [],
         "scope_versions": [],
         "scope_commands": [],
+        "protected": False,
     }
 
 
@@ -596,6 +597,7 @@ def remote_role_dict():
         "scope_instances": [],
         "scope_versions": [],
         "scope_commands": [],
+        "protected": False,
     }
 
 

@@ -1669,6 +1669,7 @@ class Role(BaseModel):
         scope_instances=None,
         scope_versions=None,
         scope_commands=None,
+        protected=False,
     ):
         self.permission = permission or "READ_ONLY"
         self.description = description
@@ -1680,6 +1681,7 @@ class Role(BaseModel):
         self.scope_instances = scope_instances or []
         self.scope_versions = scope_versions or []
         self.scope_commands = scope_commands or []
+        self.protected = protected
 
     def __str__(self):
         return "%s" % (self.name)

@@ -514,8 +514,9 @@ class SystemClient(object):
         if request.parent is None and (
             brewtils.plugin.CONFIG.bg_host.upper()
             != self._easy_client.client.bg_host.upper()
-            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_url_prefix
-            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_url_prefix
+            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
+            or brewtils.plugin.CONFIG.bg_url_prefix
+            != self._easy_client.client.bg_url_prefix
         ):
             request.parent = getattr(
                 brewtils.plugin.request_context, "current_request", None

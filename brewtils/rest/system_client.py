@@ -511,7 +511,7 @@ class SystemClient(object):
             raise RequestFailedError(request)
 
         # Support cross-server parent/child requests. Add parent if request has different host.
-        if request.parent is None and (
+        if request.parent is None and brewtils.plugin.CONFIG and (
             brewtils.plugin.CONFIG.bg_host.upper()
             != self._easy_client.client.bg_host.upper()
             or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port

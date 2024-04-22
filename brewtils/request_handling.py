@@ -120,6 +120,7 @@ class LocalRequestProcessor(object):
                 request.parameters,
                 definitions=command.parameters,
                 upload=False,
+                allow_any_parameter=command.allow_any_kwargs,
             )
 
         return getattr(target, request.command)(**parameters)
@@ -358,6 +359,7 @@ class RequestProcessor(object):
                 request.parameters,
                 definitions=command.parameters,
                 upload=False,
+                allow_any_parameter=command.allow_any_kwargs,
             )
 
         return getattr(target, request.command)(**parameters)

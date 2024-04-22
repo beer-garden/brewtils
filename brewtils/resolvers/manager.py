@@ -8,6 +8,7 @@ try:
 except ImportError:
     from collections.abc import Mapping as CollectionsMapping
 
+from brewtils.errors import RequestProcessException
 from brewtils.models import Parameter, Resolvable
 from brewtils.resolvers.bytes import BytesResolver
 from brewtils.resolvers.chunks import ChunksResolver
@@ -42,14 +43,15 @@ class ResolutionManager(object):
         self.logger = logging.getLogger(__name__)
         self.resolvers = build_resolver_map(**kwargs)
 
-    def resolve(self, values, definitions=None, upload=True):
-        # type: (Mapping[str, Any], List[Parameter], bool) -> Dict[str, Any]
+    def resolve(self, values, definitions=None, upload=True, allow_any_parameter=False):
+        # type: (Mapping[str, Any], List[Parameter], bool, bool) -> Dict[str, Any]
         """Iterate through parameters, resolving as necessary
 
         Args:
             values: Dictionary of request parameter values
             definitions: Parameter definitions
             upload: Controls which methods will be called on resolvers
+            allow_any_parameter: Controls if any KWARG value is supported by command
 
         Returns:
             The resolved parameter dict
@@ -58,50 +60,57 @@ class ResolutionManager(object):
 
         for key, value in values.items():
             # First find the matching Parameter definition, if possible
-            definition = Parameter()
+            definition = None
+            resolved = None
             for param_def in definitions or []:
                 if param_def.key == key:
                     definition = param_def
                     break
 
-            # Check to see if this is a nested parameter
-            if isinstance(value, CollectionsMapping) and definition.parameters:
-                resolved = self.resolve(
-                    value, definitions=definition.parameters, upload=upload
-                )
-
-            # See if this is a multi parameter
-            elif isinstance(value, list):
-                # This is kind of gross because multi-parameters are kind of gross
-                # We have to wrap everything into the correct form and pull it out
-                resolved = []
-
-                for item in value:
-                    resolved_item = self.resolve(
-                        {key: item}, definitions=definitions, upload=upload
+            if definition:
+                # Check to see if this is a nested parameter
+                if isinstance(value, CollectionsMapping) and definition.parameters:
+                    resolved = self.resolve(
+                        value, definitions=definition.parameters, upload=upload
                     )
-                    resolved.append(resolved_item[key])
 
-            # This is a simple parameter
-            else:
-                # See if this is a parameter that needs to be resolved
-                for resolver in self.resolvers:
-                    if upload and resolver.should_upload(value, definition):
-                        resolvable = resolver.upload(value, definition)
-                        resolved = SchemaParser.serialize(resolvable, to_string=False)
-                        break
-                    elif (
-                        not upload
-                        and resolver.should_download(value, definition)
-                        and isinstance(value, Mapping)
-                    ):
-                        resolvable = Resolvable(**value)
-                        resolved = resolver.download(resolvable, definition)
-                        break
+                # See if this is a multi parameter
+                elif isinstance(value, list):
+                    # This is kind of gross because multi-parameters are kind of gross
+                    # We have to wrap everything into the correct form and pull it out
+                    resolved = []
 
-                # Just a normal parameter
+                    for item in value:
+                        resolved_item = self.resolve(
+                            {key: item}, definitions=definitions, upload=upload
+                        )
+                        resolved.append(resolved_item[key])
+
+                # This is a simple parameter
                 else:
-                    resolved = value
+                    # See if this is a parameter that needs to be resolved
+                    for resolver in self.resolvers:
+                        if upload and resolver.should_upload(value, definition):
+                            resolvable = resolver.upload(value, definition)
+                            resolved = SchemaParser.serialize(resolvable, to_string=False)
+                            break
+                        elif (
+                            not upload
+                            and resolver.should_download(value, definition)
+                            and isinstance(value, Mapping)
+                        ):
+                            resolvable = Resolvable(**value)
+                            resolved = resolver.download(resolvable, definition)
+                            break
+
+                    # Just a normal parameter
+                    else:
+                        resolved = value
+            elif allow_any_parameter:
+                # Only supports normal parameters
+                resolved = value
+            else:
+                raise RequestProcessException(f"Unable to map key '{key}' to command parameter")
 
             resolved_parameters[key] = resolved
 

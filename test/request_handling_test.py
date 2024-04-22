@@ -373,7 +373,7 @@ class TestRequestProcessor(object):
 
             processor._invoke_command(target_mock, request, {})
             processor._resolver.resolve.assert_called_once_with(
-                request.parameters, definitions=bg_command.parameters, upload=False
+                request.parameters, definitions=bg_command.parameters, upload=False, allow_any_parameter=False
             )
             getattr(target_mock, bg_command.name).assert_called_once_with(
                 message="test"

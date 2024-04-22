@@ -622,7 +622,7 @@ class SystemClient(object):
             return request.parameters
 
         return self._resolver.resolve(
-            request.parameters, self._commands[command].parameters, upload=True
+            request.parameters, self._commands[command].parameters, upload=True, allow_any_parameter=self._commands[command].allow_any_kwargs,
         )
 
     @staticmethod

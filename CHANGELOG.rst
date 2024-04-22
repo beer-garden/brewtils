@@ -7,6 +7,7 @@ TBD
 
 - Add support for cross-server parent/child requests
 - Fixed Typehinting parsing for `datetime.datetime` types
+- Fixed `allow_any_kwargs` for commands that are called via SystemClient.
 
 3.25.0
 ------

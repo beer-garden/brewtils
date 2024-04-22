@@ -1,6 +1,11 @@
 Brewtils Changelog
 ==================
 
+3.25.1
+------
+TBD
+- Fixed Typehinting parsing for `datetime.datetime` types
+
 3.25.0
 ------
 4/5/2024

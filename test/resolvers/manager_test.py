@@ -233,6 +233,7 @@ class TestNestedMultiResolve(object):
 
         assert resolved == {"message": [{"nested": "hi"}, {"nested": "hi"}]}
 
+
 class TestAnyParameters(object):
     """Tests with no resolution necessary"""
 
@@ -243,7 +244,9 @@ class TestAnyParameters(object):
         for param in bg_command.parameters:
             param.parameters = None
 
-        resolved = manager.resolve(values, definitions=bg_command.parameters, allow_any_parameter=True)
+        resolved = manager.resolve(
+            values, definitions=bg_command.parameters, allow_any_parameter=True
+        )
         assert resolved == values
 
     def test_mixed_kwarg(self, manager, bg_command):
@@ -253,7 +256,9 @@ class TestAnyParameters(object):
         for param in bg_command.parameters:
             param.parameters = None
 
-        resolved = manager.resolve(values, definitions=bg_command.parameters, allow_any_parameter=True)
+        resolved = manager.resolve(
+            values, definitions=bg_command.parameters, allow_any_parameter=True
+        )
         assert resolved == values
 
     def test_raise_error(self, manager, bg_command):
@@ -264,5 +269,6 @@ class TestAnyParameters(object):
             param.parameters = None
 
         with pytest.raises(RequestProcessException):
-            manager.resolve(values, definitions=bg_command.parameters, allow_any_parameter=False)
-
+            manager.resolve(
+                values, definitions=bg_command.parameters, allow_any_parameter=False
+            )

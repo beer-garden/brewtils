@@ -7,6 +7,7 @@ TBD
 
 - Add support for cross-server parent/child requests
 - Fixed Typehinting parsing for `datetime.datetime` types
+- Fixed Self Referencing System Client Parent/Child request mapping
 
 3.25.0
 ------

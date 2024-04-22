@@ -4,6 +4,8 @@ Brewtils Changelog
 3.25.1
 ------
 TBD
+
+- Add support for cross-server parent/child requests
 - Fixed Typehinting parsing for `datetime.datetime` types
 
 3.25.0

@@ -258,8 +258,7 @@ class RequestProcessor(object):
         try:
             # Set request context so this request will be the parent of any
             # generated requests and update status We also need the host/port of
-            #  the current plugin. We currently don't support parent/child
-            # requests across different servers.
+            #  the current plugin.
             brewtils.plugin.request_context.current_request = request
 
             output = self._invoke_command(target, request, headers)

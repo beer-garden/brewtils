@@ -92,7 +92,9 @@ class ResolutionManager(object):
                     for resolver in self.resolvers:
                         if upload and resolver.should_upload(value, definition):
                             resolvable = resolver.upload(value, definition)
-                            resolved = SchemaParser.serialize(resolvable, to_string=False)
+                            resolved = SchemaParser.serialize(
+                                resolvable, to_string=False
+                            )
                             break
                         elif (
                             not upload
@@ -110,7 +112,9 @@ class ResolutionManager(object):
                 # Only supports normal parameters
                 resolved = value
             else:
-                raise RequestProcessException(f"Unable to map key '{key}' to command parameter")
+                raise RequestProcessException(
+                    f"Unable to map key '{key}' to command parameter"
+                )
 
             resolved_parameters[key] = resolved
 

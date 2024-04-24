@@ -70,6 +70,7 @@ class LocalRequestProcessor(object):
                 if parameter.default is not None:
                     if parameter.key not in request.parameters:
                         request.parameters[parameter.key] = parameter.default
+            request.command_type = command.command_type
 
         request.status = "IN_PROGRESS"
 

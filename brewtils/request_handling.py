@@ -74,6 +74,7 @@ class LocalRequestProcessor(object):
         request.status = "IN_PROGRESS"
 
         request = self._ez_client.put_request(request)
+        brewtils.plugin.request_context.current_request = request
 
         try:
             output = self._invoke_command(brewtils.plugin.CLIENT, request)

@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Add support for cross-server parent/child requests
+- Fixed Self-Referencing bug where spawned requests did not assign command_type
 - Fixed Typehinting parsing for `datetime.datetime` types
 - Fixed `allow_any_kwargs` for commands that are called via SystemClient.
 - Fixed Self Referencing System Client Parent/Child request mapping

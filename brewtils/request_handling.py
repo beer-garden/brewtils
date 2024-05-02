@@ -283,7 +283,12 @@ class RequestProcessor(object):
         self.consumer.stop_consuming()
 
         # Finish all current actions
-        self._pool.shutdown(wait=True)
+        if sys.version_info.major == 3 and sys.version_info.minor >= 9:
+            # Only finish requests that are In Progress
+            self._pool.shutdown(wait=True, cancel_futures=True)
+        else:
+            # Finish all requests in the pool
+            self._pool.shutdown(wait=True)
 
         self.consumer.stop()
         self.consumer.join()

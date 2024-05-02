@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Add support for cross-server parent/child requests
+- Added Python 3.9 `ThreadPoolExecutor` shutdown process to only finish cached requests that are IN_PROGRESS
 - Fixed Self-Referencing bug where spawned requests did not assign command_type
 - Fixed Typehinting parsing for `datetime.datetime` types
 - Fixed `allow_any_kwargs` for commands that are called via SystemClient.

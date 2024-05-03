@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.25.1
 ------
-TBD
+5/3/2024
 
 - Add support for cross-server parent/child requests
 - Added Python 3.9 `ThreadPoolExecutor` shutdown process to only finish cached requests that are IN_PROGRESS

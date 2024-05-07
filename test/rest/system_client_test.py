@@ -98,7 +98,7 @@ class TestLoadBgSystem(object):
             client.no_command()
 
     def test_latest(self, client, easy_client, bg_system, bg_system_2):
-        easy_client.find_systems.return_value = [bg_system, bg_system_2]
+        easy_client.find_systems.return_value = [bg_system_2]
 
         client.load_bg_system()
         assert client.bg_system == bg_system_2

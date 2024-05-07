@@ -356,7 +356,7 @@ class SystemClient(object):
                 _command=command_name,
                 _system_name=self._system.name,
                 _system_namespace=self._system.namespace,
-                _system_version=self._system.version,
+                _system_version=self._version_constraint if self._version_constraint == "latest" else self._system.version,
                 _system_display=self._system.display_name,
                 _output_type=self._commands[command_name].output_type,
                 _instance_name=self._default_instance,
@@ -459,11 +459,14 @@ class SystemClient(object):
         """
 
         if self._version_constraint == "latest":
-            self._system = self._determine_latest(
-                self._easy_client.find_systems(
-                    name=self._system_name, namespace=self._system_namespace
+            systems = self._easy_client.find_systems(
+                    name=self._system_name, namespace=self._system_namespace, filter_latest=True
                 )
-            )
+            if systems:
+                self._system = systems[0]
+            else:
+                self._system = None
+            
         else:
             self._system = self._easy_client.find_unique_system(
                 name=self._system_name,

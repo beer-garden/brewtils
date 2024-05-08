@@ -1,12 +1,13 @@
 Brewtils Changelog
 ==================
 
-3.25.2
+3.26.0
 ------
 TBD
 
 - Added API support for Latest System, SystemClient will use Version `latest` instead of resolved version. 
   Allowing Beer Garden to resolve the latest version.
+- Must upgrade to a minimum version of Beer Garden 3.26.0 to support new APIs
 
 3.25.1
 ------

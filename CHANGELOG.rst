@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.0
+------
+TBD
+
+- Fixed cross-server url prefix comparison and handled case where there is no current request
+
 3.25.1
 ------
 5/3/2024

@@ -29,7 +29,13 @@ class AutoDecorator:
                 _wrapped = getattr(client, func)
                 if not hasattr(_wrapped, "_command") and not func.startswith("__"):
                     # decorators.py will handle all of the markings
-                    has_kwargs = any([True for p in signature(_wrapped).parameters.values() if p.kind == InspectParameter.VAR_KEYWORD])
+                    has_kwargs = any(
+                        [
+                            True
+                            for p in signature(_wrapped).parameters.values()
+                            if p.kind == InspectParameter.VAR_KEYWORD
+                        ]
+                    )
                     if func.startswith("_"):
                         _wrapped._command = Command(hidden=True)
                     elif has_kwargs:

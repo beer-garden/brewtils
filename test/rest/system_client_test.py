@@ -98,13 +98,13 @@ class TestLoadBgSystem(object):
             client.no_command()
 
     def test_latest(self, client, easy_client, bg_system, bg_system_2):
-        easy_client.find_systems.return_value = [bg_system, bg_system_2]
+        easy_client.find_systems.return_value = [bg_system_2]
 
         client.load_bg_system()
         assert client.bg_system == bg_system_2
         assert client.bg_default_instance == "default"
         easy_client.find_systems.assert_called_once_with(
-            name=bg_system.name, namespace=""
+            name=bg_system.name, namespace="", filter_latest=True
         )
 
     @pytest.mark.parametrize(
@@ -154,7 +154,7 @@ class TestLoadBgSystem(object):
         client.load_bg_system()
         assert client.bg_system == bg_system
         easy_client.find_systems.assert_called_once_with(
-            name=bg_system.name, namespace="foo"
+            name=bg_system.name, namespace="foo", filter_latest=True
         )
 
     def test_no_system_kwargs(self):

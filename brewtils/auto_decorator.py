@@ -36,11 +36,8 @@ class AutoDecorator:
                             if p.kind == InspectParameter.VAR_KEYWORD
                         ]
                     )
-                    if func.startswith("_"):
-                        _wrapped._command = Command(hidden=True)
-                    elif has_kwargs:
-                        _wrapped._command = Command(hidden=func.startswith("_"), allow_any_kwargs=True)
-                    else:
-                        _wrapped._command = Command()
+                    _wrapped._command = Command(
+                        hidden=func.startswith("_"), allow_any_kwargs=has_kwargs
+                    )
 
         return client

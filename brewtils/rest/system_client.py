@@ -528,13 +528,13 @@ class SystemClient(object):
                 != self._easy_client.client.bg_host.upper()
                 or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
                 or brewtils.plugin.CONFIG.bg_url_prefix
-                != self._easy_client.client.bg_url_prefix
+                != self._easy_client.client.bg_prefix
             )
         ):
             request.parent = getattr(
                 brewtils.plugin.request_context, "current_request", None
             )
-            request.has_parent = True
+            request.has_parent = request.parent is not None
             ec = EasyClient(
                 bg_host=brewtils.plugin.CONFIG.bg_host,
                 bg_port=brewtils.plugin.CONFIG.bg_port,

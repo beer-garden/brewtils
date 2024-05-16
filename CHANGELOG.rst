@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.26.0
 ------
-TBD
+5/16/2024
 
 - Added support for autobrew any kwargs
 - Fixed cross-server url prefix comparison and handled case where there is no current request

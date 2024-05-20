@@ -1,6 +1,27 @@
 Brewtils Changelog
 ==================
 
+3.26.0
+------
+5/16/2024
+
+- Added support for autobrew any kwargs
+- Fixed cross-server url prefix comparison and handled case where there is no current request
+- Added API support for Latest System, SystemClient will use Version `latest` instead of resolved version. 
+  Allowing Beer Garden to resolve the latest version.
+- Must upgrade to a minimum version of Beer Garden 3.26.0 to support new APIs
+
+3.25.1
+------
+5/3/2024
+
+- Add support for cross-server parent/child requests
+- Added Python 3.9 `ThreadPoolExecutor` shutdown process to only finish cached requests that are IN_PROGRESS
+- Fixed Self-Referencing bug where spawned requests did not assign command_type
+- Fixed Typehinting parsing for `datetime.datetime` types
+- Fixed `allow_any_kwargs` for commands that are called via SystemClient.
+- Fixed Self Referencing System Client Parent/Child request mapping
+
 3.25.0
 ------
 4/5/2024

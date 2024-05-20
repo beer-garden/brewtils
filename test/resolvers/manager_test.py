@@ -3,6 +3,7 @@
 import pytest
 from mock import Mock
 
+from brewtils.errors import RequestProcessException
 from brewtils.resolvers.manager import ResolutionManager
 
 
@@ -231,3 +232,43 @@ class TestNestedMultiResolve(object):
         )
 
         assert resolved == {"message": [{"nested": "hi"}, {"nested": "hi"}]}
+
+
+class TestAnyParameters(object):
+    """Tests with no resolution necessary"""
+
+    def test_kwarg_simple(self, manager, bg_command):
+        values = {"kwarg": "kwargs"}
+
+        # Need to clear out nested parameters otherwise this is a model parameter
+        for param in bg_command.parameters:
+            param.parameters = None
+
+        resolved = manager.resolve(
+            values, definitions=bg_command.parameters, allow_any_parameter=True
+        )
+        assert resolved == values
+
+    def test_mixed_kwarg(self, manager, bg_command):
+        values = {"message": "hi", "kwarg": "kwargs"}
+
+        # Need to clear out nested parameters otherwise this is a model parameter
+        for param in bg_command.parameters:
+            param.parameters = None
+
+        resolved = manager.resolve(
+            values, definitions=bg_command.parameters, allow_any_parameter=True
+        )
+        assert resolved == values
+
+    def test_raise_error(self, manager, bg_command):
+        values = {"message": "hi", "kwarg": "kwargs"}
+
+        # Need to clear out nested parameters otherwise this is a model parameter
+        for param in bg_command.parameters:
+            param.parameters = None
+
+        with pytest.raises(RequestProcessException):
+            manager.resolve(
+                values, definitions=bg_command.parameters, allow_any_parameter=False
+            )

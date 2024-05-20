@@ -366,6 +366,7 @@ class RestClient(object):
         """Perform a GET on the System collection URL
 
         Args:
+            filter_latest (bool): Filter latest system versions
             **kwargs: Query parameters to be used in the GET request
 
         Returns:

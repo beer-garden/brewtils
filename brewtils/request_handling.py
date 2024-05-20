@@ -70,10 +70,12 @@ class LocalRequestProcessor(object):
                 if parameter.default is not None:
                     if parameter.key not in request.parameters:
                         request.parameters[parameter.key] = parameter.default
+            request.command_type = command.command_type
 
         request.status = "IN_PROGRESS"
 
         request = self._ez_client.put_request(request)
+        brewtils.plugin.request_context.current_request = request
 
         try:
             output = self._invoke_command(brewtils.plugin.CLIENT, request)
@@ -120,6 +122,7 @@ class LocalRequestProcessor(object):
                 request.parameters,
                 definitions=command.parameters,
                 upload=False,
+                allow_any_parameter=command.allow_any_kwargs,
             )
 
         return getattr(target, request.command)(**parameters)
@@ -258,8 +261,7 @@ class RequestProcessor(object):
         try:
             # Set request context so this request will be the parent of any
             # generated requests and update status We also need the host/port of
-            #  the current plugin. We currently don't support parent/child
-            # requests across different servers.
+            #  the current plugin.
             brewtils.plugin.request_context.current_request = request
 
             output = self._invoke_command(target, request, headers)
@@ -281,7 +283,12 @@ class RequestProcessor(object):
         self.consumer.stop_consuming()
 
         # Finish all current actions
-        self._pool.shutdown(wait=True)
+        if sys.version_info.major == 3 and sys.version_info.minor >= 9:
+            # Only finish requests that are In Progress
+            self._pool.shutdown(wait=True, cancel_futures=True)
+        else:
+            # Finish all requests in the pool
+            self._pool.shutdown(wait=True)
 
         self.consumer.stop()
         self.consumer.join()
@@ -359,6 +366,7 @@ class RequestProcessor(object):
                 request.parameters,
                 definitions=command.parameters,
                 upload=False,
+                allow_any_parameter=command.allow_any_kwargs,
             )
 
         return getattr(target, request.command)(**parameters)

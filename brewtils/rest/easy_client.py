@@ -360,6 +360,7 @@ class EasyClient(object):
         """Find Systems using keyword arguments as search parameters
 
         Args:
+            filter_latest (bool): Filter latest system versions
             **kwargs: Search parameters
 
         Returns:

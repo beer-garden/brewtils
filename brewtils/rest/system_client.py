@@ -430,6 +430,7 @@ class SystemClient(object):
                     return self.send_bg_request(**kwargs)
                 elif self._use_latest:
                     self._use_latest = False
+                    kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
             raise
         

@@ -349,6 +349,7 @@ class TestExecute(object):
         with pytest.raises(ValidationError):
             client.speak()
         assert easy_client.create_request.call_count == 2
+        assert not client._use_latest
 
     def test_retry_send_different_version(
         self, client, easy_client, bg_system_2, mock_success
@@ -364,138 +365,138 @@ class TestExecute(object):
         assert easy_client.create_request.call_count == 1
 
 
-# class TestExecuteNonBlocking(object):
-#     @pytest.mark.usefixtures("sleep_patch")
-#     def test_speak(self, client, easy_client, mock_success, mock_in_progress):
-#         easy_client.find_unique_request.return_value = mock_success
-#         easy_client.create_request.return_value = mock_in_progress
+class TestExecuteNonBlocking(object):
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_speak(self, client, easy_client, mock_success, mock_in_progress):
+        easy_client.find_unique_request.return_value = mock_success
+        easy_client.create_request.return_value = mock_in_progress
 
-#         request = client.speak(_blocking=False).result()
+        request = client.speak(_blocking=False).result()
 
-#         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-#         assert request.status == mock_success.status
-#         assert request.output == mock_success.output
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+        assert request.status == mock_success.status
+        assert request.output == mock_success.output
 
-#     @pytest.mark.usefixtures("sleep_patch")
-#     def test_multiple_commands(
-#         self, client, easy_client, mock_success, mock_in_progress
-#     ):
-#         easy_client.find_unique_request.return_value = mock_success
-#         easy_client.create_request.return_value = mock_in_progress
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_multiple_commands(
+        self, client, easy_client, mock_success, mock_in_progress
+    ):
+        easy_client.find_unique_request.return_value = mock_success
+        easy_client.create_request.return_value = mock_in_progress
 
-#         futures = [client.speak(_blocking=False) for _ in range(3)]
-#         wait(futures)
+        futures = [client.speak(_blocking=False) for _ in range(3)]
+        wait(futures)
 
-#         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-#         for future in futures:
-#             result = future.result()
-#             assert result.status == mock_success.status
-#             assert result.output == mock_success.output
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+        for future in futures:
+            result = future.result()
+            assert result.status == mock_success.status
+            assert result.output == mock_success.output
 
-#     @pytest.mark.usefixtures("sleep_patch")
-#     def test_error_raise(self, client, easy_client, mock_error):
-#         easy_client.create_request.return_value = mock_error
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_error_raise(self, client, easy_client, mock_error):
+        easy_client.create_request.return_value = mock_error
 
-#         future = client.speak(_blocking=False, _raise_on_error=True)
+        future = client.speak(_blocking=False, _raise_on_error=True)
 
-#         with pytest.raises(RequestFailedError) as ex:
-#             future.result()
+        with pytest.raises(RequestFailedError) as ex:
+            future.result()
 
-#         assert ex.value.request.status == mock_error.status
-#         assert ex.value.request.output == mock_error.output
-
-
-# class TestWaitForRequest(object):
-#     def test_delays(
-#         self, client, easy_client, sleep_patch, mock_success, mock_in_progress
-#     ):
-#         easy_client.create_request.return_value = mock_in_progress
-#         easy_client.find_unique_request.side_effect = [
-#             mock_in_progress,
-#             mock_in_progress,
-#             mock_success,
-#         ]
-
-#         client.speak(_blocking=False).result()
-
-#         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(2.0)])
-#         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-
-#     def test_max_delay(
-#         self, client, easy_client, mock_success, mock_in_progress, sleep_patch
-#     ):
-#         easy_client.create_request.return_value = mock_in_progress
-#         easy_client.find_unique_request.side_effect = [
-#             mock_in_progress,
-#             mock_in_progress,
-#             mock_success,
-#         ]
-
-#         client._max_delay = 1
-#         client.speak(_blocking=False).result()
-
-#         sleep_patch.assert_has_calls([call(0.5), call(1.0), call(1.0)])
-#         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-
-#     @pytest.mark.usefixtures("sleep_patch")
-#     @pytest.mark.parametrize("timeout", [0, None, -1])
-#     def test_no_timeout(
-#         self, client, easy_client, mock_success, mock_in_progress, timeout
-#     ):
-#         easy_client.create_request.return_value = mock_in_progress
-#         easy_client.find_unique_request.side_effect = [
-#             mock_in_progress,
-#             mock_in_progress,
-#             mock_success,
-#         ]
-
-#         request = client.speak(_blocking=False, _timeout=timeout).result()
-
-#         assert request.status == mock_success.status
-#         assert request.output == mock_success.output
-
-#     @pytest.mark.usefixtures("sleep_patch")
-#     @pytest.mark.parametrize("timeout", [1, 5, 0.1])
-#     def test_timeout(self, client, easy_client, mock_in_progress, timeout):
-#         easy_client.create_request.return_value = mock_in_progress
-#         easy_client.find_unique_request.return_value = mock_in_progress
-
-#         future = client.speak(_blocking=False, _timeout=timeout)
-
-#         with pytest.raises(TimeoutExceededError):
-#             future.result()
-#         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-
-#     @pytest.mark.usefixtures("sleep_patch")
-#     def test_multiple_commands_timeout(self, client, easy_client, mock_in_progress):
-#         easy_client.find_unique_request.return_value = mock_in_progress
-#         easy_client.create_request.return_value = mock_in_progress
-
-#         client._timeout = 1
-#         futures = [client.speak(_blocking=False) for _ in range(3)]
-#         wait(futures)
-
-#         easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
-#         for future in futures:
-#             with pytest.raises(TimeoutExceededError):
-#                 future.result()
+        assert ex.value.request.status == mock_error.status
+        assert ex.value.request.output == mock_error.output
 
 
-# @pytest.mark.parametrize(
-#     "latest,versions",
-#     [
-#         ("1.0.0", ["1.0.0"]),
-#         ("2.0.0", ["1.0.0", "2.0.0"]),
-#         ("1.2.0", ["1.0.0", "1.2.0"]),
-#         ("1.0.0", ["1.0.0", "0.2.1rc1"]),
-#         ("1.0.0rc1", ["1.0.0rc1", "0.2.1"]),
-#         ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
-#         ("1.0", ["1.0", "0.2.1"]),
-#         ("1.0.0", ["1.0.0rc1", "1.0.0"]),
-#         ("b", ["a", "b"]),
-#         ("1.0.0", ["a", "b", "1.0.0"]),
-#     ],
-# )
-# def test_determine_latest(client, versions, latest):
-#     systems = [Mock(version=version) for version in versions]
-#     assert client._determine_latest(systems).version == latest
+class TestWaitForRequest(object):
+    def test_delays(
+        self, client, easy_client, sleep_patch, mock_success, mock_in_progress
+    ):
+        easy_client.create_request.return_value = mock_in_progress
+        easy_client.find_unique_request.side_effect = [
+            mock_in_progress,
+            mock_in_progress,
+            mock_success,
+        ]
+
+        client.speak(_blocking=False).result()
+
+        sleep_patch.assert_has_calls([call(0.5), call(1.0), call(2.0)])
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+
+    def test_max_delay(
+        self, client, easy_client, mock_success, mock_in_progress, sleep_patch
+    ):
+        easy_client.create_request.return_value = mock_in_progress
+        easy_client.find_unique_request.side_effect = [
+            mock_in_progress,
+            mock_in_progress,
+            mock_success,
+        ]
+
+        client._max_delay = 1
+        client.speak(_blocking=False).result()
+
+        sleep_patch.assert_has_calls([call(0.5), call(1.0), call(1.0)])
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+
+    @pytest.mark.usefixtures("sleep_patch")
+    @pytest.mark.parametrize("timeout", [0, None, -1])
+    def test_no_timeout(
+        self, client, easy_client, mock_success, mock_in_progress, timeout
+    ):
+        easy_client.create_request.return_value = mock_in_progress
+        easy_client.find_unique_request.side_effect = [
+            mock_in_progress,
+            mock_in_progress,
+            mock_success,
+        ]
+
+        request = client.speak(_blocking=False, _timeout=timeout).result()
+
+        assert request.status == mock_success.status
+        assert request.output == mock_success.output
+
+    @pytest.mark.usefixtures("sleep_patch")
+    @pytest.mark.parametrize("timeout", [1, 5, 0.1])
+    def test_timeout(self, client, easy_client, mock_in_progress, timeout):
+        easy_client.create_request.return_value = mock_in_progress
+        easy_client.find_unique_request.return_value = mock_in_progress
+
+        future = client.speak(_blocking=False, _timeout=timeout)
+
+        with pytest.raises(TimeoutExceededError):
+            future.result()
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+
+    @pytest.mark.usefixtures("sleep_patch")
+    def test_multiple_commands_timeout(self, client, easy_client, mock_in_progress):
+        easy_client.find_unique_request.return_value = mock_in_progress
+        easy_client.create_request.return_value = mock_in_progress
+
+        client._timeout = 1
+        futures = [client.speak(_blocking=False) for _ in range(3)]
+        wait(futures)
+
+        easy_client.find_unique_request.assert_called_with(id=mock_in_progress.id)
+        for future in futures:
+            with pytest.raises(TimeoutExceededError):
+                future.result()
+
+
+@pytest.mark.parametrize(
+    "latest,versions",
+    [
+        ("1.0.0", ["1.0.0"]),
+        ("2.0.0", ["1.0.0", "2.0.0"]),
+        ("1.2.0", ["1.0.0", "1.2.0"]),
+        ("1.0.0", ["1.0.0", "0.2.1rc1"]),
+        ("1.0.0rc1", ["1.0.0rc1", "0.2.1"]),
+        ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
+        ("1.0", ["1.0", "0.2.1"]),
+        ("1.0.0", ["1.0.0rc1", "1.0.0"]),
+        ("b", ["a", "b"]),
+        ("1.0.0", ["a", "b", "1.0.0"]),
+    ],
+)
+def test_determine_latest(client, versions, latest):
+    systems = [Mock(version=version) for version in versions]
+    assert client._determine_latest(systems).version == latest

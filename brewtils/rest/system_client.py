@@ -261,6 +261,8 @@ class SystemClient(object):
                     self._system_namespace = self._system_namespaces[0]
                     self._current_system_namespace = -1
 
+        self._use_latest = self._version_constraint.lower() == "latest"
+
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
         self._max_delay = kwargs.get("max_delay", 30)
@@ -358,7 +360,7 @@ class SystemClient(object):
                 _system_namespace=self._system.namespace,
                 _system_version=(
                     self._version_constraint
-                    if self._version_constraint == "latest"
+                    if self._use_latest
                     else self._system.version
                 ),
                 _system_display=self._system.display_name,
@@ -411,6 +413,12 @@ class SystemClient(object):
         # check for a new version and retry
         try:
             request = self._construct_bg_request(**kwargs)
+
+            if not self.target_self:
+                request = self._easy_client.create_request(
+                    request, blocking=blocking, timeout=timeout
+                )
+
         except ValidationError:
             if self._system and self._version_constraint == "latest":
                 old_version = self._system.version
@@ -420,11 +428,11 @@ class SystemClient(object):
                 if old_version != self._system.version:
                     kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
+                elif self._use_latest:
+                    self._use_latest = False
+                    kwargs["_system_version"] = self._system.version
+                    return self.send_bg_request(**kwargs)
             raise
-        if not self.target_self:
-            request = self._easy_client.create_request(
-                request, blocking=blocking, timeout=timeout
-            )
 
         # If not blocking just return the future
         if not blocking:

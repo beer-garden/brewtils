@@ -342,12 +342,14 @@ class TestExecute(object):
         assert request.status == mock_error.status
         assert request.output == mock_error.output
 
-    def test_retry_send_no_different_version(self, client, easy_client):
+    def test_retry_send_latest_no_different_version(self, client, easy_client):
+
         easy_client.create_request.side_effect = ValidationError
 
         with pytest.raises(ValidationError):
             client.speak()
-        assert easy_client.create_request.call_count == 1
+        assert easy_client.create_request.call_count == 2
+        assert not client._use_latest
 
     def test_retry_send_different_version(
         self, client, easy_client, bg_system_2, mock_success

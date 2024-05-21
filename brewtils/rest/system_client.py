@@ -413,7 +413,7 @@ class SystemClient(object):
         # check for a new version and retry
         try:
             request = self._construct_bg_request(**kwargs)
-            
+
             if not self.target_self:
                 request = self._easy_client.create_request(
                     request, blocking=blocking, timeout=timeout
@@ -433,7 +433,6 @@ class SystemClient(object):
                     kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
             raise
-        
 
         # If not blocking just return the future
         if not blocking:

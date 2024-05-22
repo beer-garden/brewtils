@@ -111,18 +111,32 @@ jobs:
         uses: codecov/codecov-action@v1
 
   UpdateDocs:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        python-version: ['3.12']
+        os: ['ubuntu-latest']
+
     permissions:
       contents: read
       pages: write
       id-token: write
+
     environment:
       name: github-pages
       url: ${{steps.deployment.outputs.page_url}}
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
 
     name: Build and Deploy readthedocs
     steps:
       - uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Make Docs
         run: make docs

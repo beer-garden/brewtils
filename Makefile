@@ -131,7 +131,7 @@ docs-deps: deps ## install dependencies for documentation
 
 docs: docs-deps ## generate Sphinx HTML documentation, including API docs
 	sphinx-apidoc -o docs/ $(MODULE_NAME)
-	$(MAKE) -C docs html
+	$(MAKE) -C docs html -b  dirhtml
 
 docs-view: docs ## view generated documenation in a browser
 	$(BROWSER) docs/_build/html/index.html

@@ -111,21 +111,12 @@ jobs:
         uses: codecov/codecov-action@v1
 
   UpdateDocs:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        python-version: ['3.12']
-        os: ['ubuntu-latest']
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
       pages: write
       id-token: write
-
-    env:
-      OS: ${{ matrix.os }}
-      PYTHON: ${{ matrix.python-version }}
 
     environment:
       name: github-pages
@@ -138,7 +129,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.12
 
       - name: Make Docs
         run: make docs

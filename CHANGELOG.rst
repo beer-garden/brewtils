@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.26.1
 ------
-TBD
+5/24/2024
 
 - Fixed SystemClient to revert to actual System Version when using `latest` when validation error occurs when no change in calculated latest. 
   Allowing support for Beer Garden >= 3.26

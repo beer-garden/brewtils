@@ -353,9 +353,13 @@ class SystemClient(object):
             self.load_bg_system()
 
         if command_name in self._commands:
+            command_type = kwargs.pop(
+                "_command_type", self._commands[command_name].command_type
+            )
             return partial(
                 self.send_bg_request,
                 _command=command_name,
+                _command_type=command_type,
                 _system_name=self._system.name,
                 _system_namespace=self._system.namespace,
                 _system_version=(
@@ -577,6 +581,7 @@ class SystemClient(object):
         """Create a request that can be used with EasyClient.create_request"""
 
         command = kwargs.pop("_command", None)
+        command_type = kwargs.pop("_command_type", None)
         system_name = kwargs.pop("_system_name", None)
         system_version = kwargs.pop("_system_version", None)
         system_display = kwargs.pop("_system_display", None)
@@ -611,6 +616,7 @@ class SystemClient(object):
 
         request = Request(
             command=command,
+            command_type=command_type,
             system=system_name,
             system_version=system_version,
             namespace=system_namespace,

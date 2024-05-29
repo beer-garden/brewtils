@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.2
+------
+TBD
+
+- Expanded Lark parsing to support static String values provided for command choices
+
 3.26.1
 ------
 5/24/2024

@@ -20,7 +20,6 @@ except ImportError:
     GrammarError = ParseError
     LexError = ParseError
 
-
 choices_grammar = r"""
     func: CNAME [func_args]
     url: ADDRESS [url_args]
@@ -30,12 +29,16 @@ choices_grammar = r"""
     url_args: "?" arg_pair ("&" arg_pair)*
 
     arg_pair: CNAME "=" ref
-    ?ref: "${" CNAME "}"
+    ?ref: var_ref
+      | ESCAPED_STRING
+
+    var_ref: "${" CNAME "}"
 
     ADDRESS: /^http[^\?]*/
 
     %import common.CNAME
     %import common.WS
+    %import common.ESCAPED_STRING
     %ignore WS
 """
 

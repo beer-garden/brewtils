@@ -39,7 +39,6 @@ choices_grammar = r"""
     %import common.ESCAPED_STRING
     %ignore WS
 """
-## var_ref: "${" CNAME "}"
 
 parsers = {
     "func": Lark(choices_grammar, start="func"),

@@ -856,6 +856,8 @@ class TestDynamicParameters(object):
 
         assert(cmd1.parameters[1].choices.value == 'get_choices_with_argument(key=${index}, value="foo")')
         assert(cmd1.parameters[1].choices.type == 'command')
+        assert(cmd1.parameters[1].choices.details['args'][1] == ('value','"foo"'))
+        assert(cmd1.parameters[1].choices.details['args'][0] == ('key','index'))
 
 
 class TestParseMethod(object):

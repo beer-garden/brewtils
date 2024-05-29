@@ -29,10 +29,8 @@ choices_grammar = r"""
     url_args: "?" arg_pair ("&" arg_pair)*
 
     arg_pair: CNAME "=" ref
-    ?ref: var_ref
+    ?ref: "${" CNAME "}"
       | ESCAPED_STRING
-
-    var_ref: "${" CNAME "}"
 
     ADDRESS: /^http[^\?]*/
 
@@ -41,6 +39,7 @@ choices_grammar = r"""
     %import common.ESCAPED_STRING
     %ignore WS
 """
+## var_ref: "${" CNAME "}"
 
 parsers = {
     "func": Lark(choices_grammar, start="func"),

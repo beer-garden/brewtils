@@ -761,51 +761,59 @@ class TestParameters(object):
             def func(foo):
                 return foo
 
+
 class TestDynamicParameters(object):
 
     def test_command_static_choices(self):
 
         STATIC_CHOICES = ["a", "b", "c"]
+
         @parameter(key="key", type="String", choices=STATIC_CHOICES)
         def func1(key):
             return key
 
         cmd1 = _parse_method(func1)
 
-        assert(cmd1.parameters[0].choices.value == STATIC_CHOICES)
-        assert(cmd1.parameters[0].choices.type == 'static')
+        assert cmd1.parameters[0].choices.value == STATIC_CHOICES
+        assert cmd1.parameters[0].choices.type == "static"
 
     def test_command_url_choices(self):
 
         CHOICES_URL = "http://example.com/api/choices.json"
 
-        @parameter(key="key", type="String", choices={"type": "url", "value": CHOICES_URL},)
+        @parameter(
+            key="key",
+            type="String",
+            choices={"type": "url", "value": CHOICES_URL},
+        )
         def func1(key):
             return key
 
         cmd1 = _parse_method(func1)
 
-        assert(cmd1.parameters[0].choices.value == CHOICES_URL)
-        assert(cmd1.parameters[0].choices.type == 'url')
+        assert cmd1.parameters[0].choices.value == CHOICES_URL
+        assert cmd1.parameters[0].choices.type == "url"
 
     def test_command_command_choices(self):
 
-        @parameter(key="key", type="String", choices={"type": "command", "value": "get_choices"})
+        @parameter(
+            key="key",
+            type="String",
+            choices={"type": "command", "value": "get_choices"},
+        )
         def func1(key):
             return key
 
         cmd1 = _parse_method(func1)
 
-        assert(cmd1.parameters[0].choices.value == "get_choices")
-        assert(cmd1.parameters[0].choices.type == 'command')
+        assert cmd1.parameters[0].choices.value == "get_choices"
+        assert cmd1.parameters[0].choices.type == "command"
 
     def test_command_reference_input(self):
 
         STATIC_CHOICES = ["a", "b", "c"]
 
-        @parameter(
-            key="index", type="String", choices=STATIC_CHOICES, default="a"
-        )
+        @parameter(key="index", type="String", choices=STATIC_CHOICES, default="a")
         @parameter(
             key="key",
             type="String",
@@ -819,22 +827,23 @@ class TestDynamicParameters(object):
         )
         def func1(index, key):
             return {index: key}
-        
+
         cmd1 = _parse_method(func1)
 
-        assert(cmd1.parameters[0].choices.value == STATIC_CHOICES)
-        assert(cmd1.parameters[0].choices.type == 'static')
+        assert cmd1.parameters[0].choices.value == STATIC_CHOICES
+        assert cmd1.parameters[0].choices.type == "static"
 
-        assert(cmd1.parameters[1].choices.value == "get_choices_with_argument(key=${index})")
-        assert(cmd1.parameters[1].choices.type == 'command')
+        assert (
+            cmd1.parameters[1].choices.value
+            == "get_choices_with_argument(key=${index})"
+        )
+        assert cmd1.parameters[1].choices.type == "command"
 
     def test_command_reference_and_static_inputs(self):
 
         STATIC_CHOICES = ["a", "b", "c"]
 
-        @parameter(
-            key="index", type="String", choices=STATIC_CHOICES, default="a"
-        )
+        @parameter(key="index", type="String", choices=STATIC_CHOICES, default="a")
         @parameter(
             key="key",
             type="String",
@@ -848,16 +857,19 @@ class TestDynamicParameters(object):
         )
         def func1(index, key):
             return {index: key}
-        
+
         cmd1 = _parse_method(func1)
 
-        assert(cmd1.parameters[0].choices.value == STATIC_CHOICES)
-        assert(cmd1.parameters[0].choices.type == 'static')
+        assert cmd1.parameters[0].choices.value == STATIC_CHOICES
+        assert cmd1.parameters[0].choices.type == "static"
 
-        assert(cmd1.parameters[1].choices.value == 'get_choices_with_argument(key=${index}, value="foo")')
-        assert(cmd1.parameters[1].choices.type == 'command')
-        assert(cmd1.parameters[1].choices.details['args'][1] == ('value','"foo"'))
-        assert(cmd1.parameters[1].choices.details['args'][0] == ('key','index'))
+        assert (
+            cmd1.parameters[1].choices.value
+            == 'get_choices_with_argument(key=${index}, value="foo")'
+        )
+        assert cmd1.parameters[1].choices.type == "command"
+        assert cmd1.parameters[1].choices.details["args"][1] == ("value", '"foo"')
+        assert cmd1.parameters[1].choices.details["args"][0] == ("key", "index")
 
 
 class TestParseMethod(object):

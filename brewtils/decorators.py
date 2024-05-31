@@ -168,7 +168,7 @@ def command(
             )
 
         # Allowing output_type matching: string == String == STRING
-        if output_type not in Command.OUTPUT_TYPES:
+        if output_type and output_type not in Command.OUTPUT_TYPES:
             if output_type.upper() in Command.OUTPUT_TYPES:
                 output_type = output_type.upper()
 
@@ -289,7 +289,7 @@ def parameter(
     """
 
     # Allowing type matching: string == String == STRING
-    if type not in Parameter.TYPES:
+    if type and type not in Parameter.TYPES:
         for parameter_type in Parameter.TYPES:
             if type.upper() == parameter_type.upper():
                 type = parameter_type

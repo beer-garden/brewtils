@@ -167,6 +167,11 @@ def command(
                 "Use of template with @command is now deprecated and will eventually be removed"
             )
 
+        # Allowing output_type matching: string == String == STRING
+        if output_type not in Command.OUTPUT_TYPES:
+            if output_type.upper() in Command.OUTPUT_TYPES:
+                output_type = output_type.upper()
+
         return functools.partial(
             command,
             description=description,
@@ -282,6 +287,14 @@ def parameter(
         The decorated function
 
     """
+
+    # Allowing type matching: string == String == STRING
+    if type not in Parameter.TYPES:
+        for parameter_type in Parameter.TYPES:
+            if type.upper() == parameter_type.upper():
+                type = parameter_type
+                break
+
     if _wrapped is None:
         return functools.partial(
             parameter,

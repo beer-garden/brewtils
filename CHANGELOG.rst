@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.2
+------
+TBD
+
+- Fixed decorators for Command and Parameter to support `type` and `output_type` capitalization variations 
+
 3.26.1
 ------
 5/24/2024

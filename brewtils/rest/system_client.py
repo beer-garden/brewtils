@@ -535,10 +535,7 @@ class SystemClient(object):
                 brewtils.plugin.request_context, "current_request", None
             )
             request.has_parent = request.parent is not None
-            if request.has_parent:
-                request.requester = getattr(
-                    brewtils.plugin.request_context.current_request, "requester", None
-                )
+
             ec = EasyClient(
                 bg_host=brewtils.plugin.CONFIG.bg_host,
                 bg_port=brewtils.plugin.CONFIG.bg_port,
@@ -586,6 +583,11 @@ class SystemClient(object):
         topic = kwargs.pop("_topic", None)
         propagate = kwargs.pop("_propagate", None)
 
+        if parent:
+            requester = getattr(brewtils.plugin.request_context.current_request, "requester", None)
+        else:
+            requester = None
+
         if system_display:
             metadata["system_display_name"] = system_display
         if publish:
@@ -616,6 +618,7 @@ class SystemClient(object):
             parent=parent,
             metadata=metadata,
             parameters=kwargs,
+            requester=requester,
         )
 
         request.parameters = self._resolve_parameters(command, request)

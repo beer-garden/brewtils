@@ -1626,6 +1626,7 @@ class User(BaseModel):
         is_remote=False,
         remote_user_mapping=None,
         metadata=None,
+        is_protected=False,
     ):
         self.id = id
         self.username = username
@@ -1636,6 +1637,7 @@ class User(BaseModel):
         self.is_remote = is_remote
         self.remote_user_mapping = remote_user_mapping or []
         self.metadata = metadata
+        self.is_protected = is_protected
 
     def __str__(self):
         return "%s: %s" % (self.username, self.roles)

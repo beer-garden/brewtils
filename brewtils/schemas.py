@@ -606,6 +606,7 @@ class UserSchema(BaseSchema):
     remote_user_mapping = fields.List(fields.Nested(RemoteUserMapSchema()))
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
+    is_protected = fields.Boolean(allow_none=True)
 
 
 

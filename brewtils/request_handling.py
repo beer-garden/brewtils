@@ -61,6 +61,7 @@ class LocalRequestProcessor(object):
 
         if parent_request:
             request.parent = Request(id=str(parent_request.id))
+            request.requester = parent_request.requester
             request.has_parent = True
 
         # check for kwargs on the target command

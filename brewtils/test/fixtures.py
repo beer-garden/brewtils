@@ -618,7 +618,7 @@ def user_dict(role_dict, remote_role_dict, remote_user_map_dict):
         "remote_user_mapping": [remote_user_map_dict],
         "is_remote": False,
         "metadata": {},
-        "is_protected": False,
+        "protected": False,
     }
 
 

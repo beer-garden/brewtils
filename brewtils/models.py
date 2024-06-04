@@ -1622,11 +1622,12 @@ class User(BaseModel):
         password=None,
         roles=None,
         local_roles=None,
-        remote_roles=None,
-        is_remote=False,
+        remote_roles=None,    
         remote_user_mapping=None,
         metadata=None,
+        is_remote=False,
         protected=False,
+        file_generated=False,
     ):
         self.id = id
         self.username = username
@@ -1638,6 +1639,7 @@ class User(BaseModel):
         self.remote_user_mapping = remote_user_mapping or []
         self.metadata = metadata
         self.protected = protected
+        self.file_generated = file_generated
 
     def __str__(self):
         return "%s: %s" % (self.username, self.roles)
@@ -1672,6 +1674,7 @@ class Role(BaseModel):
         scope_versions=None,
         scope_commands=None,
         protected=False,
+        file_generated=False,
     ):
         self.permission = permission or "READ_ONLY"
         self.description = description
@@ -1684,6 +1687,7 @@ class Role(BaseModel):
         self.scope_versions = scope_versions or []
         self.scope_commands = scope_commands or []
         self.protected = protected
+        self.file_generated = file_generated
 
     def __str__(self):
         return "%s" % (self.name)

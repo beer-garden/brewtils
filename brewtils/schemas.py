@@ -572,6 +572,7 @@ class RoleSchema(BaseSchema):
     scope_versions = fields.List(fields.Str(), allow_none=True)
     scope_commands = fields.List(fields.Str(), allow_none=True)
     protected = fields.Boolean(allow_none=True)
+    file_generated = fields.Boolean(allow_none=True)
 
 class RemoteRoleSchema(RoleSchema):
     pass
@@ -607,6 +608,7 @@ class UserSchema(BaseSchema):
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     protected = fields.Boolean(allow_none=True)
+    file_generated = fields.Boolean(allow_none=True)
 
 
 

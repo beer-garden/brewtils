@@ -577,6 +577,7 @@ def role_dict():
         "scope_versions": [],
         "scope_commands": [],
         "protected": False,
+        "file_generated": False,
     }
 
 
@@ -598,6 +599,7 @@ def remote_role_dict():
         "scope_versions": [],
         "scope_commands": [],
         "protected": False,
+        "file_generated": False,
     }
 
 
@@ -619,6 +621,7 @@ def user_dict(role_dict, remote_role_dict, remote_user_map_dict):
         "is_remote": False,
         "metadata": {},
         "protected": False,
+        "file_generated": False,
     }
 
 

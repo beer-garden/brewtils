@@ -670,7 +670,9 @@ def bg_job(job_dict, ts_dt, bg_request_template, bg_date_trigger, bg_replication
 
 
 @pytest.fixture
-def bg_cron_job(cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt, bg_replication):
+def bg_cron_job(
+    cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt, bg_replication
+):
     """A beer garden cron job"""
     dict_copy = copy.deepcopy(cron_job_dict)
     dict_copy["next_run_time"] = ts_dt
@@ -681,7 +683,9 @@ def bg_cron_job(cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt, bg_r
 
 
 @pytest.fixture
-def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger, ts_dt, bg_replication):
+def bg_interval_job(
+    interval_job_dict, bg_request_template, bg_interval_trigger, ts_dt, bg_replication
+):
     """A beer garden interval job"""
     dict_copy = copy.deepcopy(interval_job_dict)
     dict_copy["next_run_time"] = ts_dt

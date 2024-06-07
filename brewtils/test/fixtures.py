@@ -584,7 +584,7 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         "status": "RUNNING",
         "max_instances": 3,
         "timeout": 30,
-        "replication_id": "123"
+        "replication_id": "123",
     }
 
 

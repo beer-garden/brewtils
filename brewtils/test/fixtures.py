@@ -951,4 +951,6 @@ def replication_dict(ts_epoch):
 
 @pytest.fixture
 def bg_replication(replication_dict):
-    return Replication(**replication_dict)
+    dict_copy = copy.deepcopy(replication_dict)
+    dict_copy["heartbeat"] = ts_dt
+    return Replication(**dict_copy)

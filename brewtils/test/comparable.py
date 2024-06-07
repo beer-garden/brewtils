@@ -333,6 +333,7 @@ def assert_job_equal(obj1, obj2, do_raise=False):
         deep_fields={
             "trigger": partial(assert_trigger_equal, do_raise=True),
             "request_template": partial(assert_request_template_equal, do_raise=True),
+            "replication": partial(assert_replication_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

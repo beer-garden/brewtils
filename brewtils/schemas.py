@@ -545,6 +545,7 @@ class JobSchema(BaseSchema):
     status = fields.Str(allow_none=True)
     max_instances = fields.Int(allow_none=True)
     timeout = fields.Int(allow_none=True)
+    replication_id = fields.Str(allow_none=True)
 
 
 class JobExportInputSchema(BaseSchema):
@@ -645,7 +646,7 @@ class TopicSchema(BaseSchema):
 class ReplicationSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     replication_id = fields.Str(allow_none=True)
-    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
 
 
 class UserSchema(BaseSchema):

@@ -1209,6 +1209,7 @@ class Job(BaseModel):
         status=None,
         max_instances=None,
         timeout=None,
+        replication_id=None,
     ):
         self.id = id
         self.name = name
@@ -1225,6 +1226,7 @@ class Job(BaseModel):
         self.status = status
         self.max_instances = max_instances
         self.timeout = timeout
+        self.replication_id = replication_id
 
     def __str__(self):
         return "%s: %s" % (self.name, self.id)
@@ -1729,16 +1731,16 @@ class Topic(BaseModel):
 class Replication(BaseModel):
     schema = "ReplicationSchema"
 
-    def __init__(self, id=None, replication_id=None, heartbeat=None):
+    def __init__(self, id=None, replication_id=None, expires_at=None):
         self.id = id
         self.replication_id = replication_id
-        self.heartbeat = heartbeat
+        self.expires_at = expires_at
 
     def __str__(self):
-        return "%s:%s" % (self.replication_id, self.heartbeat)
+        return "%s:%s" % (self.replication_id, self.expires_at)
 
     def __repr__(self):
-        return "<Replication: replication_id=%s, heartbeat=%s>" % (
+        return "<Replication: replication_id=%s, expires_at=%s>" % (
             self.replication_id,
-            self.heartbeat,
+            self.expires_at,
         )

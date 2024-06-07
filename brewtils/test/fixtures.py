@@ -584,6 +584,7 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
         "status": "RUNNING",
         "max_instances": 3,
         "timeout": 30,
+        "replication_id": "123"
     }
 
 
@@ -945,12 +946,12 @@ def replication_dict(ts_epoch):
     return {
         "id": "1234",
         "replication_id": "89cd6a3a-e0e2-486b-b8e8-535d1893faf3",
-        "heartbeat": ts_epoch,
+        "expires_at": ts_epoch,
     }
 
 
 @pytest.fixture
 def bg_replication(replication_dict, ts_dt):
     dict_copy = copy.deepcopy(replication_dict)
-    dict_copy["heartbeat"] = ts_dt
+    dict_copy["expires_at"] = ts_dt
     return Replication(**dict_copy)

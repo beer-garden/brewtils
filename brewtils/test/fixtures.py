@@ -566,6 +566,23 @@ def bg_role(legacy_role_dict):
 
 
 @pytest.fixture
+def replication_dict(ts_epoch):
+    """Replication as a dictionary."""
+    return {
+        "id": "1234",
+        "replication_id": "89cd6a3a-e0e2-486b-b8e8-535d1893faf3",
+        "expires_at": ts_epoch,
+    }
+
+
+@pytest.fixture
+def bg_replication(replication_dict, ts_dt):
+    dict_copy = copy.deepcopy(replication_dict)
+    dict_copy["expires_at"] = ts_dt
+    return Replication(**dict_copy)
+
+
+@pytest.fixture
 def job_dict(ts_epoch, request_template_dict, date_trigger_dict, replication_dict):
     """A date job represented as a dictionary."""
     return {
@@ -941,20 +958,3 @@ def bg_topic(topic_dict, bg_subscriber):
     dict_copy = copy.deepcopy(topic_dict)
     dict_copy["subscribers"] = [bg_subscriber]
     return Topic(**dict_copy)
-
-
-@pytest.fixture
-def replication_dict(ts_epoch):
-    """Replication as a dictionary."""
-    return {
-        "id": "1234",
-        "replication_id": "89cd6a3a-e0e2-486b-b8e8-535d1893faf3",
-        "expires_at": ts_epoch,
-    }
-
-
-@pytest.fixture
-def bg_replication(replication_dict, ts_dt):
-    dict_copy = copy.deepcopy(replication_dict)
-    dict_copy["expires_at"] = ts_dt
-    return Replication(**dict_copy)

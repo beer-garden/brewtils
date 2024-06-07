@@ -641,6 +641,7 @@ class TopicSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
 
+
 class ReplicationSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     replication_id = fields.Str(allow_none=True)

@@ -933,7 +933,11 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_subscriber"),
             ),
             (brewtils.models.Topic, assert_topic_equal, lazy_fixture("bg_topic")),
-            (brewtils.models.Replication, assert_replication_equal, lazy_fixture("bg_replication")),
+            (
+                brewtils.models.Replication,
+                assert_replication_equal,
+                lazy_fixture("bg_replication"),
+            ),
         ],
     )
     def test_parsed_start(self, model, assertion, data):

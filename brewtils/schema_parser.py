@@ -437,7 +437,7 @@ class SchemaParser(object):
         return cls.parse(
             topic, brewtils.models.Topic, from_string=from_string, **kwargs
         )
-    
+
     @classmethod
     def parse_replication(cls, replication, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a replication model object
@@ -959,7 +959,7 @@ class SchemaParser(object):
             schema_name=brewtils.models.Topic.schema,
             **kwargs
         )
-    
+
     @classmethod
     def serialize_replication(cls, replication, to_string=True, **kwargs):
         """Convert a replication model into serialized form

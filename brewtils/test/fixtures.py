@@ -24,6 +24,7 @@ from brewtils.models import (
     PatchOperation,
     Principal,
     Queue,
+    Replication,
     Request,
     RequestFile,
     RequestTemplate,
@@ -31,7 +32,7 @@ from brewtils.models import (
     Runner,
     System,
     Subscriber,
-    Topic,
+    Topic, 
 )
 
 
@@ -936,3 +937,16 @@ def bg_topic(topic_dict, bg_subscriber):
     dict_copy = copy.deepcopy(topic_dict)
     dict_copy["subscribers"] = [bg_subscriber]
     return Topic(**dict_copy)
+
+@pytest.fixture
+def replication_dict(ts_epoch):
+    """Replication as a dictionary."""
+    return {
+        "id": "1234",
+        "replication_id": "89cd6a3a-e0e2-486b-b8e8-535d1893faf3",
+        "heartbeat": ts_epoch,
+    }
+
+@pytest.fixture
+def bg_replication(replication_dict):
+    return Replication(**replication_dict)

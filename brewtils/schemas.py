@@ -48,6 +48,7 @@ __all__ = [
     "SystemDomainIdentifierSchema",
     "SubscriberSchema",
     "TopicSchema",
+    "ReplicationSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -640,6 +641,11 @@ class TopicSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
 
+class ReplicationSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    replication_id = fields.Str(allow_none=True)
+    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+
 
 class UserSchema(BaseSchema):
     id = fields.Str()
@@ -690,6 +696,7 @@ model_schema_map.update(
         "Resolvable": ResolvableSchema,
         "Subscriber": SubscriberSchema,
         "Topic": TopicSchema,
+        "Replication": ReplicationSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

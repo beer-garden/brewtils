@@ -31,6 +31,7 @@ from brewtils.models import (
     PatchOperation,
     Principal,
     Queue,
+    Replication,
     Request,
     RequestFile,
     RequestTemplate,
@@ -62,6 +63,7 @@ __all__ = [
     "assert_runner_equal",
     "assert_subscriber_equal",
     "assert_topic_equal",
+    "assert_replication_equal",
 ]
 
 
@@ -198,7 +200,7 @@ assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
-
+assert_replication_equal = partial(_assert_wrapper, expected_type=Replication)
 
 def assert_command_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
@@ -405,3 +407,4 @@ def assert_topic_equal(obj1, obj2, do_raise=False):
         },
         do_raise=do_raise,
     )
+

@@ -52,6 +52,7 @@ class SchemaParser(object):
         "ResolvableSchema": brewtils.models.Resolvable,
         "SubscriberSchema": brewtils.models.Subscriber,
         "TopicSchema": brewtils.models.Topic,
+        "ReplicationSchema": brewtils.models.Replication,
     }
 
     logger = logging.getLogger(__name__)
@@ -435,6 +436,22 @@ class SchemaParser(object):
         """
         return cls.parse(
             topic, brewtils.models.Topic, from_string=from_string, **kwargs
+        )
+    
+    @classmethod
+    def parse_replication(cls, replication, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a replication model object
+
+        Args:
+            replication: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Replication object
+        """
+        return cls.parse(
+            replication, brewtils.models.Replication, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -940,6 +957,26 @@ class SchemaParser(object):
             topic,
             to_string=to_string,
             schema_name=brewtils.models.Topic.schema,
+            **kwargs
+        )
+    
+    @classmethod
+    def serialize_replication(cls, replication, to_string=True, **kwargs):
+        """Convert a replication model into serialized form
+
+        Args:
+            replication: The replication object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of replication
+        """
+        return cls.serialize(
+            replication,
+            to_string=to_string,
+            schema_name=brewtils.models.Replication.schema,
             **kwargs
         )
 

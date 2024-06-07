@@ -23,6 +23,7 @@ from brewtils.test.comparable import (
     assert_patch_equal,
     assert_principal_equal,
     assert_queue_equal,
+    assert_replication_equal,
     assert_request_equal,
     assert_request_file_equal,
     assert_resolvable_equal,
@@ -194,6 +195,12 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                brewtils.models.Replication,
+                lazy_fixture("replication_dict"),
+                assert_replication_equal,
+                lazy_fixture("bg_replication"),
+            ),
         ],
     )
     def test_single(self, model, data, assertion, expected):
@@ -340,6 +347,12 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                "parse_replication",
+                lazy_fixture("replication_dict"),
+                assert_replication_equal,
+                lazy_fixture("bg_replication"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, assertion, expected):
@@ -479,6 +492,12 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                brewtils.models.Replication,
+                lazy_fixture("replication_dict"),
+                assert_replication_equal,
+                lazy_fixture("bg_replication"),
+            ),
         ],
     )
     def test_many(self, model, data, assertion, expected):
@@ -611,6 +630,12 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                "parse_replication",
+                lazy_fixture("replication_dict"),
+                assert_replication_equal,
+                lazy_fixture("bg_replication"),
+            ),
         ],
     )
     def test_many_specific(self, method, data, assertion, expected):
@@ -666,6 +691,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
             (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
             (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
+            (lazy_fixture("bg_replication"), lazy_fixture("replication_dict")),
         ],
     )
     def test_single(self, model, expected):
@@ -777,6 +803,11 @@ class TestSerialize(object):
                 lazy_fixture("bg_topic"),
                 lazy_fixture("topic_dict"),
             ),
+            (
+                "serialize_replication",
+                lazy_fixture("bg_replication"),
+                lazy_fixture("replication_dict"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, expected):
@@ -807,6 +838,7 @@ class TestSerialize(object):
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
             (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
             (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
+            (lazy_fixture("bg_replication"), lazy_fixture("replication_dict")),
         ],
     )
     def test_many(self, model, expected):
@@ -901,6 +933,7 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_subscriber"),
             ),
             (brewtils.models.Topic, assert_topic_equal, lazy_fixture("bg_topic")),
+            (brewtils.models.Replication, assert_replication_equal, lazy_fixture("bg_replication")),
         ],
     )
     def test_parsed_start(self, model, assertion, data):
@@ -932,6 +965,7 @@ class TestRoundTrip(object):
             (brewtils.models.Operation, lazy_fixture("operation_dict")),
             (brewtils.models.Runner, lazy_fixture("runner_dict")),
             (brewtils.models.Resolvable, lazy_fixture("resolvable_dict")),
+            (brewtils.models.Replication, lazy_fixture("replication_dict")),
         ],
     )
     def test_serialized_start(self, model, data):

@@ -39,6 +39,7 @@ __all__ = [
     "Resolvable",
     "Subscriber",
     "Topic",
+    "Replication"
 ]
 
 
@@ -1723,3 +1724,17 @@ class Topic(BaseModel):
             self.name,
             self.subscribers,
         )
+        
+class Replication(BaseModel):
+    schema = "ReplicationSchema"
+
+    def __init__(self, id=None, replication_id=None, heartbeat=None):
+        self.id = id
+        self.replication_id = replication_id
+        self.heartbeat = heartbeat
+
+    def __str__(self):
+        return "%s:%s" % (self.replication_id, self.heartbeat)
+
+    def __repr__(self):
+        return "<Replication: replication_id=%s, heartbeat=%s>" % (self.replication_id, self.heartbeat)

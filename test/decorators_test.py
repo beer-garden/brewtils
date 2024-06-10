@@ -619,6 +619,25 @@ class TestCommand(object):
         assert_parameter_equal(dict_cmd.parameters[0], expected.parameters[0])
         assert_parameter_equal(param_cmd.parameters[0], expected.parameters[0])
 
+    def test_output_type(self):
+        """Ensure the wrapped function output type works with various captialization options"""
+
+        @command(output_type="STRING")
+        def cmd1(foo):
+            return foo
+
+        @command(output_type="string")
+        def cmd2(foo):
+            return foo
+
+        @command(output_type="sTrInG")
+        def cmd3(foo):
+            return foo
+
+        assert cmd1._command.output_type == "STRING"
+        assert cmd2._command.output_type == "STRING"
+        assert cmd3._command.output_type == "STRING"
+
 
 class TestParameter(object):
     """Test parameter decorator
@@ -649,6 +668,27 @@ class TestParameter(object):
             return foo
 
         assert cmd("input") == "input"
+
+    def test_types(self, basic_param):
+        """Ensure the wrapped parameter type works with various captialization options"""
+
+        del basic_param["type"]
+
+        @parameter(**basic_param, type="STRING")
+        def cmd1(foo):
+            return foo
+
+        @parameter(**basic_param, type="string")
+        def cmd2(foo):
+            return foo
+
+        @parameter(**basic_param, type="sTrInG")
+        def cmd3(foo):
+            return foo
+
+        assert cmd1.parameters[0].type == "String"
+        assert cmd2.parameters[0].type == "String"
+        assert cmd3.parameters[0].type == "String"
 
 
 class TestParameters(object):

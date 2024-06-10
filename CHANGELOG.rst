@@ -1,6 +1,20 @@
 Brewtils Changelog
 ==================
 
+3.26.2
+------
+6/6/20
+
+- Fixed decorators for Command and Parameter to support `type` and `output_type` capitalization variations 
+
+3.26.1
+------
+5/24/2024
+
+- Fixed SystemClient to revert to actual System Version when using `latest` when validation error occurs when no change in calculated latest. 
+  Allowing support for Beer Garden >= 3.26
+- Added support for SystemClient commands to override command type with `_command_type`
+
 3.26.0
 ------
 5/16/2024

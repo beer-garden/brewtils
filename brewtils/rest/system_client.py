@@ -261,6 +261,8 @@ class SystemClient(object):
                     self._system_namespace = self._system_namespaces[0]
                     self._current_system_namespace = -1
 
+        self._use_latest = self._version_constraint.lower() == "latest"
+
         self._always_update = kwargs.get("always_update", False)
         self._timeout = kwargs.get("timeout", None)
         self._max_delay = kwargs.get("max_delay", 30)
@@ -351,14 +353,18 @@ class SystemClient(object):
             self.load_bg_system()
 
         if command_name in self._commands:
+            command_type = kwargs.pop(
+                "_command_type", self._commands[command_name].command_type
+            )
             return partial(
                 self.send_bg_request,
                 _command=command_name,
+                _command_type=command_type,
                 _system_name=self._system.name,
                 _system_namespace=self._system.namespace,
                 _system_version=(
                     self._version_constraint
-                    if self._version_constraint == "latest"
+                    if self._use_latest
                     else self._system.version
                 ),
                 _system_display=self._system.display_name,
@@ -411,6 +417,12 @@ class SystemClient(object):
         # check for a new version and retry
         try:
             request = self._construct_bg_request(**kwargs)
+
+            if not self.target_self:
+                request = self._easy_client.create_request(
+                    request, blocking=blocking, timeout=timeout
+                )
+
         except ValidationError:
             if self._system and self._version_constraint == "latest":
                 old_version = self._system.version
@@ -420,11 +432,11 @@ class SystemClient(object):
                 if old_version != self._system.version:
                     kwargs["_system_version"] = self._system.version
                     return self.send_bg_request(**kwargs)
+                elif self._use_latest:
+                    self._use_latest = False
+                    kwargs["_system_version"] = self._system.version
+                    return self.send_bg_request(**kwargs)
             raise
-        if not self.target_self:
-            request = self._easy_client.create_request(
-                request, blocking=blocking, timeout=timeout
-            )
 
         # If not blocking just return the future
         if not blocking:
@@ -570,6 +582,7 @@ class SystemClient(object):
         """Create a request that can be used with EasyClient.create_request"""
 
         command = kwargs.pop("_command", None)
+        command_type = kwargs.pop("_command_type", None)
         system_name = kwargs.pop("_system_name", None)
         system_version = kwargs.pop("_system_version", None)
         system_display = kwargs.pop("_system_display", None)
@@ -609,6 +622,7 @@ class SystemClient(object):
 
         request = Request(
             command=command,
+            command_type=command_type,
             system=system_name,
             system_version=system_version,
             namespace=system_namespace,

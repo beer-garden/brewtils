@@ -1637,7 +1637,7 @@ class User(BaseModel):
         self.remote_roles = remote_roles or []
         self.is_remote = is_remote
         self.remote_user_mapping = remote_user_mapping or []
-        self.metadata = metadata
+        self.metadata = metadata or {}
         self.protected = protected
         self.file_generated = file_generated
 

@@ -25,7 +25,9 @@ def enable_auth(method):
     def wrapper(self, *args, **kwargs):
 
         # Load Token initially if authentication settings are provided
-        if not self.session.headers.get("Authorization") and ((self.username and self.password) or self.client_cert):
+        if not self.session.headers.get("Authorization") and (
+            (self.username and self.password) or self.client_cert
+        ):
             self.get_tokens()
 
         original_response = method(self, *args, **kwargs)

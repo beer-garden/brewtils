@@ -38,7 +38,7 @@ __all__ = [
     "OperationSchema",
     "UserSchema",
     "RoleSchema",
-    "RemoteUserMapSchema",
+    "AliasUserMapSchema",
     "SubscriberSchema",
     "TopicSchema",
 ]

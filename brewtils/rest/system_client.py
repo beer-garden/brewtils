@@ -597,7 +597,9 @@ class SystemClient(object):
         propagate = kwargs.pop("_propagate", None)
 
         if parent:
-            requester = getattr(brewtils.plugin.request_context.current_request, "requester", None)
+            requester = getattr(
+                brewtils.plugin.request_context.current_request, "requester", None
+            )
         else:
             requester = None
 

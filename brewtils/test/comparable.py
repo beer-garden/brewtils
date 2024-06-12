@@ -14,6 +14,7 @@ from functools import partial
 
 import brewtils.test
 from brewtils.models import (
+    AliasUserMap,
     Choices,
     Command,
     Connection,
@@ -24,24 +25,23 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
-    Role,
     LoggingConfig,
     Operation,
     Parameter,
     PatchOperation,
-    User,
-    UserToken,
     Queue,
-    RemoteUserMap,
-    RemoteRole,
     Request,
     RequestFile,
     RequestTemplate,
     Resolvable,
+    Role,
     Runner,
-    System,
     Subscriber,
+    System,
     Topic,
+    UpstreamRole,
+    User,
+    UserToken,
 )
 
 __all__ = [
@@ -57,7 +57,7 @@ __all__ = [
     "assert_parameter_equal",
     "assert_user_token_equal",
     "assert_user_equal",
-    "assert_remote_user_map_equal",
+    "assert_alias_user_map_equal",
     "assert_request_equal",
     "assert_role_equal",
     "assert_system_equal",
@@ -202,7 +202,7 @@ assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
-assert_remote_user_map_equal = partial(_assert_wrapper, expected_type=RemoteUserMap)
+assert_alias_user_map_equal = partial(_assert_wrapper, expected_type=AliasUserMap)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
 
 
@@ -246,6 +246,7 @@ def assert_event_equal(obj1, obj2, do_raise=False):
         do_raise=do_raise,
     )
 
+
 def assert_user_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
@@ -253,11 +254,12 @@ def assert_user_equal(obj1, obj2, do_raise=False):
         expected_type=User,
         deep_fields={
             "local_roles": partial(assert_role_equal, do_raise=True),
-            "remote_roles": partial(assert_remote_role_equal, do_raise=True),
-            "remote_user_mapping": partial(assert_remote_user_map_equal, do_raise=True),
+            "upstream_roles": partial(assert_upstream_role_equal, do_raise=True),
+            "alias_user_mapping": partial(assert_alias_user_map_equal, do_raise=True),
         },
         do_raise=do_raise,
     )
+
 
 def assert_user_token_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
@@ -327,11 +329,12 @@ def assert_role_equal(obj1, obj2, do_raise=False):
         do_raise=do_raise,
     )
 
-def assert_remote_role_equal(obj1, obj2, do_raise=False):
+
+def assert_upstream_role_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
         obj2,
-        expected_type=RemoteRole,
+        expected_type=UpstreamRole,
         do_raise=do_raise,
     )
 

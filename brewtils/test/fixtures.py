@@ -7,6 +7,7 @@ import pytest
 import pytz
 
 from brewtils.models import (
+    AliasUserMap,
     Choices,
     Command,
     Connection,
@@ -22,19 +23,18 @@ from brewtils.models import (
     Parameter,
     PatchOperation,
     Queue,
-    RemoteUserMap,
-    RemoteRole,
     Request,
     RequestFile,
     RequestTemplate,
     Resolvable,
+    Role,
     Runner,
+    Subscriber,
     System,
+    Topic,
+    UpstreamRole,
     User,
     UserToken,
-    Role,
-    Subscriber,
-    Topic,
 )
 
 
@@ -533,7 +533,7 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def remote_user_map_dict():
+def alias_user_map_dict():
     return {
         "target_garden": "test",
         "username": "user",
@@ -541,8 +541,9 @@ def remote_user_map_dict():
 
 
 @pytest.fixture
-def bg_remote_user_map(remote_user_map_dict):
-    return RemoteUserMap(**remote_user_map_dict)
+def bg_alias_user_map(alias_user_map_dict):
+    return AliasUserMap(**alias_user_map_dict)
+
 
 @pytest.fixture
 def user_token_dict(user_dict, ts_epoch):
@@ -582,11 +583,12 @@ def role_dict():
 
 
 @pytest.fixture
-def bg_remote_role(role_dict):
-    return RemoteRole(**role_dict)
+def bg_role(role_dict):
+    return Role(**role_dict)
+
 
 @pytest.fixture
-def remote_role_dict():
+def upstream_role_dict():
     return {
         "permission": "PLUGIN_ADMIN",
         "description": "PLUGIN ADMIN ROLE",
@@ -604,20 +606,20 @@ def remote_role_dict():
 
 
 @pytest.fixture
-def bg_role(role_dict):
-    return Role(**role_dict)
+def bg_upstream_role(upstream_role_dict):
+    return UpstreamRole(**upstream_role_dict)
 
 
 @pytest.fixture
-def user_dict(role_dict, remote_role_dict, remote_user_map_dict):
+def user_dict(role_dict, upstream_role_dict, alias_user_map_dict):
     return {
         "id": "1",
         "username": "USERNAME",
         "password": "HASH",
         "roles": ["PLUGIN_ADMIN_ROLE"],
         "local_roles": [role_dict],
-        "remote_roles": [remote_role_dict],
-        "remote_user_mapping": [remote_user_map_dict],
+        "upstream_roles": [upstream_role_dict],
+        "alias_user_mapping": [alias_user_map_dict],
         "is_remote": False,
         "metadata": {},
         "protected": False,
@@ -626,11 +628,11 @@ def user_dict(role_dict, remote_role_dict, remote_user_map_dict):
 
 
 @pytest.fixture
-def bg_user(user_dict, bg_role, bg_remote_role, bg_remote_user_map):
+def bg_user(user_dict, bg_role, bg_upstream_role, bg_alias_user_map):
     dict_copy = copy.deepcopy(user_dict)
-    dict_copy["remote_roles"] = [bg_remote_role]
+    dict_copy["upstream_roles"] = [bg_upstream_role]
     dict_copy["local_roles"] = [bg_role]
-    dict_copy["remote_user_mapping"] = [bg_remote_user_map]
+    dict_copy["alias_user_mapping"] = [bg_alias_user_map]
     return User(**dict_copy)
 
 

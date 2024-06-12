@@ -1617,13 +1617,13 @@ class User(BaseModel):
 
     def __init__(
         self,
-        username = None,
-        id = None,
+        username=None,
+        id=None,
         password=None,
         roles=None,
         local_roles=None,
-        remote_roles=None,    
-        remote_user_mapping=None,
+        upstream_roles=None,
+        alias_user_mapping=None,
         metadata=None,
         is_remote=False,
         protected=False,
@@ -1634,9 +1634,9 @@ class User(BaseModel):
         self.password = password
         self.roles = roles or []
         self.local_roles = local_roles or []
-        self.remote_roles = remote_roles or []
+        self.upstream_roles = upstream_roles or []
         self.is_remote = is_remote
-        self.remote_user_mapping = remote_user_mapping or []
+        self.alias_user_mapping = alias_user_mapping or []
         self.metadata = metadata or {}
         self.protected = protected
         self.file_generated = file_generated
@@ -1710,15 +1710,18 @@ class Role(BaseModel):
             self.scope_commands,
         )
 
-class RemoteRole(Role):
-    schema = "RemoteRoleSchema"
 
-class RemoteUserMap(BaseModel):
-    schema = "RemoteUserMapSchema"
+class UpstreamRole(Role):
+    schema = "UpstreamRoleSchema"
+
+
+class AliasUserMap(BaseModel):
+    schema = "AliasUserMapSchema"
 
     def __init__(self, target_garden, username):
         self.target_garden = target_garden
         self.username = username
+
 
 class Subscriber(BaseModel):
     schema = "SubscriberSchema"

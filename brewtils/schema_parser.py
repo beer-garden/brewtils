@@ -49,9 +49,9 @@ class SchemaParser(object):
         "RunnerSchema": brewtils.models.Runner,
         "ResolvableSchema": brewtils.models.Resolvable,
         "RoleSchema": brewtils.models.Role,
-        "RemoteRoleSchema": brewtils.models.RemoteRole,
+        "UpstreamRoleSchema": brewtils.models.UpstreamRole,
         "UserSchema": brewtils.models.User,
-        "RemoteUserMapSchema": brewtils.models.RemoteUserMap,
+        "AliasUserMapSchema": brewtils.models.AliasUserMap,
         "SubscriberSchema": brewtils.models.Subscriber,
         "TopicSchema": brewtils.models.Topic,
     }
@@ -283,9 +283,9 @@ class SchemaParser(object):
             A Role object
         """
         return cls.parse(role, brewtils.models.Role, from_string=from_string, **kwargs)
-    
+
     @classmethod
-    def parse_remote_role(cls, role, from_string=False, **kwargs):
+    def parse_upstream_role(cls, role, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a role model object
 
         Args:
@@ -296,11 +296,13 @@ class SchemaParser(object):
         Returns:
             A Role object
         """
-        return cls.parse(role, brewtils.models.RemoteRole, from_string=from_string, **kwargs)
+        return cls.parse(
+            role, brewtils.models.UpstreamRole, from_string=from_string, **kwargs
+        )
 
     @classmethod
-    def parse_remote_user_map(cls, remote_user_map, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a RemoteUserMap model object
+    def parse_alias_user_map(cls, alias_user_map, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a AliasUserMap model object
 
         Args:
             role: The raw input
@@ -308,11 +310,11 @@ class SchemaParser(object):
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A RemoteUserMap object
+            A AliasUserMap object
         """
         return cls.parse(
-            remote_user_map,
-            brewtils.models.RemoteUserMap,
+            alias_user_map,
+            brewtils.models.AliasUserMap,
             from_string=from_string,
             **kwargs
         )
@@ -330,10 +332,7 @@ class SchemaParser(object):
             A UserToken object
         """
         return cls.parse(
-            user_token,
-            brewtils.models.UserToken,
-            from_string=from_string,
-            **kwargs
+            user_token, brewtils.models.UserToken, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -771,9 +770,9 @@ class SchemaParser(object):
         return cls.serialize(
             role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
         )
-    
+
     @classmethod
-    def serialize_remote_role(cls, role, to_string=True, **kwargs):
+    def serialize_upstream_role(cls, role, to_string=True, **kwargs):
         """Convert a role model into serialized form
 
         Args:
@@ -786,15 +785,18 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            role, to_string=to_string, schema_name=brewtils.models.RemoteRole.schema, **kwargs
+            role,
+            to_string=to_string,
+            schema_name=brewtils.models.UpstreamRole.schema,
+            **kwargs
         )
 
     @classmethod
-    def serialize_remote_user_map(cls, remote_user_map, to_string=True, **kwargs):
-        """Convert a RemoteUserMap model into serialized form
+    def serialize_alias_user_map(cls, alias_user_map, to_string=True, **kwargs):
+        """Convert a AliasUserMap model into serialized form
 
         Args:
-            RemoteUserMap: The RemoteUserMap object(s) to be serialized
+            AliasUserMap: The AliasUserMap object(s) to be serialized
             to_string: True to generate a JSON-formatted string, False to generate a
                 dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
@@ -803,9 +805,9 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            remote_user_map,
+            alias_user_map,
             to_string=to_string,
-            schema_name=brewtils.models.RemoteUserMap.schema,
+            schema_name=brewtils.models.AliasUserMap.schema,
             **kwargs
         )
 

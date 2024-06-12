@@ -574,13 +574,15 @@ class RoleSchema(BaseSchema):
     protected = fields.Boolean(allow_none=True)
     file_generated = fields.Boolean(allow_none=True)
 
-class RemoteRoleSchema(RoleSchema):
+
+class UpstreamRoleSchema(RoleSchema):
     pass
 
 
-class RemoteUserMapSchema(BaseSchema):
+class AliasUserMapSchema(BaseSchema):
     target_garden = fields.Str()
     username = fields.Str()
+
 
 class SubscriberSchema(BaseSchema):
     garden = fields.Str(allow_none=True)
@@ -603,14 +605,12 @@ class UserSchema(BaseSchema):
     password = fields.Str(allow_none=True)
     roles = fields.List(fields.Str(), allow_none=True)
     local_roles = fields.List(fields.Nested(RoleSchema()), allow_none=True)
-    remote_roles = fields.List(fields.Nested(RemoteRoleSchema()), allow_none=True)
-    remote_user_mapping = fields.List(fields.Nested(RemoteUserMapSchema()))
+    upstream_roles = fields.List(fields.Nested(UpstreamRoleSchema()), allow_none=True)
+    alias_user_mapping = fields.List(fields.Nested(AliasUserMapSchema()))
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     protected = fields.Boolean(allow_none=True)
     file_generated = fields.Boolean(allow_none=True)
-
-
 
 
 model_schema_map.update(
@@ -643,9 +643,9 @@ model_schema_map.update(
         "Runner": RunnerSchema,
         "Resolvable": ResolvableSchema,
         "Role": RoleSchema,
-        "RemoteRole": RemoteRoleSchema,
+        "UpstreamRole": UpstreamRoleSchema,
         "User": UserSchema,
-        "RemoteUserMap": RemoteUserMapSchema,
+        "AliasUserMap": AliasUserMapSchema,
         "Subscriber": SubscriberSchema,
         "Topic": TopicSchema,
         # Compatibility for the Job trigger types

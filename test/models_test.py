@@ -537,7 +537,7 @@ class TestUser(object):
         return User(
             username="admin",
             roles=["bg-admin"],
-            remote_roles=[Role(name="foo", permission="ADMIN")],
+            upstream_roles=[Role(name="foo", permission="ADMIN")],
         )
 
     def test_str(self, user):

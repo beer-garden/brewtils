@@ -1710,6 +1710,22 @@ class Role(BaseModel):
             self.scope_commands,
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, Role):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.name == other.name
+            and self.description == other.description
+            and self.scope_gardens == other.scope_gardens
+            and self.scope_namespaces == other.scope_namespaces
+            and self.scope_systems == other.scope_systems
+            and self.scope_instances == other.scope_instances
+            and self.scope_versions == other.scope_versions
+            and self.scope_commands == other.scope_commands
+        )
+
 
 class UpstreamRole(Role):
     schema = "UpstreamRoleSchema"

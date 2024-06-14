@@ -1649,6 +1649,21 @@ class User(BaseModel):
             self.username,
             self.roles,
         )
+    
+    def __eq__(self, other):
+        if not isinstance(other, User):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.username == other.username
+            and self.roles == other.roles
+            and self.upstream_roles == other.upstream_roles
+            and self.is_remote == other.is_remote
+            and self.alias_user_mapping == other.alias_user_mapping
+            and self.protected == other.protected
+            and self.file_generated == other.file_generated
+        )
 
 
 class Role(BaseModel):

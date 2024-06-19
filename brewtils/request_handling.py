@@ -10,8 +10,8 @@ from concurrent.futures.thread import ThreadPoolExecutor
 import six
 from requests import ConnectionError as RequestsConnectionError
 
-from brewtils.decorators import _parse_method
 import brewtils.plugin
+from brewtils.decorators import _parse_method
 from brewtils.errors import (
     BGGivesUpError,
     DiscardMessageException,

@@ -1649,7 +1649,7 @@ class User(BaseModel):
             self.username,
             self.roles,
         )
-    
+
     def __eq__(self, other):
         if not isinstance(other, User):
             # don't attempt to compare against unrelated types

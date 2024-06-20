@@ -1210,6 +1210,7 @@ class Job(BaseModel):
         max_instances=None,
         timeout=None,
         replication=None,
+        replication_id=None,
     ):
         self.id = id
         self.name = name
@@ -1227,6 +1228,7 @@ class Job(BaseModel):
         self.max_instances = max_instances
         self.timeout = timeout
         self.replication = replication
+        self.replication_id = replication_id
 
     def __str__(self):
         return "%s: %s" % (self.name, self.id)

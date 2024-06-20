@@ -546,6 +546,7 @@ class JobSchema(BaseSchema):
     max_instances = fields.Int(allow_none=True)
     timeout = fields.Int(allow_none=True)
     replication = fields.Nested("ReplicationSchema", allow_none=True)
+    replication_id = fields.Str(allow_none=True)
 
 
 class JobExportInputSchema(BaseSchema):

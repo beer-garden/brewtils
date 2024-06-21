@@ -1623,7 +1623,7 @@ class User(BaseModel):
         roles=None,
         local_roles=None,
         upstream_roles=None,
-        alias_user_mapping=None,
+        user_alias_mapping=None,
         metadata=None,
         is_remote=False,
         protected=False,
@@ -1636,7 +1636,7 @@ class User(BaseModel):
         self.local_roles = local_roles or []
         self.upstream_roles = upstream_roles or []
         self.is_remote = is_remote
-        self.alias_user_mapping = alias_user_mapping or []
+        self.user_alias_mapping = user_alias_mapping or []
         self.metadata = metadata or {}
         self.protected = protected
         self.file_generated = file_generated
@@ -1660,7 +1660,7 @@ class User(BaseModel):
             and self.roles == other.roles
             and self.upstream_roles == other.upstream_roles
             and self.is_remote == other.is_remote
-            and self.alias_user_mapping == other.alias_user_mapping
+            and self.user_alias_mapping == other.user_alias_mapping
             and self.protected == other.protected
             and self.file_generated == other.file_generated
         )

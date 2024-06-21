@@ -606,7 +606,7 @@ class UserSchema(BaseSchema):
     roles = fields.List(fields.Str(), allow_none=True)
     local_roles = fields.List(fields.Nested(RoleSchema()), allow_none=True)
     upstream_roles = fields.List(fields.Nested(UpstreamRoleSchema()), allow_none=True)
-    alias_user_mapping = fields.List(fields.Nested(AliasUserMapSchema()))
+    user_alias_mapping = fields.List(fields.Nested(AliasUserMapSchema()))
     is_remote = fields.Boolean(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     protected = fields.Boolean(allow_none=True)

@@ -255,7 +255,7 @@ def assert_user_equal(obj1, obj2, do_raise=False):
         deep_fields={
             "local_roles": partial(assert_role_equal, do_raise=True),
             "upstream_roles": partial(assert_upstream_role_equal, do_raise=True),
-            "alias_user_mapping": partial(assert_alias_user_map_equal, do_raise=True),
+            "user_alias_mapping": partial(assert_alias_user_map_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

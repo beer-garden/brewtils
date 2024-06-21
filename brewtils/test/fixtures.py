@@ -619,7 +619,7 @@ def user_dict(role_dict, upstream_role_dict, alias_user_map_dict):
         "roles": ["PLUGIN_ADMIN_ROLE"],
         "local_roles": [role_dict],
         "upstream_roles": [upstream_role_dict],
-        "alias_user_mapping": [alias_user_map_dict],
+        "user_alias_mapping": [alias_user_map_dict],
         "is_remote": False,
         "metadata": {},
         "protected": False,
@@ -632,7 +632,7 @@ def bg_user(user_dict, bg_role, bg_upstream_role, bg_alias_user_map):
     dict_copy = copy.deepcopy(user_dict)
     dict_copy["upstream_roles"] = [bg_upstream_role]
     dict_copy["local_roles"] = [bg_role]
-    dict_copy["alias_user_mapping"] = [bg_alias_user_map]
+    dict_copy["user_alias_mapping"] = [bg_alias_user_map]
     return User(**dict_copy)
 
 

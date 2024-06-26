@@ -91,8 +91,8 @@ class Events(Enum):
     JOB_EXECUTED = 43
     USER_UPDATED = 44
     USERS_IMPORTED = 45
-    ROLE_DELETED = 46
-    ROLE_UPDATED = 47
+    ROLE_UPDATED = 46
+    ROLE_DELETED = 47
     COMMAND_PUBLISHING_BLOCKLIST_SYNC = 48
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
@@ -1629,8 +1629,8 @@ class User(BaseModel):
         protected=False,
         file_generated=False,
     ):
-        self.id = id
         self.username = username
+        self.id = id
         self.password = password
         self.roles = roles or []
         self.local_roles = local_roles or []
@@ -1691,10 +1691,10 @@ class Role(BaseModel):
         protected=False,
         file_generated=False,
     ):
+        self.name = name
         self.permission = permission or "READ_ONLY"
         self.description = description
-        self.id = id
-        self.name = name
+        self.id = id 
         self.scope_gardens = scope_gardens or []
         self.scope_namespaces = scope_namespaces or []
         self.scope_systems = scope_systems or []
@@ -1733,6 +1733,7 @@ class Role(BaseModel):
         return (
             self.name == other.name
             and self.description == other.description
+            and self.permission == other.permission
             and self.scope_gardens == other.scope_gardens
             and self.scope_namespaces == other.scope_namespaces
             and self.scope_systems == other.scope_systems

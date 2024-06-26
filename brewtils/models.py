@@ -102,6 +102,11 @@ class Events(Enum):
 
     # Next: 57
 
+class Permissions(Enum):
+    READ_ONLY = 1
+    OPERATOR = 2
+    PLUGIN_ADMIN = 3
+    GARDEN_ADMIN = 4
 
 class BaseModel(object):
     schema = None
@@ -1669,6 +1674,7 @@ class User(BaseModel):
 class Role(BaseModel):
     schema = "RoleSchema"
 
+    # TODO: REMOVE after DB model Updated with Permissions enum
     PERMISSION_TYPES = {
         "GARDEN_ADMIN",
         "PLUGIN_ADMIN",
@@ -1692,7 +1698,7 @@ class Role(BaseModel):
         file_generated=False,
     ):
         self.name = name
-        self.permission = permission or "READ_ONLY"
+        self.permission = permission or Permissions.READ_ONLY.name
         self.description = description
         self.id = id 
         self.scope_gardens = scope_gardens or []

@@ -583,7 +583,7 @@ def bg_replication(replication_dict, ts_dt):
 
 
 @pytest.fixture
-def job_dict(ts_epoch, request_template_dict, date_trigger_dict, replication_dict):
+def job_dict(ts_epoch, request_template_dict, date_trigger_dict):
     """A date job represented as a dictionary."""
     return {
         "name": "job_name",
@@ -601,7 +601,6 @@ def job_dict(ts_epoch, request_template_dict, date_trigger_dict, replication_dic
         "status": "RUNNING",
         "max_instances": 3,
         "timeout": 30,
-        "replication": replication_dict,
     }
 
 
@@ -659,39 +658,32 @@ def job_dict_for_import(job_dict):
 
 
 @pytest.fixture
-def bg_job(job_dict, ts_dt, bg_request_template, bg_date_trigger, bg_replication):
+def bg_job(job_dict, ts_dt, bg_request_template, bg_date_trigger):
     """A job as a model."""
     dict_copy = copy.deepcopy(job_dict)
     dict_copy["next_run_time"] = ts_dt
     dict_copy["trigger"] = bg_date_trigger
     dict_copy["request_template"] = bg_request_template
-    dict_copy["replication"] = bg_replication
     return Job(**dict_copy)
 
 
 @pytest.fixture
-def bg_cron_job(
-    cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt, bg_replication
-):
+def bg_cron_job(cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt):
     """A beer garden cron job"""
     dict_copy = copy.deepcopy(cron_job_dict)
     dict_copy["next_run_time"] = ts_dt
     dict_copy["trigger"] = bg_cron_trigger
     dict_copy["request_template"] = bg_request_template
-    dict_copy["replication"] = bg_replication
     return Job(**dict_copy)
 
 
 @pytest.fixture
-def bg_interval_job(
-    interval_job_dict, bg_request_template, bg_interval_trigger, ts_dt, bg_replication
-):
+def bg_interval_job(interval_job_dict, bg_request_template, bg_interval_trigger, ts_dt):
     """A beer garden interval job"""
     dict_copy = copy.deepcopy(interval_job_dict)
     dict_copy["next_run_time"] = ts_dt
     dict_copy["trigger"] = bg_interval_trigger
     dict_copy["request_template"] = bg_request_template
-    dict_copy["replication"] = bg_replication
     return Job(**dict_copy)
 
 

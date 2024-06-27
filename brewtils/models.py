@@ -100,8 +100,10 @@ class Events(Enum):
     TOPIC_CREATED = 54
     TOPIC_UPDATED = 55
     TOPIC_REMOVED = 56
+    REPLICATION_CREATE = 57
+    REPLICATION_UPDATE = 58
 
-    # Next: 57
+    # Next: 59
 
 
 class BaseModel(object):

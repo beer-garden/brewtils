@@ -102,11 +102,13 @@ class Events(Enum):
 
     # Next: 57
 
+
 class Permissions(Enum):
     READ_ONLY = 1
     OPERATOR = 2
     PLUGIN_ADMIN = 3
     GARDEN_ADMIN = 4
+
 
 class BaseModel(object):
     schema = None
@@ -1700,7 +1702,7 @@ class Role(BaseModel):
         self.name = name
         self.permission = permission or Permissions.READ_ONLY.name
         self.description = description
-        self.id = id 
+        self.id = id
         self.scope_gardens = scope_gardens or []
         self.scope_namespaces = scope_namespaces or []
         self.scope_systems = scope_systems or []

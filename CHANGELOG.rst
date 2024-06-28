@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Added support models for tracking primary replication
+
 3.26.2
 ------
 6/6/20

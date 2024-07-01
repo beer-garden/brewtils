@@ -165,6 +165,8 @@ class Plugin(object):
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
 
+        prefix_topic (str): Prefix for Generated Command Topics
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
@@ -283,6 +285,8 @@ class Plugin(object):
             self._system.description = new_client.__doc__.split("\n")[0]
         if not self._system.groups:
             self._system.groups = getattr(new_client, "_groups", [])  # noqa
+        if not self.system.prefix_topic:
+            self._system.prefix_topic = getattr(new_client, "_prefix_topic")  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
@@ -298,6 +302,7 @@ class Plugin(object):
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
             client_clazz._groups = self._system.groups
+            client_clazz._prefix_topic = self._system.prefix_topic
             client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:
@@ -837,6 +842,7 @@ class Plugin(object):
                 display_name=self._config.display_name,
                 template=self._config.template,
                 groups=self._config.groups,
+                prefix_topic=self._config.prefix_topic,
             )
 
         return system

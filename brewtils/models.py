@@ -760,6 +760,7 @@ class System(BaseModel):
         local=None,
         template=None,
         groups=None,
+        prefix_topic=None,
     ):
         self.name = name
         self.description = description
@@ -775,6 +776,7 @@ class System(BaseModel):
         self.local = local
         self.template = template
         self.groups = groups or []
+        self.prefix_topic = prefix_topic
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
@@ -1675,7 +1677,7 @@ class Subscriber(BaseModel):
         self.version = version
         self.instance = instance
         self.command = command
-        self.subscriber_type = subscriber_type or "DYNAMIC" 
+        self.subscriber_type = subscriber_type or "DYNAMIC"
 
     def __str__(self):
         return "%s" % self.__dict__

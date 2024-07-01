@@ -54,6 +54,7 @@ def client():
         _bg_name=None,
         _bg_version=None,
         _groups=[],
+        _prefix_topic=None,
     )
 
 
@@ -150,6 +151,7 @@ class TestInit(object):
             max_concurrent=1,
             group="GroupA",
             groups=["GroupB"],
+            prefix_topic="custom.topic",
         )
 
         assert plugin._logger == logger
@@ -158,6 +160,7 @@ class TestInit(object):
         assert plugin._config.bg_url_prefix == "/beer/"
         assert plugin._config.ssl_enabled is False
         assert plugin._config.ca_verify is False
+        assert plugin._config.prefix_topic == "custom.topic"
         assert "GroupA" == plugin._config.group
         assert "GroupB" in plugin._config.groups
         assert "GroupA" not in plugin._config.groups
@@ -169,6 +172,7 @@ class TestInit(object):
         os.environ["BG_SSL_ENABLED"] = "False"
         os.environ["BG_CA_VERIFY"] = "False"
         os.environ["BG_GROUP"] = "GroupA"
+        os.environ["BG_PREFIX_TOPIC"] = "custom.topic"
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
@@ -177,6 +181,7 @@ class TestInit(object):
         assert plugin._config.bg_url_prefix == "/beer/"
         assert plugin._config.ssl_enabled is False
         assert plugin._config.ca_verify is False
+        assert plugin._config.prefix_topic == "custom.topic"
         assert "GroupA" == plugin._config.group
 
     def test_conflicts(self, client, bg_system):

@@ -256,6 +256,7 @@ class SystemSchema(BaseSchema):
     local = fields.Bool(allow_none=True)
     template = fields.Str(allow_none=True)
     groups = fields.List(fields.Str(), allow_none=True)
+    prefix_topic = fields.Str(allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):

@@ -633,6 +633,7 @@ class SubscriberSchema(BaseSchema):
     version = fields.Str(allow_none=True)
     instance = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    subscriber_type = fields.Str(allow_none=True)
 
 
 class TopicSchema(BaseSchema):

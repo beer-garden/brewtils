@@ -917,6 +917,7 @@ def subscriber_dict():
         "version": "1.0.0",
         "instance": "inst",
         "command": "run",
+        "subscriber_type": "DYNAMIC",
     }
 
 

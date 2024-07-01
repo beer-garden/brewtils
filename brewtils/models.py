@@ -1667,6 +1667,7 @@ class Subscriber(BaseModel):
         version=None,
         instance=None,
         command=None,
+        subscriber_type=None,
     ):
         self.garden = garden
         self.namespace = namespace
@@ -1674,6 +1675,7 @@ class Subscriber(BaseModel):
         self.version = version
         self.instance = instance
         self.command = command
+        self.subscriber_type = subscriber_type or "DYNAMIC" 
 
     def __str__(self):
         return "%s" % self.__dict__
@@ -1681,7 +1683,7 @@ class Subscriber(BaseModel):
     def __repr__(self):
         return (
             "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
-            "command=%s>"
+            "command=%s, subscriber_type=%s>"
             % (
                 self.garden,
                 self.namespace,
@@ -1689,6 +1691,7 @@ class Subscriber(BaseModel):
                 self.version,
                 self.instance,
                 self.command,
+                self.subscriber_type,
             )
         )
 
@@ -1704,6 +1707,7 @@ class Subscriber(BaseModel):
             and self.version == other.version
             and self.instance == other.instance
             and self.command == other.command
+            and self.subscriber_type == other.subscriber_type
         )
 
 

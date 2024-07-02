@@ -286,7 +286,7 @@ class Plugin(object):
         if not self._system.groups:
             self._system.groups = getattr(new_client, "_groups", [])  # noqa
         if not self.system.prefix_topic:
-            self._system.prefix_topic = getattr(new_client, "_prefix_topic")  # noqa
+            self._system.prefix_topic = getattr(new_client, "_prefix_topic", None)  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 

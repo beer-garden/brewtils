@@ -24,9 +24,11 @@ def easy_client(monkeypatch):
 def client():
     return PublishClient(bg_host="localhost", bg_port=3000)
 
+
 @pytest.fixture(autouse=True)
 def empty_system():
     brewtils.plugin._system = System()
+
 
 class TestPublishClient(object):
     def setup_config(self):
@@ -37,7 +39,7 @@ class TestPublishClient(object):
         brewtils.plugin.CONFIG.instance_name = "foo"
         brewtils.plugin.CONFIG.bg_host = "localhost"
         brewtils.plugin.CONFIG.bg_port = "3000"
-        
+
     def test_publish(self, client):
         assert client.publish(_topic="topic")
 

@@ -785,7 +785,7 @@ class Plugin(object):
         """
         try:
             garden = self._ez_client.get_config()["garden_name"]
-            ns = self._system.namespace or garden 
+            ns = self._system.namespace or garden
 
             self._system.namespace = ns
             self._config.namespace = ns

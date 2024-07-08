@@ -167,7 +167,8 @@ _SYSTEM_SPEC = {
         "description": "Custom topic prefix to prepend to command name for Pub/Sub routing",
         "required": False,
         "long_description": "Each command has a generated topic assigned for Pub/Sub routing,"
-        "the default is `<garden name>.<namespace>.<system name>.<system version>.<system instance>.<command name>`"
+        "the default is "
+        "<garden name>.<namespace>.<system name>.<system version>.<system instance>.<command name>"
         "if a prefix is provided, then it is `<prefix>.<command name>`",
     },
 }

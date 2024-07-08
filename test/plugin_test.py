@@ -747,9 +747,10 @@ class TestSetupNamespace(object):
 
         self._validate_namespace(plugin, expected_namespace)
 
-    def test_from_system(self, client, bg_system):
+    def test_from_system(self, client, bg_system, ez_client):
         expected_namespace = "foo"
         bg_system.namespace = expected_namespace
+        ez_client.get_config.return_value = {"garden_name": "garden"}
 
         plugin = Plugin(client, bg_host="localhost", system=bg_system)
 

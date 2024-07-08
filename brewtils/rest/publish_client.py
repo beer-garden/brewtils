@@ -88,13 +88,18 @@ class PublishClient(object):
         """
 
         if _topic is None:
-            if (
-                brewtils.plugin.CONFIG.name
+
+            if brewtils.plugin._system.prefix_topic:
+                _topic = brewtils.plugin._system.prefix_topic
+            elif (
+                brewtils.plugin.CONFIG.garden
+                and brewtils.plugin.CONFIG.name
                 and brewtils.plugin.CONFIG.version
                 and brewtils.plugin.CONFIG.instance_name
                 and brewtils.plugin.CONFIG.namespace
             ):
-                _topic = "{0}.{1}.{2}.{3}".format(
+                _topic = "{0}.{1}.{2}.{3}.{4}".format(
+                    brewtils.plugin.CONFIG.garden,
                     brewtils.plugin.CONFIG.namespace,
                     brewtils.plugin.CONFIG.name,
                     brewtils.plugin.CONFIG.version,

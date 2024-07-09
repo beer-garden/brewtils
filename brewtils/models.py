@@ -4,6 +4,7 @@ from enum import Enum
 
 import pytz  # noqa # not in requirements file
 import six  # noqa # not in requirements file
+from datetime import datetime
 
 from brewtils.errors import ModelError, _deprecate
 
@@ -421,6 +422,27 @@ class Parameter(BaseModel):
                 return True
 
         return False
+
+
+class StatusHistory(BaseModel):
+    schema = "StatusHistorySchema"
+
+    def __init__(self, status=None, heartbeat=None):
+        self.status = status
+        self.heartbeat = heartbeat
+
+
+class StatusInfo(BaseModel):
+    schema = "StatusInfoSchema"
+
+    def __init__(self, heartbeat=None, history=None):
+        self.heartbeat = heartbeat
+        self.history = history or []
+
+    def set_status_heartbeat(self, status):
+
+        self.heartbeat = datetime.utcnow()
+        self.history.append(StatusHistory(status=status, heartbeat=self.heartbeat))
 
 
 class RequestFile(BaseModel):

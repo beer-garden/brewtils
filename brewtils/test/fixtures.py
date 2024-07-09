@@ -32,6 +32,8 @@ from brewtils.models import (
     System,
     Subscriber,
     Topic,
+    StatusHistory,
+    StatusInfo,
 )
 
 
@@ -204,7 +206,7 @@ def bg_command_2(command_dict_2, bg_parameter, system_id):
 
 
 @pytest.fixture
-def instance_dict(ts_epoch):
+def instance_dict(status_info_dict):
     """An instance represented as a dictionary."""
     return {
         "id": "584f11af55a38e64799fd1d4",
@@ -231,16 +233,16 @@ def instance_dict(ts_epoch):
             },
             "url": "amqp://guest:guest@localhost:5672",
         },
-        "status_info": {"heartbeat": ts_epoch},
+        "status_info": status_info_dict,
         "metadata": {"meta": "data"},
     }
 
 
 @pytest.fixture
-def bg_instance(instance_dict, ts_dt):
+def bg_instance(instance_dict, bg_status_info):
     """An instance as a model."""
     dict_copy = copy.deepcopy(instance_dict)
-    dict_copy["status_info"]["heartbeat"] = ts_dt
+    dict_copy["status_info"] = bg_status_info
     return Instance(**dict_copy)
 
 
@@ -763,52 +765,85 @@ def bg_request_file(request_file_dict):
 
 
 @pytest.fixture
-def connection_dict():
+def connection_dict(status_info_dict):
     """A connection as a dictionary."""
 
     return {
         "api": "HTTP",
         "config": {},
         "status": "RECEIVING",
-        "status_info": {},
+        "status_info": status_info_dict,
     }
 
 
 @pytest.fixture
-def connection_publishing_dict():
+def connection_publishing_dict(status_info_dict):
     """A connection as a dictionary."""
 
     return {
         "api": "HTTP",
         "config": {},
         "status": "PUBLISHING",
-        "status_info": {},
+        "status_info": status_info_dict,
     }
 
 
 @pytest.fixture
-def bg_connection(connection_dict):
+def bg_connection(connection_dict, bg_status_info):
     """An connection as a model."""
     dict_copy = copy.deepcopy(connection_dict)
+    dict_copy["status_info"] = bg_status_info
     return Connection(**dict_copy)
 
 
 @pytest.fixture
 def bg_connection_publishing(connection_publishing_dict):
     """An connection as a model."""
-    dict_copy = copy.deepcopy(connection_publishing_dict)
+    dict_copy = copy.deepcopy(connection_publishing_dict, bg_status_info)
+    dict_copy["status_info"] = bg_status_info
     return Connection(**dict_copy)
+
+@pytest.fixture
+def status_history_dict(ts_epoch):
+    """A status history as a dictionary"""
+
+    return {
+        "status": "RUNNING",
+        "heartbeat": ts_epoch,
+    }
+
+@pytest.fixture
+def bg_status_history(status_history_dict, ts_dt):
+    dict_copy = copy.deepcopy(status_history_dict)
+    dict_copy["heartbeat"] = ts_dt
+    return StatusHistory(**dict_copy)
 
 
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_dict):
+def status_info_dict(ts_epoch, status_history_dict):
+    """A status info as a dictionary"""
+
+    return {
+        "heartbeat": ts_epoch,
+        "history": [status_history_dict]
+    }
+
+@pytest.fixture
+def bg_status_info(status_info_dict, ts_dt, bg_status_history):
+    dict_copy = copy.deepcopy(status_info_dict)
+    dict_copy["history"] = [bg_status_history]
+    dict_copy["heartbeat"] = ts_dt
+    return StatusInfo(**dict_copy)
+
+@pytest.fixture
+def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_dict, status_info_dict):
     """A garden as a dictionary."""
 
     return {
         "id": "123f11af55a38e64799fa1c1",
         "name": "garden",
         "status": "RUNNING",
-        "status_info": {},
+        "status_info": status_info_dict,
         "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
@@ -822,12 +857,13 @@ def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_di
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system, bg_connection, bg_connection_publishing):
+def bg_garden(garden_dict, bg_system, bg_connection, bg_connection_publishing, bg_status_info):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
     dict_copy["publishing_connections"] = [bg_connection_publishing]
+    dict_copy["status_info"] = [bg_status_info]
     return Garden(**dict_copy)
 
 

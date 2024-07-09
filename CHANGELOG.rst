@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.3
+------
+TBD
+
+- Update Parameter decorator to map parameter type from literal to string value if possible
+
 3.26.2
 ------
 6/6/20

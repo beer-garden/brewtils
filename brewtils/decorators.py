@@ -290,6 +290,12 @@ def parameter(
 
     # Allowing type matching: string == String == STRING
     if type and type not in Parameter.TYPES:
+        if not isinstance(type, str):
+            temp_type = _format_type(type)
+            if temp_type in Parameter.TYPES:
+                type = temp_type
+            else:
+                raise ValueError(f"Unable to map type {type} to string literal")
         for parameter_type in Parameter.TYPES:
             if type.upper() == parameter_type.upper():
                 type = parameter_type

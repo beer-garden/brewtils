@@ -782,6 +782,7 @@ class System(BaseModel):
         local=None,
         template=None,
         groups=None,
+        prefix_topic=None,
     ):
         self.name = name
         self.description = description
@@ -797,6 +798,7 @@ class System(BaseModel):
         self.local = local
         self.template = template
         self.groups = groups or []
+        self.prefix_topic = prefix_topic
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
@@ -1689,6 +1691,7 @@ class Subscriber(BaseModel):
         version=None,
         instance=None,
         command=None,
+        subscriber_type=None,
     ):
         self.garden = garden
         self.namespace = namespace
@@ -1696,6 +1699,7 @@ class Subscriber(BaseModel):
         self.version = version
         self.instance = instance
         self.command = command
+        self.subscriber_type = subscriber_type or "DYNAMIC"
 
     def __str__(self):
         return "%s" % self.__dict__
@@ -1703,7 +1707,7 @@ class Subscriber(BaseModel):
     def __repr__(self):
         return (
             "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
-            "command=%s>"
+            "command=%s, subscriber_type=%s>"
             % (
                 self.garden,
                 self.namespace,
@@ -1711,6 +1715,7 @@ class Subscriber(BaseModel):
                 self.version,
                 self.instance,
                 self.command,
+                self.subscriber_type,
             )
         )
 
@@ -1726,6 +1731,7 @@ class Subscriber(BaseModel):
             and self.version == other.version
             and self.instance == other.instance
             and self.command == other.command
+            and self.subscriber_type == other.subscriber_type
         )
 
 

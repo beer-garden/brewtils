@@ -29,8 +29,8 @@ from brewtils.models import (
     RequestTemplate,
     Resolvable,
     Runner,
-    System,
     Subscriber,
+    System,
     Topic,
     StatusHistory,
     StatusInfo,
@@ -264,6 +264,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "local": True,
         "template": "<html>template</html>",
         "groups": ["GroupB", "GroupA"],
+        "prefix_topic": "custom_topic",
     }
 
 
@@ -953,6 +954,7 @@ def subscriber_dict():
         "version": "1.0.0",
         "instance": "inst",
         "command": "run",
+        "subscriber_type": "DYNAMIC",
     }
 
 

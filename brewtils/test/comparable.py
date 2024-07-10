@@ -208,7 +208,7 @@ def assert_status_info_equal(obj1, obj2, do_raise=False):
         obj2,
         expected_type=StatusInfo,
         deep_fields={
-            "status_history": partial(assert_status_history_equal, do_raise=True),
+            "history": partial(assert_status_history_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

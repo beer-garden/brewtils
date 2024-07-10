@@ -247,7 +247,7 @@ class Instance(BaseModel):
         self.description = description
         self.id = id
         self.status = status.upper() if status else None
-        self.status_info = status_info or {}
+        self.status_info = status_info
         self.queue_type = queue_type
         self.queue_info = queue_info or {}
         self.icon_name = icon_name
@@ -431,6 +431,18 @@ class StatusHistory(BaseModel):
         self.status = status
         self.heartbeat = heartbeat
 
+    def __str__(self):
+        return "%s:%s" % (
+            self.status,
+            self.heartbeat,
+        )
+
+    def __repr__(self):
+        return "<StatusHistory: status=%s, heartbeat=%s>" % (
+            self.status,
+            self.heartbeat,
+        )
+
 
 class StatusInfo(BaseModel):
     schema = "StatusInfoSchema"
@@ -444,6 +456,14 @@ class StatusInfo(BaseModel):
         self.heartbeat = datetime.utcnow()
         self.history.append(StatusHistory(status=status, heartbeat=self.heartbeat))
 
+    def __str__(self):
+        return self.heartbeat
+
+    def __repr__(self):
+        return "<StatusInfo: heartbeat=%s, history=%s>" % (
+            self.heartbeat,
+            self.history,
+        )
 
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"
@@ -1497,7 +1517,7 @@ class Garden(BaseModel):
         self.id = id
         self.name = name
         self.status = status.upper() if status else None
-        self.status_info = status_info or {}
+        self.status_info = status_info
         self.namespaces = namespaces or []
         self.systems = systems or []
 
@@ -1554,7 +1574,7 @@ class Connection(BaseModel):
     ):
         self.api = api
         self.status = status
-        self.status_info = status_info or {}
+        self.status_info = status_info
         self.config = config or {}
 
     def __str__(self):

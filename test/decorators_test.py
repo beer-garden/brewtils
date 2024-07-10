@@ -698,6 +698,54 @@ class TestParameter(object):
         assert cmd2.parameters[0].type == "String"
         assert cmd3.parameters[0].type == "String"
 
+    def test_literal_mapping(self, basic_param):
+
+        del basic_param["type"]
+
+        @parameter(**basic_param, type=str)
+        def cmd1(foo):
+            return foo
+
+        @parameter(**basic_param, type=int)
+        def cmd2(foo):
+            return foo
+
+        @parameter(**basic_param, type=float)
+        def cmd3(foo):
+            return foo
+
+        @parameter(**basic_param, type=bool)
+        def cmd4(foo):
+            return foo
+
+        @parameter(**basic_param, type=dict)
+        def cmd5(foo):
+            return foo
+
+        @parameter(**basic_param)
+        def cmd6(foo):
+            return foo
+
+        assert cmd1.parameters[0].type == "String"
+        assert cmd2.parameters[0].type == "Integer"
+        assert cmd3.parameters[0].type == "Float"
+        assert cmd4.parameters[0].type == "Boolean"
+        assert cmd5.parameters[0].type == "Dictionary"
+        assert cmd6.parameters[0].type == "Any"
+
+        with pytest.raises(ValueError):
+
+            class BadType:
+                bad = True
+
+            @parameter(**basic_param, type=BadType)
+            def cmd_bad_1(foo):
+                return foo
+
+            @parameter(**basic_param, type="Bad Type")
+            def cmd_bad_2(foo):
+                return foo
+
 
 class TestParameters(object):
     @pytest.fixture(autouse=True)

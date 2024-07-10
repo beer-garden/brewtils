@@ -511,9 +511,15 @@ class TestClient(object):
         assert hasattr(ClientClass, "_bg_commands")
         assert hasattr(ClientClass, "_current_request")
         assert hasattr(ClientClass, "_groups")
+        assert hasattr(ClientClass, "_prefix_topic")
 
     def test_with_args(self):
-        @client(bg_name="sys", bg_version="1.0.0", groups=["GroupA"])
+        @client(
+            bg_name="sys",
+            bg_version="1.0.0",
+            groups=["GroupA"],
+            prefix_topic="custom_topic",
+        )
         class ClientClass(object):
             @command
             def foo(self):
@@ -524,10 +530,12 @@ class TestClient(object):
         assert hasattr(ClientClass, "_bg_commands")
         assert hasattr(ClientClass, "_current_request")
         assert hasattr(ClientClass, "_groups")
+        assert hasattr(ClientClass, "_prefix_topic")
 
         assert ClientClass._bg_name == "sys"
         assert ClientClass._bg_version == "1.0.0"
         assert ClientClass._groups == ["GroupA"]
+        assert ClientClass._prefix_topic == "custom_topic"
 
     def test_group(self):
         @client(bg_name="sys", bg_version="1.0.0", group="GroupB")

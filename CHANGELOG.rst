@@ -1,6 +1,14 @@
 Brewtils Changelog
 ==================
 
+3.26.3
+------
+TBD
+
+- Added Subscriber Types to Subscriber model
+- Added Prefix Topics to System model
+- Support adding Prefix Topics for the Generated Subscribers. It is supported through the `@client` or SystemClient inputs or beer.conf
+
 3.26.2
 ------
 6/6/20

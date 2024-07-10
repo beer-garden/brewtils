@@ -36,11 +36,11 @@ from brewtils.models import (
     RequestTemplate,
     Resolvable,
     Runner,
-    System,
-    Subscriber,
-    Topic,
     StatusHistory,
-    StatusInfo
+    StatusInfo,
+    Subscriber,
+    System,
+    Topic,
 )
 
 __all__ = [
@@ -202,6 +202,7 @@ assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
 assert_status_history_equal = partial(_assert_wrapper, expected_type=StatusHistory)
 
+
 def assert_status_info_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
@@ -213,6 +214,7 @@ def assert_status_info_equal(obj1, obj2, do_raise=False):
         do_raise=do_raise,
     )
 
+
 def assert_instance_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
@@ -221,6 +223,7 @@ def assert_instance_equal(obj1, obj2, do_raise=False):
         deep_fields={"status_info": partial(assert_status_info_equal, do_raise=True)},
         do_raise=do_raise,
     )
+
 
 def assert_connection_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
@@ -438,6 +441,3 @@ def assert_topic_equal(obj1, obj2, do_raise=False):
         },
         do_raise=do_raise,
     )
-
-
-

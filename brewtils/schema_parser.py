@@ -438,7 +438,7 @@ class SchemaParser(object):
         return cls.parse(
             topic, brewtils.models.Topic, from_string=from_string, **kwargs
         )
-    
+
     @classmethod
     def parse_status_info(cls, status_info, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a status info model object
@@ -454,7 +454,7 @@ class SchemaParser(object):
         return cls.parse(
             status_info, brewtils.models.StatusInfo, from_string=from_string, **kwargs
         )
-    
+
     @classmethod
     def parse_status_history(cls, status_history, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a status history model object
@@ -468,7 +468,10 @@ class SchemaParser(object):
             A StatusHistory object
         """
         return cls.parse(
-            status_history, brewtils.models.StatusHistory, from_string=from_string, **kwargs
+            status_history,
+            brewtils.models.StatusHistory,
+            from_string=from_string,
+            **kwargs
         )
 
     @classmethod
@@ -976,7 +979,7 @@ class SchemaParser(object):
             schema_name=brewtils.models.Topic.schema,
             **kwargs
         )
-    
+
     @classmethod
     def serialize_status_info(cls, status_info, to_string=True, **kwargs):
         """Convert a status info model into serialized form
@@ -996,7 +999,7 @@ class SchemaParser(object):
             schema_name=brewtils.models.StatusInfo.schema,
             **kwargs
         )
-    
+
     @classmethod
     def serialize_status_history(cls, status_history, to_string=True, **kwargs):
         """Convert a status history model into serialized form

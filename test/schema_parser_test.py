@@ -5,8 +5,11 @@ from __future__ import unicode_literals
 
 import copy
 
-import brewtils.models
 import pytest
+from marshmallow.exceptions import MarshmallowError
+from pytest_lazyfixture import lazy_fixture
+
+import brewtils.models
 from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
@@ -28,12 +31,12 @@ from brewtils.test.comparable import (
     assert_resolvable_equal,
     assert_role_equal,
     assert_runner_equal,
+    assert_status_history_equal,
+    assert_status_info_equal,
     assert_subscriber_equal,
     assert_system_equal,
     assert_topic_equal,
 )
-from marshmallow.exceptions import MarshmallowError
-from pytest_lazyfixture import lazy_fixture
 
 
 class TestParse(object):
@@ -194,6 +197,18 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                brewtils.models.StatusInfo,
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                brewtils.models.StatusHistory,
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
         ],
     )
     def test_single(self, model, data, assertion, expected):
@@ -340,6 +355,18 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                "parse_status_info",
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                "parse_status_history",
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, assertion, expected):
@@ -479,6 +506,18 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                brewtils.models.StatusInfo,
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                brewtils.models.StatusHistory,
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
         ],
     )
     def test_many(self, model, data, assertion, expected):
@@ -611,6 +650,18 @@ class TestParse(object):
                 assert_topic_equal,
                 lazy_fixture("bg_topic"),
             ),
+            (
+                "parse_status_info",
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                "parse_status_history",
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
         ],
     )
     def test_many_specific(self, method, data, assertion, expected):
@@ -666,6 +717,8 @@ class TestSerialize(object):
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
             (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
             (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
+            (lazy_fixture("bg_status_info"), lazy_fixture("status_info_dict")),
+            (lazy_fixture("bg_status_history"), lazy_fixture("status_history_dict")),
         ],
     )
     def test_single(self, model, expected):
@@ -777,6 +830,16 @@ class TestSerialize(object):
                 lazy_fixture("bg_topic"),
                 lazy_fixture("topic_dict"),
             ),
+            (
+                "serialize_status_info",
+                lazy_fixture("bg_status_info"),
+                lazy_fixture("status_info_dict"),
+            ),
+            (
+                "serialize_status_history",
+                lazy_fixture("bg_status_history"),
+                lazy_fixture("status_history_dict"),
+            ),
         ],
     )
     def test_single_specific(self, method, data, expected):
@@ -807,6 +870,8 @@ class TestSerialize(object):
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
             (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
             (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
+            (lazy_fixture("bg_status_info"), lazy_fixture("status_info_dict")),
+            (lazy_fixture("bg_status_history"), lazy_fixture("status_history_dict")),
         ],
     )
     def test_many(self, model, expected):
@@ -901,6 +966,16 @@ class TestRoundTrip(object):
                 lazy_fixture("bg_subscriber"),
             ),
             (brewtils.models.Topic, assert_topic_equal, lazy_fixture("bg_topic")),
+            (
+                brewtils.models.StatusInfo,
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                brewtils.models.StatusHistory,
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
         ],
     )
     def test_parsed_start(self, model, assertion, data):
@@ -932,6 +1007,8 @@ class TestRoundTrip(object):
             (brewtils.models.Operation, lazy_fixture("operation_dict")),
             (brewtils.models.Runner, lazy_fixture("runner_dict")),
             (brewtils.models.Resolvable, lazy_fixture("resolvable_dict")),
+            (brewtils.models.StatusInfo, lazy_fixture("status_info_dict")),
+            (brewtils.models.StatusHistory, lazy_fixture("status_history_dict")),
         ],
     )
     def test_serialized_start(self, model, data):

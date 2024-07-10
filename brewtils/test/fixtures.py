@@ -29,11 +29,11 @@ from brewtils.models import (
     RequestTemplate,
     Resolvable,
     Runner,
+    StatusHistory,
+    StatusInfo,
     Subscriber,
     System,
     Topic,
-    StatusHistory,
-    StatusInfo,
 )
 
 
@@ -798,11 +798,12 @@ def bg_connection(connection_dict, bg_status_info):
 
 
 @pytest.fixture
-def bg_connection_publishing(connection_publishing_dict):
+def bg_connection_publishing(connection_publishing_dict, bg_status_info):
     """An connection as a model."""
-    dict_copy = copy.deepcopy(connection_publishing_dict, bg_status_info)
+    dict_copy = copy.deepcopy(connection_publishing_dict)
     dict_copy["status_info"] = bg_status_info
     return Connection(**dict_copy)
+
 
 @pytest.fixture
 def status_history_dict(ts_epoch):
@@ -812,6 +813,7 @@ def status_history_dict(ts_epoch):
         "status": "RUNNING",
         "heartbeat": ts_epoch,
     }
+
 
 @pytest.fixture
 def bg_status_history(status_history_dict, ts_dt):
@@ -824,10 +826,8 @@ def bg_status_history(status_history_dict, ts_dt):
 def status_info_dict(ts_epoch, status_history_dict):
     """A status info as a dictionary"""
 
-    return {
-        "heartbeat": ts_epoch,
-        "history": [status_history_dict]
-    }
+    return {"heartbeat": ts_epoch, "history": [status_history_dict]}
+
 
 @pytest.fixture
 def bg_status_info(status_info_dict, ts_dt, bg_status_history):
@@ -836,8 +836,11 @@ def bg_status_info(status_info_dict, ts_dt, bg_status_history):
     dict_copy["heartbeat"] = ts_dt
     return StatusInfo(**dict_copy)
 
+
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_dict, status_info_dict):
+def garden_dict(
+    ts_epoch, system_dict, connection_dict, connection_publishing_dict, status_info_dict
+):
     """A garden as a dictionary."""
 
     return {
@@ -858,13 +861,15 @@ def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_di
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system, bg_connection, bg_connection_publishing, bg_status_info):
+def bg_garden(
+    garden_dict, bg_system, bg_connection, bg_connection_publishing, bg_status_info
+):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
     dict_copy["publishing_connections"] = [bg_connection_publishing]
-    dict_copy["status_info"] = [bg_status_info]
+    dict_copy["status_info"] = bg_status_info
     return Garden(**dict_copy)
 
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
 from enum import Enum
 
 import pytz  # noqa # not in requirements file
 import six  # noqa # not in requirements file
-from datetime import datetime
 
 from brewtils.errors import ModelError, _deprecate
 
@@ -464,6 +464,7 @@ class StatusInfo(BaseModel):
             self.heartbeat,
             self.history,
         )
+
 
 class RequestFile(BaseModel):
     schema = "RequestFileSchema"

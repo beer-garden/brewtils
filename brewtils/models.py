@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import copy
 from datetime import datetime
 from enum import Enum
 
@@ -454,7 +455,7 @@ class StatusInfo(BaseModel):
     def set_status_heartbeat(self, status):
 
         self.heartbeat = datetime.utcnow()
-        self.history.append(StatusHistory(status=status, heartbeat=self.heartbeat))
+        self.history.append(StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat))
 
     def __str__(self):
         return self.heartbeat

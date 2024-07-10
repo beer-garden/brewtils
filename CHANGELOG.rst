@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.26.3
 ------
-TBD
+7/10/24
 
 - Update Parameter decorator to map parameter type from literal to string value if possible
 - Added Subscriber Types to Subscriber model

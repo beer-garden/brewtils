@@ -247,7 +247,7 @@ class Instance(BaseModel):
         self.description = description
         self.id = id
         self.status = status.upper() if status else None
-        self.status_info = status_info
+        self.status_info = status_info if status_info else StatusInfo()
         self.queue_type = queue_type
         self.queue_info = queue_info or {}
         self.icon_name = icon_name
@@ -1518,7 +1518,7 @@ class Garden(BaseModel):
         self.id = id
         self.name = name
         self.status = status.upper() if status else None
-        self.status_info = status_info
+        self.status_info = status_info if status_info else StatusInfo()
         self.namespaces = namespaces or []
         self.systems = systems or []
 
@@ -1575,7 +1575,7 @@ class Connection(BaseModel):
     ):
         self.api = api
         self.status = status
-        self.status_info = status_info
+        self.status_info = status_info if status_info else StatusInfo()
         self.config = config or {}
 
     def __str__(self):

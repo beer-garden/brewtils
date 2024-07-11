@@ -457,7 +457,7 @@ class StatusInfo(BaseModel):
         self.heartbeat = datetime.utcnow()
         self.history.append(StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat))
 
-        if max_history and len(self.history) > max_history:
+        if max_history and max_history > 0 and len(self.history) > max_history:
             self.history = self.history[(max_history * -1):]
 
     def __str__(self):

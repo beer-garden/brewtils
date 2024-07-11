@@ -735,3 +735,11 @@ class TestStatusInfo:
             status_info.set_status_heartbeat("RUNNING")
 
         assert len(status_info.history) == 10
+
+    def test_negative_history(self):
+        status_info = StatusInfo()
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("RUNNING", max_history=-1)
+
+        assert len(status_info.history) == 10

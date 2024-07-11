@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Fixed bug where parameter type mapping did not match type hinting
+
 3.26.3
 ------
 7/10/24

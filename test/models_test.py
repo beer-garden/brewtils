@@ -20,6 +20,7 @@ from brewtils.models import (
     RequestTemplate,
     LegacyRole,
     Subscriber,
+    StatusInfo,
     Topic,
 )
 from pytest_lazyfixture import lazy_fixture
@@ -713,3 +714,24 @@ class TestTopic:
             topic1.name,
             [subscriber1],
         )
+
+
+class TestStatusInfo:
+
+    def test_max_history(self):
+        status_info = StatusInfo()
+
+        max_length = 5
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("RUNNING", max_history=max_length)
+
+        assert len(status_info.history) == max_length
+
+    def test_history(self):
+        status_info = StatusInfo()
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("RUNNING")
+
+        assert len(status_info.history) == 10

@@ -242,7 +242,7 @@ def instance_dict(status_info_dict):
 def bg_instance(instance_dict, bg_status_info):
     """An instance as a model."""
     dict_copy = copy.deepcopy(instance_dict)
-    dict_copy["status_info"] = bg_status_info
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Instance(**dict_copy)
 
 
@@ -793,7 +793,7 @@ def connection_publishing_dict(status_info_dict):
 def bg_connection(connection_dict, bg_status_info):
     """An connection as a model."""
     dict_copy = copy.deepcopy(connection_dict)
-    dict_copy["status_info"] = bg_status_info
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Connection(**dict_copy)
 
 
@@ -801,7 +801,7 @@ def bg_connection(connection_dict, bg_status_info):
 def bg_connection_publishing(connection_publishing_dict, bg_status_info):
     """An connection as a model."""
     dict_copy = copy.deepcopy(connection_publishing_dict)
-    dict_copy["status_info"] = bg_status_info
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Connection(**dict_copy)
 
 
@@ -832,7 +832,7 @@ def status_info_dict(ts_epoch, status_history_dict):
 @pytest.fixture
 def bg_status_info(status_info_dict, ts_dt, bg_status_history):
     dict_copy = copy.deepcopy(status_info_dict)
-    dict_copy["history"] = [bg_status_history]
+    dict_copy["history"] = [copy.deepcopy(bg_status_history)]
     dict_copy["heartbeat"] = ts_dt
     return StatusInfo(**dict_copy)
 
@@ -869,7 +869,7 @@ def bg_garden(
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
     dict_copy["publishing_connections"] = [bg_connection_publishing]
-    dict_copy["status_info"] = bg_status_info
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Garden(**dict_copy)
 
 

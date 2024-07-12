@@ -51,7 +51,7 @@ def get_current_request_read_only():
     """Read-Only instance of Current Request
 
     Returns a copy of the current request, modifications to this object
-    does not impact the actual current request
+    do not impact the actual current request
     """
     return copy.deepcopy(request_context.current_request)
 

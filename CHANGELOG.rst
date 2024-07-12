@@ -5,6 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
+- Fixed bug where parameter type mapping did not match type hinting
 - Exposed a read only feature to provide the current request that is being processed `from brewtils import get_current_request_read_only`
 - Expand Job Export to include Job id
 

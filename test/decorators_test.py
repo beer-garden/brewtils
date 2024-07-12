@@ -731,7 +731,7 @@ class TestParameter(object):
         assert cmd3.parameters[0].type == "Float"
         assert cmd4.parameters[0].type == "Boolean"
         assert cmd5.parameters[0].type == "Dictionary"
-        assert cmd6.parameters[0].type == "Any"
+        assert cmd6.parameters[0].type is None
 
         with pytest.raises(ValueError):
 

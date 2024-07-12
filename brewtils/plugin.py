@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import json
 import logging
 import logging.config
@@ -44,6 +45,15 @@ request_context.current_request = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
+
+
+def get_current_request_read_only():
+    """Read-Only instance of Current Request
+
+    Returns a copy of the current request, modifications to this object
+    do not impact the actual current request
+    """
+    return copy.deepcopy(request_context.current_request)
 
 
 class Plugin(object):

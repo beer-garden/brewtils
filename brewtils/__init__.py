@@ -4,7 +4,11 @@ from brewtils.auto_decorator import AutoDecorator
 from brewtils.config import get_argument_parser, get_connection_info, load_config
 from brewtils.decorators import client, command, parameter, subscribe, system
 from brewtils.log import configure_logging
-from brewtils.plugin import get_current_request_read_only, Plugin, RemotePlugin  # noqa F401
+from brewtils.plugin import (
+    get_current_request_read_only,
+    Plugin,
+    RemotePlugin,
+)  # noqa F401
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.easy_client import EasyClient, get_easy_client
 from brewtils.rest.publish_client import PublishClient
@@ -28,7 +32,7 @@ __all__ = [
     "configure_logging",
     "normalize_url_prefix",
     "AutoDecorator",
-    "get_current_request_read_only"
+    "get_current_request_read_only",
 ]
 
 # Aliased for compatibility

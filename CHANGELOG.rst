@@ -5,6 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
+- Exposed a read only feature to provide the current request that is being processed `from brewtils import get_current_request_read_only`
 - Expand Job Export to include Job id
 
 3.26.3

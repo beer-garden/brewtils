@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.4
+------
+TBD
+
+- Expand Job Export to include Job id
+
 3.26.3
 ------
 7/10/24

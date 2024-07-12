@@ -556,7 +556,6 @@ class JobExportSchema(JobSchema):
         # exclude fields from a Job that we don't want when we later go to import
         # the Job definition
         self.opts.exclude += (
-            "id",
             "next_run_time",
             "success_count",
             "error_count",

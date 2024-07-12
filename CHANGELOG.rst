@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.26.4
+------
+TBD
+
+- Exposed a read only feature to provide the current request that is being processed `from brewtils import get_current_request_read_only`
+
 3.26.3
 ------
 7/10/24

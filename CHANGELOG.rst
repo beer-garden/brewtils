@@ -1,6 +1,13 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Formalized Status Info model and added helper features to track the history of the status changes.
+
+
 3.26.4
 ------
 7/12/24

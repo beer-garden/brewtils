@@ -210,6 +210,31 @@ def process_choices(choices):
                 unparsed_value = value["command"]
 
             details = parse(unparsed_value, parse_as="func")
+
+            if isinstance(value, dict):
+
+                target_plugin = False
+                valid_details = True
+                # Required Fields
+                for key in ["system", "instance", "version"]:
+                    if value.get(key, None):
+                        target_plugin = True
+                        details[key] = value.get(key)
+                    else:
+                        valid_details = False
+
+                # Optional Fields
+                for key in ["namespace"]:
+                    if value.get(key, None):
+                        target_plugin = True
+                        details[key] = value.get(key)
+
+                if target_plugin and not valid_details:
+                    raise PluginParamError(
+                        'Specifying a plugin requires a "system", "instance", "version"'
+                        ' to be defined in the "details" dict.'
+                    )
+
         elif choice_type == "url":
             unparsed_value = value
             details = parse(unparsed_value, parse_as="url")
@@ -226,6 +251,7 @@ def process_choices(choices):
                 details = {"key_reference": parse(unparsed_value, parse_as="reference")}
             else:
                 details = {}
+
     except ParseError:
         raise PluginParamError(
             "Invalid choices definition - Unable to parse '%s'" % unparsed_value

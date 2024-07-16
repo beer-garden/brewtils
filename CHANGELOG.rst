@@ -1,6 +1,13 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Expanded support of Choices parameter to support `namespace`, `system`, `version`, and `instance` to allow generation of lists
+  from other plugins. When populated, `system`, `version`, and `instance` are all required for validation
+
 3.26.4
 ------
 7/12/24

@@ -241,6 +241,38 @@ class TestProcessChoices(object):
                     "details": {"name": "my_command", "args": []},
                 },
             ),
+            (
+                {
+                    "type": "command",
+                    "value": {
+                        "command": "my_command",
+                        "namespace": "ns",
+                        "system": "foo",
+                        "version": "1.0.0",
+                        "instance": "instance",
+                    },
+                },
+                {
+                    "type": "command",
+                    "value": {
+                        "command": "my_command",
+                        "namespace": "ns",
+                        "system": "foo",
+                        "version": "1.0.0",
+                        "instance": "instance",
+                    },
+                    "display": "select",
+                    "strict": True,
+                    "details": {
+                        "name": "my_command",
+                        "args": [],
+                        "system": "foo",
+                        "version": "1.0.0",
+                        "instance": "instance",
+                        "namespace": "ns",
+                    },
+                },
+            ),
         ],
     )
     def test_choices(self, cmd, choices, expected):
@@ -271,6 +303,15 @@ class TestProcessChoices(object):
             {"type": "command", "value": "bad_def(x="},
             # Just wrong
             1,
+            # Missing Version from System/Version/Instance
+            {
+                "type": "command",
+                "value": {
+                    "command": "my_command",
+                    "system": "foo",
+                    "instance": "instance",
+                },
+            },
         ],
     )
     def test_choices_error(self, cmd, choices):

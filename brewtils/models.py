@@ -1405,26 +1405,24 @@ class CronTrigger(BaseModel):
 class FileTrigger(BaseModel):
     schema = "FileTriggerSchema"
 
-    def __init__(self, pattern=None, path=None, recursive=None, callbacks=None):
+    def __init__(self, pattern=None, path=None, recursive=None):
         self.pattern = pattern
         self.path = path
         self.recursive = recursive
-        self.callbacks = callbacks
 
     def __str__(self):
         return repr(self)
 
     def __repr__(self):
-        return "<FileTrigger: %s %s %s %s>" % (
+        return "<FileTrigger: %s %s %s>" % (
             self.pattern,
             self.path,
             self.recursive,
-            self.callbacks,
         )
 
     @property
     def scheduler_attributes(self):
-        return ["pattern", "path", "recursive", "callbacks"]
+        return ["pattern", "path", "recursive"]
 
     @property
     def scheduler_kwargs(self):
@@ -1434,7 +1432,6 @@ class FileTrigger(BaseModel):
                 "pattern": self.pattern,
                 "path": self.path,
                 "recursive": self.recursive,
-                "callbacks": self.callbacks,
             }
         )
 

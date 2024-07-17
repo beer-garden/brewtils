@@ -486,7 +486,7 @@ class CronTriggerSchema(BaseSchema):
 
 
 class FileTriggerSchema(BaseSchema):
-    pattern = fields.List(fields.Str(), allow_none=True)
+    pattern = fields.Str(allow_none=True)
     path = fields.Str(allow_none=True)
     recursive = fields.Bool(allow_none=True)
 

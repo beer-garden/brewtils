@@ -511,9 +511,15 @@ class TestClient(object):
         assert hasattr(ClientClass, "_bg_commands")
         assert hasattr(ClientClass, "_current_request")
         assert hasattr(ClientClass, "_groups")
+        assert hasattr(ClientClass, "_prefix_topic")
 
     def test_with_args(self):
-        @client(bg_name="sys", bg_version="1.0.0", groups=["GroupA"])
+        @client(
+            bg_name="sys",
+            bg_version="1.0.0",
+            groups=["GroupA"],
+            prefix_topic="custom_topic",
+        )
         class ClientClass(object):
             @command
             def foo(self):
@@ -524,10 +530,12 @@ class TestClient(object):
         assert hasattr(ClientClass, "_bg_commands")
         assert hasattr(ClientClass, "_current_request")
         assert hasattr(ClientClass, "_groups")
+        assert hasattr(ClientClass, "_prefix_topic")
 
         assert ClientClass._bg_name == "sys"
         assert ClientClass._bg_version == "1.0.0"
         assert ClientClass._groups == ["GroupA"]
+        assert ClientClass._prefix_topic == "custom_topic"
 
     def test_group(self):
         @client(bg_name="sys", bg_version="1.0.0", group="GroupB")
@@ -689,6 +697,54 @@ class TestParameter(object):
         assert cmd1.parameters[0].type == "String"
         assert cmd2.parameters[0].type == "String"
         assert cmd3.parameters[0].type == "String"
+
+    def test_literal_mapping(self, basic_param):
+
+        del basic_param["type"]
+
+        @parameter(**basic_param, type=str)
+        def cmd1(foo):
+            return foo
+
+        @parameter(**basic_param, type=int)
+        def cmd2(foo):
+            return foo
+
+        @parameter(**basic_param, type=float)
+        def cmd3(foo):
+            return foo
+
+        @parameter(**basic_param, type=bool)
+        def cmd4(foo):
+            return foo
+
+        @parameter(**basic_param, type=dict)
+        def cmd5(foo):
+            return foo
+
+        @parameter(**basic_param)
+        def cmd6(foo):
+            return foo
+
+        assert cmd1.parameters[0].type == "String"
+        assert cmd2.parameters[0].type == "Integer"
+        assert cmd3.parameters[0].type == "Float"
+        assert cmd4.parameters[0].type == "Boolean"
+        assert cmd5.parameters[0].type == "Dictionary"
+        assert cmd6.parameters[0].type is None
+
+        with pytest.raises(ValueError):
+
+            class BadType:
+                bad = True
+
+            @parameter(**basic_param, type=BadType)
+            def cmd_bad_1(foo):
+                return foo
+
+            @parameter(**basic_param, type="Bad Type")
+            def cmd_bad_2(foo):
+                return foo
 
 
 class TestParameters(object):

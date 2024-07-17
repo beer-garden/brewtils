@@ -229,6 +229,7 @@ class SystemSchema(BaseSchema):
     local = fields.Bool(allow_none=True)
     template = fields.Str(allow_none=True)
     groups = fields.List(fields.Str(), allow_none=True)
+    prefix_topic = fields.Str(allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):
@@ -510,7 +511,6 @@ class JobExportSchema(JobSchema):
         # exclude fields from a Job that we don't want when we later go to import
         # the Job definition
         self.opts.exclude += (
-            "id",
             "next_run_time",
             "success_count",
             "error_count",
@@ -591,6 +591,7 @@ class SubscriberSchema(BaseSchema):
     version = fields.Str(allow_none=True)
     instance = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    subscriber_type = fields.Str(allow_none=True)
 
 
 class TopicSchema(BaseSchema):

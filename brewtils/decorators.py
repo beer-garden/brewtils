@@ -40,6 +40,7 @@ def client(
     bg_version=None,  # type: Optional[str]
     group=None,  # type: str
     groups=[],  # type: Optional[List[str]]
+    prefix_topic=None,  # type: Optional[str]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -68,6 +69,7 @@ def client(
         bg_version: Optional plugin version
         group: Optional plugin group
         groups: Optional plugin groups
+        prefix_topic: Optional prefix for Generated Command to Topic mappings
 
     Returns:
         The decorated class
@@ -75,7 +77,12 @@ def client(
     """
     if _wrapped is None:
         return functools.partial(
-            client, bg_name=bg_name, bg_version=bg_version, groups=groups, group=group
+            client,
+            bg_name=bg_name,
+            bg_version=bg_version,
+            groups=groups,
+            group=group,
+            prefix_topic=prefix_topic,
         )  # noqa
 
     # Assign these here so linters don't complain
@@ -84,6 +91,7 @@ def client(
     _wrapped._bg_commands = []
     _wrapped._current_request = None
     _wrapped._groups = groups
+    _wrapped._prefix_topic = prefix_topic
 
     if group:
         _wrapped._groups.append(group)
@@ -288,12 +296,21 @@ def parameter(
 
     """
 
-    # Allowing type matching: string == String == STRING
-    if type and type not in Parameter.TYPES:
-        for parameter_type in Parameter.TYPES:
-            if type.upper() == parameter_type.upper():
-                type = parameter_type
-                break
+    # Validate type against permitted string literals
+    if type:
+        if not isinstance(type, str):
+            # Try to map literal to string equivalent
+            temp_type = _format_type(type)
+            if temp_type in Parameter.TYPES:
+                type = temp_type
+        elif type not in Parameter.TYPES:
+            # Allowing type matching: string == String == STRING
+            for parameter_type in Parameter.TYPES:
+                if type.upper() == parameter_type.upper():
+                    type = parameter_type
+                    break
+        if type not in Parameter.TYPES:
+            raise ValueError(f"Unable to map type {type} to string literal")
 
     if _wrapped is None:
         return functools.partial(

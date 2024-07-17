@@ -265,6 +265,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "local": True,
         "template": "<html>template</html>",
         "groups": ["GroupB", "GroupA"],
+        "prefix_topic": "custom_topic",
     }
 
 
@@ -700,7 +701,6 @@ def job_dict_for_import(job_dict):
     """A job dict but some keys and values are missing."""
     dict_copy = copy.deepcopy(job_dict)
     for field in [
-        "id",
         "next_run_time",
         "success_count",
         "error_count",
@@ -991,6 +991,7 @@ def subscriber_dict():
         "version": "1.0.0",
         "instance": "inst",
         "command": "run",
+        "subscriber_type": "DYNAMIC",
     }
 
 

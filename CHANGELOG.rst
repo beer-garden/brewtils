@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Expanded Topic/Subscriber models to include counters
+
 3.26.4
 ------
 7/12/24

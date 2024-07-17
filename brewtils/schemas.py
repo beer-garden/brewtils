@@ -634,12 +634,15 @@ class SubscriberSchema(BaseSchema):
     instance = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
     subscriber_type = fields.Str(allow_none=True)
+    subscriber_type = fields.Str(allow_none=True)
+    consumer_count = fields.Int(allow_none=True)
 
 
 class TopicSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
+    publisher_count = fields.Int(allow_none=True)
 
 
 class UserSchema(BaseSchema):

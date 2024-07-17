@@ -918,7 +918,7 @@ def subscriber_dict():
         "instance": "inst",
         "command": "run",
         "subscriber_type": "DYNAMIC",
-        "consumer_count": 10
+        "consumer_count": 10,
     }
 
 
@@ -930,7 +930,12 @@ def bg_subscriber(subscriber_dict):
 @pytest.fixture
 def topic_dict(subscriber_dict):
     """Topic as dict"""
-    return {"id": "5d174df1", "name": "foo", "subscribers": [subscriber_dict], "publisher_count": 10}
+    return {
+        "id": "5d174df1",
+        "name": "foo",
+        "subscribers": [subscriber_dict],
+        "publisher_count": 10,
+    }
 
 
 @pytest.fixture

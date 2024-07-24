@@ -20,6 +20,7 @@ from brewtils.models import (
     CronTrigger,
     DateTrigger,
     Event,
+    FileTrigger,
     Garden,
     Instance,
     IntervalTrigger,
@@ -191,7 +192,8 @@ assert_logging_config_equal = partial(_assert_wrapper, expected_type=LoggingConf
 assert_queue_equal = partial(_assert_wrapper, expected_type=Queue)
 assert_request_template_equal = partial(_assert_wrapper, expected_type=RequestTemplate)
 assert_trigger_equal = partial(
-    _assert_wrapper, expected_type=(CronTrigger, DateTrigger, IntervalTrigger)
+    _assert_wrapper,
+    expected_type=(CronTrigger, DateTrigger, FileTrigger, IntervalTrigger),
 )
 assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)

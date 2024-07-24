@@ -13,6 +13,7 @@ from brewtils.models import (
     CronTrigger,
     DateTrigger,
     Event,
+    FileTrigger,
     Garden,
     Instance,
     IntervalTrigger,
@@ -609,6 +610,15 @@ def cron_job_dict(job_dict, cron_trigger_dict):
 
 
 @pytest.fixture
+def file_job_dict(job_dict, file_trigger_dict):
+    """A file job represented as a dictionary."""
+    dict_copy = copy.deepcopy(job_dict)
+    dict_copy["trigger_type"] = "file"
+    dict_copy["trigger"] = file_trigger_dict
+    return dict_copy
+
+
+@pytest.fixture
 def interval_job_dict(job_dict, interval_trigger_dict):
     """An interval job represented as a dictionary."""
     dict_copy = copy.deepcopy(job_dict)
@@ -655,6 +665,16 @@ def bg_cron_job(cron_job_dict, bg_request_template, bg_cron_trigger, ts_dt):
     dict_copy = copy.deepcopy(cron_job_dict)
     dict_copy["next_run_time"] = ts_dt
     dict_copy["trigger"] = bg_cron_trigger
+    dict_copy["request_template"] = bg_request_template
+    return Job(**dict_copy)
+
+
+@pytest.fixture
+def bg_file_job(file_job_dict, bg_request_template, bg_file_trigger):
+    """A beer garden interval job"""
+    dict_copy = copy.deepcopy(file_job_dict)
+    dict_copy["next_run_time"] = None
+    dict_copy["trigger"] = bg_file_trigger
     dict_copy["request_template"] = bg_request_template
     return Job(**dict_copy)
 
@@ -754,6 +774,23 @@ def bg_date_trigger(date_trigger_dict, ts_dt):
     dict_copy = copy.deepcopy(date_trigger_dict)
     dict_copy["run_date"] = ts_dt
     return DateTrigger(**dict_copy)
+
+
+@pytest.fixture
+def file_trigger_dict():
+    """A file trigger as a dictionary"""
+    return {
+        "path": "./input",
+        "pattern": "*",
+        "recursive": False,
+    }
+
+
+@pytest.fixture
+def bg_file_trigger(file_trigger_dict):
+    """A file trigger as a model"""
+    dict_copy = copy.deepcopy(file_trigger_dict)
+    return FileTrigger(**dict_copy)
 
 
 @pytest.fixture

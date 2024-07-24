@@ -1414,7 +1414,7 @@ class FileTrigger(BaseModel):
         return repr(self)
 
     def __repr__(self):
-        return "<FileTrigger: %s %s %s>" % (
+        return "<FileTrigger: pattern=%s, path=%s, recursive=%s>" % (
             self.pattern,
             self.path,
             self.recursive,

@@ -10,8 +10,8 @@ from concurrent.futures.thread import ThreadPoolExecutor
 import six
 from requests import ConnectionError as RequestsConnectionError
 
-from brewtils.decorators import _parse_method
 import brewtils.plugin
+from brewtils.decorators import _parse_method
 from brewtils.errors import (
     BGGivesUpError,
     DiscardMessageException,
@@ -61,6 +61,7 @@ class LocalRequestProcessor(object):
 
         if parent_request:
             request.parent = Request(id=str(parent_request.id))
+            request.requester = parent_request.requester
             request.has_parent = True
 
         # check for kwargs on the target command

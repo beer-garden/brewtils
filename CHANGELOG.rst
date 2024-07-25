@@ -5,6 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
+- Added support models for tracking primary replication
 - New Models for User, UserToken, Role, and AliasUserMap
 - Must upgrade to a minimum version of Beer Garden 3.27.0 to support new authentication models. If authentication is not enabled, upgrade
   is not required. 

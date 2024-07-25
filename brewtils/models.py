@@ -39,6 +39,7 @@ __all__ = [
     "User",
     "Subscriber",
     "Topic",
+    "Replication",
 ]
 
 
@@ -99,8 +100,10 @@ class Events(Enum):
     TOPIC_CREATED = 54
     TOPIC_UPDATED = 55
     TOPIC_REMOVED = 56
+    REPLICATION_CREATED = 57
+    REPLICATION_UPDATED = 58
 
-    # Next: 57
+    # Next: 59
 
 
 class Permissions(Enum):
@@ -1835,4 +1838,22 @@ class Topic(BaseModel):
         return "<Topic: name=%s, subscribers=%s>" % (
             self.name,
             self.subscribers,
+        )
+
+
+class Replication(BaseModel):
+    schema = "ReplicationSchema"
+
+    def __init__(self, id=None, replication_id=None, expires_at=None):
+        self.id = id
+        self.replication_id = replication_id
+        self.expires_at = expires_at
+
+    def __str__(self):
+        return "%s:%s" % (self.replication_id, self.expires_at)
+
+    def __repr__(self):
+        return "<Replication: replication_id=%s, expires_at=%s>" % (
+            self.replication_id,
+            self.expires_at,
         )

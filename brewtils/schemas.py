@@ -41,6 +41,7 @@ __all__ = [
     "AliasUserMapSchema",
     "SubscriberSchema",
     "TopicSchema",
+    "ReplicationSchema",
 ]
 
 # This will be updated after all the schema classes are defined
@@ -600,6 +601,12 @@ class TopicSchema(BaseSchema):
     subscribers = fields.List(fields.Nested(SubscriberSchema, allow_none=True))
 
 
+class ReplicationSchema(BaseSchema):
+    id = fields.Str(allow_none=True)
+    replication_id = fields.Str(allow_none=True)
+    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+
+
 class UserSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     username = fields.Str(allow_none=True)
@@ -649,6 +656,7 @@ model_schema_map.update(
         "AliasUserMap": AliasUserMapSchema,
         "Subscriber": SubscriberSchema,
         "Topic": TopicSchema,
+        "Replication": ReplicationSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,
         "date": DateTriggerSchema,

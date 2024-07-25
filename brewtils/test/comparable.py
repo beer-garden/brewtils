@@ -30,6 +30,7 @@ from brewtils.models import (
     Parameter,
     PatchOperation,
     Queue,
+    Replication,
     Request,
     RequestFile,
     RequestTemplate,
@@ -67,6 +68,7 @@ __all__ = [
     "assert_runner_equal",
     "assert_subscriber_equal",
     "assert_topic_equal",
+    "assert_replication_equal",
 ]
 
 
@@ -204,6 +206,7 @@ assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
 assert_alias_user_map_equal = partial(_assert_wrapper, expected_type=AliasUserMap)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
+assert_replication_equal = partial(_assert_wrapper, expected_type=Replication)
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
@@ -360,6 +363,7 @@ def assert_job_equal(obj1, obj2, do_raise=False):
         deep_fields={
             "trigger": partial(assert_trigger_equal, do_raise=True),
             "request_template": partial(assert_request_template_equal, do_raise=True),
+            "replication": partial(assert_replication_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

@@ -23,6 +23,7 @@ from brewtils.models import (
     Parameter,
     PatchOperation,
     Queue,
+    Replication,
     Request,
     RequestFile,
     RequestTemplate,
@@ -635,6 +636,23 @@ def bg_user(user_dict, bg_role, bg_upstream_role, bg_alias_user_map):
     dict_copy["local_roles"] = [bg_role]
     dict_copy["user_alias_mapping"] = [bg_alias_user_map]
     return User(**dict_copy)
+
+
+@pytest.fixture
+def replication_dict(ts_epoch):
+    """Replication as a dictionary."""
+    return {
+        "id": "1234",
+        "replication_id": "89cd6a3a-e0e2-486b-b8e8-535d1893faf3",
+        "expires_at": ts_epoch,
+    }
+
+
+@pytest.fixture
+def bg_replication(replication_dict, ts_dt):
+    dict_copy = copy.deepcopy(replication_dict)
+    dict_copy["expires_at"] = ts_dt
+    return Replication(**dict_copy)
 
 
 @pytest.fixture

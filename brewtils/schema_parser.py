@@ -54,6 +54,8 @@ class SchemaParser(object):
         "AliasUserMapSchema": brewtils.models.AliasUserMap,
         "SubscriberSchema": brewtils.models.Subscriber,
         "TopicSchema": brewtils.models.Topic,
+        "StatusInfoSchema": brewtils.models.StatusInfo,
+        "StatusHistorySchema": brewtils.models.StatusHistory,
         "ReplicationSchema": brewtils.models.Replication,
     }
 
@@ -468,6 +470,40 @@ class SchemaParser(object):
             topic, brewtils.models.Topic, from_string=from_string, **kwargs
         )
 
+    @classmethod
+    def parse_status_info(cls, status_info, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a status info model object
+
+        Args:
+            status_info: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A StatusInfo object
+        """
+        return cls.parse(
+            status_info, brewtils.models.StatusInfo, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_status_history(cls, status_history, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a status history model object
+
+        Args:
+            status_history: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A StatusHistory object
+        """
+        return cls.parse(
+            status_history,
+            brewtils.models.StatusHistory,
+            from_string=from_string,
+            **kwargs
+        )
     @classmethod
     def parse_replication(cls, replication, from_string=False, **kwargs):
         """Convert raw JSON string or dictionary to a replication model object
@@ -1024,6 +1060,46 @@ class SchemaParser(object):
             **kwargs
         )
 
+    @classmethod
+    def serialize_status_info(cls, status_info, to_string=True, **kwargs):
+        """Convert a status info model into serialized form
+
+        Args:
+            status_info: The status info object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of status_info
+        """
+        return cls.serialize(
+            status_info,
+            to_string=to_string,
+            schema_name=brewtils.models.StatusInfo.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_status_history(cls, status_history, to_string=True, **kwargs):
+        """Convert a status history model into serialized form
+
+        Args:
+            status_history: The status history object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of status_history
+        """
+        return cls.serialize(
+            status_history,
+            to_string=to_string,
+            schema_name=brewtils.models.StatusHistory.schema,
+            **kwargs
+        )
+    
     @classmethod
     def serialize_replication(cls, replication, to_string=True, **kwargs):
         """Convert a replication model into serialized form

@@ -37,6 +37,8 @@ from brewtils.models import (
     Resolvable,
     Role,
     Runner,
+    StatusHistory,
+    StatusInfo,
     Subscriber,
     System,
     Topic,
@@ -68,6 +70,8 @@ __all__ = [
     "assert_runner_equal",
     "assert_subscriber_equal",
     "assert_topic_equal",
+    "assert_status_info_equal",
+    "assert_status_history_equal",
     "assert_replication_equal",
 ]
 
@@ -191,7 +195,6 @@ def _assert_wrapper(obj1, obj2, expected_type=None, do_raise=False, **kwargs):
 
 
 # These are the 'simple' models - they don't have any nested models as fields
-assert_instance_equal = partial(_assert_wrapper, expected_type=Instance)
 assert_choices_equal = partial(_assert_wrapper, expected_type=Choices)
 assert_patch_equal = partial(_assert_wrapper, expected_type=PatchOperation)
 assert_logging_config_equal = partial(_assert_wrapper, expected_type=LoggingConfig)
@@ -203,10 +206,46 @@ assert_trigger_equal = partial(
 assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
-assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
+assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
+assert_status_history_equal = partial(_assert_wrapper, expected_type=StatusHistory)
+
+
+def assert_status_info_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=StatusInfo,
+        deep_fields={
+            "history": partial(assert_status_history_equal, do_raise=True),
+        },
+        do_raise=do_raise,
+    )
+
+
+def assert_instance_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Instance,
+        deep_fields={"status_info": partial(assert_status_info_equal, do_raise=True)},
+        do_raise=do_raise,
+    )
+
+
+def assert_connection_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=Connection,
+        deep_fields={"status_info": partial(assert_status_info_equal, do_raise=True)},
+        do_raise=do_raise,
+    )
+
+
 assert_alias_user_map_equal = partial(_assert_wrapper, expected_type=AliasUserMap)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
 assert_replication_equal = partial(_assert_wrapper, expected_type=Replication)
+
 
 
 def assert_command_equal(obj1, obj2, do_raise=False):
@@ -424,6 +463,7 @@ def assert_garden_equal(obj1, obj2, do_raise=False):
             "systems": partial(assert_system_equal, do_raise=True),
             "receiving_connections": partial(assert_connection_equal, do_raise=True),
             "publishing_connections": partial(assert_connection_equal, do_raise=True),
+            "status_info": partial(assert_status_info_equal, do_raise=True),
         },
         do_raise=do_raise,
     )

@@ -32,6 +32,8 @@ from brewtils.test.comparable import (
     assert_resolvable_equal,
     assert_role_equal,
     assert_runner_equal,
+    assert_status_history_equal,
+    assert_status_info_equal,
     assert_subscriber_equal,
     assert_system_equal,
     assert_topic_equal,
@@ -218,6 +220,18 @@ class TestParse(object):
                 lazy_fixture("bg_topic"),
             ),
             (
+                brewtils.models.StatusInfo,
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                brewtils.models.StatusHistory,
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
+            (
                 brewtils.models.Replication,
                 lazy_fixture("replication_dict"),
                 assert_replication_equal,
@@ -388,6 +402,18 @@ class TestParse(object):
                 lazy_fixture("bg_topic"),
             ),
             (
+                "parse_status_info",
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                "parse_status_history",
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
+            (
                 "parse_replication",
                 lazy_fixture("replication_dict"),
                 assert_replication_equal,
@@ -551,6 +577,18 @@ class TestParse(object):
                 lazy_fixture("bg_topic"),
             ),
             (
+                brewtils.models.StatusInfo,
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                brewtils.models.StatusHistory,
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+             ),
+            (
                 brewtils.models.Replication,
                 lazy_fixture("replication_dict"),
                 assert_replication_equal,
@@ -707,6 +745,18 @@ class TestParse(object):
                 lazy_fixture("bg_topic"),
             ),
             (
+                "parse_status_info",
+                lazy_fixture("status_info_dict"),
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                "parse_status_history",
+                lazy_fixture("status_history_dict"),
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
+            (
                 "parse_replication",
                 lazy_fixture("replication_dict"),
                 assert_replication_equal,
@@ -770,6 +820,8 @@ class TestSerialize(object):
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
             (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
             (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
+            (lazy_fixture("bg_status_info"), lazy_fixture("status_info_dict")),
+            (lazy_fixture("bg_status_history"), lazy_fixture("status_history_dict")),
             (lazy_fixture("bg_replication"), lazy_fixture("replication_dict")),
         ],
     )
@@ -898,6 +950,16 @@ class TestSerialize(object):
                 lazy_fixture("topic_dict"),
             ),
             (
+                "serialize_status_info",
+                lazy_fixture("bg_status_info"),
+                lazy_fixture("status_info_dict"),
+            ),
+            (
+                "serialize_status_history",
+                lazy_fixture("bg_status_history"),
+                lazy_fixture("status_history_dict"),
+             ),
+            (
                 "serialize_replication",
                 lazy_fixture("bg_replication"),
                 lazy_fixture("replication_dict"),
@@ -935,6 +997,8 @@ class TestSerialize(object):
             (lazy_fixture("bg_resolvable"), lazy_fixture("resolvable_dict")),
             (lazy_fixture("bg_subscriber"), lazy_fixture("subscriber_dict")),
             (lazy_fixture("bg_topic"), lazy_fixture("topic_dict")),
+            (lazy_fixture("bg_status_info"), lazy_fixture("status_info_dict")),
+            (lazy_fixture("bg_status_history"), lazy_fixture("status_history_dict")),
             (lazy_fixture("bg_replication"), lazy_fixture("replication_dict")),
         ],
     )
@@ -1046,6 +1110,16 @@ class TestRoundTrip(object):
             ),
             (brewtils.models.Topic, assert_topic_equal, lazy_fixture("bg_topic")),
             (
+                brewtils.models.StatusInfo,
+                assert_status_info_equal,
+                lazy_fixture("bg_status_info"),
+            ),
+            (
+                brewtils.models.StatusHistory,
+                assert_status_history_equal,
+                lazy_fixture("bg_status_history"),
+            ),
+            (
                 brewtils.models.Replication,
                 assert_replication_equal,
                 lazy_fixture("bg_replication"),
@@ -1083,6 +1157,8 @@ class TestRoundTrip(object):
             (brewtils.models.Operation, lazy_fixture("operation_dict")),
             (brewtils.models.Runner, lazy_fixture("runner_dict")),
             (brewtils.models.Resolvable, lazy_fixture("resolvable_dict")),
+            (brewtils.models.StatusInfo, lazy_fixture("status_info_dict")),
+            (brewtils.models.StatusHistory, lazy_fixture("status_history_dict")),
             (brewtils.models.Replication, lazy_fixture("replication_dict")),
         ],
     )

@@ -41,6 +41,8 @@ __all__ = [
     "AliasUserMapSchema",
     "SubscriberSchema",
     "TopicSchema",
+    "StatusInfoSchema",
+    "StatusHistorySchema",
     "ReplicationSchema",
 ]
 
@@ -330,8 +332,14 @@ class RequestSchema(RequestTemplateSchema):
     target_garden = fields.String(allow_none=True)
 
 
+class StatusHistorySchema(BaseSchema):
+    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    status = fields.Str(allow_none=True)
+
+
 class StatusInfoSchema(BaseSchema):
     heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    history = fields.Nested("StatusHistorySchema", many=True, allow_none=True)
 
 
 class PatchSchema(BaseSchema):
@@ -656,6 +664,8 @@ model_schema_map.update(
         "AliasUserMap": AliasUserMapSchema,
         "Subscriber": SubscriberSchema,
         "Topic": TopicSchema,
+        "StatusInfo": StatusInfoSchema,
+        "StatusHistory": StatusHistorySchema,
         "Replication": ReplicationSchema,
         # Compatibility for the Job trigger types
         "interval": IntervalTriggerSchema,

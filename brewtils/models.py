@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import copy
+from datetime import datetime
 from enum import Enum
 
 import pytz  # noqa # not in requirements file
@@ -256,7 +258,7 @@ class Instance(BaseModel):
         self.description = description
         self.id = id
         self.status = status.upper() if status else None
-        self.status_info = status_info or {}
+        self.status_info = status_info if status_info else StatusInfo()
         self.queue_type = queue_type
         self.queue_info = queue_info or {}
         self.icon_name = icon_name
@@ -431,6 +433,53 @@ class Parameter(BaseModel):
                 return True
 
         return False
+
+
+class StatusHistory(BaseModel):
+    schema = "StatusHistorySchema"
+
+    def __init__(self, status=None, heartbeat=None):
+        self.status = status
+        self.heartbeat = heartbeat
+
+    def __str__(self):
+        return "%s:%s" % (
+            self.status,
+            self.heartbeat,
+        )
+
+    def __repr__(self):
+        return "<StatusHistory: status=%s, heartbeat=%s>" % (
+            self.status,
+            self.heartbeat,
+        )
+
+
+class StatusInfo(BaseModel):
+    schema = "StatusInfoSchema"
+
+    def __init__(self, heartbeat=None, history=None):
+        self.heartbeat = heartbeat
+        self.history = history or []
+
+    def set_status_heartbeat(self, status, max_history=None):
+
+        self.heartbeat = datetime.utcnow()
+        self.history.append(
+            StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
+        )
+
+        if max_history and max_history > 0 and len(self.history) > max_history:
+            self.history = self.history[(max_history * -1) :]
+
+    def __str__(self):
+        return self.heartbeat
+
+    def __repr__(self):
+        return "<StatusInfo: heartbeat=%s, history=%s>" % (
+            self.heartbeat,
+            self.history,
+        )
 
 
 class RequestFile(BaseModel):
@@ -1438,7 +1487,7 @@ class Garden(BaseModel):
         self.id = id
         self.name = name
         self.status = status.upper() if status else None
-        self.status_info = status_info or {}
+        self.status_info = status_info if status_info else StatusInfo()
         self.namespaces = namespaces or []
         self.systems = systems or []
 
@@ -1498,7 +1547,7 @@ class Connection(BaseModel):
     ):
         self.api = api
         self.status = status
-        self.status_info = status_info or {}
+        self.status_info = status_info if status_info else StatusInfo()
         self.config = config or {}
 
     def __str__(self):

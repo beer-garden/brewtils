@@ -23,9 +23,7 @@ __all__ = [
     "Event",
     "Events",
     "Queue",
-    "Principal",
-    "LegacyRole",
-    "RefreshToken",
+    "UserToken",
     "Job",
     "RequestFile",
     "File",
@@ -39,8 +37,11 @@ __all__ = [
     "Garden",
     "Operation",
     "Resolvable",
+    "Role",
+    "User",
     "Subscriber",
     "Topic",
+    "Replication",
 ]
 
 
@@ -94,15 +95,24 @@ class Events(Enum):
     USER_UPDATED = 44
     USERS_IMPORTED = 45
     ROLE_UPDATED = 46
-    ROLES_IMPORTED = 47
+    ROLE_DELETED = 47
     COMMAND_PUBLISHING_BLOCKLIST_SYNC = 48
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
     TOPIC_CREATED = 54
     TOPIC_UPDATED = 55
     TOPIC_REMOVED = 56
+    REPLICATION_CREATED = 57
+    REPLICATION_UPDATED = 58
 
-    # Next: 57
+    # Next: 59
+
+
+class Permissions(Enum):
+    READ_ONLY = 1
+    OPERATOR = 2
+    PLUGIN_ADMIN = 3
+    GARDEN_ADMIN = 4
 
 
 class BaseModel(object):
@@ -1159,81 +1169,32 @@ class Queue(BaseModel):
         return "<Queue: name=%s, size=%s>" % (self.name, self.size)
 
 
-class Principal(BaseModel):
-    schema = "PrincipalSchema"
+class UserToken(BaseModel):
+    schema = "UserTokenSchema"
 
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
+        uuid=None,
+        issued_at=None,
+        expires_at=None,
         username=None,
-        roles=None,
-        permissions=None,
-        preferences=None,
-        metadata=None,
     ):
         self.id = id
+        self.uuid = uuid
+        self.issued_at = issued_at
+        self.expires_at = expires_at
         self.username = username
-        self.roles = roles
-        self.permissions = permissions
-        self.preferences = preferences
-        self.metadata = metadata
 
     def __str__(self):
         return "%s" % self.username
 
     def __repr__(self):
-        return "<Principal: username=%s, roles=%s, permissions=%s>" % (
+        return "<UserToken: uuid=%s, issued_at=%s, expires_at=%s, username=%s>" % (
+            self.uuid,
+            self.issued_at,
+            self.expires_at,
             self.username,
-            self.roles,
-            self.permissions,
-        )
-
-
-class LegacyRole(BaseModel):
-    schema = "LegacyRoleSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        name=None,
-        description=None,
-        permissions=None,
-    ):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.permissions = permissions
-
-    def __str__(self):
-        return "%s" % self.name
-
-    def __repr__(self):
-        return "<LegacyRole: name=%s, permissions=%s>" % (self.name, self.permissions)
-
-
-class RefreshToken(BaseModel):
-    schema = "RefreshTokenSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        issued=None,
-        expires=None,
-        payload=None,
-    ):
-        self.id = id
-        self.issued = issued
-        self.expires = expires
-        self.payload = payload or {}
-
-    def __str__(self):
-        return "%s" % self.payload
-
-    def __repr__(self):
-        return "<RefreshToken: issued=%s, expires=%s, payload=%s>" % (
-            self.issued,
-            self.expires,
-            self.payload,
         )
 
 
@@ -1520,6 +1481,8 @@ class Garden(BaseModel):
         parent=None,
         children=None,
         metadata=None,
+        default_user=None,
+        shared_users=None,
     ):
         self.id = id
         self.name = name
@@ -1536,6 +1499,9 @@ class Garden(BaseModel):
         self.parent = parent
         self.children = children
         self.metadata = metadata or {}
+
+        self.default_user = default_user
+        self.shared_users = shared_users
 
     def __str__(self):
         return "%s" % self.name
@@ -1707,6 +1673,150 @@ class Resolvable(BaseModel):
         )
 
 
+class User(BaseModel):
+    schema = "UserSchema"
+
+    def __init__(
+        self,
+        username=None,
+        id=None,
+        password=None,
+        roles=None,
+        local_roles=None,
+        upstream_roles=None,
+        user_alias_mapping=None,
+        metadata=None,
+        is_remote=False,
+        protected=False,
+        file_generated=False,
+    ):
+        self.username = username
+        self.id = id
+        self.password = password
+        self.roles = roles or []
+        self.local_roles = local_roles or []
+        self.upstream_roles = upstream_roles or []
+        self.is_remote = is_remote
+        self.user_alias_mapping = user_alias_mapping or []
+        self.metadata = metadata or {}
+        self.protected = protected
+        self.file_generated = file_generated
+
+    def __str__(self):
+        return "%s: %s" % (self.username, self.roles)
+
+    def __repr__(self):
+        return "<User: username=%s, roles=%s>" % (
+            self.username,
+            self.roles,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, User):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.username == other.username
+            and self.roles == other.roles
+            and self.upstream_roles == other.upstream_roles
+            and self.is_remote == other.is_remote
+            and self.user_alias_mapping == other.user_alias_mapping
+            and self.protected == other.protected
+            and self.file_generated == other.file_generated
+        )
+
+
+class Role(BaseModel):
+    schema = "RoleSchema"
+
+    # TODO: REMOVE after DB model Updated with Permissions enum
+    PERMISSION_TYPES = {
+        "GARDEN_ADMIN",
+        "PLUGIN_ADMIN",
+        "OPERATOR",
+        "READ_ONLY",  # Default value if not role is provided
+    }
+
+    def __init__(
+        self,
+        name,
+        permission=None,
+        description=None,
+        id=None,
+        scope_gardens=None,
+        scope_namespaces=None,
+        scope_systems=None,
+        scope_instances=None,
+        scope_versions=None,
+        scope_commands=None,
+        protected=False,
+        file_generated=False,
+    ):
+        self.name = name
+        self.permission = permission or Permissions.READ_ONLY.name
+        self.description = description
+        self.id = id
+        self.scope_gardens = scope_gardens or []
+        self.scope_namespaces = scope_namespaces or []
+        self.scope_systems = scope_systems or []
+        self.scope_instances = scope_instances or []
+        self.scope_versions = scope_versions or []
+        self.scope_commands = scope_commands or []
+        self.protected = protected
+        self.file_generated = file_generated
+
+    def __str__(self):
+        return "%s" % (self.name)
+
+    def __repr__(self):
+        return (
+            "<Role: id=%s, name=%s, description=%s, permission=%s, scope_garden=%s, "
+            "scope_namespaces=%s, scope_systems=%s, scope_instances=%s, "
+            "scope_versions=%s, scope_commands=%s>"
+        ) % (
+            self.id,
+            self.name,
+            self.description,
+            self.permission,
+            self.scope_gardens,
+            self.scope_namespaces,
+            self.scope_systems,
+            self.scope_instances,
+            self.scope_versions,
+            self.scope_commands,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Role):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.name == other.name
+            and self.description == other.description
+            and self.permission == other.permission
+            and self.scope_gardens == other.scope_gardens
+            and self.scope_namespaces == other.scope_namespaces
+            and self.scope_systems == other.scope_systems
+            and self.scope_instances == other.scope_instances
+            and self.scope_versions == other.scope_versions
+            and self.scope_commands == other.scope_commands
+        )
+
+
+class UpstreamRole(Role):
+    schema = "UpstreamRoleSchema"
+
+
+class AliasUserMap(BaseModel):
+    schema = "AliasUserMapSchema"
+
+    def __init__(self, target_garden, username):
+        self.target_garden = target_garden
+        self.username = username
+
+
 class Subscriber(BaseModel):
     schema = "SubscriberSchema"
 
@@ -1777,4 +1887,22 @@ class Topic(BaseModel):
         return "<Topic: name=%s, subscribers=%s>" % (
             self.name,
             self.subscribers,
+        )
+
+
+class Replication(BaseModel):
+    schema = "ReplicationSchema"
+
+    def __init__(self, id=None, replication_id=None, expires_at=None):
+        self.id = id
+        self.replication_id = replication_id
+        self.expires_at = expires_at
+
+    def __str__(self):
+        return "%s:%s" % (self.replication_id, self.expires_at)
+
+    def __repr__(self):
+        return "<Replication: replication_id=%s, expires_at=%s>" % (
+            self.replication_id,
+            self.expires_at,
         )

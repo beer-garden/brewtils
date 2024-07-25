@@ -13,12 +13,12 @@ from brewtils.models import (
     LoggingConfig,
     Parameter,
     PatchOperation,
-    Principal,
+    User,
     Queue,
     Request,
     RequestFile,
     RequestTemplate,
-    LegacyRole,
+    Role,
     Subscriber,
     StatusInfo,
     Topic,
@@ -532,31 +532,36 @@ class TestQueue(object):
         assert repr(queue) == "<Queue: name=echo.1-0-0.default, size=3>"
 
 
-class TestPrincipal(object):
+class TestUser(object):
     @pytest.fixture
-    def principal(self):
-        return Principal(username="admin", roles=["bg-admin"], permissions=["bg-all"])
-
-    def test_str(self, principal):
-        assert str(principal) == "admin"
-
-    def test_repr(self, principal):
-        assert (
-            repr(principal)
-            == "<Principal: username=admin, roles=['bg-admin'], permissions=['bg-all']>"
+    def user(self):
+        return User(
+            username="admin",
+            roles=["bg-admin"],
+            upstream_roles=[Role(name="foo", permission="ADMIN")],
         )
 
+    def test_str(self, user):
+        assert str(user) == "admin: ['bg-admin']"
 
-class TestLegacyRole(object):
+    def test_repr(self, user):
+        assert repr(user) == "<User: username=admin, roles=['bg-admin']>"
+
+
+class TestRole(object):
     @pytest.fixture
     def role(self):
-        return LegacyRole(name="bg-admin", permissions=["bg-all"])
+        return Role(name="bg-admin", permission="PLUGIN_ADMIN")
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
-        assert repr(role) == "<LegacyRole: name=bg-admin, permissions=['bg-all']>"
+        assert repr(role) == (
+            "<Role: id=None, name=bg-admin, description=None, permission=PLUGIN_ADMIN, "
+            "scope_garden=[], scope_namespaces=[], scope_systems=[], "
+            "scope_instances=[], scope_versions=[], scope_commands=[]>"
+        )
 
 
 class TestDateTrigger(object):

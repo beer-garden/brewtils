@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import json
 import logging
 import logging.config
@@ -44,6 +45,15 @@ request_context.current_request = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
+
+
+def get_current_request_read_only():
+    """Read-Only instance of Current Request
+
+    Returns a copy of the current request, modifications to this object
+    do not impact the actual current request
+    """
+    return copy.deepcopy(request_context.current_request)
 
 
 class Plugin(object):
@@ -165,6 +175,8 @@ class Plugin(object):
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
 
+        prefix_topic (str): Prefix for Generated Command Topics
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
@@ -232,7 +244,7 @@ class Plugin(object):
 
         if not self._legacy:
             # Namespace setup depends on self._system and self._ez_client
-            self._setup_namespace()
+            self._setup_garden_namespace()
 
             # And with _system and _ez_client we can ask for the real logging config
             self._initialize_logging()
@@ -283,6 +295,10 @@ class Plugin(object):
             self._system.description = new_client.__doc__.split("\n")[0]
         if not self._system.groups:
             self._system.groups = getattr(new_client, "_groups", [])  # noqa
+        if not self.system.prefix_topic:
+            self._system.prefix_topic = getattr(
+                new_client, "_prefix_topic", None
+            )  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
@@ -298,6 +314,7 @@ class Plugin(object):
             client_clazz._bg_version = self._system.version
             client_clazz._bg_commands = self._system.commands
             client_clazz._groups = self._system.groups
+            client_clazz._prefix_topic = self._system.prefix_topic
             client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:
@@ -368,7 +385,7 @@ class Plugin(object):
 
         # If namespace couldn't be determined at init try one more time
         if not self._legacy and not self._config.namespace:
-            self._setup_namespace()
+            self._setup_garden_namespace()
 
         self._system = self._initialize_system()
         self._instance = self._initialize_instance()
@@ -747,7 +764,7 @@ class Plugin(object):
 
         return logger or logging.getLogger(__name__)
 
-    def _setup_namespace(self):
+    def _setup_garden_namespace(self):
         """Determine the namespace the Plugin is operating in
 
         This function attempts to determine the correct namespace and ensures that
@@ -777,11 +794,16 @@ class Plugin(object):
         before the namespace is determined will have potentially incorrect namespaces).
         """
         try:
-            ns = self._system.namespace or self._ez_client.get_config()["garden_name"]
+            garden = self._ez_client.get_config()["garden_name"]
+            ns = self._system.namespace or garden
 
             self._system.namespace = ns
             self._config.namespace = ns
+
+            self._config.garden = garden
+
             CONFIG.namespace = ns
+            CONFIG.garden = garden
         except Exception as ex:
             self._logger.warning(
                 "Namespace value was not resolved from config sources and an exception "
@@ -837,6 +859,7 @@ class Plugin(object):
                 display_name=self._config.display_name,
                 template=self._config.template,
                 groups=self._config.groups,
+                prefix_topic=self._config.prefix_topic,
             )
 
         return system

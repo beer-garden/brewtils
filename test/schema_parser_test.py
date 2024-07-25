@@ -5,11 +5,15 @@ from __future__ import unicode_literals
 
 import copy
 
-import brewtils.models
 import pytest
+from marshmallow.exceptions import MarshmallowError
+from pytest_lazyfixture import lazy_fixture
+
+import brewtils.models
 from brewtils.models import System
 from brewtils.schema_parser import SchemaParser
 from brewtils.test.comparable import (
+    assert_alias_user_map_equal,
     assert_command_equal,
     assert_connection_equal,
     assert_event_equal,
@@ -21,7 +25,6 @@ from brewtils.test.comparable import (
     assert_operation_equal,
     assert_parameter_equal,
     assert_patch_equal,
-    assert_principal_equal,
     assert_queue_equal,
     assert_replication_equal,
     assert_request_equal,
@@ -32,9 +35,10 @@ from brewtils.test.comparable import (
     assert_subscriber_equal,
     assert_system_equal,
     assert_topic_equal,
+    assert_upstream_role_equal,
+    assert_user_equal,
+    assert_user_token_equal,
 )
-from marshmallow.exceptions import MarshmallowError
-from pytest_lazyfixture import lazy_fixture
 
 
 class TestParse(object):
@@ -124,16 +128,34 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
-                brewtils.models.Principal,
-                lazy_fixture("principal_dict"),
-                assert_principal_equal,
-                lazy_fixture("bg_principal"),
+                brewtils.models.User,
+                lazy_fixture("user_dict"),
+                assert_user_equal,
+                lazy_fixture("bg_user"),
             ),
             (
-                brewtils.models.LegacyRole,
-                lazy_fixture("legacy_role_dict"),
+                brewtils.models.UserToken,
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
+                brewtils.models.AliasUserMap,
+                lazy_fixture("alias_user_map_dict"),
+                assert_alias_user_map_equal,
+                lazy_fixture("bg_alias_user_map"),
+            ),
+            (
+                brewtils.models.Role,
+                lazy_fixture("role_dict"),
                 assert_role_equal,
                 lazy_fixture("bg_role"),
+            ),
+            (
+                brewtils.models.UpstreamRole,
+                lazy_fixture("upstream_role_dict"),
+                assert_upstream_role_equal,
+                lazy_fixture("bg_upstream_role"),
             ),
             (
                 brewtils.models.Job,
@@ -270,16 +292,34 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
-                "parse_principal",
-                lazy_fixture("principal_dict"),
-                assert_principal_equal,
-                lazy_fixture("bg_principal"),
+                "parse_user",
+                lazy_fixture("user_dict"),
+                assert_user_equal,
+                lazy_fixture("bg_user"),
+            ),
+            (
+                "parse_user_token",
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
+                "parse_alias_user_map",
+                lazy_fixture("alias_user_map_dict"),
+                assert_alias_user_map_equal,
+                lazy_fixture("bg_alias_user_map"),
             ),
             (
                 "parse_role",
-                lazy_fixture("legacy_role_dict"),
+                lazy_fixture("role_dict"),
                 assert_role_equal,
                 lazy_fixture("bg_role"),
+            ),
+            (
+                "parse_upstream_role",
+                lazy_fixture("upstream_role_dict"),
+                assert_upstream_role_equal,
+                lazy_fixture("bg_upstream_role"),
             ),
             (
                 "parse_job",
@@ -421,16 +461,34 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
-                brewtils.models.Principal,
-                lazy_fixture("principal_dict"),
-                assert_principal_equal,
-                lazy_fixture("bg_principal"),
+                brewtils.models.User,
+                lazy_fixture("user_dict"),
+                assert_user_equal,
+                lazy_fixture("bg_user"),
             ),
             (
-                brewtils.models.LegacyRole,
-                lazy_fixture("legacy_role_dict"),
+                brewtils.models.UserToken,
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
+                brewtils.models.AliasUserMap,
+                lazy_fixture("alias_user_map_dict"),
+                assert_alias_user_map_equal,
+                lazy_fixture("bg_alias_user_map"),
+            ),
+            (
+                brewtils.models.Role,
+                lazy_fixture("role_dict"),
                 assert_role_equal,
                 lazy_fixture("bg_role"),
+            ),
+            (
+                brewtils.models.UpstreamRole,
+                lazy_fixture("upstream_role_dict"),
+                assert_upstream_role_equal,
+                lazy_fixture("bg_upstream_role"),
             ),
             (
                 brewtils.models.Job,
@@ -565,16 +623,34 @@ class TestParse(object):
                 lazy_fixture("bg_queue"),
             ),
             (
-                "parse_principal",
-                lazy_fixture("principal_dict"),
-                assert_principal_equal,
-                lazy_fixture("bg_principal"),
+                "parse_user",
+                lazy_fixture("user_dict"),
+                assert_user_equal,
+                lazy_fixture("bg_user"),
+            ),
+            (
+                "parse_user_token",
+                lazy_fixture("user_token_dict"),
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
+                "parse_alias_user_map",
+                lazy_fixture("alias_user_map_dict"),
+                assert_alias_user_map_equal,
+                lazy_fixture("bg_alias_user_map"),
             ),
             (
                 "parse_role",
-                lazy_fixture("legacy_role_dict"),
+                lazy_fixture("role_dict"),
                 assert_role_equal,
                 lazy_fixture("bg_role"),
+            ),
+            (
+                "parse_upstream_role",
+                lazy_fixture("upstream_role_dict"),
+                assert_upstream_role_equal,
+                lazy_fixture("bg_upstream_role"),
             ),
             (
                 "parse_job",
@@ -680,8 +756,11 @@ class TestSerialize(object):
             (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
-            (lazy_fixture("bg_principal"), lazy_fixture("principal_dict")),
-            (lazy_fixture("bg_role"), lazy_fixture("legacy_role_dict")),
+            (lazy_fixture("bg_user"), lazy_fixture("user_dict")),
+            (lazy_fixture("bg_user_token"), lazy_fixture("user_token_dict")),
+            (lazy_fixture("bg_alias_user_map"), lazy_fixture("alias_user_map_dict")),
+            (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            (lazy_fixture("bg_upstream_role"), lazy_fixture("upstream_role_dict")),
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
@@ -743,14 +822,29 @@ class TestSerialize(object):
             ("serialize_event", lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             ("serialize_queue", lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
             (
-                "serialize_principal",
-                lazy_fixture("bg_principal"),
-                lazy_fixture("principal_dict"),
+                "serialize_user",
+                lazy_fixture("bg_user"),
+                lazy_fixture("user_dict"),
+            ),
+            (
+                "serialize_user_token",
+                lazy_fixture("bg_user_token"),
+                lazy_fixture("user_token_dict"),
+            ),
+            (
+                "serialize_alias_user_map",
+                lazy_fixture("bg_alias_user_map"),
+                lazy_fixture("alias_user_map_dict"),
             ),
             (
                 "serialize_role",
                 lazy_fixture("bg_role"),
-                lazy_fixture("legacy_role_dict"),
+                lazy_fixture("role_dict"),
+            ),
+            (
+                "serialize_upstream_role",
+                lazy_fixture("bg_upstream_role"),
+                lazy_fixture("upstream_role_dict"),
             ),
             ("serialize_job", lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (
@@ -827,8 +921,11 @@ class TestSerialize(object):
             (lazy_fixture("bg_logging_config"), lazy_fixture("logging_config_dict")),
             (lazy_fixture("bg_event"), lazy_fixture("event_dict")),
             (lazy_fixture("bg_queue"), lazy_fixture("queue_dict")),
-            (lazy_fixture("bg_principal"), lazy_fixture("principal_dict")),
-            (lazy_fixture("bg_role"), lazy_fixture("legacy_role_dict")),
+            (lazy_fixture("bg_user"), lazy_fixture("user_dict")),
+            (lazy_fixture("bg_user_token"), lazy_fixture("user_token_dict")),
+            (lazy_fixture("bg_alias_user_map"), lazy_fixture("alias_user_map_dict")),
+            (lazy_fixture("bg_role"), lazy_fixture("role_dict")),
+            (lazy_fixture("bg_upstream_role"), lazy_fixture("upstream_role_dict")),
             (lazy_fixture("bg_job"), lazy_fixture("job_dict")),
             (lazy_fixture("bg_cron_job"), lazy_fixture("cron_job_dict")),
             (lazy_fixture("bg_interval_job"), lazy_fixture("interval_job_dict")),
@@ -907,11 +1004,26 @@ class TestRoundTrip(object):
             (brewtils.models.Event, assert_event_equal, lazy_fixture("bg_event")),
             (brewtils.models.Queue, assert_queue_equal, lazy_fixture("bg_queue")),
             (
-                brewtils.models.Principal,
-                assert_principal_equal,
-                lazy_fixture("bg_principal"),
+                brewtils.models.User,
+                assert_user_equal,
+                lazy_fixture("bg_user"),
             ),
-            (brewtils.models.LegacyRole, assert_role_equal, lazy_fixture("bg_role")),
+            (
+                brewtils.models.UserToken,
+                assert_user_token_equal,
+                lazy_fixture("bg_user_token"),
+            ),
+            (
+                brewtils.models.AliasUserMap,
+                assert_alias_user_map_equal,
+                lazy_fixture("bg_alias_user_map"),
+            ),
+            (brewtils.models.Role, assert_role_equal, lazy_fixture("bg_role")),
+            (
+                brewtils.models.UpstreamRole,
+                assert_upstream_role_equal,
+                lazy_fixture("bg_upstream_role"),
+            ),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_cron_job")),
             (brewtils.models.Job, assert_job_equal, lazy_fixture("bg_interval_job")),
@@ -960,8 +1072,10 @@ class TestRoundTrip(object):
             (brewtils.models.LoggingConfig, lazy_fixture("logging_config_dict")),
             (brewtils.models.Event, lazy_fixture("event_dict")),
             (brewtils.models.Queue, lazy_fixture("queue_dict")),
-            (brewtils.models.Principal, lazy_fixture("principal_dict")),
-            (brewtils.models.LegacyRole, lazy_fixture("legacy_role_dict")),
+            (brewtils.models.User, lazy_fixture("user_dict")),
+            (brewtils.models.UserToken, lazy_fixture("user_token_dict")),
+            (brewtils.models.Role, lazy_fixture("role_dict")),
+            (brewtils.models.UpstreamRole, lazy_fixture("upstream_role_dict")),
             (brewtils.models.Job, lazy_fixture("job_dict")),
             (brewtils.models.Job, lazy_fixture("cron_job_dict")),
             (brewtils.models.Job, lazy_fixture("interval_job_dict")),

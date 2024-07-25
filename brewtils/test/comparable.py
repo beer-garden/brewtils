@@ -14,6 +14,7 @@ from functools import partial
 
 import brewtils.test
 from brewtils.models import (
+    AliasUserMap,
     Choices,
     Command,
     Connection,
@@ -24,22 +25,24 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
-    LegacyRole,
     LoggingConfig,
     Operation,
     Parameter,
     PatchOperation,
-    Principal,
     Queue,
     Replication,
     Request,
     RequestFile,
     RequestTemplate,
     Resolvable,
+    Role,
     Runner,
-    System,
     Subscriber,
+    System,
     Topic,
+    UpstreamRole,
+    User,
+    UserToken,
 )
 
 __all__ = [
@@ -53,7 +56,9 @@ __all__ = [
     "assert_trigger_equal",
     "assert_command_equal",
     "assert_parameter_equal",
-    "assert_principal_equal",
+    "assert_user_token_equal",
+    "assert_user_equal",
+    "assert_alias_user_map_equal",
     "assert_request_equal",
     "assert_role_equal",
     "assert_system_equal",
@@ -199,6 +204,7 @@ assert_request_file_equal = partial(_assert_wrapper, expected_type=RequestFile)
 assert_runner_equal = partial(_assert_wrapper, expected_type=Runner)
 assert_resolvable_equal = partial(_assert_wrapper, expected_type=Resolvable)
 assert_connection_equal = partial(_assert_wrapper, expected_type=Connection)
+assert_alias_user_map_equal = partial(_assert_wrapper, expected_type=AliasUserMap)
 assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
 assert_replication_equal = partial(_assert_wrapper, expected_type=Replication)
 
@@ -244,12 +250,28 @@ def assert_event_equal(obj1, obj2, do_raise=False):
     )
 
 
-def assert_principal_equal(obj1, obj2, do_raise=False):
+def assert_user_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
         obj2,
-        expected_type=Principal,
-        deep_fields={"roles": partial(assert_role_equal, do_raise=True)},
+        expected_type=User,
+        deep_fields={
+            "local_roles": partial(assert_role_equal, do_raise=True),
+            "upstream_roles": partial(assert_upstream_role_equal, do_raise=True),
+            "user_alias_mapping": partial(assert_alias_user_map_equal, do_raise=True),
+        },
+        do_raise=do_raise,
+    )
+
+
+def assert_user_token_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=UserToken,
+        deep_fields={
+            "user": partial(assert_user_equal, do_raise=True),
+        },
         do_raise=do_raise,
     )
 
@@ -306,8 +328,16 @@ def assert_role_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,
         obj2,
-        expected_type=LegacyRole,
-        deep_fields={"roles": partial(assert_role_equal, do_raise=True)},
+        expected_type=Role,
+        do_raise=do_raise,
+    )
+
+
+def assert_upstream_role_equal(obj1, obj2, do_raise=False):
+    return _assert_wrapper(
+        obj1,
+        obj2,
+        expected_type=UpstreamRole,
         do_raise=do_raise,
     )
 

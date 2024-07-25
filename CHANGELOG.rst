@@ -6,6 +6,28 @@ Brewtils Changelog
 TBD
 
 - Added support models for tracking primary replication
+- New Models for User, UserToken, Role, and AliasUserMap
+- Must upgrade to a minimum version of Beer Garden 3.27.0 to support new authentication models. If authentication is not enabled, upgrade
+  is not required. 
+- Removed 2.0 Legacy support for Principle and LegacyRole models
+- Fixed bug in SystemClient to properly assign requester field from parent request
+
+3.26.4
+------
+7/12/24
+
+- Fixed bug where parameter type mapping did not match type hinting
+- Exposed a read only feature to provide the current request that is being processed `from brewtils import get_current_request_read_only`
+- Expand Job Export to include Job id
+
+3.26.3
+------
+7/10/24
+
+- Update Parameter decorator to map parameter type from literal to string value if possible
+- Added Subscriber Types to Subscriber model
+- Added Prefix Topics to System model
+- Support adding Prefix Topics for the Generated Subscribers. It is supported through the `@client` or SystemClient inputs or beer.conf
 
 3.26.2
 ------

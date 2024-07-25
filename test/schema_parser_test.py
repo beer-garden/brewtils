@@ -587,7 +587,7 @@ class TestParse(object):
                 lazy_fixture("status_history_dict"),
                 assert_status_history_equal,
                 lazy_fixture("bg_status_history"),
-             ),
+            ),
             (
                 brewtils.models.Replication,
                 lazy_fixture("replication_dict"),
@@ -958,7 +958,7 @@ class TestSerialize(object):
                 "serialize_status_history",
                 lazy_fixture("bg_status_history"),
                 lazy_fixture("status_history_dict"),
-             ),
+            ),
             (
                 "serialize_replication",
                 lazy_fixture("bg_replication"),

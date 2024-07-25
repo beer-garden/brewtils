@@ -247,7 +247,6 @@ assert_subscriber_equal = partial(_assert_wrapper, expected_type=Subscriber)
 assert_replication_equal = partial(_assert_wrapper, expected_type=Replication)
 
 
-
 def assert_command_equal(obj1, obj2, do_raise=False):
     return _assert_wrapper(
         obj1,

@@ -7,6 +7,7 @@ import pytest
 import pytz
 
 from brewtils.models import (
+    AliasUserMap,
     Choices,
     Command,
     Connection,
@@ -17,21 +18,26 @@ from brewtils.models import (
     Instance,
     IntervalTrigger,
     Job,
-    LegacyRole,
     LoggingConfig,
     Operation,
     Parameter,
     PatchOperation,
-    Principal,
     Queue,
+    Replication,
     Request,
     RequestFile,
     RequestTemplate,
     Resolvable,
+    Role,
     Runner,
+    StatusHistory,
+    StatusInfo,
     Subscriber,
     System,
     Topic,
+    UpstreamRole,
+    User,
+    UserToken,
 )
 
 
@@ -204,7 +210,7 @@ def bg_command_2(command_dict_2, bg_parameter, system_id):
 
 
 @pytest.fixture
-def instance_dict(ts_epoch):
+def instance_dict(status_info_dict):
     """An instance represented as a dictionary."""
     return {
         "id": "584f11af55a38e64799fd1d4",
@@ -231,16 +237,16 @@ def instance_dict(ts_epoch):
             },
             "url": "amqp://guest:guest@localhost:5672",
         },
-        "status_info": {"heartbeat": ts_epoch},
+        "status_info": status_info_dict,
         "metadata": {"meta": "data"},
     }
 
 
 @pytest.fixture
-def bg_instance(instance_dict, ts_dt):
+def bg_instance(instance_dict, bg_status_info):
     """An instance as a model."""
     dict_copy = copy.deepcopy(instance_dict)
-    dict_copy["status_info"]["heartbeat"] = ts_dt
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Instance(**dict_copy)
 
 
@@ -531,38 +537,124 @@ def bg_queue(queue_dict):
 
 
 @pytest.fixture
-def principal_dict(legacy_role_dict):
+def alias_user_map_dict():
     return {
-        "id": "58542eb571afd47ead90d24f",
-        "username": "admin",
-        "roles": [legacy_role_dict],
-        "permissions": ["bg-all"],
-        "preferences": {"theme": "dark"},
-        "metadata": {"foo": "bar"},
+        "target_garden": "test",
+        "username": "user",
     }
 
 
 @pytest.fixture
-def bg_principal(principal_dict, bg_role):
-    dict_copy = copy.deepcopy(principal_dict)
-    dict_copy["roles"] = [bg_role]
-    return Principal(**dict_copy)
+def bg_alias_user_map(alias_user_map_dict):
+    return AliasUserMap(**alias_user_map_dict)
 
 
 @pytest.fixture
-def legacy_role_dict():
+def user_token_dict(user_dict, ts_epoch):
     return {
-        "id": "58542eb571afd47ead90d26f",
-        "name": "bg-admin",
-        "description": "The admin role",
-        "permissions": ["bg-all"],
+        "id": "1",
+        "uuid": "11111111-2222-4444-5555-66666666666",
+        "issued_at": ts_epoch,
+        "expires_at": ts_epoch,
+        "username": "USERNAME",
     }
 
 
 @pytest.fixture
-def bg_role(legacy_role_dict):
-    dict_copy = copy.deepcopy(legacy_role_dict)
-    return LegacyRole(**dict_copy)
+def bg_user_token(user_token_dict, ts_dt):
+    dict_copy = copy.deepcopy(user_token_dict)
+    dict_copy["issued_at"] = ts_dt
+    dict_copy["expires_at"] = ts_dt
+    return UserToken(**dict_copy)
+
+
+@pytest.fixture
+def role_dict():
+    return {
+        "permission": "PLUGIN_ADMIN",
+        "description": "PLUGIN ADMIN ROLE",
+        "id": "1",
+        "name": "PLUGIN_ADMIN_ROLE",
+        "scope_gardens": ["FOO"],
+        "scope_namespaces": [],
+        "scope_systems": [],
+        "scope_instances": [],
+        "scope_versions": [],
+        "scope_commands": [],
+        "protected": False,
+        "file_generated": False,
+    }
+
+
+@pytest.fixture
+def bg_role(role_dict):
+    return Role(**role_dict)
+
+
+@pytest.fixture
+def upstream_role_dict():
+    return {
+        "permission": "PLUGIN_ADMIN",
+        "description": "PLUGIN ADMIN ROLE",
+        "id": "1",
+        "name": "PLUGIN_ADMIN_ROLE",
+        "scope_gardens": ["FOO"],
+        "scope_namespaces": [],
+        "scope_systems": [],
+        "scope_instances": [],
+        "scope_versions": [],
+        "scope_commands": [],
+        "protected": False,
+        "file_generated": False,
+    }
+
+
+@pytest.fixture
+def bg_upstream_role(upstream_role_dict):
+    return UpstreamRole(**upstream_role_dict)
+
+
+@pytest.fixture
+def user_dict(role_dict, upstream_role_dict, alias_user_map_dict):
+    return {
+        "id": "1",
+        "username": "USERNAME",
+        "password": "HASH",
+        "roles": ["PLUGIN_ADMIN_ROLE"],
+        "local_roles": [role_dict],
+        "upstream_roles": [upstream_role_dict],
+        "user_alias_mapping": [alias_user_map_dict],
+        "is_remote": False,
+        "metadata": {},
+        "protected": False,
+        "file_generated": False,
+    }
+
+
+@pytest.fixture
+def bg_user(user_dict, bg_role, bg_upstream_role, bg_alias_user_map):
+    dict_copy = copy.deepcopy(user_dict)
+    dict_copy["upstream_roles"] = [bg_upstream_role]
+    dict_copy["local_roles"] = [bg_role]
+    dict_copy["user_alias_mapping"] = [bg_alias_user_map]
+    return User(**dict_copy)
+
+
+@pytest.fixture
+def replication_dict(ts_epoch):
+    """Replication as a dictionary."""
+    return {
+        "id": "1234",
+        "replication_id": "89cd6a3a-e0e2-486b-b8e8-535d1893faf3",
+        "expires_at": ts_epoch,
+    }
+
+
+@pytest.fixture
+def bg_replication(replication_dict, ts_dt):
+    dict_copy = copy.deepcopy(replication_dict)
+    dict_copy["expires_at"] = ts_dt
+    return Replication(**dict_copy)
 
 
 @pytest.fixture
@@ -763,52 +855,88 @@ def bg_request_file(request_file_dict):
 
 
 @pytest.fixture
-def connection_dict():
+def connection_dict(status_info_dict):
     """A connection as a dictionary."""
 
     return {
         "api": "HTTP",
         "config": {},
         "status": "RECEIVING",
-        "status_info": {},
+        "status_info": status_info_dict,
     }
 
 
 @pytest.fixture
-def connection_publishing_dict():
+def connection_publishing_dict(status_info_dict):
     """A connection as a dictionary."""
 
     return {
         "api": "HTTP",
         "config": {},
         "status": "PUBLISHING",
-        "status_info": {},
+        "status_info": status_info_dict,
     }
 
 
 @pytest.fixture
-def bg_connection(connection_dict):
+def bg_connection(connection_dict, bg_status_info):
     """An connection as a model."""
     dict_copy = copy.deepcopy(connection_dict)
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Connection(**dict_copy)
 
 
 @pytest.fixture
-def bg_connection_publishing(connection_publishing_dict):
+def bg_connection_publishing(connection_publishing_dict, bg_status_info):
     """An connection as a model."""
     dict_copy = copy.deepcopy(connection_publishing_dict)
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Connection(**dict_copy)
 
 
 @pytest.fixture
-def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_dict):
+def status_history_dict(ts_epoch):
+    """A status history as a dictionary"""
+
+    return {
+        "status": "RUNNING",
+        "heartbeat": ts_epoch,
+    }
+
+
+@pytest.fixture
+def bg_status_history(status_history_dict, ts_dt):
+    dict_copy = copy.deepcopy(status_history_dict)
+    dict_copy["heartbeat"] = ts_dt
+    return StatusHistory(**dict_copy)
+
+
+@pytest.fixture
+def status_info_dict(ts_epoch, status_history_dict):
+    """A status info as a dictionary"""
+
+    return {"heartbeat": ts_epoch, "history": [status_history_dict]}
+
+
+@pytest.fixture
+def bg_status_info(status_info_dict, ts_dt, bg_status_history):
+    dict_copy = copy.deepcopy(status_info_dict)
+    dict_copy["history"] = [copy.deepcopy(bg_status_history)]
+    dict_copy["heartbeat"] = ts_dt
+    return StatusInfo(**dict_copy)
+
+
+@pytest.fixture
+def garden_dict(
+    ts_epoch, system_dict, connection_dict, connection_publishing_dict, status_info_dict
+):
     """A garden as a dictionary."""
 
     return {
         "id": "123f11af55a38e64799fa1c1",
         "name": "garden",
         "status": "RUNNING",
-        "status_info": {},
+        "status_info": status_info_dict,
         "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
@@ -818,16 +946,21 @@ def garden_dict(ts_epoch, system_dict, connection_dict, connection_publishing_di
         "has_parent": False,
         "children": [],
         "metadata": {},
+        "default_user": None,
+        "shared_users": True,
     }
 
 
 @pytest.fixture
-def bg_garden(garden_dict, bg_system, bg_connection, bg_connection_publishing):
+def bg_garden(
+    garden_dict, bg_system, bg_connection, bg_connection_publishing, bg_status_info
+):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
     dict_copy["publishing_connections"] = [bg_connection_publishing]
+    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Garden(**dict_copy)
 
 

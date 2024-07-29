@@ -37,21 +37,26 @@ class SchemaParser(object):
         "QueueSchema": brewtils.models.Queue,
         "ParameterSchema": brewtils.models.Parameter,
         "PatchSchema": brewtils.models.PatchOperation,
-        "PrincipalSchema": brewtils.models.Principal,
-        "RefreshTokenSchema": brewtils.models.RefreshToken,
+        "UserTokenSchema": brewtils.models.UserToken,
         "RequestSchema": brewtils.models.Request,
         "RequestFileSchema": brewtils.models.RequestFile,
         "FileSchema": brewtils.models.File,
         "FileChunkSchema": brewtils.models.FileChunk,
         "FileStatusSchema": brewtils.models.FileStatus,
         "RequestTemplateSchema": brewtils.models.RequestTemplate,
-        "LegacyRoleSchema": brewtils.models.LegacyRole,
         "SystemSchema": brewtils.models.System,
         "OperationSchema": brewtils.models.Operation,
         "RunnerSchema": brewtils.models.Runner,
         "ResolvableSchema": brewtils.models.Resolvable,
+        "RoleSchema": brewtils.models.Role,
+        "UpstreamRoleSchema": brewtils.models.UpstreamRole,
+        "UserSchema": brewtils.models.User,
+        "AliasUserMapSchema": brewtils.models.AliasUserMap,
         "SubscriberSchema": brewtils.models.Subscriber,
         "TopicSchema": brewtils.models.Topic,
+        "StatusInfoSchema": brewtils.models.StatusInfo,
+        "StatusHistorySchema": brewtils.models.StatusHistory,
+        "ReplicationSchema": brewtils.models.Replication,
     }
 
     logger = logging.getLogger(__name__)
@@ -255,20 +260,18 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def parse_principal(cls, principal, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a principal model object
+    def parse_user(cls, user, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a user model object
 
         Args:
-            principal: The raw input
+            user: The raw input
             from_string: True if input is a JSON string, False if a dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A Principal object
+            A User object
         """
-        return cls.parse(
-            principal, brewtils.models.Principal, from_string=from_string, **kwargs
-        )
+        return cls.parse(user, brewtils.models.User, from_string=from_string, **kwargs)
 
     @classmethod
     def parse_role(cls, role, from_string=False, **kwargs):
@@ -282,27 +285,57 @@ class SchemaParser(object):
         Returns:
             A Role object
         """
-        return cls.parse(
-            role, brewtils.models.LegacyRole, from_string=from_string, **kwargs
-        )
+        return cls.parse(role, brewtils.models.Role, from_string=from_string, **kwargs)
 
     @classmethod
-    def parse_refresh_token(cls, refresh_token, from_string=False, **kwargs):
-        """Convert raw JSON string or dictionary to a refresh token object
+    def parse_upstream_role(cls, role, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a role model object
 
         Args:
-            refresh_token: The raw input
+            role: The raw input
             from_string: True if input is a JSON string, False if a dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
-            A RefreshToken object
+            A Role object
         """
         return cls.parse(
-            refresh_token,
-            brewtils.models.RefreshToken,
+            role, brewtils.models.UpstreamRole, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_alias_user_map(cls, alias_user_map, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a AliasUserMap model object
+
+        Args:
+            role: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A AliasUserMap object
+        """
+        return cls.parse(
+            alias_user_map,
+            brewtils.models.AliasUserMap,
             from_string=from_string,
             **kwargs
+        )
+
+    @classmethod
+    def parse_user_token(cls, user_token, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a user token object
+
+        Args:
+            user_token: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A UserToken object
+        """
+        return cls.parse(
+            user_token, brewtils.models.UserToken, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -435,6 +468,57 @@ class SchemaParser(object):
         """
         return cls.parse(
             topic, brewtils.models.Topic, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_status_info(cls, status_info, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a status info model object
+
+        Args:
+            status_info: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A StatusInfo object
+        """
+        return cls.parse(
+            status_info, brewtils.models.StatusInfo, from_string=from_string, **kwargs
+        )
+
+    @classmethod
+    def parse_status_history(cls, status_history, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a status history model object
+
+        Args:
+            status_history: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A StatusHistory object
+        """
+        return cls.parse(
+            status_history,
+            brewtils.models.StatusHistory,
+            from_string=from_string,
+            **kwargs
+        )
+
+    @classmethod
+    def parse_replication(cls, replication, from_string=False, **kwargs):
+        """Convert raw JSON string or dictionary to a replication model object
+
+        Args:
+            replication: The raw input
+            from_string: True if input is a JSON string, False if a dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            A Replication object
+        """
+        return cls.parse(
+            replication, brewtils.models.Replication, from_string=from_string, **kwargs
         )
 
     @classmethod
@@ -708,11 +792,11 @@ class SchemaParser(object):
         )
 
     @classmethod
-    def serialize_principal(cls, principal, to_string=True, **kwargs):
-        """Convert a principal model into serialized form
+    def serialize_user(cls, user, to_string=True, **kwargs):
+        """Convert a user model into serialized form
 
         Args:
-            principal: The principal object(s) to be serialized
+            user: The user object(s) to be serialized
             to_string: True to generate a JSON-formatted string, False to generate a
                 dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
@@ -721,10 +805,7 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            principal,
-            to_string=to_string,
-            schema_name=brewtils.models.Principal.schema,
-            **kwargs
+            user, to_string=to_string, schema_name=brewtils.models.User.schema, **kwargs
         )
 
     @classmethod
@@ -741,18 +822,15 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            role,
-            to_string=to_string,
-            schema_name=brewtils.models.LegacyRole.schema,
-            **kwargs
+            role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
         )
 
     @classmethod
-    def serialize_refresh_token(cls, refresh_token, to_string=True, **kwargs):
+    def serialize_upstream_role(cls, role, to_string=True, **kwargs):
         """Convert a role model into serialized form
 
         Args:
-            refresh_token: The token object(s) to be serialized
+            role: The role object(s) to be serialized
             to_string: True to generate a JSON-formatted string, False to generate a
                 dictionary
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
@@ -761,9 +839,49 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            refresh_token,
+            role,
             to_string=to_string,
-            schema_name=brewtils.models.RefreshToken.schema,
+            schema_name=brewtils.models.UpstreamRole.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_alias_user_map(cls, alias_user_map, to_string=True, **kwargs):
+        """Convert a AliasUserMap model into serialized form
+
+        Args:
+            AliasUserMap: The AliasUserMap object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation
+        """
+        return cls.serialize(
+            alias_user_map,
+            to_string=to_string,
+            schema_name=brewtils.models.AliasUserMap.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_user_token(cls, user_token, to_string=True, **kwargs):
+        """Convert a role model into serialized form
+
+        Args:
+            user_token: The token object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation
+        """
+        return cls.serialize(
+            user_token,
+            to_string=to_string,
+            schema_name=brewtils.models.UserToken.schema,
             **kwargs
         )
 
@@ -940,6 +1058,66 @@ class SchemaParser(object):
             topic,
             to_string=to_string,
             schema_name=brewtils.models.Topic.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_status_info(cls, status_info, to_string=True, **kwargs):
+        """Convert a status info model into serialized form
+
+        Args:
+            status_info: The status info object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of status_info
+        """
+        return cls.serialize(
+            status_info,
+            to_string=to_string,
+            schema_name=brewtils.models.StatusInfo.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_status_history(cls, status_history, to_string=True, **kwargs):
+        """Convert a status history model into serialized form
+
+        Args:
+            status_history: The status history object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of status_history
+        """
+        return cls.serialize(
+            status_history,
+            to_string=to_string,
+            schema_name=brewtils.models.StatusHistory.schema,
+            **kwargs
+        )
+
+    @classmethod
+    def serialize_replication(cls, replication, to_string=True, **kwargs):
+        """Convert a replication model into serialized form
+
+        Args:
+            replication: The replication object(s) to be serialized
+            to_string: True to generate a JSON-formatted string, False to generate a
+                dictionary
+            **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
+
+        Returns:
+            Serialized representation of replication
+        """
+        return cls.serialize(
+            replication,
+            to_string=to_string,
+            schema_name=brewtils.models.Replication.schema,
             **kwargs
         )
 

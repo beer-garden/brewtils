@@ -23,12 +23,19 @@ def enable_auth(method):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+
+        # Load Token initially if authentication settings are provided
+        if not self.session.headers.get("Authorization") and (
+            (self.username and self.password) or self.client_cert
+        ):
+            self.get_tokens()
+
         original_response = method(self, *args, **kwargs)
 
         if original_response.status_code != 401:
             return original_response
 
-        # Try to use credentials
+        # Refresh Token if expired and caused 401
         if (self.username and self.password) or self.client_cert:
             credential_response = self.get_tokens()
 

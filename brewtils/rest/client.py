@@ -154,6 +154,7 @@ class RestClient(object):
             self.admin_url = self.base_url + "api/v1/admin/"
             self.forward_url = self.base_url + "api/v1/forward"
             self.topic_url = self.base_url + "api/v1/topics/"
+            self.topic_name_url = self.base_url + "api/v1/topics/name/"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
@@ -947,17 +948,23 @@ class RestClient(object):
         return response
 
     @enable_auth
-    def get_topic(self, topic_id):
-        # type: (str, **Any) -> Response
+    def get_topic(self, topic_id=None, topic_name=None):
+        # type: (str, str, **Any) -> Response
         """Performs a GET on the Topic URL
 
         Args:
-            topic_id: Topic id
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
 
         Returns:
             Requests Response object
         """
-        return self.session.get(self.topic_url + topic_id)
+        if topic_id:
+            return self.session.get(self.topic_url + topic_id)
+        if topic_name:
+            return self.session.get(self.topic_name_url + topic_name)
+        
+        raise RuntimeError("Unable to find Topic ID or Topic Name to Get")
 
     @enable_auth
     def get_topics(self):
@@ -985,30 +992,44 @@ class RestClient(object):
         )
 
     @enable_auth
-    def patch_topic(self, topic_id, payload):
-        # type: (str, str) -> Response
+    def patch_topic(self, topic_id=None, topic_name=None, operations=None):
+        # type: (str, str, str) -> Response
         """Performs a PATCH on a Topic URL
 
         Args:
-            topic_id: Topic id
-            payload: Serialized PatchOperation
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
+            operations: Serialized PatchOperation
 
         Returns:
             Requests Response object
         """
-        return self.session.patch(
-            self.topic_url + topic_id, data=payload, headers=self.JSON_HEADERS
-        )
+        if topic_id:
+            return self.session.patch(
+                self.topic_url + topic_id, data=operations, headers=self.JSON_HEADERS
+            )
+        if topic_name:
+            return self.session.patch(
+                self.topic_name_url + topic_name, data=operations, headers=self.JSON_HEADERS
+            )
+        
+        raise RuntimeError("Unable to find Topic ID or Topic Name to Patch")
 
     @enable_auth
-    def delete_topic(self, topic_id):
-        # type: (str) -> Response
+    def delete_topic(self, topic_id=None, topic_name=None):
+        # type: (str, str) -> Response
         """Performs a DELETE on a Topic URL
 
         Args:
-            topic_id: Topic id
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
 
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.topic_url + topic_id)
+        if topic_id:
+            return self.session.delete(self.topic_url + topic_id)
+        if topic_name:
+            return self.session.delete(self.topic_name_url + topic_name)
+        
+        raise RuntimeError("Unable to find Topic ID or Topic Name to Delete")

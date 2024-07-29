@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Expanded Topics Rest API to support Topic Name as a key 
+
 3.26.4
 ------
 7/12/24

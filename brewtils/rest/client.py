@@ -970,7 +970,7 @@ class RestClient(object):
             return self.session.get(self.topic_url + topic_id)
         if topic_name:
             return self.session.get(self.topic_name_url + topic_name)
-        
+
         raise RuntimeError("Unable to find Topic ID or Topic Name to Get")
 
     @enable_auth
@@ -1017,9 +1017,11 @@ class RestClient(object):
             )
         if topic_name:
             return self.session.patch(
-                self.topic_name_url + topic_name, data=operations, headers=self.JSON_HEADERS
+                self.topic_name_url + topic_name,
+                data=operations,
+                headers=self.JSON_HEADERS,
             )
-        
+
         raise RuntimeError("Unable to find Topic ID or Topic Name to Patch")
 
     @enable_auth
@@ -1038,5 +1040,5 @@ class RestClient(object):
             return self.session.delete(self.topic_url + topic_id)
         if topic_name:
             return self.session.delete(self.topic_name_url + topic_name)
-        
+
         raise RuntimeError("Unable to find Topic ID or Topic Name to Delete")

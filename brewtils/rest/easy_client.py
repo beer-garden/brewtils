@@ -1232,5 +1232,7 @@ class EasyClient(object):
             operations.append(PatchOperation("remove", value=remove))
 
         return self.client.patch_topic(
-            topic_id=topic_id, topic_name=topic_name, operations=SchemaParser.serialize_patch(operations, many=True)
+            topic_id=topic_id,
+            topic_name=topic_name,
+            operations=SchemaParser.serialize_patch(operations, many=True),
         )

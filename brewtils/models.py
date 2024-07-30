@@ -99,8 +99,9 @@ class Events(Enum):
     TOPIC_CREATED = 54
     TOPIC_UPDATED = 55
     TOPIC_REMOVED = 56
+    DIRECTORY_FILE_CHANGE = 57
 
-    # Next: 57
+    # Next: 58
 
 
 class BaseModel(object):

@@ -783,6 +783,10 @@ def file_trigger_dict():
         "path": "./input",
         "pattern": "*",
         "recursive": False,
+        "create": True,
+        "modify": False,
+        "move": False,
+        "delete": False,
     }
 
 

@@ -489,6 +489,10 @@ class FileTriggerSchema(BaseSchema):
     pattern = fields.Str(allow_none=True)
     path = fields.Str(allow_none=True)
     recursive = fields.Bool(allow_none=True)
+    create = fields.Bool(allow_none=True)
+    modify = fields.Bool(allow_none=True)
+    move = fields.Bool(allow_none=True)
+    delete = fields.Bool(allow_none=True)
 
 
 class ConnectionSchema(BaseSchema):

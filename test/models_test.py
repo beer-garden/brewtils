@@ -572,6 +572,10 @@ class TestFileTrigger(object):
             "path": "./input",
             "pattern": "*",
             "recursive": False,
+            "create": True,
+            "modify": False,
+            "move": False,
+            "delete": False,
         }
 
 
@@ -642,8 +646,14 @@ class TestCronTrigger(object):
         ),
         (
             lazy_fixture("bg_file_trigger"),
-            "<FileTrigger: pattern=*, path=./input, recursive=False>",
-            "<FileTrigger: pattern=*, path=./input, recursive=False>",
+            (
+                "<FileTrigger: pattern=*, path=./input, recursive=False, "
+                "create=True, modify=False, move=False, delete=False>"
+            ),
+            (
+                "<FileTrigger: pattern=*, path=./input, recursive=False, "
+                "create=True, modify=False, move=False, delete=False>"
+            ),
         ),
         (
             lazy_fixture("bg_interval_trigger"),

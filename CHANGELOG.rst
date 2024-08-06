@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+3.27.0
+------
+TBD
+
+- Formalized Status Info model and added helper features to track the history of the status changes.
+- Added support models for tracking primary replication
+- New Models for User, UserToken, Role, and AliasUserMap
+- Must upgrade to a minimum version of Beer Garden 3.27.0 to support new authentication models. If authentication is not enabled, upgrade
+  is not required. 
+- Removed 2.0 Legacy support for Principle and LegacyRole models
+- Fixed bug in SystemClient to properly assign requester field from parent request
+
 3.26.4
 ------
 7/12/24

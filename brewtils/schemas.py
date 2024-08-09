@@ -601,7 +601,6 @@ class SubscriberSchema(BaseSchema):
     instance = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
     subscriber_type = fields.Str(allow_none=True)
-    subscriber_type = fields.Str(allow_none=True)
     consumer_count = fields.Int(allow_none=True)
 
 

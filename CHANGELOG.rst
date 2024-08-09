@@ -5,6 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
+- Expanded Topic/Subscriber models to include counters
 - Formalized Status Info model and added helper features to track the history of the status changes.
 - Added support models for tracking primary replication
 - New Models for User, UserToken, Role, and AliasUserMap

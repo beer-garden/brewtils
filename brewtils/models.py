@@ -1829,6 +1829,7 @@ class Subscriber(BaseModel):
         instance=None,
         command=None,
         subscriber_type=None,
+        consumer_count=0,
     ):
         self.garden = garden
         self.namespace = namespace
@@ -1837,6 +1838,7 @@ class Subscriber(BaseModel):
         self.instance = instance
         self.command = command
         self.subscriber_type = subscriber_type or "DYNAMIC"
+        self.consumer_count = consumer_count
 
     def __str__(self):
         return "%s" % self.__dict__
@@ -1844,7 +1846,7 @@ class Subscriber(BaseModel):
     def __repr__(self):
         return (
             "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
-            "command=%s, subscriber_type=%s>"
+            "command=%s, subscriber_type=%s, consumer_count=%s>"
             % (
                 self.garden,
                 self.namespace,
@@ -1853,6 +1855,7 @@ class Subscriber(BaseModel):
                 self.instance,
                 self.command,
                 self.subscriber_type,
+                self.consumer_count,
             )
         )
 
@@ -1875,18 +1878,22 @@ class Subscriber(BaseModel):
 class Topic(BaseModel):
     schema = "TopicSchema"
 
-    def __init__(self, id=None, name=None, subscribers=None):  # noqa # shadows built-in
+    def __init__(
+        self, id=None, name=None, subscribers=None, publisher_count=0
+    ):  # noqa # shadows built-in
         self.id = id
         self.name = name
         self.subscribers = subscribers or []
+        self.publisher_count = publisher_count
 
     def __str__(self):
         return "%s: %s" % (self.name, [str(s) for s in self.subscribers])
 
     def __repr__(self):
-        return "<Topic: name=%s, subscribers=%s>" % (
+        return "<Topic: name=%s, subscribers=%s, publisher_count=%s>" % (
             self.name,
             self.subscribers,
+            self.publisher_count,
         )
 
 

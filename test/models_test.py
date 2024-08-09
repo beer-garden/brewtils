@@ -694,7 +694,7 @@ def subscriber1():
 
 @pytest.fixture
 def topic1(subscriber1):
-    return Topic(name="foo.*", subscribers=[subscriber1])
+    return Topic(name="foo.*", subscribers=[subscriber1], publisher_count=10)
 
 
 class TestSubscriber(object):
@@ -715,9 +715,12 @@ class TestTopic:
         assert str(topic1) == "%s: %s" % (topic1.name, [str(subscriber1)])
 
     def test_repr(self, topic1, subscriber1):
-        assert repr(topic1) == "<Topic: name=%s, subscribers=%s>" % (
+        assert repr(
+            topic1
+        ) == "<Topic: name=%s, subscribers=%s, publisher_count=%s>" % (
             topic1.name,
             [subscriber1],
+            topic1.publisher_count,
         )
 
 

@@ -473,9 +473,13 @@ class TestRestClient(object):
 
         assert get_tokens_mock.called is True
 
-    def test_get_topic(self, client, session_mock):
-        client.get_topic("id")
+    def test_get_topic_id(self, client, session_mock):
+        client.get_topic(topic_id="id")
         session_mock.get.assert_called_with(client.topic_url + "id")
+
+    def test_get_topic_name(self, client, session_mock):
+        client.get_topic(topic_name="topic_name")
+        session_mock.get.assert_called_with(client.topic_name_url + "topic_name")
 
     def test_get_topics(self, client, session_mock):
         client.get_topics()
@@ -487,14 +491,26 @@ class TestRestClient(object):
             client.topic_url, data="payload", headers=client.JSON_HEADERS
         )
 
-    def test_patch_topic(self, client, session_mock):
-        client.patch_topic("id", "payload")
+    def test_patch_topic_id(self, client, session_mock):
+        client.patch_topic(topic_id="id", operations="payload")
         session_mock.patch.assert_called_with(
             client.topic_url + "id",
             data="payload",
             headers=client.JSON_HEADERS,
         )
 
-    def test_delete_topic(self, client, session_mock):
-        client.delete_topic("id")
+    def test_patch_topic_name(self, client, session_mock):
+        client.patch_topic(topic_name="topic_name", operations="payload")
+        session_mock.patch.assert_called_with(
+            client.topic_name_url + "topic_name",
+            data="payload",
+            headers=client.JSON_HEADERS,
+        )
+
+    def test_delete_topic_id(self, client, session_mock):
+        client.delete_topic(topic_id="id")
         session_mock.delete.assert_called_with(client.topic_url + "id")
+
+    def test_delete_topic_name(self, client, session_mock):
+        client.delete_topic(topic_name="topic_name")
+        session_mock.delete.assert_called_with(client.topic_name_url + "topic_name")

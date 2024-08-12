@@ -5,6 +5,8 @@ Brewtils Changelog
 ------
 TBD
 
+- Expanded Topics Rest API to support Topic Name as a key 
+- Expanded Topic/Subscriber models to include counters
 - Formalized Status Info model and added helper features to track the history of the status changes.
 - Added support models for tracking primary replication
 - New Models for User, UserToken, Role, and AliasUserMap
@@ -12,6 +14,7 @@ TBD
   is not required. 
 - Removed 2.0 Legacy support for Principle and LegacyRole models
 - Fixed bug in SystemClient to properly assign requester field from parent request
+
 
 3.26.4
 ------

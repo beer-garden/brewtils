@@ -572,6 +572,19 @@ class TestDateTrigger(object):
         }
 
 
+class TestFileTrigger(object):
+    def test_schedule_kwargs_default(self, bg_file_trigger):
+        assert bg_file_trigger.scheduler_kwargs == {
+            "path": "./input",
+            "pattern": "*",
+            "recursive": False,
+            "create": True,
+            "modify": False,
+            "move": False,
+            "delete": False,
+        }
+
+
 class TestIntervalTrigger(object):
     def test_scheduler_kwargs_default(self):
         assert IntervalTrigger(timezone="utc").scheduler_kwargs == {
@@ -636,6 +649,17 @@ class TestCronTrigger(object):
             lazy_fixture("bg_date_trigger"),
             "<DateTrigger: run_date=2016-01-01 00:00:00>",
             "<DateTrigger: run_date=2016-01-01 00:00:00>",
+        ),
+        (
+            lazy_fixture("bg_file_trigger"),
+            (
+                "<FileTrigger: pattern=*, path=./input, recursive=False, "
+                "create=True, modify=False, move=False, delete=False>"
+            ),
+            (
+                "<FileTrigger: pattern=*, path=./input, recursive=False, "
+                "create=True, modify=False, move=False, delete=False>"
+            ),
         ),
         (
             lazy_fixture("bg_interval_trigger"),

@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.27.0
 ------
-TBD
+8/13/24
 
 - Expanded Topics Rest API to support Topic Name as a key 
 - Expanded Topic/Subscriber models to include counters

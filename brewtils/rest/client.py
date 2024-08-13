@@ -23,12 +23,19 @@ def enable_auth(method):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+
+        # Load Token initially if authentication settings are provided
+        if not self.session.headers.get("Authorization") and (
+            (self.username and self.password) or self.client_cert
+        ):
+            self.get_tokens()
+
         original_response = method(self, *args, **kwargs)
 
         if original_response.status_code != 401:
             return original_response
 
-        # Try to use credentials
+        # Refresh Token if expired and caused 401
         if (self.username and self.password) or self.client_cert:
             credential_response = self.get_tokens()
 
@@ -154,6 +161,7 @@ class RestClient(object):
             self.admin_url = self.base_url + "api/v1/admin/"
             self.forward_url = self.base_url + "api/v1/forward"
             self.topic_url = self.base_url + "api/v1/topics/"
+            self.topic_name_url = self.base_url + "api/v1/topics/name/"
 
             # Deprecated
             self.logging_config_url = self.base_url + "api/v1/config/logging/"
@@ -947,17 +955,23 @@ class RestClient(object):
         return response
 
     @enable_auth
-    def get_topic(self, topic_id):
-        # type: (str, **Any) -> Response
+    def get_topic(self, topic_id=None, topic_name=None):
+        # type: (str, str, **Any) -> Response
         """Performs a GET on the Topic URL
 
         Args:
-            topic_id: Topic id
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
 
         Returns:
             Requests Response object
         """
-        return self.session.get(self.topic_url + topic_id)
+        if topic_id:
+            return self.session.get(self.topic_url + topic_id)
+        if topic_name:
+            return self.session.get(self.topic_name_url + topic_name)
+
+        raise RuntimeError("Unable to find Topic ID or Topic Name to Get")
 
     @enable_auth
     def get_topics(self):
@@ -985,30 +999,46 @@ class RestClient(object):
         )
 
     @enable_auth
-    def patch_topic(self, topic_id, payload):
-        # type: (str, str) -> Response
+    def patch_topic(self, topic_id=None, topic_name=None, operations=None):
+        # type: (str, str, str) -> Response
         """Performs a PATCH on a Topic URL
 
         Args:
-            topic_id: Topic id
-            payload: Serialized PatchOperation
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
+            operations: Serialized PatchOperation
 
         Returns:
             Requests Response object
         """
-        return self.session.patch(
-            self.topic_url + topic_id, data=payload, headers=self.JSON_HEADERS
-        )
+        if topic_id:
+            return self.session.patch(
+                self.topic_url + topic_id, data=operations, headers=self.JSON_HEADERS
+            )
+        if topic_name:
+            return self.session.patch(
+                self.topic_name_url + topic_name,
+                data=operations,
+                headers=self.JSON_HEADERS,
+            )
+
+        raise RuntimeError("Unable to find Topic ID or Topic Name to Patch")
 
     @enable_auth
-    def delete_topic(self, topic_id):
-        # type: (str) -> Response
+    def delete_topic(self, topic_id=None, topic_name=None):
+        # type: (str, str) -> Response
         """Performs a DELETE on a Topic URL
 
         Args:
-            topic_id: Topic id
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
 
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.topic_url + topic_id)
+        if topic_id:
+            return self.session.delete(self.topic_url + topic_id)
+        if topic_name:
+            return self.session.delete(self.topic_name_url + topic_name)
+
+        raise RuntimeError("Unable to find Topic ID or Topic Name to Delete")

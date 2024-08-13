@@ -13,13 +13,14 @@ from brewtils.models import (
     LoggingConfig,
     Parameter,
     PatchOperation,
-    Principal,
+    User,
     Queue,
     Request,
     RequestFile,
     RequestTemplate,
-    LegacyRole,
+    Role,
     Subscriber,
+    StatusInfo,
     Topic,
 )
 from pytest_lazyfixture import lazy_fixture
@@ -531,31 +532,36 @@ class TestQueue(object):
         assert repr(queue) == "<Queue: name=echo.1-0-0.default, size=3>"
 
 
-class TestPrincipal(object):
+class TestUser(object):
     @pytest.fixture
-    def principal(self):
-        return Principal(username="admin", roles=["bg-admin"], permissions=["bg-all"])
-
-    def test_str(self, principal):
-        assert str(principal) == "admin"
-
-    def test_repr(self, principal):
-        assert (
-            repr(principal)
-            == "<Principal: username=admin, roles=['bg-admin'], permissions=['bg-all']>"
+    def user(self):
+        return User(
+            username="admin",
+            roles=["bg-admin"],
+            upstream_roles=[Role(name="foo", permission="ADMIN")],
         )
 
+    def test_str(self, user):
+        assert str(user) == "admin: ['bg-admin']"
 
-class TestLegacyRole(object):
+    def test_repr(self, user):
+        assert repr(user) == "<User: username=admin, roles=['bg-admin']>"
+
+
+class TestRole(object):
     @pytest.fixture
     def role(self):
-        return LegacyRole(name="bg-admin", permissions=["bg-all"])
+        return Role(name="bg-admin", permission="PLUGIN_ADMIN")
 
     def test_str(self, role):
         assert str(role) == "bg-admin"
 
     def test_repr(self, role):
-        assert repr(role) == "<LegacyRole: name=bg-admin, permissions=['bg-all']>"
+        assert repr(role) == (
+            "<Role: id=None, name=bg-admin, description=None, permission=PLUGIN_ADMIN, "
+            "scope_garden=[], scope_namespaces=[], scope_systems=[], "
+            "scope_instances=[], scope_versions=[], scope_commands=[]>"
+        )
 
 
 class TestDateTrigger(object):
@@ -563,6 +569,19 @@ class TestDateTrigger(object):
         assert bg_date_trigger.scheduler_kwargs == {
             "timezone": pytz.utc,
             "run_date": ts_dt_utc,
+        }
+
+
+class TestFileTrigger(object):
+    def test_schedule_kwargs_default(self, bg_file_trigger):
+        assert bg_file_trigger.scheduler_kwargs == {
+            "path": "./input",
+            "pattern": "*",
+            "recursive": False,
+            "create": True,
+            "modify": False,
+            "move": False,
+            "delete": False,
         }
 
 
@@ -632,6 +651,17 @@ class TestCronTrigger(object):
             "<DateTrigger: run_date=2016-01-01 00:00:00>",
         ),
         (
+            lazy_fixture("bg_file_trigger"),
+            (
+                "<FileTrigger: pattern=*, path=./input, recursive=False, "
+                "create=True, modify=False, move=False, delete=False>"
+            ),
+            (
+                "<FileTrigger: pattern=*, path=./input, recursive=False, "
+                "create=True, modify=False, move=False, delete=False>"
+            ),
+        ),
+        (
             lazy_fixture("bg_interval_trigger"),
             "<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>",
             "<IntervalTrigger: weeks=1, days=1, hours=1, minutes=1, seconds=1>",
@@ -688,7 +718,7 @@ def subscriber1():
 
 @pytest.fixture
 def topic1(subscriber1):
-    return Topic(name="foo.*", subscribers=[subscriber1])
+    return Topic(name="foo.*", subscribers=[subscriber1], publisher_count=10)
 
 
 class TestSubscriber(object):
@@ -709,7 +739,39 @@ class TestTopic:
         assert str(topic1) == "%s: %s" % (topic1.name, [str(subscriber1)])
 
     def test_repr(self, topic1, subscriber1):
-        assert repr(topic1) == "<Topic: name=%s, subscribers=%s>" % (
+        assert repr(
+            topic1
+        ) == "<Topic: name=%s, subscribers=%s, publisher_count=%s>" % (
             topic1.name,
             [subscriber1],
+            topic1.publisher_count,
         )
+
+
+class TestStatusInfo:
+
+    def test_max_history(self):
+        status_info = StatusInfo()
+
+        max_length = 5
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("RUNNING", max_history=max_length)
+
+        assert len(status_info.history) == max_length
+
+    def test_history(self):
+        status_info = StatusInfo()
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("RUNNING")
+
+        assert len(status_info.history) == 10
+
+    def test_negative_history(self):
+        status_info = StatusInfo()
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("RUNNING", max_history=-1)
+
+        assert len(status_info.history) == 10

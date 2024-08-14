@@ -152,6 +152,7 @@ class TestInit(object):
             group="GroupA",
             groups=["GroupB"],
             prefix_topic="custom.topic",
+            requires=["SystemA"],
         )
 
         assert plugin._logger == logger
@@ -164,6 +165,7 @@ class TestInit(object):
         assert "GroupA" == plugin._config.group
         assert "GroupB" in plugin._config.groups
         assert "GroupA" not in plugin._config.groups
+        assert "SystemA" in plugin._config.requires
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -173,6 +175,7 @@ class TestInit(object):
         os.environ["BG_CA_VERIFY"] = "False"
         os.environ["BG_GROUP"] = "GroupA"
         os.environ["BG_PREFIX_TOPIC"] = "custom.topic"
+        os.environ["BG_REQUIRES"] = "['SystemA']"
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
@@ -183,6 +186,7 @@ class TestInit(object):
         assert plugin._config.ca_verify is False
         assert plugin._config.prefix_topic == "custom.topic"
         assert "GroupA" == plugin._config.group
+        assert "SystemA" in plugin._config.requires
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -504,6 +508,7 @@ class TestInitializeSystem(object):
             display_name=bg_system.display_name,
             template="<html>template</html>",
             groups=bg_system.groups,
+            requires=bg_system.requires,
         )
         # assert ez_client.create_system.return_value == plugin.system
 
@@ -534,6 +539,7 @@ class TestInitializeSystem(object):
             template="<html>template</html>",
             add_instance=ANY,
             groups=["GroupB", "GroupA"],
+            requires=["SystemA"],
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
 
@@ -811,6 +817,7 @@ class TestSetupSystem(object):
                 "icon_name": "icon",
                 "display_name": "display_name",
                 "metadata": '{"foo": "bar"}',
+                "requires": []
             }
         )
 
@@ -825,6 +832,7 @@ class TestSetupSystem(object):
         assert new_system.icon_name == "icon"
         assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
+        assert new_system.requires == []
 
 
 class TestValidateSystem(object):

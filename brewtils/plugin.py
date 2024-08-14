@@ -85,6 +85,7 @@ class Plugin(object):
         - ``display_name``
         - ``group``
         - ``groups``
+        - ``requires``
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -171,6 +172,7 @@ class Plugin(object):
         metadata (dict): System metadata
         instance_name (str): Instance name
         namespace (str): Namespace name
+        requires (list): Required systems dependencies
 
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
@@ -540,6 +542,7 @@ class Plugin(object):
             "icon_name": self._system.icon_name,
             "template": self._system.template,
             "groups": self._system.groups,
+            "requires": self._system.requires,
         }
 
         # And if this particular instance doesn't exist we want to add it
@@ -860,6 +863,7 @@ class Plugin(object):
                 template=self._config.template,
                 groups=self._config.groups,
                 prefix_topic=self._config.prefix_topic,
+                requires=self._config.requires,
             )
 
         return system

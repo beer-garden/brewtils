@@ -228,6 +228,7 @@ class Instance(BaseModel):
         "STARTING",
         "STOPPING",
         "UNKNOWN",
+        "AWAITING_SYSTEM"
     }
 
     def __init__(
@@ -761,6 +762,7 @@ class System(BaseModel):
         template=None,
         groups=None,
         prefix_topic=None,
+        requires=None,
     ):
         self.name = name
         self.description = description
@@ -777,6 +779,7 @@ class System(BaseModel):
         self.template = template
         self.groups = groups or []
         self.prefix_topic = prefix_topic
+        self.requires = requires or []
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

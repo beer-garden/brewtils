@@ -85,6 +85,7 @@ class Plugin(object):
         - ``display_name``
         - ``group``
         - ``groups``
+        - ``require``
         - ``requires``
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
@@ -172,6 +173,8 @@ class Plugin(object):
         metadata (dict): System metadata
         instance_name (str): Instance name
         namespace (str): Namespace name
+
+        require (str): Required system dependency
         requires (list): Required systems dependencies
 
         group (str): Grouping label applied to plugin
@@ -849,6 +852,9 @@ class Plugin(object):
             # Commands are not defined here - they're set in the client property setter
             if self._config.group:
                 self._config.groups.append(self._config.group)
+
+            if self._config.require:
+                self._config.requires.append(self._config.require)
 
             system = System(
                 name=self._config.name,

@@ -136,6 +136,23 @@ class TestInit(object):
 
         assert plugin._system.groups == ["GroupB", "GroupA"]
 
+    def test_requires(self, client):
+        logger = Mock()
+        plugin = Plugin(
+            client,
+            bg_host="host1",
+            bg_port=2338,
+            bg_url_prefix="/beer/",
+            ssl_enabled=False,
+            ca_verify=False,
+            logger=logger,
+            max_concurrent=1,
+            require="SystemA",
+            requires=["SystemB"],
+        )
+
+        assert plugin._system.requires == ["SystemB", "SystemA"]
+
     def test_kwargs(self, client, bg_system):
         logger = Mock()
 
@@ -152,7 +169,8 @@ class TestInit(object):
             group="GroupA",
             groups=["GroupB"],
             prefix_topic="custom.topic",
-            requires=["SystemA"],
+            require="SystemA",
+            requires=["SystemB"],
         )
 
         assert plugin._logger == logger
@@ -165,7 +183,9 @@ class TestInit(object):
         assert "GroupA" == plugin._config.group
         assert "GroupB" in plugin._config.groups
         assert "GroupA" not in plugin._config.groups
-        assert "SystemA" in plugin._config.requires
+        assert "SystemA" == plugin._config.require
+        assert "SystemB" in plugin._config.requires
+        assert "SystemA" not in plugin._config.requires
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -175,7 +195,7 @@ class TestInit(object):
         os.environ["BG_CA_VERIFY"] = "False"
         os.environ["BG_GROUP"] = "GroupA"
         os.environ["BG_PREFIX_TOPIC"] = "custom.topic"
-        os.environ["BG_REQUIRES"] = "['SystemA']"
+        os.environ["BG_REQUIRE"] = "SystemA"
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
@@ -186,7 +206,7 @@ class TestInit(object):
         assert plugin._config.ca_verify is False
         assert plugin._config.prefix_topic == "custom.topic"
         assert "GroupA" == plugin._config.group
-        assert "SystemA" in plugin._config.requires
+        assert "SystemA" in plugin._config.require
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"

@@ -171,6 +171,11 @@ _SYSTEM_SPEC = {
         "<garden name>.<namespace>.<system name>.<system version>.<system instance>.<command name>"
         "if a prefix is provided, then it is `<prefix>.<command name>`",
     },
+    "require": {
+        "type": "str",
+        "description": "A requires system dependency",
+        "required": False,
+    },
     "requires": {
         "type": "list",
         "description": "The required system dependencies",

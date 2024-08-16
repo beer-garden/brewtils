@@ -254,12 +254,49 @@ class Plugin(object):
             # And with _system and _ez_client we can ask for the real logging config
             self._initialize_logging()
 
+    def get_system_dependency(self, require, timeout=300):
+        wait_time = 0.1
+        while timeout > 0:
+            system = self._ez_client.find_unique_system(name=require)
+            if (
+                system
+                and system.instances
+                and any("RUNNING" == instance.status for instance in system.instances)
+            ):
+                return system
+            self.logger.warning(
+                f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
+                f"dependency for {require}"
+            )
+            timeout = timeout - wait_time
+            wait_time = min(wait_time * 2, 30)
+
+        # TODO: Raise better exception
+        raise ValueError(f"Failed to resolve {self._system} dependency for {require}")
+
+    def await_dependencies(self, config):
+        for req in config.requires:
+            try:
+                system = self.get_system_dependency(req)
+                self.logger.info(
+                    f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
+                )
+            except Exception:
+                # TODO: Shutdown the plugin
+                self.logger.error(
+                    f"Failed to find a matching system for {req}: "
+                    f"{config.name} {config.instance_name}"
+                )
+
     def run(self):
         if not self._client:
             raise AttributeError(
                 "Unable to start a Plugin without a Client. Please set the 'client' "
                 "attribute to an instance of a class decorated with @brewtils.system"
             )
+
+        if self._config.requires:
+            self.await_dependencies(self._config)
 
         self._startup()
         self._logger.info("Plugin %s has started", self.unique_name)
@@ -596,13 +633,13 @@ class Plugin(object):
             thread_name="Admin Consumer",
             queue_name=self._instance.queue_info["admin"]["name"],
             max_concurrent=1,
-            **common_args
+            **common_args,
         )
         request_consumer = RequestConsumer.create(
             thread_name="Request Consumer",
             queue_name=self._instance.queue_info["request"]["name"],
             max_concurrent=self._config.max_concurrent,
-            **common_args
+            **common_args,
         )
 
         # Both RequestProcessors need an updater

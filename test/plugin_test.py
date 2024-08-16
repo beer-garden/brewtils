@@ -837,7 +837,7 @@ class TestSetupSystem(object):
                 "icon_name": "icon",
                 "display_name": "display_name",
                 "metadata": '{"foo": "bar"}',
-                "requires": []
+                "requires": [],
             }
         )
 

@@ -183,6 +183,11 @@ _SYSTEM_SPEC = {
         "required": False,
         "default": [],
     },
+    "requires_timeout": {
+        "type": "int",
+        "description": "The dependency timeout to use",
+        "default": 300,
+    },
 }
 
 _PLUGIN_SPEC = {

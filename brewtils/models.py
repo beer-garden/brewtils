@@ -763,6 +763,7 @@ class System(BaseModel):
         groups=None,
         prefix_topic=None,
         requires=None,
+        requires_timeout=None,
     ):
         self.name = name
         self.description = description
@@ -780,6 +781,7 @@ class System(BaseModel):
         self.groups = groups or []
         self.prefix_topic = prefix_topic
         self.requires = requires or []
+        self.requires_timeout = requires_timeout
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)

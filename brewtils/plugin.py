@@ -87,6 +87,7 @@ class Plugin(object):
         - ``groups``
         - ``require``
         - ``requires``
+        - ``requires_timeout``
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -176,6 +177,7 @@ class Plugin(object):
 
         require (str): Required system dependency
         requires (list): Required systems dependencies
+        requires_timeout (int): Timeout to wait for dependencies
 
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
@@ -401,7 +403,7 @@ class Plugin(object):
 
     def await_dependencies(self, config):
         for req in config.requires:
-            system = self.get_system_dependency(req)
+            system = self.get_system_dependency(req, config.requires_timeout)
             self.logger.info(
                 f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
             )
@@ -446,6 +448,7 @@ class Plugin(object):
         self._admin_processor.startup()
 
         try:
+            print(self._config)
             if self._config.requires:
                 self.await_dependencies(self._config)
         except PluginValidationError:
@@ -922,6 +925,7 @@ class Plugin(object):
                 groups=self._config.groups,
                 prefix_topic=self._config.prefix_topic,
                 requires=self._config.requires,
+                requires_timeout=self._config.requires_timeout,
             )
 
         return system

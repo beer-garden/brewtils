@@ -171,6 +171,7 @@ class TestInit(object):
             prefix_topic="custom.topic",
             require="SystemA",
             requires=["SystemB"],
+            requires_timeout=200,
         )
 
         assert plugin._logger == logger
@@ -186,6 +187,7 @@ class TestInit(object):
         assert "SystemA" == plugin._config.require
         assert "SystemB" in plugin._config.requires
         assert "SystemA" not in plugin._config.requires
+        assert plugin._config.requires_timeout == 200
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"

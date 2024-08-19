@@ -264,20 +264,21 @@ class Plugin(object):
         try:
             self._startup()
             self._logger.info("Plugin %s has started", self.unique_name)
+
+            try:
+                # Need the timeout param so this works correctly in Python 2
+                while not self._shutdown_event.wait(timeout=0.1):
+                    pass
+            except KeyboardInterrupt:
+                self._logger.debug("Received KeyboardInterrupt - shutting down")
+            except Exception as ex:
+                self._logger.exception("Exception during wait, shutting down: %s", ex)
+
+            self._shutdown()
         except PluginValidationError:
             self._shutdown(status="ERROR")
-
-        try:
-            # Need the timeout param so this works correctly in Python 2
-            while not self._shutdown_event.wait(timeout=0.1):
-                pass
-        except KeyboardInterrupt:
-            self._logger.debug("Received KeyboardInterrupt - shutting down")
-        except Exception as ex:
-            self._logger.exception("Exception during wait, shutting down: %s", ex)
-
-        self._shutdown()
-        self._logger.info("Plugin %s has terminated", self.unique_name)
+        finally:
+            self._logger.info("Plugin %s has terminated", self.unique_name)
 
     @property
     def client(self):

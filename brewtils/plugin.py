@@ -254,40 +254,6 @@ class Plugin(object):
             # And with _system and _ez_client we can ask for the real logging config
             self._initialize_logging()
 
-    def get_system_dependency(self, require, timeout=300):
-        wait_time = 0.1
-        while timeout > 0:
-            system = self._ez_client.find_unique_system(name=require)
-            if (
-                system
-                and system.instances
-                and any("RUNNING" == instance.status for instance in system.instances)
-            ):
-                return system
-            self.logger.warning(
-                f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
-                f"dependency for {require}"
-            )
-            timeout = timeout - wait_time
-            wait_time = min(wait_time * 2, 30)
-
-        # TODO: Raise better exception
-        raise ValueError(f"Failed to resolve {self._system} dependency for {require}")
-
-    def await_dependencies(self, config):
-        for req in config.requires:
-            try:
-                system = self.get_system_dependency(req)
-                self.logger.info(
-                    f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
-                )
-            except Exception:
-                # TODO: Shutdown the plugin
-                self.logger.error(
-                    f"Failed to find a matching system for {req}: "
-                    f"{config.name} {config.instance_name}"
-                )
-
     def run(self):
         if not self._client:
             raise AttributeError(
@@ -295,11 +261,11 @@ class Plugin(object):
                 "attribute to an instance of a class decorated with @brewtils.system"
             )
 
-        if self._config.requires:
-            self.await_dependencies(self._config)
-
-        self._startup()
-        self._logger.info("Plugin %s has started", self.unique_name)
+        try:
+            self._startup()
+            self._logger.info("Plugin %s has started", self.unique_name)
+        except PluginValidationError:
+            self._shutdown(status="ERROR")
 
         try:
             # Need the timeout param so this works correctly in Python 2
@@ -410,6 +376,35 @@ class Plugin(object):
 
         sys.excepthook = _hook
 
+    def get_system_dependency(self, require, timeout=300):
+        wait_time = 0.1
+        while timeout > 0:
+            system = self._ez_client.find_unique_system(name=require)
+            if (
+                system
+                and system.instances
+                and any("RUNNING" == instance.status for instance in system.instances)
+            ):
+                return system
+            self._wait()
+            self.logger.error(
+                f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
+                f"dependency for {require}"
+            )
+            timeout = timeout - wait_time
+            wait_time = min(wait_time * 2, 30)
+
+        raise PluginValidationError(
+            f"Failed to resolve {self._system} dependency for {require}"
+        )
+
+    def await_dependencies(self, config):
+        for req in config.requires:
+            system = self.get_system_dependency(req)
+            self.logger.info(
+                f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
+            )
+
     def _startup(self):
         """Plugin startup procedure
 
@@ -448,12 +443,20 @@ class Plugin(object):
         self._logger.debug("Initializing and starting processors")
         self._admin_processor, self._request_processor = self._initialize_processors()
         self._admin_processor.startup()
-        self._request_processor.startup()
 
-        self._logger.debug("Setting signal handlers")
-        self._set_signal_handlers()
+        try:
+            if self._config.requires:
+                self.await_dependencies(self._config)
+        except PluginValidationError:
+            raise
+        else:
+            self._start()
+            self._request_processor.startup()
+        finally:
+            self._logger.debug("Setting signal handlers")
+            self._set_signal_handlers()
 
-    def _shutdown(self):
+    def _shutdown(self, status="STOPPED"):
         """Plugin shutdown procedure
 
         This method gracefully stops the plugin. When it completes the plugin should be
@@ -464,14 +467,18 @@ class Plugin(object):
         self._shutdown_event.set()
 
         self._logger.debug("Shutting down processors")
-        self._request_processor.shutdown()
+        # Join will cause an exception if processor thread wasn't started
+        try:
+            self._request_processor.shutdown()
+        except RuntimeError:
+            pass
         self._admin_processor.shutdown()
 
         try:
-            self._ez_client.update_instance(self._instance.id, new_status="STOPPED")
+            self._ez_client.update_instance(self._instance.id, new_status=status)
         except Exception:
             self._logger.warning(
-                "Unable to notify Beer-garden that this plugin is STOPPED, so this "
+                f"Unable to notify Beer-garden that this plugin is {status}, so this "
                 "plugin's status may be incorrect in Beer-garden"
             )
 
@@ -676,6 +683,13 @@ class Plugin(object):
         """Handle start Request"""
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="RUNNING"
+        )
+
+    def _wait(self):
+        """Handle wait request"""
+        # Set the status to wait
+        self._instance = self._ez_client.update_instance(
+            self._instance.id, new_status="AWAITING_SYSTEM"
         )
 
     def _stop(self):

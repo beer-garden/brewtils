@@ -310,6 +310,8 @@ class Plugin(object):
             self._system.prefix_topic = getattr(
                 new_client, "_prefix_topic", None
             )  # noqa
+        if not self._system.requires:
+            self._system.requires = getattr(new_client, "_requires", [])  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
@@ -326,6 +328,7 @@ class Plugin(object):
             client_clazz._bg_commands = self._system.commands
             client_clazz._groups = self._system.groups
             client_clazz._prefix_topic = self._system.prefix_topic
+            client_clazz._requires = self._system.requires
             client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:

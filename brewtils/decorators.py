@@ -41,6 +41,8 @@ def client(
     group=None,  # type: str
     groups=[],  # type: Optional[List[str]]
     prefix_topic=None,  # type: Optional[str]
+    require=None,  # type: str
+    requires=[],  # type: Optional[List[str]]
 ):
     # type: (...) -> Type
     """Class decorator that marks a class as a beer-garden Client
@@ -70,6 +72,8 @@ def client(
         group: Optional plugin group
         groups: Optional plugin groups
         prefix_topic: Optional prefix for Generated Command to Topic mappings
+        require: Optional system dependency
+        requires: Optional system dependencies
 
     Returns:
         The decorated class
@@ -83,6 +87,8 @@ def client(
             groups=groups,
             group=group,
             prefix_topic=prefix_topic,
+            require=require,
+            requires=requires,
         )  # noqa
 
     # Assign these here so linters don't complain
@@ -92,9 +98,13 @@ def client(
     _wrapped._current_request = None
     _wrapped._groups = groups
     _wrapped._prefix_topic = prefix_topic
+    _wrapped._requires = requires
 
     if group:
         _wrapped._groups.append(group)
+
+    if require:
+        _wrapped._requires.append(require)
 
     return _wrapped
 

@@ -264,7 +264,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "groups": ["GroupB", "GroupA"],
         "prefix_topic": "custom_topic",
         "requires": ["SystemA"],
-        "requires_timeout": 300
+        "requires_timeout": 300,
     }
 
 

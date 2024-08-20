@@ -389,13 +389,13 @@ class Plugin(object):
                 and any("RUNNING" == instance.status for instance in system.instances)
             ):
                 return system
-            self._wait()
             self.logger.error(
                 f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
                 f"dependency for {require}"
             )
             timeout = timeout - wait_time
             wait_time = min(wait_time * 2, 30)
+            self._wait(wait_time)
 
         raise PluginValidationError(
             f"Failed to resolve {self._system} dependency for {require}"
@@ -688,12 +688,13 @@ class Plugin(object):
             self._instance.id, new_status="RUNNING"
         )
 
-    def _wait(self):
+    def _wait(self, timeout):
         """Handle wait request"""
         # Set the status to wait
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="AWAITING_SYSTEM"
         )
+        self._shutdown_event.wait(timeout)
 
     def _stop(self):
         """Handle stop Request"""

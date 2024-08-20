@@ -1094,9 +1094,7 @@ class EasyClient(object):
             SchemaParser.serialize_operation(operation), **kwargs
         )
 
-    @wrap_response(
-        parse_method="parse_principal", parse_many=False, default_exc=FetchError
-    )
+    @wrap_response(parse_method="parse_user", parse_many=False, default_exc=FetchError)
     def get_user(self, user_identifier):
         """Find a user
 
@@ -1104,7 +1102,7 @@ class EasyClient(object):
             user_identifier (str): User ID or username
 
         Returns:
-            Principal: The User
+            User: The User
 
         """
         return self.client.get_user(user_identifier)
@@ -1113,7 +1111,7 @@ class EasyClient(object):
         """Find user using the current set of credentials
 
         Returns:
-            Principal: The User
+            User: The User
 
         """
         return self.get_user(self.client.username or "anonymous")
@@ -1164,17 +1162,18 @@ class EasyClient(object):
             return False, metadata_json
 
     @wrap_response(parse_method="parse_topic", parse_many=False, default_exc=FetchError)
-    def get_topic(self, topic_id):
+    def get_topic(self, topic_id=None, topic_name=None):
         """Get a topic
 
         Args:
-            topic_id: Topic id
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
 
         Returns:
             The Topic
 
         """
-        return self.client.get_topic(topic_id)
+        return self.client.get_topic(topic_id=topic_id, topic_name=topic_name)
 
     @wrap_response(parse_method="parse_topic", parse_many=True, default_exc=FetchError)
     def get_topics(self):
@@ -1200,11 +1199,12 @@ class EasyClient(object):
         return self.client.post_topics(SchemaParser.serialize_topic(topic))
 
     @wrap_response(return_boolean=True, raise_404=True)
-    def remove_topic(self, topic_id):
+    def remove_topic(self, topic_id=None, topic_name=None):
         """Remove a unique Topic
 
         Args:
-            topic_id: Topic id
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
 
         Returns:
             bool: True if removal was successful
@@ -1213,14 +1213,15 @@ class EasyClient(object):
             NotFoundError: Couldn't find a Topic matching given parameters
 
         """
-        return self.client.delete_topic(topic_id)
+        return self.client.delete_topic(topic_id=topic_id, topic_name=topic_name)
 
     @wrap_response(parse_method="parse_topic", parse_many=False, default_exc=SaveError)
-    def update_topic(self, topic_id, add=None, remove=None):
+    def update_topic(self, topic_id=None, topic_name=None, add=None, remove=None):
         """Update a Topic
 
         Args:
-            topic_id (str): The Topic ID
+            topic_id (Optional[str]): Topic id
+            topic_name (Optional[str]): Topic name
             add (Optional[str]): Add subscriber
             remove (Optional[str]): Remove subscriber
 
@@ -1236,5 +1237,7 @@ class EasyClient(object):
             operations.append(PatchOperation("remove", value=remove))
 
         return self.client.patch_topic(
-            topic_id, SchemaParser.serialize_patch(operations, many=True)
+            topic_id=topic_id,
+            topic_name=topic_name,
+            operations=SchemaParser.serialize_patch(operations, many=True),
         )

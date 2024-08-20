@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import copy
+from datetime import datetime
 from enum import Enum
 
 import pytz  # noqa # not in requirements file
@@ -21,9 +23,7 @@ __all__ = [
     "Event",
     "Events",
     "Queue",
-    "Principal",
-    "LegacyRole",
-    "RefreshToken",
+    "UserToken",
     "Job",
     "RequestFile",
     "File",
@@ -37,8 +37,11 @@ __all__ = [
     "Garden",
     "Operation",
     "Resolvable",
+    "Role",
+    "User",
     "Subscriber",
     "Topic",
+    "Replication",
 ]
 
 
@@ -92,15 +95,25 @@ class Events(Enum):
     USER_UPDATED = 44
     USERS_IMPORTED = 45
     ROLE_UPDATED = 46
-    ROLES_IMPORTED = 47
+    ROLE_DELETED = 47
     COMMAND_PUBLISHING_BLOCKLIST_SYNC = 48
     COMMAND_PUBLISHING_BLOCKLIST_REMOVE = 49
     COMMAND_PUBLISHING_BLOCKLIST_UPDATE = 50
     TOPIC_CREATED = 54
     TOPIC_UPDATED = 55
     TOPIC_REMOVED = 56
+    REPLICATION_CREATED = 57
+    REPLICATION_UPDATED = 58
+    DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 57
+    # Next: 60
+
+
+class Permissions(Enum):
+    READ_ONLY = 1
+    OPERATOR = 2
+    PLUGIN_ADMIN = 3
+    GARDEN_ADMIN = 4
 
 
 class BaseModel(object):
@@ -247,7 +260,7 @@ class Instance(BaseModel):
         self.description = description
         self.id = id
         self.status = status.upper() if status else None
-        self.status_info = status_info or {}
+        self.status_info = status_info if status_info else StatusInfo()
         self.queue_type = queue_type
         self.queue_info = queue_info or {}
         self.icon_name = icon_name
@@ -422,6 +435,53 @@ class Parameter(BaseModel):
                 return True
 
         return False
+
+
+class StatusHistory(BaseModel):
+    schema = "StatusHistorySchema"
+
+    def __init__(self, status=None, heartbeat=None):
+        self.status = status
+        self.heartbeat = heartbeat
+
+    def __str__(self):
+        return "%s:%s" % (
+            self.status,
+            self.heartbeat,
+        )
+
+    def __repr__(self):
+        return "<StatusHistory: status=%s, heartbeat=%s>" % (
+            self.status,
+            self.heartbeat,
+        )
+
+
+class StatusInfo(BaseModel):
+    schema = "StatusInfoSchema"
+
+    def __init__(self, heartbeat=None, history=None):
+        self.heartbeat = heartbeat
+        self.history = history or []
+
+    def set_status_heartbeat(self, status, max_history=None):
+
+        self.heartbeat = datetime.utcnow()
+        self.history.append(
+            StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
+        )
+
+        if max_history and max_history > 0 and len(self.history) > max_history:
+            self.history = self.history[(max_history * -1) :]
+
+    def __str__(self):
+        return self.heartbeat
+
+    def __repr__(self):
+        return "<StatusInfo: heartbeat=%s, history=%s>" % (
+            self.heartbeat,
+            self.history,
+        )
 
 
 class RequestFile(BaseModel):
@@ -1115,81 +1175,32 @@ class Queue(BaseModel):
         return "<Queue: name=%s, size=%s>" % (self.name, self.size)
 
 
-class Principal(BaseModel):
-    schema = "PrincipalSchema"
+class UserToken(BaseModel):
+    schema = "UserTokenSchema"
 
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
+        uuid=None,
+        issued_at=None,
+        expires_at=None,
         username=None,
-        roles=None,
-        permissions=None,
-        preferences=None,
-        metadata=None,
     ):
         self.id = id
+        self.uuid = uuid
+        self.issued_at = issued_at
+        self.expires_at = expires_at
         self.username = username
-        self.roles = roles
-        self.permissions = permissions
-        self.preferences = preferences
-        self.metadata = metadata
 
     def __str__(self):
         return "%s" % self.username
 
     def __repr__(self):
-        return "<Principal: username=%s, roles=%s, permissions=%s>" % (
+        return "<UserToken: uuid=%s, issued_at=%s, expires_at=%s, username=%s>" % (
+            self.uuid,
+            self.issued_at,
+            self.expires_at,
             self.username,
-            self.roles,
-            self.permissions,
-        )
-
-
-class LegacyRole(BaseModel):
-    schema = "LegacyRoleSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        name=None,
-        description=None,
-        permissions=None,
-    ):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.permissions = permissions
-
-    def __str__(self):
-        return "%s" % self.name
-
-    def __repr__(self):
-        return "<LegacyRole: name=%s, permissions=%s>" % (self.name, self.permissions)
-
-
-class RefreshToken(BaseModel):
-    schema = "RefreshTokenSchema"
-
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        issued=None,
-        expires=None,
-        payload=None,
-    ):
-        self.id = id
-        self.issued = issued
-        self.expires = expires
-        self.payload = payload or {}
-
-    def __str__(self):
-        return "%s" % self.payload
-
-    def __repr__(self):
-        return "<RefreshToken: issued=%s, expires=%s, payload=%s>" % (
-            self.issued,
-            self.expires,
-            self.payload,
         )
 
 
@@ -1410,26 +1421,44 @@ class CronTrigger(BaseModel):
 class FileTrigger(BaseModel):
     schema = "FileTriggerSchema"
 
-    def __init__(self, pattern=None, path=None, recursive=None, callbacks=None):
+    def __init__(
+        self,
+        pattern=None,
+        path=None,
+        recursive=None,
+        create=None,
+        modify=None,
+        move=None,
+        delete=None,
+    ):
         self.pattern = pattern
         self.path = path
         self.recursive = recursive
-        self.callbacks = callbacks
+        self.create = create
+        self.modify = modify
+        self.move = move
+        self.delete = delete
 
     def __str__(self):
         return repr(self)
 
     def __repr__(self):
-        return "<FileTrigger: %s %s %s %s>" % (
+        return (
+            "<FileTrigger: pattern=%s, path=%s, recursive=%s, "
+            "create=%s, modify=%s, move=%s, delete=%s>"
+        ) % (
             self.pattern,
             self.path,
             self.recursive,
-            self.callbacks,
+            self.create,
+            self.modify,
+            self.move,
+            self.delete,
         )
 
     @property
     def scheduler_attributes(self):
-        return ["pattern", "path", "recursive", "callbacks"]
+        return ["pattern", "path", "recursive", "create", "modify", "move", "delete"]
 
     @property
     def scheduler_kwargs(self):
@@ -1439,7 +1468,10 @@ class FileTrigger(BaseModel):
                 "pattern": self.pattern,
                 "path": self.path,
                 "recursive": self.recursive,
-                "callbacks": self.callbacks,
+                "create": self.create,
+                "modify": self.modify,
+                "move": self.move,
+                "delete": self.delete,
             }
         )
 
@@ -1476,11 +1508,13 @@ class Garden(BaseModel):
         parent=None,
         children=None,
         metadata=None,
+        default_user=None,
+        shared_users=None,
     ):
         self.id = id
         self.name = name
         self.status = status.upper() if status else None
-        self.status_info = status_info or {}
+        self.status_info = status_info if status_info else StatusInfo()
         self.namespaces = namespaces or []
         self.systems = systems or []
 
@@ -1492,6 +1526,9 @@ class Garden(BaseModel):
         self.parent = parent
         self.children = children
         self.metadata = metadata or {}
+
+        self.default_user = default_user
+        self.shared_users = shared_users
 
     def __str__(self):
         return "%s" % self.name
@@ -1537,7 +1574,7 @@ class Connection(BaseModel):
     ):
         self.api = api
         self.status = status
-        self.status_info = status_info or {}
+        self.status_info = status_info if status_info else StatusInfo()
         self.config = config or {}
 
     def __str__(self):
@@ -1663,6 +1700,150 @@ class Resolvable(BaseModel):
         )
 
 
+class User(BaseModel):
+    schema = "UserSchema"
+
+    def __init__(
+        self,
+        username=None,
+        id=None,
+        password=None,
+        roles=None,
+        local_roles=None,
+        upstream_roles=None,
+        user_alias_mapping=None,
+        metadata=None,
+        is_remote=False,
+        protected=False,
+        file_generated=False,
+    ):
+        self.username = username
+        self.id = id
+        self.password = password
+        self.roles = roles or []
+        self.local_roles = local_roles or []
+        self.upstream_roles = upstream_roles or []
+        self.is_remote = is_remote
+        self.user_alias_mapping = user_alias_mapping or []
+        self.metadata = metadata or {}
+        self.protected = protected
+        self.file_generated = file_generated
+
+    def __str__(self):
+        return "%s: %s" % (self.username, self.roles)
+
+    def __repr__(self):
+        return "<User: username=%s, roles=%s>" % (
+            self.username,
+            self.roles,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, User):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.username == other.username
+            and self.roles == other.roles
+            and self.upstream_roles == other.upstream_roles
+            and self.is_remote == other.is_remote
+            and self.user_alias_mapping == other.user_alias_mapping
+            and self.protected == other.protected
+            and self.file_generated == other.file_generated
+        )
+
+
+class Role(BaseModel):
+    schema = "RoleSchema"
+
+    # TODO: REMOVE after DB model Updated with Permissions enum
+    PERMISSION_TYPES = {
+        "GARDEN_ADMIN",
+        "PLUGIN_ADMIN",
+        "OPERATOR",
+        "READ_ONLY",  # Default value if not role is provided
+    }
+
+    def __init__(
+        self,
+        name,
+        permission=None,
+        description=None,
+        id=None,
+        scope_gardens=None,
+        scope_namespaces=None,
+        scope_systems=None,
+        scope_instances=None,
+        scope_versions=None,
+        scope_commands=None,
+        protected=False,
+        file_generated=False,
+    ):
+        self.name = name
+        self.permission = permission or Permissions.READ_ONLY.name
+        self.description = description
+        self.id = id
+        self.scope_gardens = scope_gardens or []
+        self.scope_namespaces = scope_namespaces or []
+        self.scope_systems = scope_systems or []
+        self.scope_instances = scope_instances or []
+        self.scope_versions = scope_versions or []
+        self.scope_commands = scope_commands or []
+        self.protected = protected
+        self.file_generated = file_generated
+
+    def __str__(self):
+        return "%s" % (self.name)
+
+    def __repr__(self):
+        return (
+            "<Role: id=%s, name=%s, description=%s, permission=%s, scope_garden=%s, "
+            "scope_namespaces=%s, scope_systems=%s, scope_instances=%s, "
+            "scope_versions=%s, scope_commands=%s>"
+        ) % (
+            self.id,
+            self.name,
+            self.description,
+            self.permission,
+            self.scope_gardens,
+            self.scope_namespaces,
+            self.scope_systems,
+            self.scope_instances,
+            self.scope_versions,
+            self.scope_commands,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Role):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.name == other.name
+            and self.description == other.description
+            and self.permission == other.permission
+            and self.scope_gardens == other.scope_gardens
+            and self.scope_namespaces == other.scope_namespaces
+            and self.scope_systems == other.scope_systems
+            and self.scope_instances == other.scope_instances
+            and self.scope_versions == other.scope_versions
+            and self.scope_commands == other.scope_commands
+        )
+
+
+class UpstreamRole(Role):
+    schema = "UpstreamRoleSchema"
+
+
+class AliasUserMap(BaseModel):
+    schema = "AliasUserMapSchema"
+
+    def __init__(self, target_garden, username):
+        self.target_garden = target_garden
+        self.username = username
+
+
 class Subscriber(BaseModel):
     schema = "SubscriberSchema"
 
@@ -1675,6 +1856,7 @@ class Subscriber(BaseModel):
         instance=None,
         command=None,
         subscriber_type=None,
+        consumer_count=0,
     ):
         self.garden = garden
         self.namespace = namespace
@@ -1683,6 +1865,7 @@ class Subscriber(BaseModel):
         self.instance = instance
         self.command = command
         self.subscriber_type = subscriber_type or "DYNAMIC"
+        self.consumer_count = consumer_count
 
     def __str__(self):
         return "%s" % self.__dict__
@@ -1690,7 +1873,7 @@ class Subscriber(BaseModel):
     def __repr__(self):
         return (
             "<Subscriber: garden=%s, namespace=%s, system=%s, version=%s, instance=%s, "
-            "command=%s, subscriber_type=%s>"
+            "command=%s, subscriber_type=%s, consumer_count=%s>"
             % (
                 self.garden,
                 self.namespace,
@@ -1699,6 +1882,7 @@ class Subscriber(BaseModel):
                 self.instance,
                 self.command,
                 self.subscriber_type,
+                self.consumer_count,
             )
         )
 
@@ -1721,16 +1905,38 @@ class Subscriber(BaseModel):
 class Topic(BaseModel):
     schema = "TopicSchema"
 
-    def __init__(self, id=None, name=None, subscribers=None):  # noqa # shadows built-in
+    def __init__(
+        self, id=None, name=None, subscribers=None, publisher_count=0
+    ):  # noqa # shadows built-in
         self.id = id
         self.name = name
         self.subscribers = subscribers or []
+        self.publisher_count = publisher_count
 
     def __str__(self):
         return "%s: %s" % (self.name, [str(s) for s in self.subscribers])
 
     def __repr__(self):
-        return "<Topic: name=%s, subscribers=%s>" % (
+        return "<Topic: name=%s, subscribers=%s, publisher_count=%s>" % (
             self.name,
             self.subscribers,
+            self.publisher_count,
+        )
+
+
+class Replication(BaseModel):
+    schema = "ReplicationSchema"
+
+    def __init__(self, id=None, replication_id=None, expires_at=None):
+        self.id = id
+        self.replication_id = replication_id
+        self.expires_at = expires_at
+
+    def __str__(self):
+        return "%s:%s" % (self.replication_id, self.expires_at)
+
+    def __repr__(self):
+        return "<Replication: replication_id=%s, expires_at=%s>" % (
+            self.replication_id,
+            self.expires_at,
         )

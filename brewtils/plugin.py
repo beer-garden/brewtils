@@ -448,7 +448,6 @@ class Plugin(object):
         self._admin_processor.startup()
 
         try:
-            print(self._config)
             if self._config.requires:
                 self.await_dependencies(self._config)
         except PluginValidationError:

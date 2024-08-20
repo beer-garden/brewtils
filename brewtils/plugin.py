@@ -382,7 +382,7 @@ class Plugin(object):
     def get_system_dependency(self, require, timeout=300):
         wait_time = 0.1
         while timeout > 0:
-            system = self._ez_client.find_unique_system(name=require)
+            system = self._ez_client.find_unique_system(name=require, local=True)
             if (
                 system
                 and system.instances

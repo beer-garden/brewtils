@@ -85,6 +85,9 @@ class Plugin(object):
         - ``display_name``
         - ``group``
         - ``groups``
+        - ``require``
+        - ``requires``
+        - ``requires_timeout``
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -172,6 +175,10 @@ class Plugin(object):
         instance_name (str): Instance name
         namespace (str): Namespace name
 
+        require (str): Required system dependency
+        requires (list): Required systems dependencies
+        requires_timeout (int): Timeout to wait for dependencies
+
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
 
@@ -256,20 +263,24 @@ class Plugin(object):
                 "attribute to an instance of a class decorated with @brewtils.system"
             )
 
-        self._startup()
-        self._logger.info("Plugin %s has started", self.unique_name)
-
         try:
-            # Need the timeout param so this works correctly in Python 2
-            while not self._shutdown_event.wait(timeout=0.1):
-                pass
-        except KeyboardInterrupt:
-            self._logger.debug("Received KeyboardInterrupt - shutting down")
-        except Exception as ex:
-            self._logger.exception("Exception during wait, shutting down: %s", ex)
+            self._startup()
+            self._logger.info("Plugin %s has started", self.unique_name)
 
-        self._shutdown()
-        self._logger.info("Plugin %s has terminated", self.unique_name)
+            try:
+                # Need the timeout param so this works correctly in Python 2
+                while not self._shutdown_event.wait(timeout=0.1):
+                    pass
+            except KeyboardInterrupt:
+                self._logger.debug("Received KeyboardInterrupt - shutting down")
+            except Exception as ex:
+                self._logger.exception("Exception during wait, shutting down: %s", ex)
+
+            self._shutdown()
+        except PluginValidationError:
+            self._shutdown(status="ERROR")
+        finally:
+            self._logger.info("Plugin %s has terminated", self.unique_name)
 
     @property
     def client(self):
@@ -299,6 +310,8 @@ class Plugin(object):
             self._system.prefix_topic = getattr(
                 new_client, "_prefix_topic", None
             )  # noqa
+        if not self._system.requires:
+            self._system.requires = getattr(new_client, "_requires", [])  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
@@ -315,6 +328,7 @@ class Plugin(object):
             client_clazz._bg_commands = self._system.commands
             client_clazz._groups = self._system.groups
             client_clazz._prefix_topic = self._system.prefix_topic
+            client_clazz._requires = self._system.requires
             client_clazz._current_request = client_clazz.current_request
         except TypeError:
             if sys.version_info.major != 2:
@@ -368,6 +382,35 @@ class Plugin(object):
 
         sys.excepthook = _hook
 
+    def get_system_dependency(self, require, timeout=300):
+        wait_time = 0.1
+        while timeout > 0:
+            system = self._ez_client.find_unique_system(name=require, local=True)
+            if (
+                system
+                and system.instances
+                and any("RUNNING" == instance.status for instance in system.instances)
+            ):
+                return system
+            self.logger.error(
+                f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
+                f"dependency for {require}"
+            )
+            timeout = timeout - wait_time
+            wait_time = min(wait_time * 2, 30)
+            self._wait(wait_time)
+
+        raise PluginValidationError(
+            f"Failed to resolve {self._system} dependency for {require}"
+        )
+
+    def await_dependencies(self, requires, config):
+        for req in requires:
+            system = self.get_system_dependency(req, config.requires_timeout)
+            self.logger.info(
+                f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
+            )
+
     def _startup(self):
         """Plugin startup procedure
 
@@ -406,12 +449,20 @@ class Plugin(object):
         self._logger.debug("Initializing and starting processors")
         self._admin_processor, self._request_processor = self._initialize_processors()
         self._admin_processor.startup()
-        self._request_processor.startup()
 
-        self._logger.debug("Setting signal handlers")
-        self._set_signal_handlers()
+        try:
+            if self._system.requires:
+                self.await_dependencies(self._system.requires, self._config)
+        except PluginValidationError:
+            raise
+        else:
+            self._start()
+            self._request_processor.startup()
+        finally:
+            self._logger.debug("Setting signal handlers")
+            self._set_signal_handlers()
 
-    def _shutdown(self):
+    def _shutdown(self, status="STOPPED"):
         """Plugin shutdown procedure
 
         This method gracefully stops the plugin. When it completes the plugin should be
@@ -422,14 +473,18 @@ class Plugin(object):
         self._shutdown_event.set()
 
         self._logger.debug("Shutting down processors")
-        self._request_processor.shutdown()
+        # Join will cause an exception if processor thread wasn't started
+        try:
+            self._request_processor.shutdown()
+        except RuntimeError:
+            pass
         self._admin_processor.shutdown()
 
         try:
-            self._ez_client.update_instance(self._instance.id, new_status="STOPPED")
+            self._ez_client.update_instance(self._instance.id, new_status=status)
         except Exception:
             self._logger.warning(
-                "Unable to notify Beer-garden that this plugin is STOPPED, so this "
+                f"Unable to notify Beer-garden that this plugin is {status}, so this "
                 "plugin's status may be incorrect in Beer-garden"
             )
 
@@ -540,6 +595,7 @@ class Plugin(object):
             "icon_name": self._system.icon_name,
             "template": self._system.template,
             "groups": self._system.groups,
+            "requires": self._system.requires,
         }
 
         # And if this particular instance doesn't exist we want to add it
@@ -590,13 +646,13 @@ class Plugin(object):
             thread_name="Admin Consumer",
             queue_name=self._instance.queue_info["admin"]["name"],
             max_concurrent=1,
-            **common_args
+            **common_args,
         )
         request_consumer = RequestConsumer.create(
             thread_name="Request Consumer",
             queue_name=self._instance.queue_info["request"]["name"],
             max_concurrent=self._config.max_concurrent,
-            **common_args
+            **common_args,
         )
 
         # Both RequestProcessors need an updater
@@ -634,6 +690,14 @@ class Plugin(object):
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="RUNNING"
         )
+
+    def _wait(self, timeout):
+        """Handle wait request"""
+        # Set the status to wait
+        self._instance = self._ez_client.update_instance(
+            self._instance.id, new_status="AWAITING_SYSTEM"
+        )
+        self._shutdown_event.wait(timeout)
 
     def _stop(self):
         """Handle stop Request"""
@@ -847,6 +911,9 @@ class Plugin(object):
             if self._config.group:
                 self._config.groups.append(self._config.group)
 
+            if self._config.require:
+                self._config.requires.append(self._config.require)
+
             system = System(
                 name=self._config.name,
                 version=self._config.version,
@@ -860,6 +927,8 @@ class Plugin(object):
                 template=self._config.template,
                 groups=self._config.groups,
                 prefix_topic=self._config.prefix_topic,
+                requires=self._config.requires,
+                requires_timeout=self._config.requires_timeout,
             )
 
         return system

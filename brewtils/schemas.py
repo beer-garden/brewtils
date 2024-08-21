@@ -233,6 +233,8 @@ class SystemSchema(BaseSchema):
     template = fields.Str(allow_none=True)
     groups = fields.List(fields.Str(), allow_none=True)
     prefix_topic = fields.Str(allow_none=True)
+    requires = fields.List(fields.Str(), allow_none=True)
+    requires_timeout = fields.Integer(allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):

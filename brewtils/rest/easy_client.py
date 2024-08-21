@@ -398,6 +398,7 @@ class EasyClient(object):
             icon_name (str): New System icon name
             template (str): New System template
             groups (list): New System groups
+            requires (list): New System dependencies
 
         Returns:
             System: The updated system
@@ -423,6 +424,10 @@ class EasyClient(object):
         groups = kwargs.pop("groups", [])
         if groups:
             operations.append(PatchOperation("replace", "/groups", groups))
+
+        requires = kwargs.pop("requires", [])
+        if requires:
+            operations.append(PatchOperation("replace", "/requires", requires))
 
         # The remaining kwargs are all strings
         # Sending an empty string (instead of None) ensures they're actually cleared

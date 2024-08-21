@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.1
+------
+TBD
+
+- Updated Plugin class to accept requires and requires_timeout attributes to require plugin to wait for dependencies before starting.
+
 3.27.0
 ------
 8/13/24

@@ -136,6 +136,23 @@ class TestInit(object):
 
         assert plugin._system.groups == ["GroupB", "GroupA"]
 
+    def test_requires(self, client):
+        logger = Mock()
+        plugin = Plugin(
+            client,
+            bg_host="host1",
+            bg_port=2338,
+            bg_url_prefix="/beer/",
+            ssl_enabled=False,
+            ca_verify=False,
+            logger=logger,
+            max_concurrent=1,
+            require="SystemA",
+            requires=["SystemB"],
+        )
+
+        assert plugin._system.requires == ["SystemB", "SystemA"]
+
     def test_kwargs(self, client, bg_system):
         logger = Mock()
 
@@ -152,6 +169,9 @@ class TestInit(object):
             group="GroupA",
             groups=["GroupB"],
             prefix_topic="custom.topic",
+            require="SystemA",
+            requires=["SystemB"],
+            requires_timeout=200,
         )
 
         assert plugin._logger == logger
@@ -164,6 +184,10 @@ class TestInit(object):
         assert "GroupA" == plugin._config.group
         assert "GroupB" in plugin._config.groups
         assert "GroupA" not in plugin._config.groups
+        assert "SystemA" == plugin._config.require
+        assert "SystemB" in plugin._config.requires
+        assert "SystemA" not in plugin._config.requires
+        assert plugin._config.requires_timeout == 200
 
     def test_env(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -173,6 +197,7 @@ class TestInit(object):
         os.environ["BG_CA_VERIFY"] = "False"
         os.environ["BG_GROUP"] = "GroupA"
         os.environ["BG_PREFIX_TOPIC"] = "custom.topic"
+        os.environ["BG_REQUIRE"] = "SystemA"
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
@@ -183,6 +208,7 @@ class TestInit(object):
         assert plugin._config.ca_verify is False
         assert plugin._config.prefix_topic == "custom.topic"
         assert "GroupA" == plugin._config.group
+        assert "SystemA" in plugin._config.require
 
     def test_conflicts(self, client, bg_system):
         os.environ["BG_HOST"] = "remotehost"
@@ -342,6 +368,7 @@ class TestStartup(object):
         plugin._initialize_processors = Mock(
             return_value=(admin_processor, request_processor)
         )
+        plugin._ez_client.find_unique_system = Mock(return_value=bg_system)
 
         plugin._startup()
         assert admin_processor.startup.called is True
@@ -362,6 +389,7 @@ class TestStartup(object):
         plugin._initialize_processors = Mock(
             return_value=(admin_processor, request_processor)
         )
+        plugin._ez_client.find_unique_system = Mock(return_value=bg_system)
 
         plugin._startup()
         assert admin_processor.startup.called is True
@@ -504,6 +532,7 @@ class TestInitializeSystem(object):
             display_name=bg_system.display_name,
             template="<html>template</html>",
             groups=bg_system.groups,
+            requires=bg_system.requires,
         )
         # assert ez_client.create_system.return_value == plugin.system
 
@@ -534,6 +563,7 @@ class TestInitializeSystem(object):
             template="<html>template</html>",
             add_instance=ANY,
             groups=["GroupB", "GroupA"],
+            requires=["SystemA"],
         )
         assert ez_client.update_system.call_args[1]["add_instance"].name == new_name
 
@@ -811,6 +841,7 @@ class TestSetupSystem(object):
                 "icon_name": "icon",
                 "display_name": "display_name",
                 "metadata": '{"foo": "bar"}',
+                "requires": [],
             }
         )
 
@@ -825,6 +856,7 @@ class TestSetupSystem(object):
         assert new_system.icon_name == "icon"
         assert new_system.metadata == {"foo": "bar"}
         assert new_system.display_name == "display_name"
+        assert new_system.requires == []
 
 
 class TestValidateSystem(object):

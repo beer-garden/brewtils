@@ -512,6 +512,7 @@ class TestClient(object):
         assert hasattr(ClientClass, "_current_request")
         assert hasattr(ClientClass, "_groups")
         assert hasattr(ClientClass, "_prefix_topic")
+        assert hasattr(ClientClass, "_requires")
 
     def test_with_args(self):
         @client(
@@ -519,6 +520,7 @@ class TestClient(object):
             bg_version="1.0.0",
             groups=["GroupA"],
             prefix_topic="custom_topic",
+            requires=["SystemA"],
         )
         class ClientClass(object):
             @command
@@ -531,11 +533,13 @@ class TestClient(object):
         assert hasattr(ClientClass, "_current_request")
         assert hasattr(ClientClass, "_groups")
         assert hasattr(ClientClass, "_prefix_topic")
+        assert hasattr(ClientClass, "_requires")
 
         assert ClientClass._bg_name == "sys"
         assert ClientClass._bg_version == "1.0.0"
         assert ClientClass._groups == ["GroupA"]
         assert ClientClass._prefix_topic == "custom_topic"
+        assert ClientClass._requires == ["SystemA"]
 
     def test_group(self):
         @client(bg_name="sys", bg_version="1.0.0", group="GroupB")
@@ -570,6 +574,42 @@ class TestClient(object):
         assert ClientClass._bg_name == "sys"
         assert ClientClass._bg_version == "1.0.0"
         assert ClientClass._groups == ["GroupA", "GroupB"]
+
+    def test_require(self):
+        @client(bg_name="sys", bg_version="1.0.0", require="SystemB")
+        class ClientClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
+        assert hasattr(ClientClass, "_requires")
+
+        assert ClientClass._bg_name == "sys"
+        assert ClientClass._bg_version == "1.0.0"
+        assert ClientClass._requires == ["SystemB"]
+
+    def test_requires_combine(self):
+        @client(
+            bg_name="sys", bg_version="1.0.0", requires=["SystemA"], require="SystemB"
+        )
+        class ClientClass(object):
+            @command
+            def foo(self):
+                pass
+
+        assert hasattr(ClientClass, "_bg_name")
+        assert hasattr(ClientClass, "_bg_version")
+        assert hasattr(ClientClass, "_bg_commands")
+        assert hasattr(ClientClass, "_current_request")
+        assert hasattr(ClientClass, "_requires")
+
+        assert ClientClass._bg_name == "sys"
+        assert ClientClass._bg_version == "1.0.0"
+        assert ClientClass._requires == ["SystemA", "SystemB"]
 
 
 class TestCommand(object):

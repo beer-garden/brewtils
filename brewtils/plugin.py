@@ -404,8 +404,8 @@ class Plugin(object):
             f"Failed to resolve {self._system} dependency for {require}"
         )
 
-    def await_dependencies(self, config):
-        for req in config.requires:
+    def await_dependencies(self, requires, config):
+        for req in requires:
             system = self.get_system_dependency(req, config.requires_timeout)
             self.logger.info(
                 f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
@@ -451,8 +451,8 @@ class Plugin(object):
         self._admin_processor.startup()
 
         try:
-            if self._config.requires:
-                self.await_dependencies(self._config)
+            if self._system.requires:
+                self.await_dependencies(self._system.requires, self._config)
         except PluginValidationError:
             raise
         else:

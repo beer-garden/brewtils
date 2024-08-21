@@ -368,6 +368,7 @@ class TestStartup(object):
         plugin._initialize_processors = Mock(
             return_value=(admin_processor, request_processor)
         )
+        plugin._ez_client.find_unique_system = Mock(return_value=bg_system)
 
         plugin._startup()
         assert admin_processor.startup.called is True
@@ -388,6 +389,7 @@ class TestStartup(object):
         plugin._initialize_processors = Mock(
             return_value=(admin_processor, request_processor)
         )
+        plugin._ez_client.find_unique_system = Mock(return_value=bg_system)
 
         plugin._startup()
         assert admin_processor.startup.called is True

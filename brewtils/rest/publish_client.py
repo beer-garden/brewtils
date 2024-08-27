@@ -157,15 +157,16 @@ class PublishClient(object):
         return Request(id=str(parent.id))
 
     def register_command(self, topic: str, cmd) -> Topic:
-        """Register a command to subscribe to the topic provided. The subscriber is marked as GENERATED, and will be
-        pruned after the system shuts down
+        """Register a command to subscribe to the topic provided. The subscriber is
+        marked as GENERATED, and will be pruned after the system shuts down
 
         Args:
             topic (str): Topic for the command to subscribe to
             cmd (str, function): Command to register
 
         Raises:
-            BrewtilsException: If function is provided, it must be an annotated function. Only supports running plugins
+            BrewtilsException: If function is provided, it must be an annotated
+            function. Only supports running plugins
 
         Returns:
             Topic: Updated Topic Model
@@ -179,15 +180,21 @@ class PublishClient(object):
             and brewtils.plugin.CONFIG.namespace
         ):
             raise BrewtilsException(
-                "Unable to identify Configuration for Plugin, only running Plugins can register commands"
+                (
+                    "Unable to identify Configuration for Plugin, "
+                    "only running Plugins can register commands"
+                )
             )
 
-        if type(cmd) == str:
+        if isinstance(cmd, str):
             command_name = cmd
         else:
             if not hasattr(cmd, "_command"):
                 raise BrewtilsException(
-                    f"Attempted to register command {getattr(cmd, '__name__', 'MISSING FUNC NAME')} that is not an annotated command"
+                    (
+                        f"Attempted to register command {getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
+                        "that is not an annotated command"
+                    )
                 )
             command_name = cmd._command.name
 
@@ -212,7 +219,8 @@ class PublishClient(object):
             cmd (str, function): Command to unregister
 
         Raises:
-            BrewtilsException: If function is provided, it must be an annotated function. Only supports running plugins
+            BrewtilsException: If function is provided, it must be
+            an annotated function. Only supports running plugins
 
         Returns:
             Topic: Updated Topic Model
@@ -225,15 +233,21 @@ class PublishClient(object):
             and brewtils.plugin.CONFIG.namespace
         ):
             raise BrewtilsException(
-                "Unable to identify Configuration for Plugin, only running Plugins can unregister commands"
+                (
+                    "Unable to identify Configuration for Plugin, only "
+                    "running Plugins can unregister commands"
+                )
             )
 
-        if type(cmd) == str:
+        if isinstance(cmd, str):
             command_name = cmd
         else:
             if not hasattr(cmd, "_command"):
                 raise BrewtilsException(
-                    f"Attempted to register command {getattr(cmd, '__name__', 'MISSING FUNC NAME')} that is not an annotated command"
+                    (
+                        f"Attempted to register command {getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
+                        "that is not an annotated command"
+                    )
                 )
             command_name = cmd._command.name
 

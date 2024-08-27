@@ -2,6 +2,7 @@ import pytest
 from mock import Mock
 
 import brewtils.rest
+from brewtils.decorators import command
 from brewtils.errors import BrewtilsException
 from brewtils.models import Event, Events, Request, System
 from brewtils.rest.publish_client import PublishClient
@@ -12,6 +13,7 @@ from brewtils.schema_parser import SchemaParser
 def easy_client(monkeypatch):
     mock = Mock(name="easy_client")
     mock.publish_event.return_value = True
+    mock.update_topic.return_value = True
 
     monkeypatch.setattr(
         brewtils.rest.publish_client, "EasyClient", Mock(return_value=mock)
@@ -93,3 +95,75 @@ class TestPublishClient(object):
         assert SchemaParser.serialize_event(
             called_event
         ) == SchemaParser.serialize_event(event)
+
+    def test_register_command(self, client, easy_client):
+        self.setup_config()
+
+        @command
+        def _cmd(self, x):
+            return x
+
+        client.register_command("topic", _cmd)
+
+        easy_client.update_topic.assert_called()
+
+    def test_register_command_string(self, client, easy_client):
+        self.setup_config()
+
+        client.register_command("topic", "command")
+
+        easy_client.update_topic.assert_called()
+
+    def test_unregister_command(self, client, easy_client):
+        self.setup_config()
+
+        @command
+        def _cmd(self, x):
+            return x
+
+        client.unregister_command("topic", _cmd)
+
+        easy_client.update_topic.assert_called()
+
+    def test_unregister_command_string(self, client, easy_client):
+        self.setup_config()
+
+        client.unregister_command("topic", "command")
+
+        easy_client.update_topic.assert_called()
+
+    def test_register_command_non_annotated(self, client):
+        self.setup_config()
+
+        def _cmd(self, x):
+            return x
+
+        with pytest.raises(BrewtilsException):
+            client.register_command("topic", _cmd)
+
+    def test_unregister_command_non_annotated(self, client):
+        self.setup_config()
+
+        def _cmd(self, x):
+            return x
+
+        with pytest.raises(BrewtilsException):
+            client.unregister_command("topic", _cmd)
+
+    def test_register_command_no_config(self, client):
+
+        @command
+        def _cmd(self, x):
+            return x
+
+        with pytest.raises(BrewtilsException):
+            client.register_command("topic", _cmd)
+
+    def test_unregister_command_no_config(self, client):
+
+        @command
+        def _cmd(self, x):
+            return x
+
+        with pytest.raises(BrewtilsException):
+            client.unregister_command("topic", _cmd)

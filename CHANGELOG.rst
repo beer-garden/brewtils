@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.2
+------
+TBD
+
+- Expanded PublishClient to support Registering and Unregistering commands to Topics after a plugin has been initialized
+
 3.27.1
 ------
 8/21/24

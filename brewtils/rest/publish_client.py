@@ -192,7 +192,8 @@ class PublishClient(object):
             if not hasattr(cmd, "_command"):
                 raise BrewtilsException(
                     (
-                        f"Attempted to register command {getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
+                        "Attempted to register command "
+                        f"{getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
                         "that is not an annotated command"
                     )
                 )
@@ -245,7 +246,8 @@ class PublishClient(object):
             if not hasattr(cmd, "_command"):
                 raise BrewtilsException(
                     (
-                        f"Attempted to register command {getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
+                        "Attempted to register command "
+                        f"{getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
                         "that is not an annotated command"
                     )
                 )

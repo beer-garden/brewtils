@@ -991,7 +991,7 @@ def garden_dict(
         "metadata": {},
         "default_user": None,
         "shared_users": True,
-        "version":"1.1.1",
+        "version": "1.1.1",
     }
 
 

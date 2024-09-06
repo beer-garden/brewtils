@@ -6,6 +6,8 @@ Brewtils Changelog
 TBD
 
 - Expanded PublishClient to support Registering and Unregistering commands to Topics after a plugin has been initialized
+- Fixed bug where threading a SystemClient within a plugin lost current_request context and failed to map `requester`, 
+  SystemClient will still drop the current_request context,but the requester field can be provided via `_requester`
 
 3.27.1
 ------

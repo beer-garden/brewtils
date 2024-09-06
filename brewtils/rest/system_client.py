@@ -595,13 +595,16 @@ class SystemClient(object):
         publish = kwargs.pop("_publish", None)
         topic = kwargs.pop("_topic", None)
         propagate = kwargs.pop("_propagate", None)
+        requester = kwargs.pop("_requester", None)
 
-        if parent:
+        if (
+            not requester
+            and parent
+            and getattr(brewtils.plugin.request_context, "current_request", None)
+        ):
             requester = getattr(
                 brewtils.plugin.request_context.current_request, "requester", None
             )
-        else:
-            requester = None
 
         if system_display:
             metadata["system_display_name"] = system_display

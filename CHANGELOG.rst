@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Expanded PublishClient to support Registering and Unregistering commands to Topics after a plugin has been initialized
+- Expanded Garden model to support tracking the version of Beer Garden running
 
 3.27.1
 ------

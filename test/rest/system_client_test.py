@@ -304,6 +304,52 @@ class TestCreateRequest(object):
         with pytest.raises(ValidationError):
             client._construct_bg_request(**kwargs)
 
+    def test_requester_field(self, monkeypatch, client):
+        monkeypatch.setattr(client, "_resolve_parameters", Mock())
+
+        kwargs = {
+            "_command": "",
+            "_system_name": "",
+            "_system_version": "",
+            "_instance_name": "",
+            "_requester": "test",
+        }
+
+        request = client._construct_bg_request(**kwargs)
+        assert request.requester == "test"
+
+    def test_requester_from_parent_field(self, monkeypatch, client):
+        monkeypatch.setattr(client, "_resolve_parameters", Mock())
+        monkeypatch.setattr(
+            brewtils.plugin,
+            "request_context",
+            Mock(current_request=Mock(id="1", requester="test")),
+        )
+
+        kwargs = {
+            "_command": "",
+            "_system_name": "",
+            "_system_version": "",
+            "_instance_name": "",
+        }
+
+        request = client._construct_bg_request(**kwargs)
+        assert request.requester == "test"
+
+    def test_no_requester_from_provided_parent(self, monkeypatch, client):
+        monkeypatch.setattr(client, "_resolve_parameters", Mock())
+
+        kwargs = {
+            "_command": "",
+            "_system_name": "",
+            "_system_version": "",
+            "_instance_name": "",
+            "_parent": Mock(id="1"),
+        }
+
+        request = client._construct_bg_request(**kwargs)
+        assert request.requester is None
+
     def test_positional_parameter(self, client, easy_client, mock_success):
         easy_client.create_request.return_value = mock_success
 

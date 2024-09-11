@@ -492,6 +492,7 @@ class GardenSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
     default_user = fields.Str(allow_none=True)
     shared_users = fields.Bool(allow_none=True)
+    version = fields.Str(allow_none=True)
 
 
 class JobSchema(BaseSchema):

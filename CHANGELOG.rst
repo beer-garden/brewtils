@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.27.2
 ------
-TBD
+9/12/24
 
 - Expanded PublishClient to support Registering and Unregistering commands to Topics after a plugin has been initialized
 - Fixed bug where threading a SystemClient within a plugin lost current_request context and failed to map `requester`, 

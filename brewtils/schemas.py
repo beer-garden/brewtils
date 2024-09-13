@@ -261,6 +261,7 @@ class FileSchema(BaseSchema):
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
     chunk_size = fields.Int(allow_none=False)
+    md5_sum = fields.Str(allow_none=True)
 
 
 class FileChunkSchema(BaseSchema):

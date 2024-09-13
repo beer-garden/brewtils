@@ -38,7 +38,7 @@ def easy_client(monkeypatch, bg_system):
     mock = Mock(name="easy_client")
     mock.find_unique_system.return_value = bg_system
     mock.find_systems.return_value = [bg_system]
-    mock.get_config.return_value = {"garden_name":bg_system.namespace}
+    mock.get_config.return_value = {"garden_name": bg_system.namespace}
     mock.client.bg_host = "localhost"
     mock.client.bg_port = 3000
 

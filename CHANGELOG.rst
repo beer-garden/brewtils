@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.3
+------
+TBD
+
+- Updated Plugin `max_concurrent` to support -1 to utilize the default formula that `concurrent.futures.ThreadPoolExecutor` supports `min(32, os.cpu_count() + 4)`
+
 3.27.2
 ------
 9/12/24

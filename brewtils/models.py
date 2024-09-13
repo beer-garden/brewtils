@@ -520,6 +520,7 @@ class File(BaseModel):
         owner=None,
         job=None,
         request=None,
+        md5_sum=None,
     ):
         self.id = id
         self.owner_id = owner_id
@@ -532,6 +533,7 @@ class File(BaseModel):
         self.file_size = file_size
         self.chunks = chunks
         self.chunk_size = chunk_size
+        self.md5_sum = md5_sum
 
     def __str__(self):
         return self.file_name

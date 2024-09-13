@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.3
+------
+TBD
+
+- Apply MD5 Check Sum of chunked files to ensure files are loaded into memory properly
+
 3.27.2
 ------
 9/12/24

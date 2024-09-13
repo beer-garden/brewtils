@@ -4,6 +4,7 @@ from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union
+from hashlib import md5
 
 import six
 import wrapt
@@ -999,6 +1000,8 @@ class EasyClient(object):
             fd = file_to_upload
             require_close = False
 
+        default_file_params["md5_sum"] = md5(fd.getbuffer()).hexdigest()
+
         try:
             default_file_params["file_name"] = desired_filename or fd.name
         except AttributeError:
@@ -1065,6 +1068,9 @@ class EasyClient(object):
             raise ValidationError("Requested file %s is incomplete." % file_id)
 
         file_obj.seek(0)
+
+        if "md5_sum" in meta and meta["md5_sum"] != md5(file_obj.getbuffer()).hexdigest():
+            raise ValidationError("Requested file %s does not match MD5 SUM." % file_id)
 
         return file_obj
 

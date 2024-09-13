@@ -156,7 +156,7 @@ def load_config(
     if "bg_url_prefix" in config:
         config.bg_url_prefix = normalize_url_prefix(config.bg_url_prefix)
 
-    if config.max_concurrent < 0:
+    if "max_concurrent" in config and config.max_concurrent < 0:
         config.max_concurrent = min(32, os.cpu_count() + 4)
 
     return config

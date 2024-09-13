@@ -239,14 +239,14 @@ class SystemClient(object):
             self._system_name = brewtils.plugin.CONFIG.name
             self._version_constraint = brewtils.plugin.CONFIG.version
             self._default_instance = brewtils.plugin.CONFIG.instance_name
-            self._system_namespace = brewtils.plugin.CONFIG.namespace or ""
+            self._system_namespace = brewtils.plugin.CONFIG.namespace or None
 
         else:
             self._system_name = kwargs.get("system_name")
             self._version_constraint = kwargs.get("version_constraint", "latest")
             self._default_instance = kwargs.get("default_instance", "default")
             self._system_namespace = kwargs.get(
-                "system_namespace", brewtils.plugin.CONFIG.namespace or ""
+                "system_namespace", brewtils.plugin.CONFIG.namespace or None
             )
             self._system_namespaces = kwargs.get("system_namespaces", [])
 
@@ -278,6 +278,10 @@ class SystemClient(object):
         kwargs.setdefault("stacklevel", 5)
 
         self._easy_client = EasyClient(*args, **kwargs)
+
+        if self._system_namespace is None:
+            self._system_namespace = self._easy_client.get_config()["garden_name"]
+
         self._resolver = ResolutionManager(easy_client=self._easy_client)
         self.local_request_handler = LocalRequestProcessor(
             system=self._system,

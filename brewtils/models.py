@@ -595,7 +595,7 @@ class FileStatus(BaseModel):
         chunks_ok=None,
         operation_complete=None,
         message=None,
-        md5_sum=None
+        md5_sum=None,
     ):
         # Top-level file info
         self.file_id = file_id

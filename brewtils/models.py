@@ -595,6 +595,7 @@ class FileStatus(BaseModel):
         chunks_ok=None,
         operation_complete=None,
         message=None,
+        md5_sum=None
     ):
         # Top-level file info
         self.file_id = file_id
@@ -605,6 +606,7 @@ class FileStatus(BaseModel):
         self.chunks = chunks
         self.owner_id = owner_id
         self.owner_type = owner_type
+        self.md5_sum = md5_sum
         # Chunk info
         self.chunk_id = chunk_id
         self.offset = offset

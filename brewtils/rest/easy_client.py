@@ -1069,7 +1069,10 @@ class EasyClient(object):
 
         file_obj.seek(0)
 
-        if "md5_sum" in meta and meta["md5_sum"] != md5(file_obj.getbuffer()).hexdigest():
+        if (
+            "md5_sum" in meta
+            and meta["md5_sum"] != md5(file_obj.getbuffer()).hexdigest()
+        ):
             raise ValidationError("Requested file %s does not match MD5 SUM." % file_id)
 
         return file_obj

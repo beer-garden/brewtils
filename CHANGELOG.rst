@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Updated Plugin `max_concurrent` to support -1 to utilize the default formula that `concurrent.futures.ThreadPoolExecutor` supports `min(32, os.cpu_count() + 4)`
+- Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
 
 3.27.2
 ------

@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Apply MD5 Check Sum of chunked files to ensure files are loaded into memory properly
+- Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
 
 3.27.2
 ------

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import appdirs
 from box import Box
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 
@@ -388,7 +388,7 @@ class Plugin(object):
 
     @staticmethod
     def get_timestamp(add_time: int = None):
-        current_timestamp = int(datetime.now(UTC).timestamp())
+        current_timestamp = int(datetime.now(timezone.utc).timestamp())
         if add_time:
             return current_timestamp + add_time
         return current_timestamp

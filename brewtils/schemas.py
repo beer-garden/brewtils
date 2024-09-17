@@ -282,6 +282,7 @@ class FileStatusSchema(BaseSchema):
     chunks = fields.Dict(allow_none=True)
     owner_id = fields.Str(allow_none=True)
     owner_type = fields.Str(allow_none=True)
+    md5_sum = fields.Str(allow_none=True)
     # Chunk info
     chunk_id = fields.Str(allow_none=True)
     offset = fields.Int(allow_none=True)

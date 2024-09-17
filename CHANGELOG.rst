@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
+- Updated default Garden version to `UNKNOWN`
 
 3.27.2
 ------

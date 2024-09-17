@@ -1510,7 +1510,7 @@ class Garden(BaseModel):
         metadata=None,
         default_user=None,
         shared_users=None,
-        version="0.0.0",
+        version=None,
     ):
         self.id = id
         self.name = name
@@ -1532,6 +1532,8 @@ class Garden(BaseModel):
         self.shared_users = shared_users
 
         self.version = version
+        if self.version is None:
+            self.version = "UNKNOWN"
 
     def __str__(self):
         return "%s" % self.name

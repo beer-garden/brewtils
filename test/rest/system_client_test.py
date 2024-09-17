@@ -38,6 +38,7 @@ def easy_client(monkeypatch, bg_system):
     mock = Mock(name="easy_client")
     mock.find_unique_system.return_value = bg_system
     mock.find_systems.return_value = [bg_system]
+    mock.get_config.return_value = {"garden_name": bg_system.namespace}
     mock.client.bg_host = "localhost"
     mock.client.bg_port = 3000
 
@@ -104,7 +105,7 @@ class TestLoadBgSystem(object):
         assert client.bg_system == bg_system_2
         assert client.bg_default_instance == "default"
         easy_client.find_systems.assert_called_once_with(
-            name=bg_system.name, namespace="", filter_latest=True
+            name=bg_system.name, namespace="ns", filter_latest=True
         )
 
     @pytest.mark.parametrize(
@@ -120,7 +121,7 @@ class TestLoadBgSystem(object):
         assert client.bg_system == bg_system
 
         easy_client.find_unique_system.assert_called_once_with(
-            name=bg_system.name, version=constraint, namespace=""
+            name=bg_system.name, version=constraint, namespace="ns"
         )
 
     def test_failure_with_constraint(self, client, easy_client):
@@ -219,7 +220,7 @@ class TestLoadBgSystem(object):
         assert client._system_name is None
         assert client._version_constraint == "latest"
         assert client._default_instance == "default"
-        assert client._system_namespace == ""
+        assert client._system_namespace == "ns"
 
 
 class TestCreateRequest(object):

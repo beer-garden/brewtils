@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.27.3
+------
+TBD
+
+- Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
+
 3.27.2
 ------
 9/12/24

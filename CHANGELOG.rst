@@ -5,6 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
+- Plugin will periodically monitor if required dependencies are running to update status accordingly
 - Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
 
 3.27.2

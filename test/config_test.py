@@ -38,6 +38,25 @@ def params():
     }
 
 
+class TestMaxConcurrent(object):
+
+    def test_negative_max_concurrent(self, monkeypatch, params):
+        monkeypatch.setattr(os, "cpu_count", Mock(return_value=2))
+
+        cli_args = ["-max_concurrent", "-1"]
+        config = load_config(cli_args=cli_args)
+
+        assert config["max_concurrent"] == 8
+
+    def test_positive_max_concurrent(self, monkeypatch, params):
+        monkeypatch.setattr(os, "cpu_count", Mock(return_value=2))
+
+        cli_args = ["-max_concurrent", "3"]
+        config = load_config(cli_args=cli_args)
+
+        assert config["max_concurrent"] == 3
+
+
 class TestGetConnectionInfo(object):
     def test_kwargs(self, params):
         assert params == get_connection_info(**params)

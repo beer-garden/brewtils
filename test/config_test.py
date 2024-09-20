@@ -43,7 +43,7 @@ class TestMaxConcurrent(object):
     def test_negative_max_concurrent(self, monkeypatch, params):
         monkeypatch.setattr(os, "cpu_count", Mock(return_value=2))
 
-        cli_args = ["--bg-host", "the_host", "-max_concurrent", "-1"]
+        cli_args = ["--bg-host", "the_host", "-max-concurrent", "-1"]
         config = load_config(cli_args=cli_args)
 
         assert config["max_concurrent"] == 8
@@ -51,7 +51,7 @@ class TestMaxConcurrent(object):
     def test_positive_max_concurrent(self, monkeypatch, params):
         monkeypatch.setattr(os, "cpu_count", Mock(return_value=2))
 
-        cli_args = ["--bg-host", "the_host", "-max_concurrent", "3"]
+        cli_args = ["--bg-host", "the_host", "-max-concurrent", "3"]
         config = load_config(cli_args=cli_args)
 
         assert config["max_concurrent"] == 3

@@ -727,7 +727,6 @@ class Plugin(object):
                 f"Waiting for dependency {self.unique_name}, stop consuming"
             )
             self._request_processor.consumer.stop_consuming()
-            self._request_processor.consumer._consumer_tag = None
         self._shutdown_event.wait(timeout)
 
     def _stop(self):

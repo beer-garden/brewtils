@@ -53,7 +53,7 @@ def get_current_request_read_only():
     Returns a copy of the current request, modifications to this object
     do not impact the actual current request
     """
-    return copy.deepcopy(request_context.current_request)
+    return copy.deepcopy(getattr(request_context, "current_request", None))
 
 
 class Plugin(object):

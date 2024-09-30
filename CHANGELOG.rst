@@ -9,6 +9,7 @@ TBD
 - Updated Plugin `max_concurrent` to support -1 to utilize the default formula that `concurrent.futures.ThreadPoolExecutor` supports `min(32, os.cpu_count() + 4)`
 - Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
 - Updated default Garden version to `UNKNOWN`
+- Updated `get_current_request_read_only` to support sub threads calling where current_request is not populated
 
 3.27.2
 ------

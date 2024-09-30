@@ -209,8 +209,11 @@ _PLUGIN_SPEC = {
     },
     "max_concurrent": {
         "type": "int",
-        "description": "Maximum number of requests to process concurrently",
-        "default": 5,
+        "description": (
+            "Maximum number of requests to process concurrently,"
+            " -1 will default max concurrent to min(32, os.cpu_count() + 4)"
+        ),
+        "default": -1,
     },
     "worker_shutdown_timeout": {
         "type": "int",

@@ -39,6 +39,7 @@ def target_file():
     fp.tell = Mock(return_value=0)
     fp.seek = Mock(return_value=1024)
     fp.read = Mock(side_effect=iter([b"content", None]))
+    fp.getbuffer = Mock(return_value=b"content")
     return fp
 
 
@@ -596,6 +597,12 @@ class TestChunked(object):
         client._check_chunked_file_validity = Mock(return_value=(True, {}))
 
         resolvable = client.upload_chunked_file(target_file, "desired_name")
+        _, called_kwargs = rest_client.post_chunked_file.call_args[0]
+
+        assert called_kwargs["md5_sum"] == "9a0364b9e99bb480dd25e1f0284c8555"
+        assert called_kwargs["file_name"] == "desired_name"
+        assert called_kwargs["file_size"] == 1024
+        assert called_kwargs["chunk_size"] == 261120
         assert resolvable == bg_resolvable_chunk
 
     def test_upload_file_fail(self, client, rest_client, server_error, target_file):

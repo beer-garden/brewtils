@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import os
 from argparse import ArgumentParser
 
 from yapconf import YapconfSpec
@@ -154,6 +155,9 @@ def load_config(
     # Make sure the url_prefix is normal
     if "bg_url_prefix" in config:
         config.bg_url_prefix = normalize_url_prefix(config.bg_url_prefix)
+
+    if "max_concurrent" not in config or config.max_concurrent < 0:
+        config.max_concurrent = min(32, os.cpu_count() + 4)
 
     return config
 

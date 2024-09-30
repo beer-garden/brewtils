@@ -520,6 +520,7 @@ class File(BaseModel):
         owner=None,
         job=None,
         request=None,
+        md5_sum=None,
     ):
         self.id = id
         self.owner_id = owner_id
@@ -532,6 +533,7 @@ class File(BaseModel):
         self.file_size = file_size
         self.chunks = chunks
         self.chunk_size = chunk_size
+        self.md5_sum = md5_sum
 
     def __str__(self):
         return self.file_name
@@ -593,6 +595,7 @@ class FileStatus(BaseModel):
         chunks_ok=None,
         operation_complete=None,
         message=None,
+        md5_sum=None,
     ):
         # Top-level file info
         self.file_id = file_id
@@ -603,6 +606,7 @@ class FileStatus(BaseModel):
         self.chunks = chunks
         self.owner_id = owner_id
         self.owner_type = owner_type
+        self.md5_sum = md5_sum
         # Chunk info
         self.chunk_id = chunk_id
         self.offset = offset
@@ -1510,7 +1514,7 @@ class Garden(BaseModel):
         metadata=None,
         default_user=None,
         shared_users=None,
-        version="0.0.0",
+        version=None,
     ):
         self.id = id
         self.name = name
@@ -1532,6 +1536,8 @@ class Garden(BaseModel):
         self.shared_users = shared_users
 
         self.version = version
+        if self.version is None:
+            self.version = "UNKNOWN"
 
     def __str__(self):
         return "%s" % self.name

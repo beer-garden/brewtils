@@ -428,10 +428,6 @@ class Plugin(object):
                 self.await_dependencies(self._system.requires, self._config)
                 if "RUNNING" != self._instance.status:
                     self._start()
-                    self.logger.debug(
-                        f"Dependency check resolved {self.unique_name}, start consuming"
-                    )
-                    self._request_processor.consumer.start_consuming()
             except PluginValidationError:
                 self._logger.debug(f"Dependency check timeout {self.unique_name}")
             return True
@@ -722,11 +718,6 @@ class Plugin(object):
         self._instance = self._ez_client.update_instance(
             self._instance.id, new_status="AWAITING_SYSTEM"
         )
-        if self._request_processor.consumer._consumer_tag:
-            self.logger.debug(
-                f"Waiting for dependency {self.unique_name}, stop consuming"
-            )
-            self._request_processor.consumer.stop_consuming()
         self._shutdown_event.wait(timeout)
 
     def _stop(self):

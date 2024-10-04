@@ -11,6 +11,7 @@ from pathlib import Path
 
 import appdirs
 from box import Box
+from datetime import datetime, timezone
 from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 
@@ -268,9 +269,12 @@ class Plugin(object):
             self._logger.info("Plugin %s has started", self.unique_name)
 
             try:
+                check_interval = 60
+                next_dependency_check = self.get_timestamp(check_interval)
                 # Need the timeout param so this works correctly in Python 2
                 while not self._shutdown_event.wait(timeout=0.1):
-                    pass
+                    if self.check_dependencies(next_dependency_check):
+                        next_dependency_check = self.get_timestamp(check_interval)
             except KeyboardInterrupt:
                 self._logger.debug("Received KeyboardInterrupt - shutting down")
             except Exception as ex:
@@ -382,6 +386,13 @@ class Plugin(object):
 
         sys.excepthook = _hook
 
+    @staticmethod
+    def get_timestamp(add_time: int = None):
+        current_timestamp = int(datetime.now(timezone.utc).timestamp())
+        if add_time:
+            return current_timestamp + add_time
+        return current_timestamp
+
     def get_system_dependency(self, require, timeout=300):
         wait_time = 0.1
         while timeout > 0:
@@ -407,9 +418,19 @@ class Plugin(object):
     def await_dependencies(self, requires, config):
         for req in requires:
             system = self.get_system_dependency(req, config.requires_timeout)
-            self.logger.info(
+            self.logger.debug(
                 f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
             )
+
+    def check_dependencies(self, next_dependency_check: int):
+        if self._system.requires and self.get_timestamp() >= next_dependency_check:
+            try:
+                self.await_dependencies(self._system.requires, self._config)
+                if "RUNNING" != self._instance.status:
+                    self._start()
+            except PluginValidationError:
+                self._logger.debug(f"Dependency check timeout {self.unique_name}")
+            return True
 
     def _startup(self):
         """Plugin startup procedure

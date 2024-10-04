@@ -11,6 +11,7 @@ TBD
 - Updated SystemClient to utilize the local Garden name for default Namespace if none can be determined
 - Updated default Garden version to `UNKNOWN`
 - Updated `get_current_request_read_only` to support sub threads calling where current_request is not populated
+- Refactored Publishclient for Registering and Unregistering commands input values
 
 3.27.2
 ------

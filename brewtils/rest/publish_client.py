@@ -158,7 +158,9 @@ class PublishClient(object):
 
         return Request(id=str(parent.id))
 
-    def register_command(self, topic_name: str, cmd_name: str = None, cmd_func = None) -> Topic:
+    def register_command(
+        self, topic_name: str, cmd_name: str = None, cmd_func=None
+    ) -> Topic:
         """Register a command to subscribe to the topic provided. The subscriber is
         marked as GENERATED, and will be pruned after the system shuts down
 
@@ -200,21 +202,25 @@ class PublishClient(object):
                 )
             cmd_name = cmd_func._command.name
 
-        
         return self._easy_client.update_topic(
             topic_name=topic_name,
-            add=self._schema_parser.serialize_subscriber(Subscriber(
-                garden=brewtils.plugin.CONFIG.garden,
-                namespace=brewtils.plugin.CONFIG.namespace,
-                system=brewtils.plugin.CONFIG.name,
-                version=brewtils.plugin.CONFIG.version,
-                instance=brewtils.plugin.CONFIG.instance_name,
-                command=cmd_name,
-                subscriber_type="GENERATED",
-            ), to_string=False),
+            add=self._schema_parser.serialize_subscriber(
+                Subscriber(
+                    garden=brewtils.plugin.CONFIG.garden,
+                    namespace=brewtils.plugin.CONFIG.namespace,
+                    system=brewtils.plugin.CONFIG.name,
+                    version=brewtils.plugin.CONFIG.version,
+                    instance=brewtils.plugin.CONFIG.instance_name,
+                    command=cmd_name,
+                    subscriber_type="GENERATED",
+                ),
+                to_string=False,
+            ),
         )
 
-    def unregister_command(self, topic_name: str, cmd_name: str = None, cmd_func = None) -> Topic:
+    def unregister_command(
+        self, topic_name: str, cmd_name: str = None, cmd_func=None
+    ) -> Topic:
         """Unregister a command to subscribe to the topic provided.
 
         Args:
@@ -256,13 +262,16 @@ class PublishClient(object):
 
         return self._easy_client.update_topic(
             topic_name=topic_name,
-            remove=self._schema_parser.serialize_subscriber(Subscriber(
-                garden=brewtils.plugin.CONFIG.garden,
-                namespace=brewtils.plugin.CONFIG.namespace,
-                system=brewtils.plugin.CONFIG.name,
-                version=brewtils.plugin.CONFIG.version,
-                instance=brewtils.plugin.CONFIG.instance_name,
-                command=cmd_name,
-                subscriber_type="GENERATED",
-            ), to_string=False),
+            remove=self._schema_parser.serialize_subscriber(
+                Subscriber(
+                    garden=brewtils.plugin.CONFIG.garden,
+                    namespace=brewtils.plugin.CONFIG.namespace,
+                    system=brewtils.plugin.CONFIG.name,
+                    version=brewtils.plugin.CONFIG.version,
+                    instance=brewtils.plugin.CONFIG.instance_name,
+                    command=cmd_name,
+                    subscriber_type="GENERATED",
+                ),
+                to_string=False,
+            ),
         )

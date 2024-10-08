@@ -316,6 +316,9 @@ class SystemClient(object):
             # Set loaded to False to force the reload of the System
             self._loaded = False
 
+    def _raise_exception(self, exception: Exception):
+        raise exception
+
     def create_bg_request(self, command_name, **kwargs):
         # type: (str, **Any) -> partial
         """Create a callable that will execute a Beer-garden request when called.
@@ -351,35 +354,48 @@ class SystemClient(object):
             AttributeError: System does not have a Command with the given command_name
         """
 
-        self._rotate_namespace()
+        blocking = kwargs.pop("_blocking", self._blocking)
 
-        if not self._loaded or self._always_update:
-            self.load_bg_system()
+        try:
 
-        if command_name in self._commands:
-            command_type = kwargs.pop(
-                "_command_type", self._commands[command_name].command_type
-            )
-            return partial(
-                self.send_bg_request,
-                _command=command_name,
-                _command_type=command_type,
-                _system_name=self._system.name,
-                _system_namespace=self._system.namespace,
-                _system_version=(
-                    self._version_constraint
-                    if self._use_latest
-                    else self._system.version
-                ),
-                _system_display=self._system.display_name,
-                _output_type=self._commands[command_name].output_type,
-                _instance_name=self._default_instance,
-                **kwargs,
-            )
-        else:
-            raise AttributeError(
-                "System '%s' has no command named '%s'" % (self._system, command_name)
-            )
+            self._rotate_namespace()
+
+            if not self._loaded or self._always_update:
+                self.load_bg_system()
+
+            if command_name in self._commands:
+                command_type = kwargs.pop(
+                    "_command_type", self._commands[command_name].command_type
+                )
+                return partial(
+                    self.send_bg_request,
+                    _command=command_name,
+                    _command_type=command_type,
+                    _system_name=self._system.name,
+                    _system_namespace=self._system.namespace,
+                    _system_version=(
+                        self._version_constraint
+                        if self._use_latest
+                        else self._system.version
+                    ),
+                    _system_display=self._system.display_name,
+                    _output_type=self._commands[command_name].output_type,
+                    _instance_name=self._default_instance,
+                    _blocking=blocking,
+                    **kwargs,
+                )
+            else:
+                raise AttributeError(
+                    "System '%s' has no command named '%s'"
+                    % (self._system, command_name)
+                )
+
+        except Exception as ex:
+            # Return future with the exception properly thrown within it
+            if not blocking:
+                return self._thread_pool.submit(self._raise_exception, ex)
+            else:
+                raise
 
     def send_bg_request(self, *args, **kwargs):
         """Actually create a Request and send it to Beer-garden

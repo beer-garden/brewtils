@@ -103,14 +103,14 @@ class TestPublishClient(object):
         def _cmd(self, x):
             return x
 
-        client.register_command("topic", _cmd)
+        client.register_command(topic_name="topic", cmd_func=_cmd)
 
         easy_client.update_topic.assert_called()
 
     def test_register_command_string(self, client, easy_client):
         self.setup_config()
 
-        client.register_command("topic", "command")
+        client.register_command(topic_name="topic", cmd_name="command")
 
         easy_client.update_topic.assert_called()
 
@@ -121,7 +121,7 @@ class TestPublishClient(object):
         def _cmd(self, x):
             return x
 
-        client.unregister_command("topic", _cmd)
+        client.unregister_command(topic_name="topic", cmd_func=_cmd)
 
         easy_client.update_topic.assert_called()
 
@@ -139,7 +139,7 @@ class TestPublishClient(object):
             return x
 
         with pytest.raises(BrewtilsException):
-            client.register_command("topic", _cmd)
+            client.register_command(topic_name="topic", cmd_func=_cmd)
 
     def test_unregister_command_non_annotated(self, client):
         self.setup_config()
@@ -148,7 +148,7 @@ class TestPublishClient(object):
             return x
 
         with pytest.raises(BrewtilsException):
-            client.unregister_command("topic", _cmd)
+            client.unregister_command(topic_name="topic", cmd_func=_cmd)
 
     def test_register_command_no_config(self, client):
 
@@ -157,7 +157,7 @@ class TestPublishClient(object):
             return x
 
         with pytest.raises(BrewtilsException):
-            client.register_command("topic", _cmd)
+            client.register_command(topic_name="topic", cmd_func=_cmd)
 
     def test_unregister_command_no_config(self, client):
 
@@ -166,4 +166,4 @@ class TestPublishClient(object):
             return x
 
         with pytest.raises(BrewtilsException):
-            client.unregister_command("topic", _cmd)
+            client.unregister_command(topic_name="topic", cmd_func=_cmd)

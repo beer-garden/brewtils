@@ -5,6 +5,7 @@ import brewtils.plugin
 from brewtils.errors import BrewtilsException
 from brewtils.models import Event, Events, Request, Subscriber, Topic
 from brewtils.rest.easy_client import EasyClient
+from brewtils.schema_parser import SchemaParser
 
 
 class PublishClient(object):
@@ -64,6 +65,7 @@ class PublishClient(object):
     def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger(__name__)
         self._easy_client = EasyClient(*args, **kwargs)
+        self._schema_parser = SchemaParser()
 
     def publish(
         self,
@@ -156,13 +158,16 @@ class PublishClient(object):
 
         return Request(id=str(parent.id))
 
-    def register_command(self, topic: str, cmd) -> Topic:
+    def register_command(
+        self, topic_name: str, cmd_name: str = None, cmd_func=None
+    ) -> Topic:
         """Register a command to subscribe to the topic provided. The subscriber is
         marked as GENERATED, and will be pruned after the system shuts down
 
         Args:
-            topic (str): Topic for the command to subscribe to
-            cmd (str, function): Command to register
+            topic_name (str): Topic for the command to subscribe to
+            cmd_name (str): Command to register
+            cmd_func (function): Command to register
 
         Raises:
             BrewtilsException: If function is provided, it must be an annotated
@@ -186,38 +191,42 @@ class PublishClient(object):
                 )
             )
 
-        if isinstance(cmd, str):
-            command_name = cmd
-        else:
-            if not hasattr(cmd, "_command"):
+        if not cmd_name:
+            if not hasattr(cmd_func, "_command"):
                 raise BrewtilsException(
                     (
                         "Attempted to register command "
-                        f"{getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
+                        f"{getattr(cmd_func, '__name__', 'MISSING FUNC NAME')} "
                         "that is not an annotated command"
                     )
                 )
-            command_name = cmd._command.name
+            cmd_name = cmd_func._command.name
 
         return self._easy_client.update_topic(
-            topic_name=topic,
-            add=Subscriber(
-                garden=brewtils.plugin.CONFIG.garden,
-                namespace=brewtils.plugin.CONFIG.namespace,
-                system=brewtils.plugin.CONFIG.name,
-                version=brewtils.plugin.CONFIG.version,
-                instance=brewtils.plugin.CONFIG.instance_name,
-                command=command_name,
-                subscriber_type="GENERATED",
+            topic_name=topic_name,
+            add=self._schema_parser.serialize_subscriber(
+                Subscriber(
+                    garden=brewtils.plugin.CONFIG.garden,
+                    namespace=brewtils.plugin.CONFIG.namespace,
+                    system=brewtils.plugin.CONFIG.name,
+                    version=brewtils.plugin.CONFIG.version,
+                    instance=brewtils.plugin.CONFIG.instance_name,
+                    command=cmd_name,
+                    subscriber_type="GENERATED",
+                ),
+                to_string=False,
             ),
         )
 
-    def unregister_command(self, topic: str, cmd) -> Topic:
+    def unregister_command(
+        self, topic_name: str, cmd_name: str = None, cmd_func=None
+    ) -> Topic:
         """Unregister a command to subscribe to the topic provided.
 
         Args:
-            topic (str): Topic for the command to subscribe to
-            cmd (str, function): Command to unregister
+            topic_name (str): Topic for the command to subscribe to
+            cmd_name (str): Command to unregister
+            cmd_func (function): Command to unregister
 
         Raises:
             BrewtilsException: If function is provided, it must be
@@ -240,28 +249,29 @@ class PublishClient(object):
                 )
             )
 
-        if isinstance(cmd, str):
-            command_name = cmd
-        else:
-            if not hasattr(cmd, "_command"):
+        if not cmd_name:
+            if not hasattr(cmd_func, "_command"):
                 raise BrewtilsException(
                     (
                         "Attempted to register command "
-                        f"{getattr(cmd, '__name__', 'MISSING FUNC NAME')} "
+                        f"{getattr(cmd_func, '__name__', 'MISSING FUNC NAME')} "
                         "that is not an annotated command"
                     )
                 )
-            command_name = cmd._command.name
+            cmd_name = cmd_func._command.name
 
         return self._easy_client.update_topic(
-            topic_name=topic,
-            remove=Subscriber(
-                garden=brewtils.plugin.CONFIG.garden,
-                namespace=brewtils.plugin.CONFIG.namespace,
-                system=brewtils.plugin.CONFIG.name,
-                version=brewtils.plugin.CONFIG.version,
-                instance=brewtils.plugin.CONFIG.instance_name,
-                command=command_name,
-                subscriber_type="GENERATED",
+            topic_name=topic_name,
+            remove=self._schema_parser.serialize_subscriber(
+                Subscriber(
+                    garden=brewtils.plugin.CONFIG.garden,
+                    namespace=brewtils.plugin.CONFIG.namespace,
+                    system=brewtils.plugin.CONFIG.name,
+                    version=brewtils.plugin.CONFIG.version,
+                    instance=brewtils.plugin.CONFIG.instance_name,
+                    command=cmd_name,
+                    subscriber_type="GENERATED",
+                ),
+                to_string=False,
             ),
         )

@@ -1,9 +1,9 @@
 Brewtils Changelog
 ==================
 
-3.27.3
+3.28.0
 ------
-TBD
+10/9/24
 
 - Plugin will periodically monitor if required dependencies are running to update status accordingly
 - Apply MD5 Check Sum of chunked files to ensure files are loaded into memory properly

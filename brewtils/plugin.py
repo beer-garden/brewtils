@@ -7,11 +7,11 @@ import os
 import signal
 import sys
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 import appdirs
 from box import Box
-from datetime import datetime, timezone
 from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 

@@ -305,11 +305,9 @@ class Plugin(object):
             raise AttributeError("Sorry, you can't change a plugin's client once set")
 
         if new_client is None:
-            self._set_shutdown_functions()
             return
 
         self._set_client(new_client)
-        self._set_shutdown_functions()
 
     def _run_shutdown_functions(
         self, shutdown_functions, executed_shutdown_functions=None

@@ -449,7 +449,10 @@ def parameters(*args, **kwargs):
 
 
 def shutdown(_wrapped=None):
-    """Decorator for specifying a function to run before a plugin is shutdown
+    """Decorator for specifying a function to run before a plugin is shutdown.
+
+    Functions called should short actions. Locally hosted plugin threads will be
+    pruned if not stopped within the plugin.timeout.shutdown time window
 
     for example::
 

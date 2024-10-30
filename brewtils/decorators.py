@@ -519,8 +519,9 @@ def _parse_shutdown_functions(client):
     shutdown_functions = []
 
     for attr in dir(client):
-        if callable(attr) and getattr(attr, "_shutdown", False):
-            shutdown_functions.append(attr)
+        method = getattr(client, attr)
+        if callable(method) and getattr(method, "_shutdown", False):
+            shutdown_functions.append(method)
 
     return shutdown_functions
 

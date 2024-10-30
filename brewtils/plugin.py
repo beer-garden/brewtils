@@ -224,7 +224,7 @@ class Plugin(object):
         # Need to pop out shutdown functions because these are not processed
         # until shutdown
         self._arg_shutdown_functions = kwargs.pop("shutdown_functions", [])
-        if hasattr(kwargs, "shutdown_function"):
+        if "shutdown_function" in kwargs:
             self._arg_shutdown_functions.append(kwargs.pop("shutdown_function"))
 
         # Now that logging is configured we can load the real config
@@ -541,7 +541,7 @@ class Plugin(object):
 
         self._logger.debug("About to run annotated shutdown functions")
         executed_shutdown_functions = self._run_shutdown_functions(
-            _parse_shutdown_functions(self.client)
+            _parse_shutdown_functions(self._client)
         )
 
         self._logger.debug("About to run plugin shutdown functions")

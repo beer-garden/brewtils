@@ -429,6 +429,26 @@ class TestShutdown(object):
 
         assert len(caplog.records) == 1
 
+    def test_shutdown_plugin_shutdown_function_executed(self, plugin):
+        plugin._request_processor = Mock()
+        plugin._admin_processor = Mock()
+
+        mock_shutdown_function = Mock()
+        plugin._arg_shutdown_functions = [mock_shutdown_function]
+
+        plugin._shutdown()
+        assert mock_shutdown_function.called is True
+
+    def test_shutdown_config_shutdown_function_executed(self, plugin):
+        plugin._request_processor = Mock()
+        plugin._admin_processor = Mock()
+
+        mock_shutdown_function = Mock()
+        plugin._config.shutdown_functions = [mock_shutdown_function]
+
+        plugin._shutdown()
+        assert mock_shutdown_function.called is True
+
 
 class TestInitializeLogging(object):
     @pytest.fixture(autouse=True)

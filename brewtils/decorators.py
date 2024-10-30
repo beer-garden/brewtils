@@ -106,8 +106,6 @@ def client(
     if require:
         _wrapped._requires.append(require)
 
-    _wrapped._shutdown_functions = _parse_shutdown_functions(_wrapped)
-
     return _wrapped
 
 
@@ -449,6 +447,7 @@ def parameters(*args, **kwargs):
 
     return _wrapped
 
+
 def shutdown(_wrapped=None):
     """Decorator for specifying a function to run before a plugin is shutdown
 
@@ -458,7 +457,7 @@ def shutdown(_wrapped=None):
         def pre_shutdown(self):
             # Run pre-shutdown processing
             return
-    
+
     Args:
         _wrapped: The function to decorate. This is handled as a positional argument and
             shouldn't be explicitly set.
@@ -508,10 +507,11 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
 
     return _wrapped
 
+
 def _parse_shutdown_functions(client):
     # type: (object) -> List[Callable]
     """Get a list of callable fields labeled with the shutdown annotation
-    
+
     This will iterate over everything returned from dir, looking for metadata added
     by the shutdown decorator.
     """

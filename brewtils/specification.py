@@ -199,7 +199,7 @@ _SYSTEM_SPEC = {
         "items": {"name": {"type": "str"}},
         "required": False,
         "default": [],
-    }
+    },
 }
 
 _PLUGIN_SPEC = {

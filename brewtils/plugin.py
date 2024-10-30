@@ -221,19 +221,14 @@ class Plugin(object):
         self._custom_logger = False
         self._logger = self._setup_logging(logger=logger, **kwargs)
 
-        # Need to pop out shutdown functions because String is expected from 
-        # config files, not callable functions
-        shutdown_functions = kwargs.pop("shutdown_functions", [])
+        # Need to pop out shutdown functions because these are not processed
+        # until shutdown
+        self._arg_shutdown_functions = kwargs.pop("shutdown_functions", [])
         if hasattr(kwargs, "shutdown_function"):
-            shutdown_functions.append(kwargs.pop("shutdown_function"))
-            
+            self._arg_shutdown_functions.append(kwargs.pop("shutdown_function"))
+
         # Now that logging is configured we can load the real config
         self._config = load_config(**kwargs)
-
-        # Map over single shutdown provided functions from kwargs
-        for shutdown_function in shutdown_functions:
-            if shutdown_function not in self._config.shutdown_functions:
-                self._config.shutdown_functions.append(shutdown_function)        
 
         # If global config has already been set that's a warning
         global CONFIG
@@ -247,7 +242,7 @@ class Plugin(object):
 
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
-        
+
         global CLIENT
         # Make sure this is set after self._system
         if client:
@@ -316,36 +311,36 @@ class Plugin(object):
         self._set_client(new_client)
         self._set_shutdown_functions()
 
+    def _run_shutdown_functions(
+        self, shutdown_functions, executed_shutdown_functions=None
+    ):
+        if executed_shutdown_functions is None:
+            executed_shutdown_functions = []
 
-    def _set_shutdown_functions(self):
+        for shutdown_function in shutdown_functions:
+            if callable(shutdown_function):
+                if shutdown_function not in executed_shutdown_functions:
+                    shutdown_function()
+                    executed_shutdown_functions.append(shutdown_function)
 
-        if self._client:
-            self._shutdown_functions = self._client._shutdown_functions
-        else:
-            self._shutdown_functions = []
-
-        if hasattr(self._config, "shutdown_function"):
-            if self._config.shutdown_function not in self._config.shutdown_functions:
-                self._config.shutdown_functions.append(self._config.shutdown_function)
-        
-
-        for add_shutdown_function in self._config.shutdown_functions:
-            if callable(add_shutdown_function):
-                if add_shutdown_function not in self._shutdown_functions:
-                    self._shutdown_functions.append(add_shutdown_function)
-            
-            elif self._client and hasattr(self._client, add_shutdown_function):
-                client_function = getattr(self._client, add_shutdown_function)
+            elif self._client and hasattr(self._client, shutdown_function):
+                client_function = getattr(self._client, shutdown_function)
                 if callable(client_function):
-                    if client_function not in self._shutdown_functions:
-                        self._shutdown_functions.append(client_function)
+                    if client_function not in executed_shutdown_functions:
+                        client_function()
+                        executed_shutdown_functions.append(client_function)
                 else:
-                    raise PluginValidationError(f"Provided non callable function for shutdown function: {add_shutdown_function}")
+                    self._logger.error(
+                        f"Provided non callable function for shutdown function: {shutdown_function}"
+                    )
             elif self._client:
-                raise PluginValidationError(f"Provided function not existing on client for shutdown function: {add_shutdown_function}")
+                self._logger.error(
+                    f"Provided function not existing on client for shutdown function: {shutdown_function}"
+                )
             else:
-                self._logger.warning(f"No client provided to check for shutdown function: {add_shutdown_function}")
-                
+                self._logger.error(
+                    f"No client provided to check for shutdown function: {shutdown_function}"
+                )
 
     def _set_client(self, new_client):
         # Several _system properties can come from the client, so update if needed
@@ -539,15 +534,24 @@ class Plugin(object):
         """
 
         self._logger.debug("About to shut down plugin %s", self.unique_name)
-        
-        if len(self._shutdown_functions) > 0:
 
-            # Run shutdown functions prior to setting shutdown event to allow for 
-            # any functions that might generate Requests
-            self._logger.info("About to run provided shutdown functions")
+        # Run shutdown functions prior to setting shutdown event to allow for
+        # any functions that might generate Requests
 
-            for shutdown_function in self._shutdown_functions:
-                shutdown_function()
+        self._logger.debug("About to run annotated shutdown functions")
+        executed_shutdown_functions = self._run_shutdown_functions(
+            _parse_shutdown_functions(self.client)
+        )
+
+        self._logger.debug("About to run plugin shutdown functions")
+        executed_shutdown_functions = self._run_shutdown_functions(
+            self._arg_shutdown_functions, executed_shutdown_functions
+        )
+
+        self._logger.debug("About to run config shutdown functions")
+        executed_shutdown_functions = self._run_shutdown_functions(
+            self._config.shutdown_functions, executed_shutdown_functions
+        )
 
         self._shutdown_event.set()
 

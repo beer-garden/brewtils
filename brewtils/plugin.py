@@ -333,7 +333,10 @@ class Plugin(object):
                     )
             elif self._client:
                 self._logger.error(
-                    f"Provided function not existing on client for shutdown function: {shutdown_function}"
+                    (
+                        "Provided function not existing on client "
+                        f"for shutdown function: {shutdown_function}"
+                    )
                 )
             else:
                 self._logger.error(

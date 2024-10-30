@@ -106,6 +106,8 @@ def client(
     if require:
         _wrapped._requires.append(require)
 
+    _wrapped._shutdown_functions = _parse_shutdown_functions(_wrapped)
+
     return _wrapped
 
 

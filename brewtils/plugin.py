@@ -366,8 +366,6 @@ class Plugin(object):
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
-        self._shutdown_functions = _parse_shutdown_functions(new_client)
-
         try:
             # Put some attributes on the Client class
             client_clazz = type(new_client)

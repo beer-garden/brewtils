@@ -17,7 +17,7 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.config import load_config
-from brewtils.decorators import _parse_client
+from brewtils.decorators import _parse_client, _parse_shutdown_functions
 from brewtils.display import resolve_template
 from brewtils.errors import (
     ConflictError,
@@ -183,6 +183,9 @@ class Plugin(object):
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
 
+        shutdown_function (func): Function to be executed at start of shutdown
+        shutdown_functions (list): Functions to be executed at start of shutdown
+
         prefix_topic (str): Prefix for Generated Command Topics
 
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
@@ -218,8 +221,19 @@ class Plugin(object):
         self._custom_logger = False
         self._logger = self._setup_logging(logger=logger, **kwargs)
 
+        # Need to pop out shutdown functions because String is expected from 
+        # config files, not callable functions
+        shutdown_functions = kwargs.pop("shutdown_functions", [])
+        if hasattr(kwargs, "shutdown_function"):
+            shutdown_functions.append(kwargs.pop("shutdown_function"))
+            
         # Now that logging is configured we can load the real config
         self._config = load_config(**kwargs)
+
+        # Map over single shutdown provided functions from kwargs
+        for shutdown_function in shutdown_functions:
+            if shutdown_function not in self._config.shutdown_functions:
+                self._config.shutdown_functions.append(shutdown_function)        
 
         # If global config has already been set that's a warning
         global CONFIG
@@ -233,7 +247,7 @@ class Plugin(object):
 
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
-
+        
         global CLIENT
         # Make sure this is set after self._system
         if client:
@@ -296,9 +310,42 @@ class Plugin(object):
             raise AttributeError("Sorry, you can't change a plugin's client once set")
 
         if new_client is None:
+            self._set_shutdown_functions()
             return
 
         self._set_client(new_client)
+        self._set_shutdown_functions()
+
+
+    def _set_shutdown_functions(self):
+
+        if self._client:
+            self._shutdown_functions = self._client._shutdown_functions
+        else:
+            self._shutdown_functions = []
+
+        if hasattr(self._config, "shutdown_function"):
+            if self._config.shutdown_function not in self._config.shutdown_functions:
+                self._config.shutdown_functions.append(self._config.shutdown_function)
+        
+
+        for add_shutdown_function in self._config.shutdown_functions:
+            if callable(add_shutdown_function):
+                if add_shutdown_function not in self._shutdown_functions:
+                    self._shutdown_functions.append(add_shutdown_function)
+            
+            elif self._client and hasattr(self._client, add_shutdown_function):
+                client_function = getattr(self._client, add_shutdown_function)
+                if callable(client_function):
+                    if client_function not in self._shutdown_functions:
+                        self._shutdown_functions.append(client_function)
+                else:
+                    raise PluginValidationError(f"Provided non callable function for shutdown function: {add_shutdown_function}")
+            elif self._client:
+                raise PluginValidationError(f"Provided function not existing on client for shutdown function: {add_shutdown_function}")
+            else:
+                self._logger.warning(f"No client provided to check for shutdown function: {add_shutdown_function}")
+                
 
     def _set_client(self, new_client):
         # Several _system properties can come from the client, so update if needed
@@ -318,6 +365,8 @@ class Plugin(object):
             self._system.requires = getattr(new_client, "_requires", [])  # noqa
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
+
+        self._shutdown_functions = _parse_shutdown_functions(new_client)
 
         try:
             # Put some attributes on the Client class
@@ -490,7 +539,18 @@ class Plugin(object):
         considered in a "stopped" state - the message processors shut down and all
         connections closed.
         """
+
         self._logger.debug("About to shut down plugin %s", self.unique_name)
+        
+        if len(self._shutdown_functions) > 0:
+
+            # Run shutdown functions prior to setting shutdown event to allow for 
+            # any functions that might generate Requests
+            self._logger.info("About to run provided shutdown functions")
+
+            for shutdown_function in self._shutdown_functions:
+                shutdown_function()
+
         self._shutdown_event.set()
 
         self._logger.debug("Shutting down processors")

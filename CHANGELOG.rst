@@ -1,6 +1,13 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Added new annotation/configuration support for shutdown functions. These functions will be executed at the start
+  of the shutdown process.
+
 3.28.0
 ------
 10/9/24

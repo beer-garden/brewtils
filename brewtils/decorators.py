@@ -447,6 +447,23 @@ def parameters(*args, **kwargs):
 
     return _wrapped
 
+def shutdown(_wrapped=None):
+    """Decorator for specifying a function to run before a plugin is shutdown
+
+    for example::
+
+        @shutdown
+        def pre_shutdown(self):
+            # Run pre-shutdown processing
+            return
+    
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+    """
+    _wrapped._shutdown = True
+    return _wrapped
+
 
 def subscribe(_wrapped=None, topic: str = None, topics=[]):
     """Decorator for specifiying topic to listen to.
@@ -488,6 +505,22 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
         _wrapped.subscribe_topics = subscribe_topics
 
     return _wrapped
+
+def _parse_shutdown_functions(client):
+    # type: (object) -> List[Callable]
+    """Get a list of callable fields labeled with the shutdown annotation
+    
+    This will iterate over everything returned from dir, looking for metadata added
+    by the shutdown decorator.
+    """
+
+    shutdown_functions = []
+
+    for attr in dir(client):
+        if callable(attr) and getattr(attr, "_shutdown", False):
+            shutdown_functions.append(attr)
+
+    return shutdown_functions
 
 
 def _parse_client(client):

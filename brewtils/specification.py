@@ -188,6 +188,18 @@ _SYSTEM_SPEC = {
         "description": "The dependency timeout to use",
         "default": 300,
     },
+    "shutdown_function": {
+        "type": "str",
+        "description": "The function in client to be executed at shutdown",
+        "required": False,
+    },
+    "shutdown_functions": {
+        "type": "list",
+        "description": "The functions in client to be executed at shutdown",
+        "items": {"name": {"type": "str"}},
+        "required": False,
+        "default": [],
+    }
 }
 
 _PLUGIN_SPEC = {

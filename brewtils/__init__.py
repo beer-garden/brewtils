@@ -2,7 +2,7 @@
 from brewtils.__version__ import __version__
 from brewtils.auto_decorator import AutoDecorator
 from brewtils.config import get_argument_parser, get_connection_info, load_config
-from brewtils.decorators import client, command, parameter, subscribe, system
+from brewtils.decorators import client, command, parameter, shutdown, subscribe, system
 from brewtils.log import configure_logging
 from brewtils.plugin import (
     get_current_request_read_only,
@@ -19,6 +19,7 @@ __all__ = [
     "client",
     "command",
     "parameter",
+    "shutdown",
     "system",
     "subscribe",
     "Plugin",

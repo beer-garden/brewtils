@@ -188,14 +188,26 @@ _SYSTEM_SPEC = {
         "description": "The dependency timeout to use",
         "default": 300,
     },
-    "shutdown_function": {
+    "client_shutdown_function": {
         "type": "str",
         "description": "The function in client to be executed at shutdown",
         "required": False,
     },
-    "shutdown_functions": {
+    "client_shutdown_functions": {
         "type": "list",
         "description": "The functions in client to be executed at shutdown",
+        "items": {"name": {"type": "str"}},
+        "required": False,
+        "default": [],
+    },
+    "client_startup_function": {
+        "type": "str",
+        "description": "The function in client to be executed at run",
+        "required": False,
+    },
+    "client_startup_functions": {
+        "type": "list",
+        "description": "The functions in client to be executed at run",
         "items": {"name": {"type": "str"}},
         "required": False,
         "default": [],

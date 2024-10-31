@@ -17,7 +17,11 @@ from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
 from brewtils.config import load_config
-from brewtils.decorators import _parse_client, _parse_shutdown_functions
+from brewtils.decorators import (
+    _parse_client,
+    _parse_shutdown_functions,
+    _parse_startup_functions,
+)
 from brewtils.display import resolve_template
 from brewtils.errors import (
     ConflictError,
@@ -183,8 +187,21 @@ class Plugin(object):
         group (str): Grouping label applied to plugin
         groups (list): Grouping labels applied to plugin
 
+        client_shutdown_function (str): Function to be executed at start of shutdown
+            within client code
+        client_shutdown_functions (list): Functions to be executed at start of shutdown
+            within client code
+
         shutdown_function (func): Function to be executed at start of shutdown
         shutdown_functions (list): Functions to be executed at start of shutdown
+
+        client_startup_function (str): Function to be executed at start of running plugin
+            within client code
+        client_startup_functions (list): Functions to be executed at start of running plugin
+            within client code
+
+        startup_function (func): Function to be executed at start of running plugin
+        startup_functions (list): Functions to be executed at start of running plugin
 
         prefix_topic (str): Prefix for Generated Command Topics
 
@@ -223,9 +240,42 @@ class Plugin(object):
 
         # Need to pop out shutdown functions because these are not processed
         # until shutdown
-        self._arg_shutdown_functions = kwargs.pop("shutdown_functions", [])
+        self.shutdown_functions = []
+        for shutdown_function in kwargs.pop("shutdown_functions", []):
+            if callable(shutdown_function):
+                self.shutdown_functions.append(shutdown_function)
+            else:
+                raise PluginValidationError(
+                    f"Provided un-callable shutdown function {shutdown_function}"
+                )
+
         if "shutdown_function" in kwargs:
-            self._arg_shutdown_functions.append(kwargs.pop("shutdown_function"))
+            shutdown_function = kwargs.pop("shutdown_function")
+            if callable(shutdown_function):
+                self.shutdown_functions.append(shutdown_function)
+            else:
+                raise PluginValidationError(
+                    f"Provided un-callable shutdown function {shutdown_function}"
+                )
+
+        self.startup_functions = []
+
+        for startup_function in kwargs.pop("startup_functions", []):
+            if callable(startup_function):
+                self.startup_functions.append(startup_function)
+            else:
+                raise PluginValidationError(
+                    f"Provided un-callable startup function {shutdown_function}"
+                )
+
+        if "startup_function" in kwargs:
+            startup_function = kwargs.pop("startup_function")
+            if callable(startup_function):
+                self.startup_functions.append(startup_function)
+            else:
+                raise PluginValidationError(
+                    f"Provided un-callable startup function {shutdown_function}"
+                )
 
         # Now that logging is configured we can load the real config
         self._config = load_config(**kwargs)
@@ -275,6 +325,18 @@ class Plugin(object):
 
         try:
             self._startup()
+
+            # Run provided startup functions
+            self._logger.debug("About to run annotated startup functions")
+            startup_functions = _parse_startup_functions(self._client)
+            startup_functions.extend(self.startup_functions)
+            startup_functions.extend(self._config.client_startup_functions)
+
+            if getattr(self._config, "client_startup_function"):
+                startup_functions.append(self._config.client_startup_function)
+
+            self._run_configured_functions(startup_functions)
+
             self._logger.info("Plugin %s has started", self.unique_name)
 
             try:
@@ -309,38 +371,35 @@ class Plugin(object):
 
         self._set_client(new_client)
 
-    def _run_shutdown_functions(
-        self, shutdown_functions, executed_shutdown_functions=None
-    ):
-        if executed_shutdown_functions is None:
-            executed_shutdown_functions = []
+    def _run_configured_functions(self, functions):
+        executed_functions = []
 
-        for shutdown_function in shutdown_functions:
-            if callable(shutdown_function):
-                if shutdown_function not in executed_shutdown_functions:
-                    shutdown_function()
-                    executed_shutdown_functions.append(shutdown_function)
+        for function in functions:
+            if callable(function):
+                if function not in executed_functions:
+                    function()
+                    executed_functions.append(function)
 
-            elif self._client and hasattr(self._client, shutdown_function):
-                client_function = getattr(self._client, shutdown_function)
+            elif self._client and hasattr(self._client, function):
+                client_function = getattr(self._client, function)
                 if callable(client_function):
-                    if client_function not in executed_shutdown_functions:
+                    if client_function not in executed_functions:
                         client_function()
-                        executed_shutdown_functions.append(client_function)
+                        executed_functions.append(client_function)
                 else:
                     self._logger.error(
-                        f"Provided non callable function for shutdown function: {shutdown_function}"
+                        f"Provided non callable function for function: {function}"
                     )
             elif self._client:
                 self._logger.error(
                     (
                         "Provided function not existing on client "
-                        f"for shutdown function: {shutdown_function}"
+                        f"for function: {function}"
                     )
                 )
             else:
                 self._logger.error(
-                    f"No client provided to check for shutdown function: {shutdown_function}"
+                    f"No client provided to check for function: {function}"
                 )
 
     def _set_client(self, new_client):
@@ -539,20 +598,15 @@ class Plugin(object):
         # Run shutdown functions prior to setting shutdown event to allow for
         # any functions that might generate Requests
 
-        self._logger.debug("About to run annotated shutdown functions")
-        executed_shutdown_functions = self._run_shutdown_functions(
-            _parse_shutdown_functions(self._client)
-        )
+        self._logger.debug("About to run shutdown functions")
+        shutdown_functions = _parse_shutdown_functions(self._client)
+        shutdown_functions.extend(self.shutdown_functions)
+        shutdown_functions.extend(self._config.client_shutdown_functions)
 
-        self._logger.debug("About to run plugin shutdown functions")
-        executed_shutdown_functions = self._run_shutdown_functions(
-            self._arg_shutdown_functions, executed_shutdown_functions
-        )
+        if getattr(self._config, "client_shutdown_function"):
+            shutdown_functions.append(self._config.client_shutdown_function)
 
-        self._logger.debug("About to run config shutdown functions")
-        executed_shutdown_functions = self._run_shutdown_functions(
-            self._config.shutdown_functions, executed_shutdown_functions
-        )
+        self._run_configured_functions(shutdown_functions)
 
         self._shutdown_event.set()
 

@@ -29,6 +29,7 @@ from brewtils.decorators import (
     plugin_param,
     register,
     shutdown,
+    startup,
     system,
 )
 from brewtils.errors import PluginParamError
@@ -1459,3 +1460,23 @@ class TestShutdown(object):
 
         assert not hasattr(cmd, "_shutdown")
         assert not getattr(cmd, "_shutdown", False)
+
+
+class TestStartup(object):
+    """Test shutdown decorator"""
+
+    def test_startup(self):
+        @startup
+        def cmd():
+            return True
+
+        assert hasattr(cmd, "_startup")
+        assert cmd._startup
+
+    def test_missing_startup(self):
+        @command
+        def cmd():
+            return True
+
+        assert not hasattr(cmd, "_startup")
+        assert not getattr(cmd, "_startup", False)

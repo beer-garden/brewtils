@@ -434,7 +434,7 @@ class TestShutdown(object):
         plugin._admin_processor = Mock()
 
         mock_shutdown_function = Mock()
-        plugin._arg_shutdown_functions = [mock_shutdown_function]
+        plugin.shutdown_functions = [mock_shutdown_function]
 
         plugin._shutdown()
         assert mock_shutdown_function.called is True
@@ -444,7 +444,7 @@ class TestShutdown(object):
         plugin._admin_processor = Mock()
 
         mock_shutdown_function = Mock()
-        plugin._config.shutdown_functions = [mock_shutdown_function]
+        plugin._config.client_shutdown_functions = [mock_shutdown_function]
 
         plugin._shutdown()
         assert mock_shutdown_function.called is True

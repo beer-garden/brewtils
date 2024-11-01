@@ -7,8 +7,8 @@ from functools import partial
 import marshmallow
 import simplejson
 from marshmallow import Schema, fields, post_load, pre_load
-from marshmallow.utils import UTC
 from marshmallow_polyfield import PolyField
+from pytz import UTC
 
 __all__ = [
     "SystemSchema",

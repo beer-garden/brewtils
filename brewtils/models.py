@@ -466,7 +466,7 @@ class StatusInfo(BaseModel):
 
     def set_status_heartbeat(self, status, max_history=None):
 
-        self.heartbeat = datetime.utcnow()
+        self.heartbeat = datetime.now(datetime.timezone.utc)
         self.history.append(
             StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
         )

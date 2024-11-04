@@ -32,7 +32,7 @@ setup(
     install_requires=[
         "appdirs<2",
         "lark-parser<1",
-        "marshmallow<4",
+        "marshmallow<4,>=3.3",
         "marshmallow-polyfield<6",
         "packaging",
         "pika<=1.4,>=1.0.1",

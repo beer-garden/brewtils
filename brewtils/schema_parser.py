@@ -370,9 +370,9 @@ class SchemaParser(object):
         schema = brewtils.schemas.JobExportInputSchema(**kwargs)
 
         if from_string:
-            return schema.loads(job_id_json).data
+            return schema.loads(job_id_json)
         else:
-            return schema.load(job_id_json).data
+            return schema.load(job_id_json)
 
     @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):
@@ -561,7 +561,7 @@ class SchemaParser(object):
 
         schema.context["models"] = cls._models
 
-        return schema.loads(data).data if from_string else schema.load(data).data
+        return schema.loads(data) if from_string else schema.load(data)
 
     # Serialization methods
     @classmethod
@@ -1162,7 +1162,7 @@ class SchemaParser(object):
 
             schema = getattr(brewtils.schemas, schema_name)(**kwargs)
 
-            return schema.dumps(model).data if to_string else schema.dump(model).data
+            return schema.dumps(model) if to_string else schema.dump(model)
 
         # Explicitly force to_string to False so only original call returns a string
         multiple = [

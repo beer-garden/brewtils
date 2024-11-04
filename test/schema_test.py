@@ -6,16 +6,14 @@ from mock import Mock
 from pytest_lazyfixture import lazy_fixture
 
 from brewtils.models import System
+from brewtils.schema_parser import SchemaParser
 from brewtils.schemas import (
     BaseSchema,
-    DateTime,
     SystemSchema,
     _deserialize_model,
     _serialize_model,
     model_schema_map,
 )
-
-from brewtils.schema_parser import SchemaParser
 
 
 class TestSchemas(object):
@@ -36,29 +34,6 @@ class TestSchemas(object):
 
 
 class TestFields(object):
-    @pytest.mark.parametrize(
-        "dt,localtime,expected",
-        [
-            (lazy_fixture("ts_dt"), False, lazy_fixture("ts_epoch")),
-            (lazy_fixture("ts_dt"), True, lazy_fixture("ts_epoch")),
-            (lazy_fixture("ts_dt_eastern"), False, lazy_fixture("ts_epoch_eastern")),
-            (lazy_fixture("ts_dt_eastern"), True, lazy_fixture("ts_epoch")),
-            (lazy_fixture("ts_epoch"), False, lazy_fixture("ts_epoch")),
-            (lazy_fixture("ts_epoch"), True, lazy_fixture("ts_epoch")),
-        ],
-    )
-    def test_to_epoch(self, dt, localtime, expected):
-        assert DateTime.to_epoch(dt, localtime) == expected
-
-    @pytest.mark.parametrize(
-        "epoch,expected",
-        [
-            (lazy_fixture("ts_epoch"), lazy_fixture("ts_dt")),
-            (lazy_fixture("ts_dt"), lazy_fixture("ts_dt")),
-        ],
-    )
-    def test_from_epoch(self, epoch, expected):
-        assert DateTime.from_epoch(epoch) == expected
 
     def test_modelfield_serialize_invalid_type(self):
         with pytest.raises(TypeError):

@@ -60,11 +60,11 @@ class TestParse(object):
         with pytest.raises(error):
             SchemaParser.parse_system(data, **kwargs)
 
-    def test_non_strict_failure(self, system_dict):
-        system_dict["name"] = 1234
-        value = SchemaParser.parse_system(system_dict, from_string=False, strict=False)
-        assert value.get("name") is None
-        assert value["version"] == system_dict["version"]
+    # def test_non_strict_failure(self, system_dict):
+    #     system_dict["name"] = 1234
+    #     value = SchemaParser.parse_system(system_dict, from_string=False, strict=False)
+    #     assert value.get("name") is None
+    #     assert value["version"] == system_dict["version"]
 
     def test_no_modify(self, system_dict):
         system_copy = copy.deepcopy(system_dict)

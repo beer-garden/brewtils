@@ -2,8 +2,6 @@
 
 from functools import partial
 
-import marshmallow
-import simplejson
 from marshmallow import Schema, fields, post_load, pre_load
 from marshmallow_polyfield import PolyField
 
@@ -92,18 +90,15 @@ class ModelField(PolyField):
 
 
 class BaseSchema(Schema):
-    class Meta:
-        version_nums = marshmallow.__version__.split(".")
-        if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:  # pragma: no cover
-            json_module = simplejson
-        else:
-            render_module = simplejson
-
-    def __init__(self, strict=True, **kwargs):
-        super(BaseSchema, self).__init__(strict=strict, **kwargs)
+    # class Meta:
+    #     version_nums = marshmallow.__version__.split(".")
+    #     if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:  # pragma: no cover
+    #         json_module = simplejson
+    #     else:
+    #         render_module = simplejson
 
     @post_load
-    def make_object(self, data):
+    def make_object(self, data, **_):
         try:
             model_class = self.context["models"][self.__class__.__name__]
         except KeyError:
@@ -123,8 +118,8 @@ class BaseSchema(Schema):
 class ChoicesSchema(BaseSchema):
     type = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
-    value = fields.Raw(allow_none=True, many=True)
-    strict = fields.Bool(allow_none=True, default=False)
+    value = fields.List(fields.Raw, allow_none=True)
+    strict = fields.Bool(allow_none=True, dump_default=False)
     details = fields.Dict(allow_none=True)
 
 
@@ -136,8 +131,8 @@ class ParameterSchema(BaseSchema):
     optional = fields.Bool(allow_none=True)
     default = fields.Raw(allow_none=True)
     description = fields.Str(allow_none=True)
-    choices = fields.Nested("ChoicesSchema", allow_none=True, many=False)
-    parameters = fields.Nested("self", many=True, allow_none=True)
+    choices = fields.Nested(lambda: ChoicesSchema, allow_none=True)
+    parameters = fields.List(fields.Nested(lambda: ParameterSchema), allow_none=True)
     nullable = fields.Bool(allow_none=True)
     maximum = fields.Int(allow_none=True)
     minimum = fields.Int(allow_none=True)
@@ -149,7 +144,7 @@ class ParameterSchema(BaseSchema):
 class CommandSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
-    parameters = fields.Nested("ParameterSchema", many=True)
+    parameters = fields.List(fields.Nested(lambda: ParameterSchema()), allow_none=True)
     command_type = fields.Str(allow_none=True)
     output_type = fields.Str(allow_none=True)
     schema = fields.Dict(allow_none=True)
@@ -168,7 +163,7 @@ class InstanceSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    status_info = fields.Nested(lambda: StatusInfoSchema(), allow_none=True)
     queue_type = fields.Str(allow_none=True)
     queue_info = fields.Dict(allow_none=True)
     icon_name = fields.Str(allow_none=True)
@@ -182,8 +177,8 @@ class SystemSchema(BaseSchema):
     version = fields.Str(allow_none=True)
     max_instances = fields.Integer(allow_none=True)
     icon_name = fields.Str(allow_none=True)
-    instances = fields.Nested("InstanceSchema", many=True, allow_none=True)
-    commands = fields.Nested("CommandSchema", many=True, allow_none=True)
+    instances = fields.List(fields.Nested(lambda: InstanceSchema()), allow_none=True)
+    commands = fields.List(fields.Nested(lambda: CommandSchema()), allow_none=True)
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     namespace = fields.Str(allow_none=True)
@@ -214,9 +209,7 @@ class FileSchema(BaseSchema):
     owner = fields.Raw(allow_none=True)
     job = fields.Nested("JobSchema", allow_none=True)
     request = fields.Nested("RequestSchema", allow_none=True)
-    updated_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    updated_at = fields.DateTime(allow_none=True, format="timestamp_ms")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
@@ -277,23 +270,28 @@ class RequestTemplateSchema(BaseSchema):
 class RequestSchema(RequestTemplateSchema):
     id = fields.Str(allow_none=True)
     is_event = fields.Bool(allow_none=True)
-    parent = fields.Nested("self", exclude=("children",), allow_none=True)
-    children = fields.Nested(
-        "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
+    parent = fields.Nested(
+        lambda: RequestSchema(exclude=("children",)), allow_none=True
+    )
+    children = fields.List(
+        fields.Nested(
+            lambda: RequestSchema(
+                exclude=(
+                    "parent",
+                    "children",
+                )
+            )
+        ),
+        dump_default=None,
+        allow_none=True,
     )
     output = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
     status = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
-    created_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
-    updated_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
-    status_updated_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    created_at = fields.DateTime(allow_none=True, format="timestamp_ms")
+    updated_at = fields.DateTime(allow_none=True, format="timestamp_ms")
+    status_updated_at = fields.DateTime(allow_none=True, format="timestamp_ms")
     has_parent = fields.Bool(allow_none=True)
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
@@ -301,17 +299,13 @@ class RequestSchema(RequestTemplateSchema):
 
 
 class StatusHistorySchema(BaseSchema):
-    heartbeat = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    heartbeat = fields.DateTime(allow_none=True, format="timestamp_ms")
     status = fields.Str(allow_none=True)
 
 
 class StatusInfoSchema(BaseSchema):
-    heartbeat = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
-    history = fields.Nested("StatusHistorySchema", many=True, allow_none=True)
+    heartbeat = fields.DateTime(allow_none=True, format="timestamp_ms")
+    history = fields.List(fields.Nested(lambda: StatusHistorySchema()), allow_none=True)
 
 
 class PatchSchema(BaseSchema):
@@ -320,7 +314,7 @@ class PatchSchema(BaseSchema):
     value = fields.Raw(allow_none=True)
 
     @pre_load(pass_many=True)
-    def unwrap_envelope(self, data, many):
+    def unwrap_envelope(self, data, many, **_):
         """Helper function for parsing the different patch formats.
 
         This exists because previously multiple patches serialized like::
@@ -363,9 +357,7 @@ class EventSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
-    timestamp = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    timestamp = fields.DateTime(allow_none=True, format="timestamp_ms")
 
     payload_type = fields.Str(allow_none=True)
     payload = ModelField(allow_none=True, type_field="payload_type")
@@ -387,19 +379,13 @@ class QueueSchema(BaseSchema):
 class UserTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     uuid = fields.Str(allow_none=True)
-    issued_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
-    expires_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    issued_at = fields.DateTime(allow_none=True, format="timestamp_ms")
+    expires_at = fields.DateTime(allow_none=True, format="timestamp_ms")
     username = fields.Str(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):
-    run_date = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    run_date = fields.DateTime(allow_none=True, format="timestamp_ms")
     timezone = fields.Str(allow_none=True)
 
 
@@ -409,12 +395,8 @@ class IntervalTriggerSchema(BaseSchema):
     hours = fields.Int(allow_none=True)
     minutes = fields.Int(allow_none=True)
     seconds = fields.Int(allow_none=True)
-    start_date = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
-    end_date = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    start_date = fields.DateTime(allow_none=True, format="timestamp_ms")
+    end_date = fields.DateTime(allow_none=True, format="timestamp_ms")
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
     reschedule_on_finish = fields.Bool(allow_none=True)
@@ -429,12 +411,8 @@ class CronTriggerSchema(BaseSchema):
     hour = fields.Str(allow_none=True)
     minute = fields.Str(allow_none=True)
     second = fields.Str(allow_none=True)
-    start_date = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
-    end_date = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    start_date = fields.DateTime(allow_none=True, format="timestamp_ms")
+    end_date = fields.DateTime(allow_none=True, format="timestamp_ms")
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
 
@@ -452,7 +430,7 @@ class FileTriggerSchema(BaseSchema):
 class ConnectionSchema(BaseSchema):
     api = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    status_info = fields.Nested(lambda: StatusInfoSchema(), allow_none=True)
     config = fields.Dict(allow_none=True)
 
 
@@ -460,20 +438,20 @@ class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    status_info = fields.Nested(lambda: StatusInfoSchema(), allow_none=True)
     connection_type = fields.Str(allow_none=True)
-    receiving_connections = fields.Nested(
-        "ConnectionSchema", many=True, allow_none=True
+    receiving_connections = fields.List(
+        fields.Nested(lambda: ConnectionSchema()), allow_none=True
     )
-    publishing_connections = fields.Nested(
-        "ConnectionSchema", many=True, allow_none=True
+    publishing_connections = fields.List(
+        fields.Nested(lambda: ConnectionSchema()), allow_none=True
     )
     namespaces = fields.List(fields.Str(), allow_none=True)
-    systems = fields.Nested("SystemSchema", many=True, allow_none=True)
+    systems = fields.List(fields.Nested(lambda: SystemSchema()), allow_none=True)
     has_parent = fields.Bool(allow_none=True)
     parent = fields.Str(allow_none=True)
-    children = fields.Nested(
-        "self", exclude=("parent"), many=True, default=None, allow_none=True
+    children = fields.List(
+        fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
     )
     metadata = fields.Dict(allow_none=True)
     default_user = fields.Str(allow_none=True)
@@ -493,9 +471,7 @@ class JobSchema(BaseSchema):
     request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
-    next_run_time = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    next_run_time = fields.DateTime(allow_none=True, format="timestamp_ms")
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
     canceled_count = fields.Int(allow_none=True)
@@ -608,9 +584,7 @@ class TopicSchema(BaseSchema):
 class ReplicationSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     replication_id = fields.Str(allow_none=True)
-    expires_at = fields.DateTime(
-        allow_none=True, format="timestamp", example="1500065932000"
-    )
+    expires_at = fields.DateTime(allow_none=True, format="timestamp_ms")
 
 
 class UserSchema(BaseSchema):

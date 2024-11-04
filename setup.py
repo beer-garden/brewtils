@@ -36,7 +36,6 @@ setup(
         "marshmallow-polyfield<6",
         "packaging",
         "pika<=1.4,>=1.0.1",
-        "pytz",
         "requests<3",
         "simplejson<4",
         "six<2",

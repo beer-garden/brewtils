@@ -3,8 +3,8 @@
 import copy
 from datetime import datetime
 from enum import Enum
+from zoneinfo import ZoneInfo
 
-import pytz  # noqa # not in requirements file
 import six  # noqa # not in requirements file
 
 from brewtils.errors import ModelError, _deprecate
@@ -1273,9 +1273,10 @@ class DateTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
 
-        return {"timezone": tz, "run_date": tz.localize(self.run_date)}
+        tz = ZoneInfo(self.timezone.upper())
+
+        return {"timezone": tz, "run_date": self.run_date.replace(tzinfo=tz)}
 
 
 class IntervalTrigger(BaseModel):
@@ -1332,14 +1333,16 @@ class IntervalTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
+        tz = ZoneInfo(self.timezone.upper())
 
         kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
         kwargs.update(
             {
                 "timezone": tz,
-                "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.end_date) if self.end_date else None,
+                "start_date": (
+                    self.start_date.replace(tzinfo=tz) if self.start_date else None
+                ),
+                "end_date": self.end_date.replace(tzinfo=tz) if self.end_date else None,
             }
         )
 
@@ -1408,14 +1411,16 @@ class CronTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
+        tz = ZoneInfo(self.timezone.upper())
 
         kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
         kwargs.update(
             {
                 "timezone": tz,
-                "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.end_date) if self.end_date else None,
+                "start_date": (
+                    self.start_date.replace(tzinfo=tz) if self.start_date else None
+                ),
+                "end_date": self.end_date.replace(tzinfo=tz) if self.end_date else None,
             }
         )
 

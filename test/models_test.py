@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import warnings
+from datetime import timezone
+from zoneinfo import ZoneInfo
 
 import pytest
-import pytz
+from pytest_lazyfixture import lazy_fixture
+
 from brewtils.errors import ModelError
 from brewtils.models import (
     Choices,
@@ -13,17 +16,16 @@ from brewtils.models import (
     LoggingConfig,
     Parameter,
     PatchOperation,
-    User,
     Queue,
     Request,
     RequestFile,
     RequestTemplate,
     Role,
-    Subscriber,
     StatusInfo,
+    Subscriber,
     Topic,
+    User,
 )
-from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -567,7 +569,7 @@ class TestRole(object):
 class TestDateTrigger(object):
     def test_scheduler_kwargs(self, bg_date_trigger, ts_dt_utc):
         assert bg_date_trigger.scheduler_kwargs == {
-            "timezone": pytz.utc,
+            "timezone": ZoneInfo("UTC"),
             "run_date": ts_dt_utc,
         }
 
@@ -595,7 +597,7 @@ class TestIntervalTrigger(object):
             "seconds": None,
             "start_date": None,
             "end_date": None,
-            "timezone": pytz.utc,
+            "timezone": ZoneInfo("UTC"),
             "jitter": None,
             "reschedule_on_finish": None,
         }
@@ -605,7 +607,11 @@ class TestIntervalTrigger(object):
     ):
         expected = interval_trigger_dict
         expected.update(
-            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
+            {
+                "timezone": ZoneInfo("UTC"),
+                "start_date": ts_dt_utc,
+                "end_date": ts_2_dt_utc,
+            }
         )
         assert bg_interval_trigger.scheduler_kwargs == expected
 
@@ -623,7 +629,7 @@ class TestCronTrigger(object):
             "second": None,
             "start_date": None,
             "end_date": None,
-            "timezone": pytz.utc,
+            "timezone": ZoneInfo("UTC"),
             "jitter": None,
         }
 
@@ -632,7 +638,11 @@ class TestCronTrigger(object):
     ):
         expected = cron_trigger_dict
         expected.update(
-            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
+            {
+                "timezone": ZoneInfo("UTC"),
+                "start_date": ts_dt_utc,
+                "end_date": ts_2_dt_utc,
+            }
         )
         assert bg_cron_trigger.scheduler_kwargs == expected
 

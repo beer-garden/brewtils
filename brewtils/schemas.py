@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import calendar
-import datetime
 from functools import partial
 
 import marshmallow
 import simplejson
 from marshmallow import Schema, fields, post_load, pre_load
 from marshmallow_polyfield import PolyField
-from pytz import UTC
 
 __all__ = [
     "SystemSchema",
@@ -91,45 +88,6 @@ class ModelField(PolyField):
                 _deserialize_model, type_field=type_field, allowed_types=allowed_types
             ),
             **kwargs
-        )
-
-
-class DateTime(fields.DateTime):
-    """Class that adds methods for (de)serializing DateTime fields as an epoch"""
-
-    def __init__(self, format="epoch", **kwargs):
-        self.DATEFORMAT_SERIALIZATION_FUNCS["epoch"] = self.to_epoch
-        self.DATEFORMAT_DESERIALIZATION_FUNCS["epoch"] = self.from_epoch
-        super(DateTime, self).__init__(format=format, **kwargs)
-
-    @staticmethod
-    def to_epoch(dt, localtime=False):
-        # If already in epoch form just return it
-        if isinstance(dt, int):
-            return dt
-
-        if localtime and dt.tzinfo is not None:
-            localized = dt
-        else:
-            if dt.tzinfo is None:
-                localized = UTC.localize(dt)
-            else:
-                localized = dt.astimezone(UTC)
-        return (calendar.timegm(localized.timetuple()) * 1000) + int(
-            localized.microsecond / 1000
-        )
-
-    @staticmethod
-    def from_epoch(epoch):
-        # If already in datetime form just return it
-        if isinstance(epoch, datetime.datetime):
-            return epoch
-
-        # utcfromtimestamp will correctly parse milliseconds in Python 3,
-        # but in Python 2 we need to help it
-        seconds, millis = divmod(epoch, 1000)
-        return datetime.datetime.utcfromtimestamp(seconds).replace(
-            microsecond=millis * 1000
         )
 
 
@@ -256,7 +214,9 @@ class FileSchema(BaseSchema):
     owner = fields.Raw(allow_none=True)
     job = fields.Nested("JobSchema", allow_none=True)
     request = fields.Nested("RequestSchema", allow_none=True)
-    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    updated_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
@@ -325,10 +285,14 @@ class RequestSchema(RequestTemplateSchema):
     hidden = fields.Boolean(allow_none=True)
     status = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
-    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    status_updated_at = DateTime(
-        allow_none=True, format="epoch", example="1500065932000"
+    created_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
+    updated_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
+    status_updated_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
     )
     has_parent = fields.Bool(allow_none=True)
     requester = fields.String(allow_none=True)
@@ -337,12 +301,16 @@ class RequestSchema(RequestTemplateSchema):
 
 
 class StatusHistorySchema(BaseSchema):
-    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    heartbeat = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     status = fields.Str(allow_none=True)
 
 
 class StatusInfoSchema(BaseSchema):
-    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    heartbeat = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     history = fields.Nested("StatusHistorySchema", many=True, allow_none=True)
 
 
@@ -395,7 +363,9 @@ class EventSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
-    timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    timestamp = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
 
     payload_type = fields.Str(allow_none=True)
     payload = ModelField(allow_none=True, type_field="payload_type")
@@ -417,13 +387,19 @@ class QueueSchema(BaseSchema):
 class UserTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     uuid = fields.Str(allow_none=True)
-    issued_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    issued_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
+    expires_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     username = fields.Str(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):
-    run_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    run_date = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     timezone = fields.Str(allow_none=True)
 
 
@@ -433,8 +409,12 @@ class IntervalTriggerSchema(BaseSchema):
     hours = fields.Int(allow_none=True)
     minutes = fields.Int(allow_none=True)
     seconds = fields.Int(allow_none=True)
-    start_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    end_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    start_date = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
+    end_date = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
     reschedule_on_finish = fields.Bool(allow_none=True)
@@ -449,8 +429,12 @@ class CronTriggerSchema(BaseSchema):
     hour = fields.Str(allow_none=True)
     minute = fields.Str(allow_none=True)
     second = fields.Str(allow_none=True)
-    start_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    end_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    start_date = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
+    end_date = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
 
@@ -509,7 +493,9 @@ class JobSchema(BaseSchema):
     request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
-    next_run_time = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    next_run_time = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
     canceled_count = fields.Int(allow_none=True)
@@ -622,7 +608,9 @@ class TopicSchema(BaseSchema):
 class ReplicationSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     replication_id = fields.Str(allow_none=True)
-    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    expires_at = fields.DateTime(
+        allow_none=True, format="timestamp", example="1500065932000"
+    )
 
 
 class UserSchema(BaseSchema):

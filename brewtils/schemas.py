@@ -90,12 +90,6 @@ class ModelField(PolyField):
 
 
 class BaseSchema(Schema):
-    # class Meta:
-    #     version_nums = marshmallow.__version__.split(".")
-    #     if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:  # pragma: no cover
-    #         json_module = simplejson
-    #     else:
-    #         render_module = simplejson
 
     @post_load
     def make_object(self, data, **_):

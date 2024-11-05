@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from zoneinfo import ZoneInfo
 
@@ -466,7 +466,7 @@ class StatusInfo(BaseModel):
 
     def set_status_heartbeat(self, status, max_history=None):
 
-        self.heartbeat = datetime.now(datetime.timezone.utc)
+        self.heartbeat = datetime.now(timezone.utc)
         self.history.append(
             StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
         )

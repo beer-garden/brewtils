@@ -104,7 +104,7 @@ class DateTime(fields.DateTime):
     @staticmethod
     def to_epoch(value):
         # If already in epoch form just return it
-        if isinstance(value, int):
+        if isinstance(value, int) or isinstance(value, float):
             return value
 
         return utils.timestamp_ms(value)

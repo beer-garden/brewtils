@@ -4,6 +4,7 @@ import json
 import logging
 import logging.config
 import os
+import re
 import signal
 import sys
 import threading
@@ -12,7 +13,7 @@ from pathlib import Path
 import appdirs
 from box import Box
 from datetime import datetime, timezone
-from packaging.version import Version
+from packaging.version import InvalidVersion, parse, Version
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
@@ -393,10 +394,105 @@ class Plugin(object):
             return current_timestamp + add_time
         return current_timestamp
 
+    def parse_require_version(self, require):
+        """
+        Follows npm version symbols
+        ^	accept updates to minor and patch releases only.	^0.13.0: 0.13.1, 0.14.0
+        ~	accept updates to patch releases only.	~0.13.0: 0.13.1 (not 0.14.0)
+        >	accept updates to any version greater than specified.	>0.13.0: 0.13.1, 0.14.1, 1.1.1
+        <	accept updates to any version less than specified.	<3.0.0: 2.0.0, 2.9.0
+        >=	accept any version greater than or equal to specified.	>=3.0.0: 3.0.0, 4.1.0
+        <=	accept any version less than or equal to specified.	<=3.0.0: 3.0.0, 2.9.0
+        =	accept only the exact specified version.	=3.0.0: 3.0.0, (not 3.0.1)
+        Future: regex version matching
+        """
+        name_version_list = re.findall(r"(\w+)([\^|~|>|<|=])(.*)", require)
+        if len(name_version_list) > 1:
+            raise ValueError("Failed to parse name and version")
+        elif len(name_version_list) == 1:
+            return name_version_list[0]
+        else:
+            return require, None, None
+
+    def get_system_matching_version(self, require):
+        name_version = self.parse_require_version(require)
+        require_name = name_version[0]
+        require_type = name_version[1]
+        require_version = name_version[2]
+        if require_version:
+            try:
+                parsed_version = str(parse(require_version))
+                if require_type == "=":
+                    system = self._ez_client.find_unique_system(
+                        name=require_name, version=parsed_version, local=True
+                    )
+                else:
+                    pattern = re.compile(
+                        r"^(?:([0-9]+)\.([0-9]+)\.([0-9]+)){1}(?:\.([A-Za-z0-9]+)){0,1}$"
+                    )
+                    match = re.search(pattern, parsed_version)
+                    if match:
+                        major, minor, _, _ = match.groups()
+                        if require_type == "^" and major:
+                            system = self._ez_client.find_unique_system(
+                                name=require_name,
+                                version__startswith=f"{major}.",
+                                version__gte=parsed_version,
+                                filter_latest=True,
+                                local=True,
+                            )
+                        elif require_type == "~" and major and minor:
+                            system = self._ez_client.find_unique_system(
+                                name=require_name,
+                                version__startswith=f"{major}.{minor}.",
+                                version__gte=parsed_version,
+                                filter_latest=True,
+                                local=True,
+                            )
+                        elif require_type == ">":
+                            system = self._ez_client.find_unique_system(
+                                name=require_name,
+                                version__gt=parsed_version,
+                                filter_latest=True,
+                                local=True,
+                            )
+                        elif require_type == ">=":
+                            system = self._ez_client.find_unique_system(
+                                name=require_name,
+                                version__gte=parsed_version,
+                                filter_latest=True,
+                                local=True,
+                            )
+                        elif require_type == "<":
+                            system = self._ez_client.find_unique_system(
+                                name=require_name,
+                                version__lt=parsed_version,
+                                filter_latest=True,
+                                local=True,
+                            )
+                        elif require_type == "<=":
+                            system = self._ez_client.find_unique_system(
+                                name=require_name,
+                                version__lte=parsed_version,
+                                filter_latest=True,
+                                local=True,
+                            )
+            except InvalidVersion:
+                # TODO: Regex. Switch to use version__regex when mongoengine>=0.24.0
+                system = self._ez_client.find_unique_system(
+                    name=require_name, filter_latest=True, local=True
+                )
+        else:
+            system = self._ez_client.find_unique_system(
+                name=require_name, filter_latest=True, local=True
+            )
+
+        return system
+
     def get_system_dependency(self, require, timeout=300):
         wait_time = 0.1
         while timeout > 0:
-            system = self._ez_client.find_unique_system(name=require, local=True)
+            system = self.get_system_matching_version(require)
             if (
                 system
                 and system.instances

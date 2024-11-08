@@ -15,6 +15,7 @@ from box import Box
 from datetime import datetime, timezone
 from packaging.version import InvalidVersion, parse, Version
 from requests import ConnectionError as RequestsConnectionError
+from typing import Optional
 
 import brewtils
 from brewtils.config import load_config
@@ -414,7 +415,11 @@ class Plugin(object):
         else:
             return require, None, None
 
-    def get_system_matching_version(self, require):
+    def get_system_matching_version(self, require, **kwargs) -> Optional[System]:
+        """
+        Get system matching version or None.
+        Kwargs to accept named parameters like filter_latest, filter_running, and local
+        """
         name_version = self.parse_require_version(require)
         require_name = name_version[0]
         require_type = name_version[1]
@@ -424,7 +429,7 @@ class Plugin(object):
                 parsed_version = str(parse(require_version))
                 if require_type == "=":
                     system = self._ez_client.find_unique_system(
-                        name=require_name, version=parsed_version, local=True
+                        name=require_name, version=parsed_version, **kwargs
                     )
                 else:
                     pattern = re.compile(
@@ -438,53 +443,49 @@ class Plugin(object):
                                 name=require_name,
                                 version__startswith=f"{major}.",
                                 version__gte=parsed_version,
-                                filter_latest=True,
-                                local=True,
+                                **kwargs,
                             )
                         elif require_type == "~" and major and minor:
                             system = self._ez_client.find_unique_system(
                                 name=require_name,
                                 version__startswith=f"{major}.{minor}.",
                                 version__gte=parsed_version,
-                                filter_latest=True,
-                                local=True,
+                                **kwargs,
                             )
                         elif require_type == ">":
                             system = self._ez_client.find_unique_system(
                                 name=require_name,
                                 version__gt=parsed_version,
-                                filter_latest=True,
-                                local=True,
+                                **kwargs,
                             )
                         elif require_type == ">=":
                             system = self._ez_client.find_unique_system(
                                 name=require_name,
                                 version__gte=parsed_version,
-                                filter_latest=True,
-                                local=True,
+                                **kwargs,
                             )
                         elif require_type == "<":
                             system = self._ez_client.find_unique_system(
                                 name=require_name,
                                 version__lt=parsed_version,
-                                filter_latest=True,
-                                local=True,
+                                **kwargs,
                             )
                         elif require_type == "<=":
                             system = self._ez_client.find_unique_system(
                                 name=require_name,
                                 version__lte=parsed_version,
-                                filter_latest=True,
-                                local=True,
+                                **kwargs,
                             )
             except InvalidVersion:
                 # TODO: Regex. Switch to use version__regex when mongoengine>=0.24.0
                 system = self._ez_client.find_unique_system(
-                    name=require_name, filter_latest=True, local=True
+                    name=require_name,
+                    **kwargs,
                 )
         else:
             system = self._ez_client.find_unique_system(
-                name=require_name, filter_latest=True, local=True
+                name=require_name,
+                **kwargs,
             )
 
         return system
@@ -492,12 +493,11 @@ class Plugin(object):
     def get_system_dependency(self, require, timeout=300):
         wait_time = 0.1
         while timeout > 0:
-            system = self.get_system_matching_version(require)
-            if (
-                system
-                and system.instances
-                and any("RUNNING" == instance.status for instance in system.instances)
-            ):
+            system = self.get_system_matching_version(
+                require, filter_latest=True, filter_running=True, local=True
+            )
+            if system:
+                self.logger.debug(f"Found system: {system}")
                 return system
             self.logger.error(
                 f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "

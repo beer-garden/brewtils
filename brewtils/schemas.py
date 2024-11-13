@@ -113,9 +113,9 @@ class DateTime(fields.DateTime):
     def from_epoch(value):
         # If already in datetime form just return it
         if isinstance(value, datetime.datetime):
-            return value
+            return value.replace(tzinfo=datetime.timezone.utc)
 
-        return utils.from_timestamp_ms(value)
+        return utils.from_timestamp_ms(value).replace(tzinfo=datetime.timezone.utc)
 
 
 class BaseSchema(Schema):

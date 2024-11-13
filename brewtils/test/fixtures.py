@@ -50,7 +50,7 @@ def system_id():
 @pytest.fixture
 def ts_dt():
     """Jan 1, 2016 as a naive datetime."""
-    return datetime(2016, 1, 1)
+    return datetime.fromtimestamp(ts_epoch / 1000, tz=timezone.utc)
 
 
 @pytest.fixture

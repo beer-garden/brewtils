@@ -107,13 +107,18 @@ class DateTime(fields.DateTime):
         if isinstance(value, int) or isinstance(value, float):
             return value
 
+        if value.tzinfo is not None and value.tzinfo is not datetime.timezone.utc:
+            value = value.replace(tzinfo=datetime.timezone.utc)
+
         return utils.timestamp_ms(value)
 
     @staticmethod
     def from_epoch(value):
         # If already in datetime form just return it
         if isinstance(value, datetime.datetime):
-            return value.replace(tzinfo=datetime.timezone.utc)
+            if value.tzinfo is None:
+                return value.replace(tzinfo=datetime.timezone.utc)
+            return value
 
         return utils.from_timestamp_ms(value).replace(tzinfo=datetime.timezone.utc)
 

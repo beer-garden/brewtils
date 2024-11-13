@@ -49,8 +49,8 @@ def system_id():
 
 @pytest.fixture
 def ts_dt():
-    """Jan 1, 2016 as a naive datetime."""
-    return datetime.fromtimestamp(ts_epoch / 1000, tz=timezone.utc)
+    """Jan 1, 2016 as a UTC timezone-aware datetime."""
+    return datetime(2016, 1, 1, tzinfo=timezone.utc)
 
 
 @pytest.fixture

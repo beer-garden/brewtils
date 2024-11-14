@@ -15,7 +15,6 @@ from box import Box
 from datetime import datetime, timezone
 from packaging.version import InvalidVersion, parse, Version
 from requests import ConnectionError as RequestsConnectionError
-from typing import Optional
 
 import brewtils
 from brewtils.config import load_config
@@ -407,7 +406,7 @@ class Plugin(object):
         =	accept only the exact specified version.	=3.0.0: 3.0.0, (not 3.0.1)
         Future: regex version matching
         """
-        name_version_list = re.findall(r"(\w+)([\^|~|>|<|=])(.*)", require)
+        name_version_list = re.findall(r"(\w+)([\^~]|[<>]=?|=)(.*)", require)
         if len(name_version_list) > 1:
             raise ValueError("Failed to parse name and version")
         elif len(name_version_list) == 1:
@@ -415,7 +414,7 @@ class Plugin(object):
         else:
             return require, None, None
 
-    def get_system_matching_version(self, require, **kwargs) -> Optional[System]:
+    def get_system_matching_version(self, require, **kwargs):
         """
         Get system matching version or None.
         Kwargs to accept named parameters like filter_latest, filter_running, and local

@@ -502,25 +502,24 @@ class Plugin(object):
         req = Requirement(require)
         require_name = req.name
         require_version = req.specifier
+        systems = self._ez_client.find_systems(name=require_name, **kwargs)
         if require_version:
-            systems = self._ez_client.find_systems(name=require_name, **kwargs)
             valid_versions = list(
                 require_version.filter(
                     [str(Version(system.version)) for system in systems]
                 )
             )
-            if valid_versions:
-                system_candidates = [
-                    system for system in systems if system.version in valid_versions
-                ]
-                system = system_candidates[0]
-                for system_candidate in system_candidates:
-                    if Version(system_candidate.version) > Version(system.version):
-                        system = system_candidate
         else:
-            system = self._ez_client.find_unique_system(
-                name=require_name, filter_latest=True, **kwargs
-            )
+            valid_versions = [str(Version(system.version)) for system in systems]
+
+        if valid_versions:
+            system_candidates = [
+                system for system in systems if system.version in valid_versions
+            ]
+            system = system_candidates[0]
+            for system_candidate in system_candidates:
+                if Version(system_candidate.version) > Version(system.version):
+                    system = system_candidate
 
         return system
 

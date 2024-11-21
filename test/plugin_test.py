@@ -941,93 +941,178 @@ class TestDeprecations(object):
             assert "'Plugin'" in str(warning)
             assert "4.0" in str(warning)
 
+
 class TestDependencies(object):
     # 1.0.0 bg_system
     # 2.0.0 bg_system_2
     # 2.1.0 bg_system_3
     # 2.1.1 bg_system_4
     # 3.0.0 bg_system_5
-    def test_no_specifier(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_no_specifier(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_unique_system.return_value=bg_system_5
+        p._ez_client.find_unique_system.return_value = bg_system_5
         # Expect 3.0.0 as latest valid version
         # Expect 3.0.0
         assert p.get_system_dependency("system").version == bg_system_5.version
 
-    def test_equals(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_equals(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 2.1.1 valid
         # Expect 2.1.1
         assert p.get_system_dependency("system==2.1.0").version == bg_system_3.version
-    
-    def test_compatible_release(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+
+    def test_compatible_release(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 2.1.0, 2.1.1 valid
         # Expect 2.1.1
         assert p.get_system_dependency("system~=2.1.0").version == bg_system_4.version
 
-    def test_wildcard_minor(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_wildcard_minor(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0, 2.0.0, 2.1.1, 3.0.0 valid
         # Expect 3.0.0
         assert p.get_system_dependency("system==2.*").version == bg_system_4.version
 
-    def test_wildcard_patch(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_wildcard_patch(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0, 2.0.0, 2.1.1, 3.0.0 valid
         # Expect 3.0.0
         assert p.get_system_dependency("system==2.1.*").version == bg_system_4.version
 
-    def test_excludes(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_excludes(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0, 2.0.0, 2.1.1, 3.0.0 valid
         # Expect 3.0.0
         assert p.get_system_dependency("system!=2.1.0").version == bg_system_5.version
 
     def test_gt(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 2.1.1, 3.0.0 valid
         # Expect 3.0.0
         assert p.get_system_dependency("system>2.1.0").version == bg_system_5.version
 
     def test_gte(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 2.1.0, 2.1.1, 3.0.0 valid
         # Expect 3.0.0
         assert p.get_system_dependency("system>=2.1.0").version == bg_system_5.version
 
     def test_lt(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0, 2.0.0 valid
         # Expect 2.0.0
         assert p.get_system_dependency("system<2.1.0").version == bg_system_2.version
 
     def test_lte(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0, 2.0.0, 2.1.0 valid
         # Expect 2.1.0
         assert p.get_system_dependency("system<=2.1.0").version == bg_system_3.version
 
-    def test_range(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_range(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0 valid
         # Expect 1.0.0
         assert p.get_system_dependency("system<2.0.0,>=1").version == bg_system.version
 
-    
-    def test_combo(plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5):
+    def test_combo(
+        plugin, bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5
+    ):
         p = Plugin(bg_host="localhost", system=bg_system)
-        p._ez_client.find_systems.return_value=[bg_system, bg_system_2, bg_system_3, bg_system_4, bg_system_5]
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+        ]
         # Expect 1.0.0 valid
         # Expect 1.0.0
-        assert p.get_system_dependency("system==2.*,<2.1.1,!=2.1.0").version == bg_system_2.version
+        assert (
+            p.get_system_dependency("system==2.*,<2.1.1,!=2.1.0").version
+            == bg_system_2.version
+        )

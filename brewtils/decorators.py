@@ -448,6 +448,45 @@ def parameters(*args, **kwargs):
     return _wrapped
 
 
+def shutdown(_wrapped=None):
+    """Decorator for specifying a function to run before a plugin is shutdown.
+
+    Functions called should short actions. Locally hosted plugin threads will be
+    pruned if not stopped within the plugin.timeout.shutdown time window
+
+    for example::
+
+        @shutdown
+        def pre_shutdown(self):
+            # Run pre-shutdown processing
+            return
+
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+    """
+    _wrapped._shutdown = True
+    return _wrapped
+
+
+def startup(_wrapped=None):
+    """Decorator for specifying a function to run before a plugin is running.
+
+    for example::
+
+        @startup
+        def pre_running(self):
+            # Run pre-running processing
+            return
+
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+    """
+    _wrapped._startup = True
+    return _wrapped
+
+
 def subscribe(_wrapped=None, topic: str = None, topics=[]):
     """Decorator for specifiying topic to listen to.
 
@@ -488,6 +527,42 @@ def subscribe(_wrapped=None, topic: str = None, topics=[]):
         _wrapped.subscribe_topics = subscribe_topics
 
     return _wrapped
+
+
+def _parse_shutdown_functions(client):
+    # type: (object) -> List[Callable]
+    """Get a list of callable fields labeled with the shutdown annotation
+
+    This will iterate over everything returned from dir, looking for metadata added
+    by the shutdown decorator.
+    """
+
+    shutdown_functions = []
+
+    for attr in dir(client):
+        method = getattr(client, attr)
+        if callable(method) and getattr(method, "_shutdown", False):
+            shutdown_functions.append(method)
+
+    return shutdown_functions
+
+
+def _parse_startup_functions(client):
+    # type: (object) -> List[Callable]
+    """Get a list of callable fields labeled with the startup annotation
+
+    This will iterate over everything returned from dir, looking for metadata added
+    by the startup decorator.
+    """
+
+    startup_functions = []
+
+    for attr in dir(client):
+        method = getattr(client, attr)
+        if callable(method) and getattr(method, "_startup", False):
+            startup_functions.append(method)
+
+    return startup_functions
 
 
 def _parse_client(client):

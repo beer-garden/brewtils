@@ -28,6 +28,8 @@ from brewtils.decorators import (
     parameters,
     plugin_param,
     register,
+    shutdown,
+    startup,
     system,
 )
 from brewtils.errors import PluginParamError
@@ -739,7 +741,6 @@ class TestParameter(object):
         assert cmd3.parameters[0].type == "String"
 
     def test_literal_mapping(self, basic_param):
-
         del basic_param["type"]
 
         @parameter(**basic_param, type=str)
@@ -1439,3 +1440,43 @@ class TestDeprecations(object):
                 _initialize_parameter(cmd.parameters[0]),
                 _initialize_parameter(**parameter_dict),
             )
+
+
+class TestShutdown(object):
+    """Test shutdown decorator"""
+
+    def test_shutdown(self):
+        @shutdown
+        def cmd():
+            return True
+
+        assert hasattr(cmd, "_shutdown")
+        assert cmd._shutdown
+
+    def test_missing_shutdown(self):
+        @command
+        def cmd():
+            return True
+
+        assert not hasattr(cmd, "_shutdown")
+        assert not getattr(cmd, "_shutdown", False)
+
+
+class TestStartup(object):
+    """Test shutdown decorator"""
+
+    def test_startup(self):
+        @startup
+        def cmd():
+            return True
+
+        assert hasattr(cmd, "_startup")
+        assert cmd._startup
+
+    def test_missing_startup(self):
+        @command
+        def cmd():
+            return True
+
+        assert not hasattr(cmd, "_startup")
+        assert not getattr(cmd, "_startup", False)

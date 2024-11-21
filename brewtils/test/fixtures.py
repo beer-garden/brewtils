@@ -293,6 +293,33 @@ def bg_system_2(system_dict, bg_instance, bg_command, bg_command_2):
     dict_copy["commands"] = [bg_command, bg_command_2]
     return System(**dict_copy)
 
+@pytest.fixture
+def bg_system_3(system_dict, bg_instance, bg_command, bg_command_2):
+    """A system with a different version."""
+    dict_copy = copy.deepcopy(system_dict)
+    dict_copy["version"] = "2.1.0"
+    dict_copy["instances"] = [bg_instance]
+    dict_copy["commands"] = [bg_command, bg_command_2]
+    return System(**dict_copy)
+
+@pytest.fixture
+def bg_system_4(system_dict, bg_instance, bg_command, bg_command_2):
+    """A system with a different version."""
+    dict_copy = copy.deepcopy(system_dict)
+    dict_copy["version"] = "2.1.1"
+    dict_copy["instances"] = [bg_instance]
+    dict_copy["commands"] = [bg_command, bg_command_2]
+    return System(**dict_copy)
+
+@pytest.fixture
+def bg_system_5(system_dict, bg_instance, bg_command, bg_command_2):
+    """A system with a different version."""
+    dict_copy = copy.deepcopy(system_dict)
+    dict_copy["version"] = "3.0.0"
+    dict_copy["instances"] = [bg_instance]
+    dict_copy["commands"] = [bg_command, bg_command_2]
+    return System(**dict_copy)
+
 
 @pytest.fixture
 def child_request_dict(ts_epoch):

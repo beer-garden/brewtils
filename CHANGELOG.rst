@@ -5,7 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
-- Updated plugin class to accept version contraints for required dependencies. Contraints follow npm semantic versioning syntax.
+- Updated plugin class to accept version contraints for required dependencies. Contraints follow python packaging version specifiers.
 
 3.28.0
 ------

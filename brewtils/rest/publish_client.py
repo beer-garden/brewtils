@@ -90,7 +90,6 @@ class PublishClient(object):
         """
 
         if _topic is None:
-
             if brewtils.plugin._system.prefix_topic:
                 _topic = brewtils.plugin._system.prefix_topic
             elif (

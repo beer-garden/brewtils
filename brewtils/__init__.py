@@ -2,13 +2,21 @@
 from brewtils.__version__ import __version__
 from brewtils.auto_decorator import AutoDecorator
 from brewtils.config import get_argument_parser, get_connection_info, load_config
-from brewtils.decorators import client, command, parameter, subscribe, system
+from brewtils.decorators import (
+    client,
+    command,
+    parameter,
+    shutdown,
+    startup,
+    subscribe,
+    system,
+)
 from brewtils.log import configure_logging
-from brewtils.plugin import (
-    get_current_request_read_only,
+from brewtils.plugin import (  # noqa F401
     Plugin,
     RemotePlugin,
-)  # noqa F401
+    get_current_request_read_only,
+)
 from brewtils.rest import normalize_url_prefix
 from brewtils.rest.easy_client import EasyClient, get_easy_client
 from brewtils.rest.publish_client import PublishClient
@@ -19,6 +27,8 @@ __all__ = [
     "client",
     "command",
     "parameter",
+    "shutdown",
+    "startup",
     "system",
     "subscribe",
     "Plugin",

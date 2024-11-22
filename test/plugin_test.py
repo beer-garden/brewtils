@@ -985,6 +985,8 @@ class TestDependencies(object):
             ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
             ("1.0", ["1.0", "0.2.1"]),
             ("1.0.0", ["1.0.0rc1", "1.0.0"]),
+            ("3.0.0.dev0", ["3.0.0.dev0", "3.0.0.dev"]),
+            ("3.0.0.dev", ["3.0.0.dev", "2.0.0"]),
         ],
     )
     def test_determine_latest(client, bg_system, versions, latest):

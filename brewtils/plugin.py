@@ -514,7 +514,9 @@ class Plugin(object):
 
         if valid_versions:
             system_candidates = [
-                system for system in systems if system.version in valid_versions
+                system
+                for system in systems
+                if str(Version(system.version)) in valid_versions
             ]
             system = system_candidates[0]
             for system_candidate in system_candidates:
@@ -530,9 +532,9 @@ class Plugin(object):
                 require, filter_running=True, local=True
             )
             if system:
-                self.logger.debug(f"Found system: {system}")
+                self._logger.debug(f"Found system: {system}")
                 return system
-            self.logger.error(
+            self._logger.error(
                 f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
                 f"dependency for {require}"
             )
@@ -547,7 +549,7 @@ class Plugin(object):
     def await_dependencies(self, requires, config):
         for req in requires:
             system = self.get_system_dependency(req, config.requires_timeout)
-            self.logger.debug(
+            self._logger.debug(
                 f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
             )
 

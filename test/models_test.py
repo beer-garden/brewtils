@@ -657,8 +657,8 @@ class TestCronTrigger(object):
         ),
         (
             lazy_fixture("bg_date_trigger"),
-            "<DateTrigger: run_date=2016-01-01 00:00:00>",
-            "<DateTrigger: run_date=2016-01-01 00:00:00>",
+            "<DateTrigger: run_date=2016-01-01 00:00:00+00:00>",
+            "<DateTrigger: run_date=2016-01-01 00:00:00+00:00>",
         ),
         (
             lazy_fixture("bg_file_trigger"),

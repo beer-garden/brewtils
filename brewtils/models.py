@@ -1257,7 +1257,7 @@ class Job(BaseModel):
 class DateTrigger(BaseModel):
     schema = "DateTriggerSchema"
 
-    def __init__(self, run_date=None, timezone=None):
+    def __init__(self, run_date=None, timezone="UTC"):
         self.run_date = run_date
         self.timezone = timezone
 
@@ -1291,7 +1291,7 @@ class IntervalTrigger(BaseModel):
         seconds=None,
         start_date=None,
         end_date=None,
-        timezone=None,
+        timezone="UTC",
         jitter=None,
         reschedule_on_finish=None,
     ):
@@ -1364,7 +1364,7 @@ class CronTrigger(BaseModel):
         second=None,
         start_date=None,
         end_date=None,
-        timezone=None,
+        timezone="UTC",
         jitter=None,
     ):
         self.year = year

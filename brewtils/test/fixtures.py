@@ -78,12 +78,6 @@ def ts_dt_eastern():
 
 
 @pytest.fixture
-def ts_2_dt(ts_2_epoch):
-    """Feb 2, 2017 as a naive datetime."""
-    return datetime(2017, 2, 2)
-
-
-@pytest.fixture
 def ts_2_epoch():
     """Feb 2, 2017 UTC as epoch milliseconds."""
     return 1485993600000
@@ -814,11 +808,11 @@ def interval_trigger_dict(ts_epoch, ts_2_epoch):
 
 
 @pytest.fixture
-def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt):
+def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt_utc):
     """An interval trigger as a model."""
     dict_copy = copy.deepcopy(interval_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_2_dt
+    dict_copy["end_date"] = ts_2_dt_utc
     return IntervalTrigger(**dict_copy)
 
 
@@ -848,11 +842,11 @@ def cron_trigger_dict(ts_epoch, ts_2_epoch):
 
 
 @pytest.fixture
-def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt):
+def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt_utc):
     """A cron trigger as a model."""
     dict_copy = copy.deepcopy(cron_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_2_dt
+    dict_copy["end_date"] = ts_2_dt_utc
     return CronTrigger(**dict_copy)
 
 

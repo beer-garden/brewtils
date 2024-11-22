@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import copy
 import logging
 import logging.config
 import os
 import warnings
+from packaging.requirements import InvalidRequirement
+from packaging.version import InvalidVersion
 
 import pytest
 from mock import ANY, MagicMock, Mock
@@ -369,6 +372,7 @@ class TestStartup(object):
             return_value=(admin_processor, request_processor)
         )
         plugin._ez_client.find_unique_system = Mock(return_value=bg_system)
+        plugin._ez_client.find_systems = Mock(return_value=[bg_system])
 
         plugin._startup()
         assert admin_processor.startup.called is True
@@ -390,6 +394,7 @@ class TestStartup(object):
             return_value=(admin_processor, request_processor)
         )
         plugin._ez_client.find_unique_system = Mock(return_value=bg_system)
+        plugin._ez_client.find_systems = Mock(return_value=[bg_system])
 
         plugin._startup()
         assert admin_processor.startup.called is True
@@ -960,3 +965,147 @@ class TestDeprecations(object):
             assert "'RemotePlugin'" in str(warning)
             assert "'Plugin'" in str(warning)
             assert "4.0" in str(warning)
+
+
+class TestDependencies(object):
+    # 1.0.0 bg_system
+    # 2.0.0 bg_system_2
+    # 2.1.0 bg_system_3
+    # 2.1.1 bg_system_4
+    # 3.0.0 bg_system_5
+    # 3.0.0.dev0 bg_system_6
+    @pytest.mark.parametrize(
+        "latest,versions",
+        [
+            ("1.0.0", ["1.0.0"]),
+            ("2.0.0", ["1.0.0", "2.0.0"]),
+            ("1.2.0", ["1.0.0", "1.2.0"]),
+            ("1.0.0", ["1.0.0", "0.2.1rc1"]),
+            ("1.0.0rc1", ["1.0.0rc1", "0.2.1"]),
+            ("1.0.0rc1", ["1.0.0rc1", "0.2.1rc1"]),
+            ("1.0", ["1.0", "0.2.1"]),
+            ("1.0.0", ["1.0.0rc1", "1.0.0"]),
+            ("3.0.0.dev0", ["3.0.0.dev0", "3.0.0.dev"]),
+            ("3.0.0.dev", ["3.0.0.dev", "2.0.0"]),
+        ],
+    )
+    def test_determine_latest(client, bg_system, versions, latest):
+        p = Plugin(bg_host="localhost", system=bg_system)
+        system_versions = []
+        for version in versions:
+            s = copy.deepcopy(bg_system)
+            s.version = version
+            system_versions.append(s)
+        p._ez_client.find_systems.return_value = system_versions
+        assert p.get_system_dependency("system").version == latest
+
+    @pytest.mark.parametrize(
+        "latest,versions",
+        [
+            ("b", ["a", "b"]),
+            ("1.0.0", ["a", "b", "1.0.0"]),
+        ],
+    )
+    def test_determine_latest_failures(client, bg_system, versions, latest):
+        p = Plugin(bg_host="localhost", system=bg_system)
+        system_versions = []
+        for version in versions:
+            s = copy.deepcopy(bg_system)
+            s.version = version
+            system_versions.append(s)
+        p._ez_client.find_systems.return_value = system_versions
+        with pytest.raises(InvalidVersion):
+            assert p.get_system_dependency("system").version == latest
+
+    @pytest.mark.parametrize(
+        "version_spec,latest",
+        [
+            ("system", "3.0.0"),  # test no specifier ignores pre-release
+            ("system==3.0.0.dev", "3.0.0.dev0"),  # test version parsing
+            ("system==2.1.0", "2.1.0"),  # test equals
+            ("system==3", "3.0.0"),  # test equals no dev
+            ("system~=2.1.0", "2.1.1"),  # test compatible release
+            ("system==2.*", "2.1.1"),  # test minor wildcard
+            ("system==2.1.*", "2.1.1"),  # test patch wildcard
+            ("system!=2.1.0", "3.0.0"),  # test excludes
+            ("system>2.1.0", "3.0.0"),  # test greater than
+            ("system>=2.1.0", "3.0.0"),  # test greater than or equal
+            ("system<2.1.0", "2.0.0"),  # test less than
+            ("system<=2.1.0", "2.1.0"),  # test less than or equal
+            ("system<2.0.0,>=1", "1.0.0"),  # test range
+            ("system==2.*,<2.1.1,!=2.1.0", "2.0.0"),  # test combination
+        ],
+    )
+    def test_version_specifier(
+        plugin,
+        bg_system,
+        bg_system_2,
+        bg_system_3,
+        bg_system_4,
+        bg_system_5,
+        bg_system_6,
+        version_spec,
+        latest,
+    ):
+        p = Plugin(bg_host="localhost", system=bg_system)
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+            bg_system_6,
+        ]
+        assert p.get_system_dependency(version_spec).version == latest
+
+    def test_no_match(
+        plugin,
+        bg_system,
+        bg_system_2,
+        bg_system_3,
+        bg_system_4,
+        bg_system_5,
+        bg_system_6,
+    ):
+        p = Plugin(bg_host="localhost", system=bg_system)
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+            bg_system_6,
+        ]
+        p._wait = Mock(return_value=None)
+        with pytest.raises(PluginValidationError):
+            assert p.get_system_dependency("system==3.0.1.dev0").version
+
+    @pytest.mark.parametrize(
+        "version_spec",
+        [
+            "system==*",
+            "system==a",
+            "system$$3.0.0",
+        ],
+    )
+    def test_invalid_requirement(
+        plugin,
+        bg_system,
+        bg_system_2,
+        bg_system_3,
+        bg_system_4,
+        bg_system_5,
+        bg_system_6,
+        version_spec,
+    ):
+        p = Plugin(bg_host="localhost", system=bg_system)
+        p._ez_client.find_systems.return_value = [
+            bg_system,
+            bg_system_2,
+            bg_system_3,
+            bg_system_4,
+            bg_system_5,
+            bg_system_6,
+        ]
+        with pytest.raises(InvalidRequirement):
+            p.get_system_dependency(version_spec)

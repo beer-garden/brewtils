@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.29.0
 ------
-TBD
+11/25/24
 
 - Updated plugin class to accept version contraints for required dependencies. Contraints follow python packaging version specifiers.
 - Added new annotation/configuration support for shutdown functions. These functions will be executed at the start

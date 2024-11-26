@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Dropping Official Python 2.7 Support
+
 3.29.0
 ------
 11/25/24

@@ -118,12 +118,8 @@ docker-build-docs: docs
 docker-build:
 	docker build -t $(DOCKER_NAME):python3-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python3/Dockerfile .
 	docker build -t $(DOCKER_NAME):python3-onbuild-$(VERSION)  --build-arg VERSION=$(VERSION) -f docker/python3/onbuild/Dockerfile .
-	docker build -t $(DOCKER_NAME):python2-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/Dockerfile .
-	docker build -t $(DOCKER_NAME):python2-onbuild-$(VERSION) --build-arg VERSION=$(VERSION) -f docker/python2/onbuild/Dockerfile .
 	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):latest
 	docker tag $(DOCKER_NAME):python3-$(VERSION) $(DOCKER_NAME):python3
-	docker tag $(DOCKER_NAME):python2-$(VERSION) $(DOCKER_NAME):python2
-
 
 # Documentation
 docs-deps: deps ## install dependencies for documentation
@@ -161,11 +157,8 @@ publish-package: package ## upload a package
 publish-docker: docker-build ## push the docker images
 	docker push $(DOCKER_NAME):python3-$(VERSION)
 	docker push $(DOCKER_NAME):python3-onbuild-$(VERSION)
-	docker push $(DOCKER_NAME):python2-$(VERSION)
-	docker push $(DOCKER_NAME):python2-onbuild-$(VERSION)
 	docker push $(DOCKER_NAME):latest
 	docker push $(DOCKER_NAME):python3
-	docker push $(DOCKER_NAME):python2
 
 publish-docker-docs: docker-build-docs ## push the docker images
 	docker push $(DOCKER_NAME):docs-$(VERSION)

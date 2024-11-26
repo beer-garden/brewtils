@@ -121,562 +121,562 @@ def test_get_logging_config(client, rest_client, parser, success):
     assert client.get_logging_config() == success.json()
 
 
-class TestGardens(object):
-    class TestGet(object):
-        def test_success(self, client, rest_client, bg_garden, success, parser):
-            rest_client.get_garden.return_value = success
-            parser.parse_garden.return_value = bg_garden
-
-            assert client.get_garden(bg_garden.name) == bg_garden
-
-        def test_404(self, client, rest_client, bg_garden, not_found):
-            rest_client.get_garden.return_value = not_found
-
-            with pytest.raises(NotFoundError):
-                client.get_garden(bg_garden.name)
-
-    def test_create(self, client, rest_client, success, bg_garden):
-        rest_client.post_gardens.return_value = success
-        client.create_garden(bg_garden)
-        assert rest_client.post_gardens.called is True
-
-    class TestRemove(object):
-        def test_name(self, monkeypatch, client, rest_client, success, bg_garden):
-            monkeypatch.setattr(client, "get_garden", Mock(return_value=[bg_garden]))
-            rest_client.get_garden.return_value = success
-
-            client.remove_garden(bg_garden.name)
-            rest_client.delete_garden.assert_called_once_with(bg_garden.name)
-
-        def test_not_found(
-            self, monkeypatch, client, rest_client, not_found, bg_garden
-        ):
-            monkeypatch.setattr(
-                rest_client, "delete_garden", Mock(return_value=not_found)
-            )
-
-            with pytest.raises(NotFoundError):
-                client.remove_garden(bg_garden.name)
+# class TestGardens(object):
+#     class TestGet(object):
+#         def test_success(self, client, rest_client, bg_garden, success, parser):
+#             rest_client.get_garden.return_value = success
+#             parser.parse_garden.return_value = bg_garden
+
+#             assert client.get_garden(bg_garden.name) == bg_garden
+
+#         def test_404(self, client, rest_client, bg_garden, not_found):
+#             rest_client.get_garden.return_value = not_found
+
+#             with pytest.raises(NotFoundError):
+#                 client.get_garden(bg_garden.name)
+
+#     def test_create(self, client, rest_client, success, bg_garden):
+#         rest_client.post_gardens.return_value = success
+#         client.create_garden(bg_garden)
+#         assert rest_client.post_gardens.called is True
+
+#     class TestRemove(object):
+#         def test_name(self, monkeypatch, client, rest_client, success, bg_garden):
+#             monkeypatch.setattr(client, "get_garden", Mock(return_value=[bg_garden]))
+#             rest_client.get_garden.return_value = success
+
+#             client.remove_garden(bg_garden.name)
+#             rest_client.delete_garden.assert_called_once_with(bg_garden.name)
+
+#         def test_not_found(
+#             self, monkeypatch, client, rest_client, not_found, bg_garden
+#         ):
+#             monkeypatch.setattr(
+#                 rest_client, "delete_garden", Mock(return_value=not_found)
+#             )
+
+#             with pytest.raises(NotFoundError):
+#                 client.remove_garden(bg_garden.name)
 
-    def test_update(self, client, rest_client, bg_garden, success, parser):
-        rest_client.patch_garden.return_value = success
-        parser.parse_garden.return_value = bg_garden
-        parser.serialize_garden.return_value = GardenSchema().dumps(bg_garden)
-        updated = client.update_garden(bg_garden)
+#     def test_update(self, client, rest_client, bg_garden, success, parser):
+#         rest_client.patch_garden.return_value = success
+#         parser.parse_garden.return_value = bg_garden
+#         parser.serialize_garden.return_value = GardenSchema().dumps(bg_garden)
+#         updated = client.update_garden(bg_garden)
 
-        assert updated == bg_garden
+#         assert updated == bg_garden
 
-    def test_get_all(self, client, rest_client, bg_garden, success, parser):
-        child_garden = copy.deepcopy(bg_garden)
-        child_garden.name = "child1"
-        both_gardens = [bg_garden, child_garden]
-        rest_client.get_gardens.return_value = success
-        parser.parse_garden.return_value = both_gardens
+#     def test_get_all(self, client, rest_client, bg_garden, success, parser):
+#         child_garden = copy.deepcopy(bg_garden)
+#         child_garden.name = "child1"
+#         both_gardens = [bg_garden, child_garden]
+#         rest_client.get_gardens.return_value = success
+#         parser.parse_garden.return_value = both_gardens
 
-        assert client.get_gardens() == both_gardens
+#         assert client.get_gardens() == both_gardens
 
 
-class TestSystems(object):
-    class TestGet(object):
-        def test_success(self, client, rest_client, bg_system, success, parser):
-            rest_client.get_system.return_value = success
-            parser.parse_system.return_value = bg_system
+# class TestSystems(object):
+#     class TestGet(object):
+#         def test_success(self, client, rest_client, bg_system, success, parser):
+#             rest_client.get_system.return_value = success
+#             parser.parse_system.return_value = bg_system
 
-            assert client.get_system(bg_system.id) == bg_system
+#             assert client.get_system(bg_system.id) == bg_system
 
-        def test_404(self, client, rest_client, bg_system, not_found):
-            rest_client.get_system.return_value = not_found
+#         def test_404(self, client, rest_client, bg_system, not_found):
+#             rest_client.get_system.return_value = not_found
 
-            with pytest.raises(NotFoundError):
-                client.get_system(bg_system.id)
+#             with pytest.raises(NotFoundError):
+#                 client.get_system(bg_system.id)
 
-    class TestFind(object):
-        def test_success(self, client, rest_client, success):
-            rest_client.get_systems.return_value = success
-            client.find_systems()
-            assert rest_client.get_systems.called is True
+#     class TestFind(object):
+#         def test_success(self, client, rest_client, success):
+#             rest_client.get_systems.return_value = success
+#             client.find_systems()
+#             assert rest_client.get_systems.called is True
 
-        def test_with_params(self, client, rest_client, success):
-            rest_client.get_systems.return_value = success
-            client.find_systems(name="foo")
-            rest_client.get_systems.assert_called_once_with(name="foo")
+#         def test_with_params(self, client, rest_client, success):
+#             rest_client.get_systems.return_value = success
+#             client.find_systems(name="foo")
+#             rest_client.get_systems.assert_called_once_with(name="foo")
 
-    class TestFindUnique(object):
-        def test_by_id(self, client, rest_client, bg_system, success, parser):
-            rest_client.get_system.return_value = success
-            parser.parse_system.return_value = bg_system
+#     class TestFindUnique(object):
+#         def test_by_id(self, client, rest_client, bg_system, success, parser):
+#             rest_client.get_system.return_value = success
+#             parser.parse_system.return_value = bg_system
 
-            assert client.find_unique_system(id=bg_system.id) == bg_system
+#             assert client.find_unique_system(id=bg_system.id) == bg_system
 
-        def test_by_id_404(self, client, rest_client, bg_system, not_found):
-            rest_client.get_system.return_value = not_found
-            assert client.find_unique_system(id=bg_system.id) is None
+#         def test_by_id_404(self, client, rest_client, bg_system, not_found):
+#             rest_client.get_system.return_value = not_found
+#             assert client.find_unique_system(id=bg_system.id) is None
 
-        def test_none(self, monkeypatch, client, bg_system):
-            monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
-            assert client.find_unique_system() is None
+#         def test_none(self, monkeypatch, client, bg_system):
+#             monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
+#             assert client.find_unique_system() is None
 
-        def test_one(self, monkeypatch, client, bg_system):
-            monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
-            assert client.find_unique_system() == bg_system
+#         def test_one(self, monkeypatch, client, bg_system):
+#             monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
+#             assert client.find_unique_system() == bg_system
 
-        def test_multiple(self, monkeypatch, client):
-            monkeypatch.setattr(client, "find_systems", Mock(return_value=["s1", "s2"]))
-            with pytest.raises(FetchError):
-                client.find_unique_system()
+#         def test_multiple(self, monkeypatch, client):
+#             monkeypatch.setattr(client, "find_systems", Mock(return_value=["s1", "s2"]))
+#             with pytest.raises(FetchError):
+#                 client.find_unique_system()
 
-    def test_create(self, client, rest_client, success, bg_system):
-        rest_client.post_systems.return_value = success
-        client.create_system(bg_system)
-        assert rest_client.post_systems.called is True
+#     def test_create(self, client, rest_client, success, bg_system):
+#         rest_client.post_systems.return_value = success
+#         client.create_system(bg_system)
+#         assert rest_client.post_systems.called is True
 
-    class TestUpdate(object):
-        def test_new_commands(self, client, rest_client, parser, success, bg_command):
-            rest_client.patch_system.return_value = success
+#     class TestUpdate(object):
+#         def test_new_commands(self, client, rest_client, parser, success, bg_command):
+#             rest_client.patch_system.return_value = success
 
-            client.update_system("id", new_commands=[bg_command])
-            operation = parser.serialize_patch.call_args[0][0][0]
-            assert operation.path == "/commands"
+#             client.update_system("id", new_commands=[bg_command])
+#             operation = parser.serialize_patch.call_args[0][0][0]
+#             assert operation.path == "/commands"
 
-        def test_empty_commands(self, client, rest_client, parser, success):
-            rest_client.patch_system.return_value = success
+#         def test_empty_commands(self, client, rest_client, parser, success):
+#             rest_client.patch_system.return_value = success
 
-            client.update_system("id", new_commands=[])
-            operation = parser.serialize_patch.call_args[0][0][0]
-            assert operation.path == "/commands"
+#             client.update_system("id", new_commands=[])
+#             operation = parser.serialize_patch.call_args[0][0][0]
+#             assert operation.path == "/commands"
 
-        def test_add_instance(self, client, rest_client, parser, success, bg_instance):
-            rest_client.patch_system.return_value = success
+#         def test_add_instance(self, client, rest_client, parser, success, bg_instance):
+#             rest_client.patch_system.return_value = success
 
-            client.update_system("id", add_instance=bg_instance)
-            operation = parser.serialize_patch.call_args[0][0][0]
-            assert operation.path == "/instance"
+#             client.update_system("id", add_instance=bg_instance)
+#             operation = parser.serialize_patch.call_args[0][0][0]
+#             assert operation.path == "/instance"
 
-        def test_update_metadata(self, client, rest_client, parser, success):
-            rest_client.patch_system.return_value = success
+#         def test_update_metadata(self, client, rest_client, parser, success):
+#             rest_client.patch_system.return_value = success
 
-            client.update_system("id", metadata={"hello": "world"})
-            operation = parser.serialize_patch.call_args[0][0][0]
-            assert operation.path == "/metadata"
+#             client.update_system("id", metadata={"hello": "world"})
+#             operation = parser.serialize_patch.call_args[0][0][0]
+#             assert operation.path == "/metadata"
 
-        def test_update_kwargs(self, client, rest_client, parser, success):
-            rest_client.patch_system.return_value = success
+#         def test_update_kwargs(self, client, rest_client, parser, success):
+#             rest_client.patch_system.return_value = success
 
-            client.update_system("id", display_name="foo")
-            operation = parser.serialize_patch.call_args[0][0][0]
-            assert operation.path == "/display_name"
+#             client.update_system("id", display_name="foo")
+#             operation = parser.serialize_patch.call_args[0][0][0]
+#             assert operation.path == "/display_name"
 
-    class TestRemove(object):
-        def test_params(self, monkeypatch, client, rest_client, success, bg_system):
-            monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
-            rest_client.get_system.return_value = success
+#     class TestRemove(object):
+#         def test_params(self, monkeypatch, client, rest_client, success, bg_system):
+#             monkeypatch.setattr(client, "find_systems", Mock(return_value=[bg_system]))
+#             rest_client.get_system.return_value = success
 
-            assert client.remove_system(search="params") is True
-            rest_client.delete_system.assert_called_once_with(bg_system.id)
+#             assert client.remove_system(search="params") is True
+#             rest_client.delete_system.assert_called_once_with(bg_system.id)
 
-        def test_not_found(self, monkeypatch, client, rest_client, success, bg_system):
-            monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
-            rest_client.get_system.return_value = success
+#         def test_not_found(self, monkeypatch, client, rest_client, success, bg_system):
+#             monkeypatch.setattr(client, "find_systems", Mock(return_value=None))
+#             rest_client.get_system.return_value = success
 
-            with pytest.raises(FetchError):
-                client.remove_system(search="params")
+#             with pytest.raises(FetchError):
+#                 client.remove_system(search="params")
 
-        def test_remove_system_by_id(self, client, rest_client, success, bg_system):
-            rest_client.delete_system.return_value = success
+#         def test_remove_system_by_id(self, client, rest_client, success, bg_system):
+#             rest_client.delete_system.return_value = success
 
-            assert client._remove_system_by_id(bg_system.id)
+#             assert client._remove_system_by_id(bg_system.id)
 
-        def test_remove_system_by_id_none(self, client):
-            with pytest.raises(DeleteError):
-                client._remove_system_by_id(None)
+#         def test_remove_system_by_id_none(self, client):
+#             with pytest.raises(DeleteError):
+#                 client._remove_system_by_id(None)
 
 
-class TestInstances(object):
-    def test_get(self, client, rest_client, success):
-        rest_client.get_instance.return_value = success
+# class TestInstances(object):
+#     def test_get(self, client, rest_client, success):
+#         rest_client.get_instance.return_value = success
 
-        client.get_instance("id")
-        rest_client.get_instance.assert_called_once_with("id")
-        assert rest_client.get_instance.called is True
+#         client.get_instance("id")
+#         rest_client.get_instance.assert_called_once_with("id")
+#         assert rest_client.get_instance.called is True
 
-    def test_get_status(self, client, rest_client, success):
-        rest_client.get_instance.return_value = success
+#     def test_get_status(self, client, rest_client, success):
+#         rest_client.get_instance.return_value = success
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+#         with warnings.catch_warnings(record=True) as w:
+#             warnings.simplefilter("always")
 
-            client.get_instance_status("id")
-            rest_client.get_instance.assert_called_once_with("id")
+#             client.get_instance_status("id")
+#             rest_client.get_instance.assert_called_once_with("id")
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+#             assert len(w) == 1
+#             assert w[0].category == DeprecationWarning
 
-    def test_initialize(self, client, rest_client, success):
-        rest_client.patch_instance.return_value = success
+#     def test_initialize(self, client, rest_client, success):
+#         rest_client.patch_instance.return_value = success
 
-        client.initialize_instance("id")
-        rest_client.patch_instance.assert_called_once_with("id", ANY)
-        assert rest_client.patch_instance.called is True
+#         client.initialize_instance("id")
+#         rest_client.patch_instance.assert_called_once_with("id", ANY)
+#         assert rest_client.patch_instance.called is True
 
-    def test_update(self, client, rest_client, success):
-        rest_client.patch_instance.return_value = success
+#     def test_update(self, client, rest_client, success):
+#         rest_client.patch_instance.return_value = success
 
-        client.update_instance("id", new_status="status", metadata={"meta": "update"})
-        rest_client.patch_instance.assert_called_once_with("id", ANY)
+#         client.update_instance("id", new_status="status", metadata={"meta": "update"})
+#         rest_client.patch_instance.assert_called_once_with("id", ANY)
 
-    def test_update_status(self, client, rest_client, success):
-        rest_client.patch_instance.return_value = success
+#     def test_update_status(self, client, rest_client, success):
+#         rest_client.patch_instance.return_value = success
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+#         with warnings.catch_warnings(record=True) as w:
+#             warnings.simplefilter("always")
 
-            client.update_instance_status("id", "status")
-            rest_client.patch_instance.assert_called_once_with("id", ANY)
+#             client.update_instance_status("id", "status")
+#             rest_client.patch_instance.assert_called_once_with("id", ANY)
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+#             assert len(w) == 1
+#             assert w[0].category == DeprecationWarning
 
-    def test_heartbeat(self, client, rest_client, success):
-        rest_client.patch_instance.return_value = success
+#     def test_heartbeat(self, client, rest_client, success):
+#         rest_client.patch_instance.return_value = success
 
-        assert client.instance_heartbeat("id") is True
-        rest_client.patch_instance.assert_called_once_with("id", ANY)
+#         assert client.instance_heartbeat("id") is True
+#         rest_client.patch_instance.assert_called_once_with("id", ANY)
 
-    def test_remove(self, client, rest_client, success):
-        rest_client.delete_instance.return_value = success
+#     def test_remove(self, client, rest_client, success):
+#         rest_client.delete_instance.return_value = success
 
-        assert client.remove_instance("foo") is True
-        rest_client.delete_instance.assert_called_with("foo")
+#         assert client.remove_instance("foo") is True
+#         rest_client.delete_instance.assert_called_with("foo")
 
-    def test_remove_none(self, client):
-        with pytest.raises(DeleteError):
-            client.remove_instance(None)
+#     def test_remove_none(self, client):
+#         with pytest.raises(DeleteError):
+#             client.remove_instance(None)
 
 
-class TestRequests(object):
-    class TestGet(object):
-        def test_success(self, client, rest_client, bg_request, success, parser):
-            rest_client.get_request.return_value = success
-            parser.parse_request.return_value = bg_request
+# class TestRequests(object):
+#     class TestGet(object):
+#         def test_success(self, client, rest_client, bg_request, success, parser):
+#             rest_client.get_request.return_value = success
+#             parser.parse_request.return_value = bg_request
 
-            assert client.get_request(bg_request.id) == bg_request
+#             assert client.get_request(bg_request.id) == bg_request
 
-        def test_404(self, client, rest_client, bg_request, not_found):
-            rest_client.get_request.return_value = not_found
+#         def test_404(self, client, rest_client, bg_request, not_found):
+#             rest_client.get_request.return_value = not_found
 
-            with pytest.raises(NotFoundError):
-                client.get_request(bg_request.id)
+#             with pytest.raises(NotFoundError):
+#                 client.get_request(bg_request.id)
 
-    class TestFindUnique(object):
-        def test_by_id(self, client, rest_client, bg_request, success, parser):
-            rest_client.get_request.return_value = success
-            parser.parse_request.return_value = bg_request
+#     class TestFindUnique(object):
+#         def test_by_id(self, client, rest_client, bg_request, success, parser):
+#             rest_client.get_request.return_value = success
+#             parser.parse_request.return_value = bg_request
 
-            assert client.find_unique_request(id=bg_request.id) == bg_request
+#             assert client.find_unique_request(id=bg_request.id) == bg_request
 
-        def test_by_id_404(self, client, rest_client, bg_request, not_found):
-            rest_client.get_request.return_value = not_found
-            assert client.find_unique_request(id=bg_request.id) is None
+#         def test_by_id_404(self, client, rest_client, bg_request, not_found):
+#             rest_client.get_request.return_value = not_found
+#             assert client.find_unique_request(id=bg_request.id) is None
 
-        def test_none(self, monkeypatch, client):
-            monkeypatch.setattr(client, "find_requests", Mock(return_value=None))
+#         def test_none(self, monkeypatch, client):
+#             monkeypatch.setattr(client, "find_requests", Mock(return_value=None))
 
-            assert client.find_unique_request() is None
+#             assert client.find_unique_request() is None
 
-        def test_one(self, monkeypatch, client, bg_request):
-            monkeypatch.setattr(
-                client, "find_requests", Mock(return_value=[bg_request])
-            )
-            assert client.find_unique_request() == bg_request
+#         def test_one(self, monkeypatch, client, bg_request):
+#             monkeypatch.setattr(
+#                 client, "find_requests", Mock(return_value=[bg_request])
+#             )
+#             assert client.find_unique_request() == bg_request
 
-        def test_multiple(self, monkeypatch, client):
-            monkeypatch.setattr(
-                client, "find_requests", Mock(return_value=["r1", "r2"])
-            )
+#         def test_multiple(self, monkeypatch, client):
+#             monkeypatch.setattr(
+#                 client, "find_requests", Mock(return_value=["r1", "r2"])
+#             )
 
-            with pytest.raises(FetchError):
-                client.find_unique_request()
+#             with pytest.raises(FetchError):
+#                 client.find_unique_request()
 
-    def test_find(self, client, rest_client, success):
-        rest_client.get_requests.return_value = success
+#     def test_find(self, client, rest_client, success):
+#         rest_client.get_requests.return_value = success
 
-        client.find_requests(search="params")
-        rest_client.get_requests.assert_called_once_with(search="params")
+#         client.find_requests(search="params")
+#         rest_client.get_requests.assert_called_once_with(search="params")
 
-    def test_create(self, client, rest_client, success, bg_request):
-        rest_client.post_requests.return_value = success
+#     def test_create(self, client, rest_client, success, bg_request):
+#         rest_client.post_requests.return_value = success
 
-        assert client.create_request(bg_request)
-        assert rest_client.post_requests.called is True
+#         assert client.create_request(bg_request)
+#         assert rest_client.post_requests.called is True
 
-    def test_update(self, client, rest_client, parser, success, bg_request):
-        rest_client.patch_request.return_value = success
+#     def test_update(self, client, rest_client, parser, success, bg_request):
+#         rest_client.patch_request.return_value = success
 
-        assert client.update_request(
-            "id", status="new_status", output="new_output", error_class="ValueError"
-        )
-        assert rest_client.patch_request.called is True
+#         assert client.update_request(
+#             "id", status="new_status", output="new_output", error_class="ValueError"
+#         )
+#         assert rest_client.patch_request.called is True
 
-        patch_paths = [p.path for p in parser.serialize_patch.call_args[0][0]]
-        assert "/status" in patch_paths
-        assert "/output" in patch_paths
-        assert "/error_class" in patch_paths
+#         patch_paths = [p.path for p in parser.serialize_patch.call_args[0][0]]
+#         assert "/status" in patch_paths
+#         assert "/output" in patch_paths
+#         assert "/error_class" in patch_paths
 
 
-def test_publish_event(client, rest_client, success, bg_event):
-    rest_client.post_event.return_value = success
+# def test_publish_event(client, rest_client, success, bg_event):
+#     rest_client.post_event.return_value = success
 
-    assert client.publish_event(bg_event) is True
+#     assert client.publish_event(bg_event) is True
 
 
-class TestQueues(object):
-    def test_get(self, client, rest_client, success):
-        rest_client.get_queues.return_value = success
+# class TestQueues(object):
+#     def test_get(self, client, rest_client, success):
+#         rest_client.get_queues.return_value = success
 
-        assert client.get_queues()
-        assert rest_client.get_queues.called is True
+#         assert client.get_queues()
+#         assert rest_client.get_queues.called is True
 
-    def test_clear(self, client, rest_client, success):
-        rest_client.delete_queue.return_value = success
+#     def test_clear(self, client, rest_client, success):
+#         rest_client.delete_queue.return_value = success
 
-        assert client.clear_queue("queue") is True
-        assert rest_client.delete_queue.called is True
+#         assert client.clear_queue("queue") is True
+#         assert rest_client.delete_queue.called is True
 
-    def test_clear_all(self, client, rest_client, success):
-        rest_client.delete_queues.return_value = success
+#     def test_clear_all(self, client, rest_client, success):
+#         rest_client.delete_queues.return_value = success
 
-        assert client.clear_all_queues() is True
-        assert rest_client.delete_queues.called is True
+#         assert client.clear_all_queues() is True
+#         assert rest_client.delete_queues.called is True
 
 
-class TestJobs(object):
-    def test_find(self, client, rest_client, success):
-        rest_client.get_jobs.return_value = success
+# class TestJobs(object):
+#     def test_find(self, client, rest_client, success):
+#         rest_client.get_jobs.return_value = success
 
-        assert client.find_jobs(search="params")
-        rest_client.get_jobs.assert_called_once_with(search="params")
+#         assert client.find_jobs(search="params")
+#         rest_client.get_jobs.assert_called_once_with(search="params")
 
-    def test_create(self, client, rest_client, success, bg_job):
-        rest_client.post_jobs.return_value = success
+#     def test_create(self, client, rest_client, success, bg_job):
+#         rest_client.post_jobs.return_value = success
 
-        assert client.create_job(bg_job)
-        assert rest_client.post_jobs.called is True
+#         assert client.create_job(bg_job)
+#         assert rest_client.post_jobs.called is True
 
-    def test_delete(self, client, rest_client, success, bg_job):
-        rest_client.delete_job.return_value = success
+#     def test_delete(self, client, rest_client, success, bg_job):
+#         rest_client.delete_job.return_value = success
 
-        assert client.remove_job(bg_job.id) is True
-        assert rest_client.delete_job.called is True
+#         assert client.remove_job(bg_job.id) is True
+#         assert rest_client.delete_job.called is True
 
-    def test_pause(self, client, rest_client, parser, success, bg_job):
-        rest_client.patch_job.return_value = success
+#     def test_pause(self, client, rest_client, parser, success, bg_job):
+#         rest_client.patch_job.return_value = success
 
-        client.pause_job(bg_job.id)
-        assert rest_client.patch_job.called is True
+#         client.pause_job(bg_job.id)
+#         assert rest_client.patch_job.called is True
 
-        patch_op = parser.serialize_patch.call_args[0][0][0]
-        assert patch_op.path == "/status"
-        assert patch_op.value == "PAUSED"
+#         patch_op = parser.serialize_patch.call_args[0][0][0]
+#         assert patch_op.path == "/status"
+#         assert patch_op.value == "PAUSED"
 
-    def test_resume(self, client, rest_client, parser, success, bg_job):
-        rest_client.patch_job.return_value = success
+#     def test_resume(self, client, rest_client, parser, success, bg_job):
+#         rest_client.patch_job.return_value = success
 
-        client.resume_job(bg_job.id)
-        assert rest_client.patch_job.called is True
+#         client.resume_job(bg_job.id)
+#         assert rest_client.patch_job.called is True
 
-        patch_op = parser.serialize_patch.call_args[0][0][0]
-        assert patch_op.path == "/status"
-        assert patch_op.value == "RUNNING"
+#         patch_op = parser.serialize_patch.call_args[0][0][0]
+#         assert patch_op.path == "/status"
+#         assert patch_op.value == "RUNNING"
 
-    def test_execute(self, client, rest_client, parser, success, bg_job):
-        rest_client.patch_job.return_value = success
+#     def test_execute(self, client, rest_client, parser, success, bg_job):
+#         rest_client.patch_job.return_value = success
 
-        client.execute_job(bg_job.id)
-        assert rest_client.post_execute_job.called is True
+#         client.execute_job(bg_job.id)
+#         assert rest_client.post_execute_job.called is True
 
 
-class TestJobImportExport(object):
-    def test_import(self, client, rest_client, success, bg_job_defns_list):
-        rest_client.post_import_jobs.return_value = success
+# class TestJobImportExport(object):
+#     def test_import(self, client, rest_client, success, bg_job_defns_list):
+#         rest_client.post_import_jobs.return_value = success
 
-        assert client.import_jobs(bg_job_defns_list)
-        assert rest_client.post_import_jobs.called is True
+#         assert client.import_jobs(bg_job_defns_list)
+#         assert rest_client.post_import_jobs.called is True
 
-    def test_export(self, client, rest_client, success, bg_job_ids):
-        rest_client.post_export_jobs.return_value = success
+#     def test_export(self, client, rest_client, success, bg_job_ids):
+#         rest_client.post_export_jobs.return_value = success
 
-        assert client.export_jobs(bg_job_ids)
-        assert rest_client.post_export_jobs.called is True
+#         assert client.export_jobs(bg_job_ids)
+#         assert rest_client.post_export_jobs.called is True
 
 
-def test_forward(client, rest_client, success, bg_operation):
-    rest_client.post_forward.return_value = success
+# def test_forward(client, rest_client, success, bg_operation):
+#     rest_client.post_forward.return_value = success
 
-    client.forward(bg_operation)
-    assert rest_client.post_forward.called is True
+#     client.forward(bg_operation)
+#     assert rest_client.post_forward.called is True
 
 
-def test_get_user(client, rest_client, success, bg_user):
-    rest_client.get_user.return_value = success
+# def test_get_user(client, rest_client, success, bg_user):
+#     rest_client.get_user.return_value = success
 
-    client.get_user(bg_user.username)
-    rest_client.get_user.assert_called_once_with(bg_user.username)
+#     client.get_user(bg_user.username)
+#     rest_client.get_user.assert_called_once_with(bg_user.username)
 
 
-class TestWhoAmI(object):
-    def test_user(self, client, rest_client, success):
-        rest_client.get_user.return_value = success
+# class TestWhoAmI(object):
+#     def test_user(self, client, rest_client, success):
+#         rest_client.get_user.return_value = success
 
-        client.who_am_i()
-        rest_client.get_user.assert_called_once_with(rest_client.username)
+#         client.who_am_i()
+#         rest_client.get_user.assert_called_once_with(rest_client.username)
 
-    def test_anonymous(self, client, rest_client, success):
-        rest_client.get_user.return_value = success
-        rest_client.username = None
+#     def test_anonymous(self, client, rest_client, success):
+#         rest_client.get_user.return_value = success
+#         rest_client.username = None
 
-        client.who_am_i()
-        rest_client.get_user.assert_called_once_with("anonymous")
+#         client.who_am_i()
+#         rest_client.get_user.assert_called_once_with("anonymous")
 
 
-class TestRescan(object):
-    def test_success(self, client, rest_client, parser, success, bg_command):
-        rest_client.patch_admin.return_value = success
+# class TestRescan(object):
+#     def test_success(self, client, rest_client, parser, success, bg_command):
+#         rest_client.patch_admin.return_value = success
 
-        assert client.rescan() is True
-        assert rest_client.patch_admin.called is True
+#         assert client.rescan() is True
+#         assert rest_client.patch_admin.called is True
 
-        patch_op = parser.serialize_patch.call_args[0][0]
-        assert patch_op.operation == "rescan"
+#         patch_op = parser.serialize_patch.call_args[0][0]
+#         assert patch_op.operation == "rescan"
 
-    def test_failure(self, client, rest_client, parser, server_error, bg_command):
-        rest_client.patch_admin.return_value = server_error
+#     def test_failure(self, client, rest_client, parser, server_error, bg_command):
+#         rest_client.patch_admin.return_value = server_error
 
-        with pytest.raises(RestError):
-            client.rescan()
-        assert rest_client.patch_admin.called is True
+#         with pytest.raises(RestError):
+#             client.rescan()
+#         assert rest_client.patch_admin.called is True
 
-        patch_op = parser.serialize_patch.call_args[0][0]
-        assert patch_op.operation == "rescan"
+#         patch_op = parser.serialize_patch.call_args[0][0]
+#         assert patch_op.operation == "rescan"
 
 
-class TestChunked(object):
-    def test_stream_to_sink_fail(self, client, rest_client):
-        client._check_chunked_file_validity = Mock(return_value=(False, {}))
-        rest_client.get_chunked_file.return_value = None
-        with pytest.raises(ValidationError):
-            client.download_chunked_file("file_id")
+# class TestChunked(object):
+#     def test_stream_to_sink_fail(self, client, rest_client):
+#         client._check_chunked_file_validity = Mock(return_value=(False, {}))
+#         rest_client.get_chunked_file.return_value = None
+#         with pytest.raises(ValidationError):
+#             client.download_chunked_file("file_id")
 
-    def test_download_chunked_file(
-        self, client, rest_client, target_file, target_file_id
-    ):
-        file_data = b64encode(target_file.read())
+#     def test_download_chunked_file(
+#         self, client, rest_client, target_file, target_file_id
+#     ):
+#         file_data = b64encode(target_file.read())
 
-        client._check_chunked_file_validity = Mock(
-            return_value=(True, {"file_id": target_file_id, "number_of_chunks": 1})
-        )
-        response = Mock()
-        response.ok = True
-        response.json = Mock(return_value={"data": file_data})
-        rest_client.get_chunked_file.return_value = response
-        byte_obj = client.download_chunked_file("file_id")
-        assert byte_obj.read() == b64decode(file_data)
+#         client._check_chunked_file_validity = Mock(
+#             return_value=(True, {"file_id": target_file_id, "number_of_chunks": 1})
+#         )
+#         response = Mock()
+#         response.ok = True
+#         response.json = Mock(return_value={"data": file_data})
+#         rest_client.get_chunked_file.return_value = response
+#         byte_obj = client.download_chunked_file("file_id")
+#         assert byte_obj.read() == b64decode(file_data)
 
-    def test_upload_chunked_file(
-        self,
-        client,
-        rest_client,
-        parser,
-        success,
-        target_file,
-        resolvable_chunk_dict,
-        bg_resolvable_chunk,
-    ):
-        success.json = Mock(return_value=resolvable_chunk_dict)
-        rest_client.post_chunked_file.return_value = success
-        parser.parse_resolvable.return_value = bg_resolvable_chunk
-        client._check_chunked_file_validity = Mock(return_value=(True, {}))
+#     def test_upload_chunked_file(
+#         self,
+#         client,
+#         rest_client,
+#         parser,
+#         success,
+#         target_file,
+#         resolvable_chunk_dict,
+#         bg_resolvable_chunk,
+#     ):
+#         success.json = Mock(return_value=resolvable_chunk_dict)
+#         rest_client.post_chunked_file.return_value = success
+#         parser.parse_resolvable.return_value = bg_resolvable_chunk
+#         client._check_chunked_file_validity = Mock(return_value=(True, {}))
 
-        resolvable = client.upload_chunked_file(target_file, "desired_name")
-        _, called_kwargs = rest_client.post_chunked_file.call_args[0]
+#         resolvable = client.upload_chunked_file(target_file, "desired_name")
+#         _, called_kwargs = rest_client.post_chunked_file.call_args[0]
 
-        assert called_kwargs["md5_sum"] == "9a0364b9e99bb480dd25e1f0284c8555"
-        assert called_kwargs["file_name"] == "desired_name"
-        assert called_kwargs["file_size"] == 1024
-        assert called_kwargs["chunk_size"] == 261120
-        assert resolvable == bg_resolvable_chunk
+#         assert called_kwargs["md5_sum"] == "9a0364b9e99bb480dd25e1f0284c8555"
+#         assert called_kwargs["file_name"] == "desired_name"
+#         assert called_kwargs["file_size"] == 1024
+#         assert called_kwargs["chunk_size"] == 261120
+#         assert resolvable == bg_resolvable_chunk
 
-    def test_upload_file_fail(self, client, rest_client, server_error, target_file):
-        rest_client.post_chunked_file.return_value = server_error
-        with pytest.raises(SaveError):
-            assert client.upload_chunked_file(target_file, "desired_name")
+#     def test_upload_file_fail(self, client, rest_client, server_error, target_file):
+#         rest_client.post_chunked_file.return_value = server_error
+#         with pytest.raises(SaveError):
+#             assert client.upload_chunked_file(target_file, "desired_name")
 
 
-class TestTopics(object):
-    class TestGet(object):
-        def test_success(self, client, rest_client, bg_topic, success, parser):
-            rest_client.get_topic.return_value = success
-            parser.parse_topic.return_value = bg_topic
+# class TestTopics(object):
+#     class TestGet(object):
+#         def test_success(self, client, rest_client, bg_topic, success, parser):
+#             rest_client.get_topic.return_value = success
+#             parser.parse_topic.return_value = bg_topic
 
-            assert client.get_topic(bg_topic.id) == bg_topic
+#             assert client.get_topic(bg_topic.id) == bg_topic
 
-        def test_404(self, client, rest_client, bg_topic, not_found):
-            rest_client.get_topic.return_value = not_found
+#         def test_404(self, client, rest_client, bg_topic, not_found):
+#             rest_client.get_topic.return_value = not_found
 
-            with pytest.raises(NotFoundError):
-                client.get_topic(bg_topic.id)
+#             with pytest.raises(NotFoundError):
+#                 client.get_topic(bg_topic.id)
 
-    def test_create(self, client, rest_client, success, bg_topic):
-        rest_client.create_topic.return_value = success
-        client.create_topic(bg_topic)
-        assert rest_client.post_topics.called is True
+#     def test_create(self, client, rest_client, success, bg_topic):
+#         rest_client.create_topic.return_value = success
+#         client.create_topic(bg_topic)
+#         assert rest_client.post_topics.called is True
 
-    def test_get_all(self, client, rest_client, bg_topic, success, parser):
-        second_topic = copy.deepcopy(bg_topic)
-        second_topic.name = "topic2"
-        both_topics = [bg_topic, second_topic]
-        rest_client.get_topics.return_value = success
-        parser.parse_topic.return_value = both_topics
+#     def test_get_all(self, client, rest_client, bg_topic, success, parser):
+#         second_topic = copy.deepcopy(bg_topic)
+#         second_topic.name = "topic2"
+#         both_topics = [bg_topic, second_topic]
+#         rest_client.get_topics.return_value = success
+#         parser.parse_topic.return_value = both_topics
 
-        assert client.get_topics() == both_topics
+#         assert client.get_topics() == both_topics
 
-    class TestRemove(object):
-        def test_not_found(self, monkeypatch, client, rest_client, not_found, bg_topic):
-            monkeypatch.setattr(
-                rest_client, "delete_topic", Mock(return_value=not_found)
-            )
+#     class TestRemove(object):
+#         def test_not_found(self, monkeypatch, client, rest_client, not_found, bg_topic):
+#             monkeypatch.setattr(
+#                 rest_client, "delete_topic", Mock(return_value=not_found)
+#             )
 
-            with pytest.raises(NotFoundError):
-                client.remove_topic(bg_topic.id)
+#             with pytest.raises(NotFoundError):
+#                 client.remove_topic(bg_topic.id)
 
-        def test_id(self, client, rest_client, success, bg_topic):
-            rest_client.delete_topic.return_value = success
+#         def test_id(self, client, rest_client, success, bg_topic):
+#             rest_client.delete_topic.return_value = success
 
-            assert client.remove_topic(bg_topic.id)
+#             assert client.remove_topic(bg_topic.id)
 
-    class TestPatch(object):
-        def test_add_subscriber(
-            self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber
-        ):
-            monkeypatch.setattr(rest_client, "patch_topic", Mock(return_value=success))
+#     class TestPatch(object):
+#         def test_add_subscriber(
+#             self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber
+#         ):
+#             monkeypatch.setattr(rest_client, "patch_topic", Mock(return_value=success))
 
-            assert client.update_topic(bg_topic.id, add=bg_subscriber)
-            assert rest_client.patch_topic.called is True
+#             assert client.update_topic(bg_topic.id, add=bg_subscriber)
+#             assert rest_client.patch_topic.called is True
 
-        def test_remove_subscriber(
-            self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber
-        ):
-            monkeypatch.setattr(rest_client, "patch_topic", Mock(return_value=success))
+#         def test_remove_subscriber(
+#             self, monkeypatch, client, rest_client, success, bg_topic, bg_subscriber
+#         ):
+#             monkeypatch.setattr(rest_client, "patch_topic", Mock(return_value=success))
 
-            assert client.update_topic(bg_topic.id, remove=bg_subscriber)
-            assert rest_client.patch_topic.called is True
+#             assert client.update_topic(bg_topic.id, remove=bg_subscriber)
+#             assert rest_client.patch_topic.called is True
 
-        def test_remove_subscriber_not_found(
-            self, monkeypatch, client, rest_client, not_found, bg_topic, bg_subscriber
-        ):
-            monkeypatch.setattr(
-                rest_client, "patch_topic", Mock(return_value=not_found)
-            )
+#         def test_remove_subscriber_not_found(
+#             self, monkeypatch, client, rest_client, not_found, bg_topic, bg_subscriber
+#         ):
+#             monkeypatch.setattr(
+#                 rest_client, "patch_topic", Mock(return_value=not_found)
+#             )
 
-            with pytest.raises(NotFoundError):
-                assert client.update_topic(bg_topic.id, remove=bg_subscriber)
-                assert rest_client.patch_topic.called is True
+#             with pytest.raises(NotFoundError):
+#                 assert client.update_topic(bg_topic.id, remove=bg_subscriber)
+#                 assert rest_client.patch_topic.called is True

@@ -23,7 +23,9 @@ def not_found():
 
 @pytest.fixture
 def wait_exceeded():
-    return Mock(ok=False, status_code=408, json=Mock(return_value="payload"))
+    return Mock(
+        ok=False, status_code=500, json=Mock(return_value="Max wait time exceeded")
+    )
 
 
 @pytest.fixture

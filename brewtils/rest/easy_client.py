@@ -78,7 +78,7 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         if raise_404:
             raise NotFoundError(message)
         else:
-            return None 
+            return None
     elif response.status_code == 409:
         raise ConflictError(message)
     elif response.status_code == 413:

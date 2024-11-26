@@ -78,9 +78,7 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         if raise_404:
             raise NotFoundError(message)
         else:
-            return None
-    elif response.status_code == 500 and message == "Max wait time exceeded":
-        raise WaitExceededError(message)
+            return None 
     elif response.status_code == 409:
         raise ConflictError(message)
     elif response.status_code == 413:
@@ -89,6 +87,8 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         raise ValidationError(message)
     elif response.status_code == 503:
         raise RestConnectionError(message)
+    elif response.status_code == 504:
+        raise WaitExceededError(message)
     else:
         raise default_exc(message)
 

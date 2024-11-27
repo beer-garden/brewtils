@@ -129,6 +129,7 @@ class Command(BaseModel):
     def __init__(
         self,
         name=None,
+        display_name=None,
         description=None,
         parameters=None,
         command_type=None,
@@ -144,6 +145,7 @@ class Command(BaseModel):
         allow_any_kwargs=None,
     ):
         self.name = name
+        self.display_name = display_name or name
         self.description = description
         self.parameters = parameters or []
         self.command_type = command_type

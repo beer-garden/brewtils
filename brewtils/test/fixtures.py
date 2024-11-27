@@ -170,6 +170,7 @@ def command_dict(parameter_dict, system_id):
     """A command represented as a dictionary."""
     return {
         "name": "speak",
+        "display_name": "speak_display",
         "description": "desc",
         "parameters": [parameter_dict],
         "command_type": "ACTION",

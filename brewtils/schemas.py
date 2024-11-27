@@ -190,6 +190,7 @@ class ParameterSchema(BaseSchema):
 
 class CommandSchema(BaseSchema):
     name = fields.Str(allow_none=True)
+    display_name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     parameters = fields.Nested("ParameterSchema", many=True)
     command_type = fields.Str(allow_none=True)

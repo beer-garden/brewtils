@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Added support for display name to command decorator
+
 3.29.0
 ------
 11/25/24

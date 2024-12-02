@@ -12,6 +12,7 @@ from pathlib import Path
 
 import appdirs
 from box import Box
+from packaging.requirements import Requirement
 from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 
@@ -495,17 +496,44 @@ class Plugin(object):
             return current_timestamp + add_time
         return current_timestamp
 
+    def get_system_matching_version(self, require, **kwargs):
+        system = None
+        req = Requirement(require)
+        require_name = req.name
+        require_version = req.specifier
+        systems = self._ez_client.find_systems(name=require_name, **kwargs)
+        if require_version:
+            valid_versions = list(
+                require_version.filter(
+                    [str(Version(system.version)) for system in systems]
+                )
+            )
+        else:
+            valid_versions = [str(Version(system.version)) for system in systems]
+
+        if valid_versions:
+            system_candidates = [
+                system
+                for system in systems
+                if str(Version(system.version)) in valid_versions
+            ]
+            system = system_candidates[0]
+            for system_candidate in system_candidates:
+                if Version(system_candidate.version) > Version(system.version):
+                    system = system_candidate
+
+        return system
+
     def get_system_dependency(self, require, timeout=300):
         wait_time = 0.1
         while timeout > 0:
-            system = self._ez_client.find_unique_system(name=require, local=True)
-            if (
-                system
-                and system.instances
-                and any("RUNNING" == instance.status for instance in system.instances)
-            ):
+            system = self.get_system_matching_version(
+                require, filter_running=True, local=True
+            )
+            if system:
+                self._logger.debug(f"Found system: {system}")
                 return system
-            self.logger.error(
+            self._logger.error(
                 f"Waiting {wait_time:.1f} seconds before next attempt for {self._system} "
                 f"dependency for {require}"
             )
@@ -520,7 +548,7 @@ class Plugin(object):
     def await_dependencies(self, requires, config):
         for req in requires:
             system = self.get_system_dependency(req, config.requires_timeout)
-            self.logger.debug(
+            self._logger.debug(
                 f"Resolved system {system} for {req}: {config.name} {config.instance_name}"
             )
 

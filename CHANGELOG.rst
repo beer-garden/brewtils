@@ -1,15 +1,22 @@
 Brewtils Changelog
 ==================
 
-3.29.0
+3.29.1
 ------
 TBD
 
+- Updated Wait Timeout Exception expected HTTP code from 408 to 504
+- Dropping Official Python 2.7 Support
+
+3.29.0
+------
+11/25/24
+
+- Updated plugin class to accept version contraints for required dependencies. Contraints follow python packaging version specifiers.
 - Added new annotation/configuration support for shutdown functions. These functions will be executed at the start
   of the shutdown process.
 - Added new annotation/configuration support for startup functions. These functions will be executed after `Plugin().run()` 
   has completed startup processes
-
 
 3.28.0
 ------

@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.29.1
+------
+TBD
+
+- Updated Wait Timeout Exception expected HTTP code from 408 to 504
+
 3.29.0
 ------
 11/25/24

@@ -62,11 +62,11 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
 
     Raises:
         NotFoundError: Status code 404 and raise_404 is True
-        WaitExceededError: Status code 408
         ConflictError: Status code 409
         TooLargeError: Status code 413
         ValidationError: Any other 4xx status codes
         RestConnectionError: Status code 503
+        WaitExceededError: Status code 504
         default_exc: Any other status code
     """
     try:
@@ -79,8 +79,6 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
             raise NotFoundError(message)
         else:
             return None
-    elif response.status_code == 408:
-        raise WaitExceededError(message)
     elif response.status_code == 409:
         raise ConflictError(message)
     elif response.status_code == 413:
@@ -89,6 +87,8 @@ def handle_response_failure(response, default_exc=RestError, raise_404=True):
         raise ValidationError(message)
     elif response.status_code == 503:
         raise RestConnectionError(message)
+    elif response.status_code == 504:
+        raise WaitExceededError(message)
     else:
         raise default_exc(message)
 

@@ -570,7 +570,13 @@ class SchemaParser(object):
             if strict:
                 raise err
             cls.logger.error(err.messages)
-            return err.valid_data
+            try:
+                cls.logger.error("LOAD")
+                return schema.load(err.valid_data)
+            except:
+                cls.logger.error("LOADS")
+                return schema.loads(err.valid_data)
+            
 
     # Serialization methods
     @classmethod

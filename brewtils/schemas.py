@@ -142,6 +142,9 @@ class BaseSchema(Schema):
             if isinstance(value, fields.FieldABC)
         ]
 
+    class Meta:
+        unknown = 'EXCLUDE'
+
 
 class ChoicesSchema(BaseSchema):
     type = fields.Str(allow_none=True)

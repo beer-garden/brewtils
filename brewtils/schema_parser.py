@@ -528,7 +528,6 @@ class SchemaParser(object):
         data,  # type: Optional[Union[str, Dict[str, Any]]]
         model_class,  # type: Any
         from_string=False,  # type: bool
-        strict=True,  # type: bool
         **kwargs  # type: Any
     ):  # type: (...) -> Union[str, Dict[str, Any]]
         """Convert a JSON string or dictionary into a model object
@@ -537,7 +536,6 @@ class SchemaParser(object):
             data: The raw input
             model_class: Class object of the desired model type
             from_string: True if input is a JSON string, False if a dictionary
-            strict: False if parsing should return back valid sections
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
@@ -563,19 +561,8 @@ class SchemaParser(object):
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
         schema.context["models"] = cls._models
-
-        try:
-            return schema.loads(data) if from_string else schema.load(data)
-        except ValidationError as err:
-            if strict:
-                raise err
-            cls.logger.error(err.messages)
-            try:
-                cls.logger.error("LOAD")
-                return schema.load(err.valid_data)
-            except:
-                cls.logger.error("LOADS")
-                return schema.loads(err.valid_data)
+    
+        return schema.loads(data) if from_string else schema.load(data)
             
 
     # Serialization methods

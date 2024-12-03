@@ -3,7 +3,7 @@
 import datetime
 from functools import partial
 
-from marshmallow import Schema, fields, post_load, pre_load, utils
+from marshmallow import Schema, fields, post_load, pre_load, utils, EXCLUDE
 from marshmallow_polyfield import PolyField
 
 __all__ = [
@@ -143,7 +143,7 @@ class BaseSchema(Schema):
         ]
 
     class Meta:
-        unknown = 'EXCLUDE'
+        unknown = EXCLUDE
 
 
 class ChoicesSchema(BaseSchema):

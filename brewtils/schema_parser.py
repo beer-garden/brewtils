@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Union
 
 import six  # type: ignore
 from box import Box  # type: ignore
+from marshmallow import ValidationError
 
 import brewtils.models
 import brewtils.schemas
@@ -527,6 +528,7 @@ class SchemaParser(object):
         data,  # type: Optional[Union[str, Dict[str, Any]]]
         model_class,  # type: Any
         from_string=False,  # type: bool
+        strict=True,  # type: bool
         **kwargs  # type: Any
     ):  # type: (...) -> Union[str, Dict[str, Any]]
         """Convert a JSON string or dictionary into a model object
@@ -535,6 +537,7 @@ class SchemaParser(object):
             data: The raw input
             model_class: Class object of the desired model type
             from_string: True if input is a JSON string, False if a dictionary
+            strict: False if parsing should return back valid sections
             **kwargs: Additional parameters to be passed to the Schema (e.g. many=True)
 
         Returns:
@@ -561,7 +564,13 @@ class SchemaParser(object):
 
         schema.context["models"] = cls._models
 
-        return schema.loads(data) if from_string else schema.load(data)
+        try:
+            return schema.loads(data) if from_string else schema.load(data)
+        except ValidationError as err:
+            if strict:
+                raise err
+            cls.logger.error(err.messages)
+            return err.valid_data
 
     # Serialization methods
     @classmethod

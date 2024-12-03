@@ -640,6 +640,7 @@ class RequestTemplate(BaseModel):
         "instance_name",
         "namespace",
         "command",
+        "command_display_name",
         "command_type",
         "parameters",
         "comment",
@@ -654,6 +655,7 @@ class RequestTemplate(BaseModel):
         instance_name=None,
         namespace=None,
         command=None,
+        command_display_name=None,
         command_type=None,
         parameters=None,
         comment=None,
@@ -665,6 +667,7 @@ class RequestTemplate(BaseModel):
         self.instance_name = instance_name
         self.namespace = namespace
         self.command = command
+        self.command_display_name = command_display_name or command
         self.command_type = command_type
         self.parameters = parameters
         self.comment = comment
@@ -711,6 +714,7 @@ class Request(RequestTemplate):
         instance_name=None,
         namespace=None,
         command=None,
+        command_display_name=None,
         id=None,  # noqa # shadows built-in
         is_event=None,
         parent=None,
@@ -738,6 +742,7 @@ class Request(RequestTemplate):
             instance_name=instance_name,
             namespace=namespace,
             command=command,
+            command_display_name=command_display_name,
             command_type=command_type,
             parameters=parameters,
             comment=comment,

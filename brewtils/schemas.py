@@ -308,6 +308,7 @@ class RequestTemplateSchema(BaseSchema):
     instance_name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    command_display_name = fields.Str(allow_none=True)
     command_type = fields.Str(allow_none=True)
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)

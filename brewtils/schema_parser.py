@@ -6,7 +6,6 @@ from typing import Any, Dict, Optional, Union
 
 import six  # type: ignore
 from box import Box  # type: ignore
-from marshmallow import ValidationError
 
 import brewtils.models
 import brewtils.schemas
@@ -561,9 +560,8 @@ class SchemaParser(object):
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
         schema.context["models"] = cls._models
-    
+
         return schema.loads(data) if from_string else schema.load(data)
-            
 
     # Serialization methods
     @classmethod

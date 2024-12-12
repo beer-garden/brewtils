@@ -246,6 +246,7 @@ def parameter(
     display_name=None,  # type: Optional[str]
     optional=None,  # type: Optional[bool]
     default=None,  # type: Optional[Any]
+    filename=None,  # type: Optional[str]
     description=None,  # type: Optional[str]
     choices=None,  # type: Optional[Union[Callable, Dict, Iterable, str]]
     parameters=None,  # type: Optional[List[Parameter]]
@@ -284,6 +285,7 @@ def parameter(
         optional: Boolean indicating if this parameter must be specified.
         default: The value this parameter will be assigned if not overridden when
             creating a request.
+        filename: Default string value for file input.
         description: An additional string that will be displayed in the user interface.
         choices: List or dictionary specifying allowed values. See documentation for
             more information.
@@ -331,6 +333,7 @@ def parameter(
             display_name=display_name,
             optional=optional,
             default=default,
+            filename=filename,
             description=description,
             choices=choices,
             parameters=parameters,
@@ -351,6 +354,7 @@ def parameter(
         display_name=display_name,
         optional=optional,
         default=default,
+        filename=filename,
         description=description,
         choices=choices,
         parameters=parameters,
@@ -885,6 +889,7 @@ def _initialize_parameter(
     display_name=None,
     optional=None,
     default=None,
+    filename=None,
     description=None,
     choices=None,
     parameters=None,
@@ -926,6 +931,7 @@ def _initialize_parameter(
         display_name=display_name,
         optional=optional,
         default=default,
+        filename=filename,
         description=description,
         choices=choices,
         parameters=parameters,

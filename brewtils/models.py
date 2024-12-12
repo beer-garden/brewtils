@@ -321,11 +321,11 @@ class Parameter(BaseModel):
         self,
         key=None,
         type=None,  # noqa # shadows built-in
-        filename=None,
         multi=None,
         display_name=None,
         optional=None,
         default=None,
+        filename=None,
         description=None,
         choices=None,
         parameters=None,
@@ -340,11 +340,11 @@ class Parameter(BaseModel):
     ):
         self.key = key
         self.type = type
-        self.filename = filename
         self.multi = multi
         self.display_name = display_name
         self.optional = optional
         self.default = default
+        self.filename = filename
         self.description = description
         self.choices = choices
         self.parameters = parameters or []

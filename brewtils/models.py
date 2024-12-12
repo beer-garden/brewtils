@@ -321,6 +321,7 @@ class Parameter(BaseModel):
         self,
         key=None,
         type=None,  # noqa # shadows built-in
+        filename=None,
         multi=None,
         display_name=None,
         optional=None,
@@ -339,6 +340,7 @@ class Parameter(BaseModel):
     ):
         self.key = key
         self.type = type
+        self.filename = filename
         self.multi = multi
         self.display_name = display_name
         self.optional = optional
@@ -1690,11 +1692,13 @@ class Resolvable(BaseModel):
         self,
         id=None,  # noqa # shadows built-in
         type=None,  # noqa # shadows built-in
+        filename=None,
         storage=None,
         details=None,
     ):
         self.id = id
         self.type = type
+        self.filename = filename
         self.storage = storage
         self.details = details or {}
 

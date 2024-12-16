@@ -190,6 +190,7 @@ class ParameterSchema(BaseSchema):
 
 class CommandSchema(BaseSchema):
     name = fields.Str(allow_none=True)
+    display_name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     parameters = fields.Nested("ParameterSchema", many=True)
     command_type = fields.Str(allow_none=True)
@@ -307,6 +308,7 @@ class RequestTemplateSchema(BaseSchema):
     instance_name = fields.Str(allow_none=True)
     namespace = fields.Str(allow_none=True)
     command = fields.Str(allow_none=True)
+    command_display_name = fields.Str(allow_none=True)
     command_type = fields.Str(allow_none=True)
     parameters = fields.Dict(allow_none=True)
     comment = fields.Str(allow_none=True)

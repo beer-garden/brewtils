@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from hashlib import md5
+
+from brewtils.errors import ValidationError
 from brewtils.resolvers import ResolverBase
 
 

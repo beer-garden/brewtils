@@ -620,8 +620,10 @@ class TestCommand(object):
     def test_basic(self, command_dict, bg_command):
         # Removing things that need to be initialized
         bg_command.name = None
+        bg_command.display_name = None
         bg_command.parameters = []
         del command_dict["name"]
+        del command_dict["display_name"]
         del command_dict["parameters"]
         del command_dict["topics"]
 
@@ -687,6 +689,13 @@ class TestCommand(object):
         assert cmd1._command.output_type == "STRING"
         assert cmd2._command.output_type == "STRING"
         assert cmd3._command.output_type == "STRING"
+
+    def test_display_name(self):
+        @command(display_name="foo_test")
+        def cmd1(foo):
+            return foo
+
+        assert cmd1._command.display_name == "foo_test"
 
 
 class TestParameter(object):
@@ -973,6 +982,18 @@ class TestInitializeCommand(object):
             pass
 
         assert _initialize_command(_cmd).description == new_description
+
+    def test_display_name(self):
+        @command(display_name="foo_test")
+        def _cmd(_):
+            pass
+
+        assert hasattr(_cmd, "_command")
+
+        _cmd = _initialize_command(_cmd)
+
+        assert _cmd.name == "_cmd"
+        assert _cmd.display_name == "foo_test"
 
 
 class TestMethodName(object):

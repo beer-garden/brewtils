@@ -8,6 +8,7 @@ TBD
 - Added support for display name to command decorator
 - Updated Wait Timeout Exception expected HTTP code from 408 to 504
 - Dropping Official Python 2.7 Support
+- Adding Official Python 3.12 Support
 
 3.29.0
 ------

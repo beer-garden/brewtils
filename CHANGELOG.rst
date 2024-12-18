@@ -5,7 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
-- Update Parameter and Resolvable to add filename
+- Update Parameter and Resolvable to add file_name
 - Updated Wait Timeout Exception expected HTTP code from 408 to 504
 - Dropping Official Python 2.7 Support
 

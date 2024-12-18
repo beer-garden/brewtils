@@ -122,7 +122,7 @@ def nested_parameter_dict():
         "display_name": "nested",
         "optional": True,
         "default": None,
-        "filename": None,
+        "file_name": None,
         "description": None,
         "choices": None,
         "parameters": [],
@@ -145,7 +145,7 @@ def parameter_dict(nested_parameter_dict, choices_dict):
         "display_name": "display",
         "optional": True,
         "default": "default",
-        "filename": None,
+        "file_name": None,
         "description": "desc",
         "choices": choices_dict,
         "parameters": [nested_parameter_dict],
@@ -1103,7 +1103,7 @@ def resolvable_dict():
         "type": "bytes",
         "storage": "gridfs",
         "details": {"random": "detail"},
-        "filename": None,
+        "file_name": None,
     }
 
 

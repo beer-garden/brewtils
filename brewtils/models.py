@@ -325,7 +325,7 @@ class Parameter(BaseModel):
         display_name=None,
         optional=None,
         default=None,
-        filename=None,
+        file_name=None,
         description=None,
         choices=None,
         parameters=None,
@@ -344,7 +344,7 @@ class Parameter(BaseModel):
         self.display_name = display_name
         self.optional = optional
         self.default = default
-        self.filename = filename
+        self.file_name = file_name
         self.description = description
         self.choices = choices
         self.parameters = parameters or []
@@ -1692,13 +1692,13 @@ class Resolvable(BaseModel):
         self,
         id=None,  # noqa # shadows built-in
         type=None,  # noqa # shadows built-in
-        filename=None,
+        file_name=None,
         storage=None,
         details=None,
     ):
         self.id = id
         self.type = type
-        self.filename = filename
+        self.file_name = file_name
         self.storage = storage
         self.details = details or {}
 

@@ -177,7 +177,7 @@ class ParameterSchema(BaseSchema):
     display_name = fields.Str(allow_none=True)
     optional = fields.Bool(allow_none=True)
     default = fields.Raw(allow_none=True)
-    filename = fields.Str(allow_none=True)
+    file_name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     choices = fields.Nested("ChoicesSchema", allow_none=True, many=False)
     parameters = fields.Nested("self", many=True, allow_none=True)
@@ -576,7 +576,7 @@ class ResolvableSchema(BaseSchema):
     type = fields.Str(allow_none=True)
     storage = fields.Str(allow_none=True)
     details = fields.Dict(allow_none=True)
-    filename = fields.Str(allow_none=True)
+    file_name = fields.Str(allow_none=True)
 
 
 class RoleSchema(BaseSchema):

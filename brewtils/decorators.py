@@ -111,6 +111,7 @@ def client(
 
 def command(
     _wrapped=None,  # type: Union[Callable, MethodType]
+    display_name=None,  # type: Optional[str]
     description=None,  # type: Optional[str]
     parameters=None,  # type: Optional[List[Parameter]]
     command_type="ACTION",  # type: str
@@ -138,6 +139,7 @@ def command(
     Args:
         _wrapped: The function to decorate. This is handled as a positional argument and
             shouldn't be explicitly set.
+        display_name: Command display name to use instead of function name.
         description: The command description. If not given the first line of the method
             docstring will be used.
         parameters: A list of Command parameters. It's recommended to use @parameter
@@ -192,6 +194,7 @@ def command(
 
         return functools.partial(
             command,
+            display_name=display_name,
             description=description,
             parameters=parameters,
             command_type=command_type,
@@ -215,6 +218,7 @@ def command(
         else:
             output_type = "STRING"
     new_command = Command(
+        display_name=display_name,
         description=description,
         parameters=parameters,
         command_type=command_type,
@@ -677,6 +681,7 @@ def _initialize_command(method):
                 break
 
     cmd.name = _method_name(method)
+    cmd.display_name = cmd.display_name or _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
 
     try:

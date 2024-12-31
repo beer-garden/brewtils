@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.29.1
 ------
-TBD
+12/31/24
 
 - Added support for display name to command decorator
 - Updated Wait Timeout Exception expected HTTP code from 408 to 504

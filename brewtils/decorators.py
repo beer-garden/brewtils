@@ -14,6 +14,10 @@ from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 if sys.version_info.major == 2:
     from funcsigs import Parameter as InspectParameter  # noqa
     from funcsigs import signature
@@ -125,6 +129,7 @@ def command(
     tag=None,  # type: str
     tags=None,  # type: Optional[List[str]]
     allow_any_kwargs=None,  # type: Optional[bool]
+    deprecated=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
 
@@ -158,6 +163,7 @@ def command(
         tags: A list of tags that can be used to filter commands
         allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to
             the Command parameters defined.
+        deprecated: Boolean to indicate if command is deprecated
 
     Returns:
         The decorated function
@@ -207,6 +213,7 @@ def command(
             metadata=metadata,
             tags=tags,
             allow_any_kwargs=allow_any_kwargs,
+            deprecated=deprecated,
         )
 
     if output_type is None:
@@ -231,6 +238,7 @@ def command(
         metadata=metadata,
         tags=tags,
         allow_any_kwargs=allow_any_kwargs,
+        deprecated=deprecated,
     )
 
     # Python 2 compatibility
@@ -261,6 +269,7 @@ def parameter(
     type_info=None,  # type: Optional[dict]
     is_kwarg=None,  # type: Optional[bool]
     model=None,  # type: Optional[Type]
+    deprecated=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Parameter details
 
@@ -304,6 +313,7 @@ def parameter(
             method.
         model: Class to be used as a model for this parameter. Must be a Python type
             object, not an instance.
+        deprecated: Boolean to indicate if this parameter is deprecated
 
     Returns:
         The decorated function
@@ -346,6 +356,7 @@ def parameter(
             type_info=type_info,
             is_kwarg=is_kwarg,
             model=model,
+            deprecated=deprecated,
         )
 
     new_parameter = Parameter(
@@ -366,6 +377,7 @@ def parameter(
         type_info=type_info,
         is_kwarg=is_kwarg,
         model=model,
+        deprecated=deprecated,
     )
 
     # Python 2 compatibility
@@ -473,6 +485,24 @@ def shutdown(_wrapped=None):
     return _wrapped
 
 
+def deprecated(_wrapped=None):
+    """Decorator for specifying a deprecated command or parameter
+
+    for example::
+
+        @deprecated
+        def pre_running(self):
+            # Run pre-running processing
+            return
+
+    Args:
+        _wrapped: The function to decorate. This is handled as a positional argument and
+            shouldn't be explicitly set.
+    """
+    _wrapped._deprecated = True
+    return _wrapped
+
+
 def startup(_wrapped=None):
     """Decorator for specifying a function to run before a plugin is running.
 
@@ -549,6 +579,18 @@ def _parse_shutdown_functions(client):
             shutdown_functions.append(method)
 
     return shutdown_functions
+
+
+def _parse_deprecated(method):
+    """Get a list of deprecated methods"""
+    cmd = getattr(method, "_command", Command())
+    if cmd.deprecated:
+        return True
+
+    if callable(method) and getattr(method, "_deprecated", False):
+        return True
+
+    return False
 
 
 def _parse_startup_functions(client):
@@ -679,6 +721,7 @@ def _initialize_command(method):
     cmd.name = _method_name(method)
     cmd.display_name = cmd.display_name or _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
+    cmd.deprecated = cmd.deprecated or _parse_deprecated(method)
 
     try:
         base_dir = os.path.dirname(inspect.getfile(method))
@@ -902,6 +945,7 @@ def _initialize_parameter(
     is_kwarg=None,
     model=None,
     method=None,
+    deprecated=None,
 ):
     # type: (...) -> Parameter
     """Initialize a Parameter
@@ -942,6 +986,7 @@ def _initialize_parameter(
         type_info=type_info,
         is_kwarg=is_kwarg,
         model=model,
+        deprecated=deprecated,
     )
 
     # Every parameter needs a key, so stop that right here

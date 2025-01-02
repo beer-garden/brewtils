@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.29.2
+------
+TBD
+
+- Added deprecated decorator and deprecated kwarg to command and parameter decorators
+
 3.29.1
 ------
 12/31/24

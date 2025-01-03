@@ -14,10 +14,6 @@ from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 if sys.version_info.major == 2:
     from funcsigs import Parameter as InspectParameter  # noqa
     from funcsigs import signature
@@ -485,24 +481,6 @@ def shutdown(_wrapped=None):
     return _wrapped
 
 
-def deprecated(_wrapped=None):
-    """Decorator for specifying a deprecated command or parameter
-
-    for example::
-
-        @deprecated
-        def pre_running(self):
-            # Run pre-running processing
-            return
-
-    Args:
-        _wrapped: The function to decorate. This is handled as a positional argument and
-            shouldn't be explicitly set.
-    """
-    _wrapped._deprecated = True
-    return _wrapped
-
-
 def startup(_wrapped=None):
     """Decorator for specifying a function to run before a plugin is running.
 
@@ -582,15 +560,8 @@ def _parse_shutdown_functions(client):
 
 
 def _parse_deprecated(method):
-    """Get a list of deprecated methods"""
-    cmd = getattr(method, "_command", Command())
-    if cmd.deprecated:
-        return True
-
-    if callable(method) and getattr(method, "_deprecated", False):
-        return True
-
-    return False
+    """Determine if method is deprecated"""
+    return any("__deprecated__" in t for t in inspect.getmembers(method))
 
 
 def _parse_startup_functions(client):

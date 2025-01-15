@@ -693,6 +693,12 @@ def _initialize_command(method):
     cmd.display_name = cmd.display_name or _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
     cmd.deprecated = cmd.deprecated or _parse_deprecated(method)
+    if cmd.deprecated:
+        cmd.hidden = cmd.deprecated
+        if cmd.description:
+            cmd.description = f"(Deprecated) {cmd.description}"
+        else:
+            cmd.description = "(Deprecated)"
 
     try:
         base_dir = os.path.dirname(inspect.getfile(method))
@@ -984,6 +990,13 @@ def _initialize_parameter(
 
     # Process the raw choices into a Choices object
     param.choices = process_choices(param.choices)
+
+    # Process deprecated
+    if param.deprecated:
+        if param.description:
+            param.description = f"(Deprecated) {param.description}"
+        else:
+            param.description = "(Deprecated)"
 
     # Now deal with nested parameters
     if param.parameters or param.model:

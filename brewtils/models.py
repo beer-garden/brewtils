@@ -812,6 +812,25 @@ class Request(RequestTemplate):
     def is_json(self):
         return self.output_type and self.output_type.upper() == "JSON"
 
+    def is_newer(self, old_request):
+        if self._status in self.COMPLETED_STATUSES and old_request._status in [
+            "CREATED",
+            "RECEIVED",
+            "IN_PROGRESS",
+        ]:
+            return True
+
+        if self._status == "IN_PROGRESS" and old_request._status in [
+            "CREATED",
+            "RECEIVED",
+        ]:
+            return True
+
+        if self.status_updated_at > old_request.status_updated_at:
+            return True
+
+        return False
+
 
 class System(BaseModel):
     schema = "SystemSchema"
@@ -1564,6 +1583,13 @@ class Garden(BaseModel):
                 self.publishing_connections,
             )
         )
+
+    def is_newer(self, old_garden):
+
+        if self.status_info.heartbeat > old_garden.status_info.heartbeat:
+            return True
+
+        return False
 
 
 class Connection(BaseModel):

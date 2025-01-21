@@ -274,6 +274,31 @@ class Instance(BaseModel):
     def __repr__(self):
         return "<Instance: name=%s, status=%s>" % (self.name, self.status)
 
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Instance):
+            return False
+
+        return self.id == other.id or self.name == other.name
+
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Instance):
+            return False
+
+        if hasattr(other, "status_info") and hasattr(self, "status_info"):
+            return self.status_info.heartbeat > other.status_info.heartbeat
+
+        if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
+            return True
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
+
 
 class Choices(BaseModel):
     schema = "ChoicesSchema"
@@ -458,6 +483,31 @@ class StatusHistory(BaseModel):
             self.heartbeat,
         )
 
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusHistory):
+            return False
+
+        return self.status == other.status and self.heartbeat == other.heartbeat
+
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusHistory):
+            return False
+
+        if hasattr(other, "heartbeat") and hasattr(self, "heartbeat"):
+            return self.heartbeat > other.heartbeat
+
+        if hasattr(self, "heartbeat"):
+            return True
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
+
 
 class StatusInfo(BaseModel):
     schema = "StatusInfoSchema"
@@ -484,6 +534,31 @@ class StatusInfo(BaseModel):
             self.heartbeat,
             self.history,
         )
+
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusInfo):
+            return False
+
+        return self.heartbeat == other.heartbeat
+
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusInfo):
+            return False
+
+        if hasattr(other, "heartbeat") and hasattr(self, "heartbeat"):
+            return self.heartbeat > other.heartbeat
+
+        if hasattr(self, "heartbeat"):
+            return True
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
 
 
 class RequestFile(BaseModel):
@@ -812,24 +887,50 @@ class Request(RequestTemplate):
     def is_json(self):
         return self.output_type and self.output_type.upper() == "JSON"
 
-    def is_newer(self, old_request):
-        if self._status in self.COMPLETED_STATUSES and old_request._status in [
-            "CREATED",
-            "RECEIVED",
-            "IN_PROGRESS",
-        ]:
-            return True
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Request):
+            return False
 
-        if self._status == "IN_PROGRESS" and old_request._status in [
-            "CREATED",
-            "RECEIVED",
-        ]:
-            return True
+        return self.id == other.id and self._status == other._status
 
-        if self.status_updated_at > old_request.status_updated_at:
-            return True
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Request):
+            return False
+
+        if self._status != other._status:
+
+            if self._status in self.COMPLETED_STATUSES and other._status in [
+                "CREATED",
+                "RECEIVED",
+                "IN_PROGRESS",
+            ]:
+                return True
+
+            if self._status == "IN_PROGRESS" and other._status in [
+                "CREATED",
+                "RECEIVED",
+            ]:
+                return True
+
+            return False
+
+        if hasattr(self, "status_updated_at") and hasattr(other, "status_updated_at"):
+            return self.status_updated_at > other.status_updated_at
+
+        if hasattr(self, "updated_at") and hasattr(other, "updated_at"):
+            return self.updated_at > other.updated_at
+
+        if hasattr(self, "created_at") and hasattr(other, "created_at"):
+            return self.created_at > other.created_at
 
         return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
 
 
 class System(BaseModel):
@@ -882,6 +983,39 @@ class System(BaseModel):
             self.version,
             self.namespace,
         )
+
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, System):
+            return False
+
+        return self.id == other.id or (
+            self.name == other.name
+            and self.namespace == other.namespace
+            and self.version == other.version
+        )
+
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, System):
+            return False
+
+        if hasattr(other, "instances") and hasattr(self, "instances"):
+
+            for self_instance in self.instances:
+                for other_instance in other.instances:
+                    if (
+                        self_instance == other_instance
+                        and self_instance > other_instance
+                    ):
+                        return True
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
 
     @property
     def instance_names(self):
@@ -1175,6 +1309,40 @@ class Event(BaseModel):
                 self.payload,
             )
         )
+
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, System):
+            return False
+
+        return (
+            self.namespace == other.namespace
+            and self.garden == other.garden
+            and self.name == other.name
+            and self.error == other.error
+            and self.error_message == other.error_message
+            and self.payload_type == other.payload_type
+            and self.payload == other.payload
+        )
+
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Event):
+            return False
+
+        if self.timestamp and other.timestamp and self.timestamp > other.timestamp:
+            return True
+
+        if self.payload and other.payload:
+            if self.payload == other.payload and self.payload > other.payload:
+                return True
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
 
 
 class Queue(BaseModel):
@@ -1591,6 +1759,61 @@ class Garden(BaseModel):
 
         return False
 
+    def __eq__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+
+        if not isinstance(other, Garden):
+            return False
+
+        return self.id == other.id or self.name == other.name
+
+    def __gt__(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+
+        if not isinstance(other, Event):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info > other.status_info
+
+        if hasattr(other, "receiving_connections") and hasattr(
+            self, "receiving_connections"
+        ):
+
+            for self_connection in self.receiving_connections:
+                for other_connection in other.receiving_connections:
+                    if (
+                        self_connection == other_connection
+                        and self_connection > other_connection
+                    ):
+                        return True
+
+        if hasattr(other, "publishing_connections") and hasattr(
+            self, "publishing_connections"
+        ):
+
+            for self_connection in self.publishing_connections:
+                for other_connection in other.publishing_connections:
+                    if (
+                        self_connection == other_connection
+                        and self_connection > other_connection
+                    ):
+                        return True
+
+        if hasattr(other, "systems") and hasattr(self, "systems"):
+
+            for self_system in self.systems:
+                for other_system in other.systems:
+                    if self_system == other_system and self_system > other_system:
+                        return True
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
+
 
 class Connection(BaseModel):
     schema = "ConnectionSchema"
@@ -1629,6 +1852,24 @@ class Connection(BaseModel):
             self.status,
             self.config,
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, Connection):
+            return False
+
+        return self.api == other.api
+
+    def __gt__(self, other):
+        if not isinstance(other, Connection):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info > other.status_info
+
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other)
 
 
 class Operation(BaseModel):

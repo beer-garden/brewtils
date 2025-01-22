@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.29.2
+------
+TBD
+
+- Added `is_newer` support for various models to enable improved event handling in framework 
+
 3.29.1
 ------
 12/31/24

@@ -5,7 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
-- Added __eq__ and __gt__ support for various models to enable improved event handling in framework 
+- Added `is_newer` support for various models to enable improved event handling in framework 
 
 3.29.1
 ------

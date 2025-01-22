@@ -3,28 +3,31 @@ import warnings
 
 import pytest
 import pytz
+from pytest_lazyfixture import lazy_fixture
+
 from brewtils.errors import ModelError
 from brewtils.models import (
     Choices,
     Command,
+    Connection,
     CronTrigger,
     Instance,
     IntervalTrigger,
     LoggingConfig,
     Parameter,
     PatchOperation,
-    User,
     Queue,
     Request,
     RequestFile,
     RequestTemplate,
     Role,
-    Subscriber,
-    StatusInfo,
-    Topic,
     StatusHistory,
+    StatusInfo,
+    Subscriber,
+    System,
+    Topic,
+    User,
 )
-from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -455,7 +458,21 @@ class TestSystem(object):
         assert "1.0.0" in repr(bg_system)
 
     def test_is_newer(self):
-        assert False
+        system1 = System(instances=[Instance(status_info=StatusInfo(heartbeat=1))])
+        system2 = System(instances=[Instance(status_info=StatusInfo(heartbeat=2))])
+        system3 = System(
+            instances=[
+                Instance(status_info=StatusInfo(heartbeat=2)),
+                Instance(status_info=StatusInfo(heartbeat=3)),
+            ]
+        )
+        system4 = System(instances=[])
+
+        assert system2.is_newer(system1)
+        assert system3.is_newer(system1)
+        assert system3.is_newer(system2)
+
+        assert not system4.is_newer(system4)
 
 
 class TestPatchOperation(object):
@@ -859,4 +876,13 @@ class TestStatusHistory:
 class TestConnection:
 
     def test_is_newer(self):
-        assert False
+        connection1 = Connection(status="RUNNING", status_info=StatusInfo(heartbeat=1))
+        connection2 = Connection(status="RUNNING", status_info=StatusInfo(heartbeat=2))
+        connection3 = Connection(status="RUNNING")
+        connection4 = Connection(status="RUNNING")
+        assert connection2.is_newer(connection1)
+        assert connection2.is_newer(connection3)
+
+        # Unable to determine, so ensure it never returns True
+        assert not connection3.is_newer(connection4)
+        assert not connection4.is_newer(connection4)

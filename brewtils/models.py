@@ -960,17 +960,25 @@ class System(BaseModel):
         if not isinstance(other, System):
             return False
 
-        if hasattr(other, "instances") and hasattr(self, "instances"):
+        self_newest_instance = None
 
-            for self_instance in self.instances:
-                for other_instance in other.instances:
-                    if (
-                        self_instance.id == other_instance.id
-                        or self_instance.name == other_instance.name
-                    ) and self_instance.is_newer(other_instance):
-                        return True
+        if hasattr(self, "instances"):
+            for instance in self.instances:
+                if not self_newest_instance:
+                    self_newest_instance = instance
+                elif instance.is_newer(self_newest_instance):
+                    self_newest_instance = instance
 
-        return False
+        if not self_newest_instance:
+            return False
+
+        if hasattr(other, "instances"):
+
+            for other_instance in other.instances:
+                if other_instance.is_newer(self_newest_instance):
+                    return False
+
+        return True
 
     @property
     def instance_names(self):

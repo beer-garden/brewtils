@@ -280,10 +280,11 @@ class Instance(BaseModel):
         if not isinstance(other, Instance):
             return False
 
-        if hasattr(other, "status_info") and hasattr(self, "status_info"):
-            return self.status_info.is_newer(other.status_info)
-
         if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
+            if hasattr(other, "status_info") and hasattr(
+                other.status_info, "heartbeat"
+            ):
+                return self.status_info.is_newer(other.status_info)
             return True
 
         return False
@@ -478,10 +479,9 @@ class StatusHistory(BaseModel):
         if not isinstance(other, StatusHistory):
             return False
 
-        if hasattr(other, "heartbeat") and hasattr(self, "heartbeat"):
-            return self.heartbeat > other.heartbeat
-
-        if hasattr(self, "heartbeat"):
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
             return True
 
         return False
@@ -519,10 +519,9 @@ class StatusInfo(BaseModel):
         if not isinstance(other, StatusInfo):
             return False
 
-        if hasattr(other, "heartbeat") and hasattr(self, "heartbeat"):
-            return self.heartbeat > other.heartbeat
-
-        if hasattr(self, "heartbeat"):
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
             return True
 
         return False
@@ -875,16 +874,31 @@ class Request(RequestTemplate):
             ]:
                 return True
 
+            if self._status == "RECEIVED" and other._status == "CREATED":
+                return True
+
             return False
 
-        if hasattr(self, "status_updated_at") and hasattr(other, "status_updated_at"):
-            return self.status_updated_at > other.status_updated_at
+        self_newest_timestamp = None
+        if hasattr(self, "status_updated_at") and self.status_updated_at:
+            self_newest_timestamp = self.status_updated_at
 
-        if hasattr(self, "updated_at") and hasattr(other, "updated_at"):
-            return self.updated_at > other.updated_at
+        if hasattr(self, "updated_at") and self.updated_at:
+            if not self_newest_timestamp or self.updated_at > self_newest_timestamp:
+                self_newest_timestamp = self.updated_at
 
-        if hasattr(self, "created_at") and hasattr(other, "created_at"):
-            return self.created_at > other.created_at
+        if hasattr(self, "created_at") and self.created_at:
+            if not self_newest_timestamp or self.created_at > self_newest_timestamp:
+                self_newest_timestamp = self.created_at
+
+        if hasattr(other, "status_updated_at") and other.status_updated_at:
+            return self_newest_timestamp > other.status_updated_at
+
+        if hasattr(other, "updated_at") and other.updated_at:
+            return self_newest_timestamp > other.updated_at
+
+        if hasattr(other, "created_at") and other.created_at:
+            return self_newest_timestamp > other.created_at
 
         return False
 

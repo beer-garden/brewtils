@@ -1,13 +1,20 @@
 Brewtils Changelog
 ==================
 
-3.29.1
+3.29.2
 ------
 TBD
+
+- Added `is_newer` support for various models to enable improved event handling in framework 
+
+3.29.1
+------
+12/31/24
 
 - Added support for display name to command decorator
 - Updated Wait Timeout Exception expected HTTP code from 408 to 504
 - Dropping Official Python 2.7 Support
+- Update Bytes file download to validate MD5 checksum
 
 3.29.0
 ------

@@ -40,6 +40,7 @@ setup(
         "requests<3",
         "simplejson<4",
         "six<2",
+        "typing_extensions>=14.12.2",
         "wrapt",
         "yapconf>=0.3.7",
     ],

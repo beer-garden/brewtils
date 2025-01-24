@@ -5,6 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
+- Added deprecated decorator and deprecated kwarg to command and parameter decorators
 - Added `is_newer` support for various models to enable improved event handling in framework 
 
 3.29.1

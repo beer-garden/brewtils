@@ -25,7 +25,7 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import BaseModel, Event, Job, PatchOperation
+from brewtils.models import BaseModel, Event, File, Job, PatchOperation
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 
@@ -170,7 +170,7 @@ class EasyClient(object):
     """
 
     _default_file_params = {
-        "chunk_size": 255 * 1024,
+        "chunk_size": File.CHUNK_SIZE,
     }
 
     def __init__(self, *args, **kwargs):

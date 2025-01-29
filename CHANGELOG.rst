@@ -7,6 +7,7 @@ TBD
 
 - Added deprecated decorator and deprecated kwarg to command and parameter decorators
 - Added `is_newer` support for various models to enable improved event handling in framework 
+- Added static chunk size to File model
 
 3.29.1
 ------

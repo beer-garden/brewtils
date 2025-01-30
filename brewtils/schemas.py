@@ -490,10 +490,10 @@ class GardenSchema(BaseSchema):
     )
     namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
-    has_parent = fields.Bool(allow_none=True)
-    parent = fields.Str(allow_none=True)
-    children = fields.Nested(
-        "self", exclude=("parent"), many=True, default=None, allow_none=True
+    has_upstream = fields.Bool(allow_none=True)
+    upstream = fields.Str(allow_none=True)
+    downstream_gardens = fields.Nested(
+        "self", exclude=("upstream"), many=True, default=None, allow_none=True
     )
     metadata = fields.Dict(allow_none=True)
     default_user = fields.Str(allow_none=True)

@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.29.2
 ------
-TBD
+1/31/25
 
 - Added deprecated decorator and deprecated kwarg to command and parameter decorators
 - Added `is_newer` support for various models to enable improved event handling in framework 

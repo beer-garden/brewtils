@@ -1,13 +1,19 @@
 Brewtils Changelog
 ==================
 
-3.29.2
+3.29.3
 ------
 1/31/25
 
 - Added deprecated decorator and deprecated kwarg to command and parameter decorators
 - Added `is_newer` support for various models to enable improved event handling in framework 
 - Added static chunk size to File model
+- Updating Pypi release process
+
+3.29.3
+------
+
+- Failed Pypi Release Process
 
 3.29.1
 ------

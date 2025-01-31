@@ -1035,7 +1035,7 @@ def garden_dict(
         "publishing_connections": [connection_publishing_dict],
         "upstream": None,
         "has_upstream": False,
-        "downstream_gardens": [],
+        "downstream": [],
         "metadata": {},
         "default_user": None,
         "shared_users": True,

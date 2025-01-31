@@ -167,9 +167,9 @@ class TestGardens(object):
         assert updated == bg_garden
 
     def test_get_all(self, client, rest_client, bg_garden, success, parser):
-        child_garden = copy.deepcopy(bg_garden)
-        child_garden.name = "child1"
-        both_gardens = [bg_garden, child_garden]
+        downstream_garden = copy.deepcopy(bg_garden)
+        downstream_garden.name = "child1"
+        both_gardens = [bg_garden, downstream_garden]
         rest_client.get_gardens.return_value = success
         parser.parse_garden.return_value = both_gardens
 

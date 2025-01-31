@@ -492,7 +492,7 @@ class GardenSchema(BaseSchema):
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
     has_upstream = fields.Bool(allow_none=True)
     upstream = fields.Str(allow_none=True)
-    downstream_gardens = fields.Nested(
+    downstream = fields.Nested(
         "self", exclude=("upstream"), many=True, default=None, allow_none=True
     )
     metadata = fields.Dict(allow_none=True)

@@ -1640,7 +1640,7 @@ class Garden(BaseModel):
         publishing_connections=None,
         has_upstream=None,
         upstream=None,
-        downstream_gardens=None,
+        downstream=None,
         metadata=None,
         default_user=None,
         shared_users=None,
@@ -1659,7 +1659,7 @@ class Garden(BaseModel):
 
         self.has_upstream = has_upstream
         self.upstream = upstream
-        self.downstream_gardens = downstream_gardens
+        self.downstream = downstream
         self.metadata = metadata or {}
 
         self.default_user = default_user

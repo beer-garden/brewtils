@@ -10,7 +10,7 @@ Brewtils Changelog
 - Added static chunk size to File model
 - Updating Pypi release process
 
-3.29.3
+3.29.2
 ------
 
 - Failed Pypi Release Process

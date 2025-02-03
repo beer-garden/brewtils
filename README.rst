@@ -1,7 +1,6 @@
-
-========
+=========
 Brewtils
-========
+=========
 
 Brewtils is the Python library for interfacing with Beergarden systems. If you are planning on
 writing beer-garden plugins, this is the correct library for you. In addition to writing plugins,

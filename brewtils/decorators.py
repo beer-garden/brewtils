@@ -125,6 +125,7 @@ def command(
     tag=None,  # type: str
     tags=None,  # type: Optional[List[str]]
     allow_any_kwargs=None,  # type: Optional[bool]
+    deprecated=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Command details
 
@@ -158,6 +159,7 @@ def command(
         tags: A list of tags that can be used to filter commands
         allow_any_kwargs: Flag controlling whether passed kwargs will be restricted to
             the Command parameters defined.
+        deprecated: Boolean to indicate if command is deprecated
 
     Returns:
         The decorated function
@@ -207,6 +209,7 @@ def command(
             metadata=metadata,
             tags=tags,
             allow_any_kwargs=allow_any_kwargs,
+            deprecated=deprecated,
         )
 
     if output_type is None:
@@ -231,6 +234,7 @@ def command(
         metadata=metadata,
         tags=tags,
         allow_any_kwargs=allow_any_kwargs,
+        deprecated=deprecated,
     )
 
     # Python 2 compatibility
@@ -261,6 +265,7 @@ def parameter(
     type_info=None,  # type: Optional[dict]
     is_kwarg=None,  # type: Optional[bool]
     model=None,  # type: Optional[Type]
+    deprecated=None,  # type: Optional[bool]
 ):
     """Decorator for specifying Parameter details
 
@@ -304,6 +309,7 @@ def parameter(
             method.
         model: Class to be used as a model for this parameter. Must be a Python type
             object, not an instance.
+        deprecated: Boolean to indicate if this parameter is deprecated
 
     Returns:
         The decorated function
@@ -346,6 +352,7 @@ def parameter(
             type_info=type_info,
             is_kwarg=is_kwarg,
             model=model,
+            deprecated=deprecated,
         )
 
     new_parameter = Parameter(
@@ -366,6 +373,7 @@ def parameter(
         type_info=type_info,
         is_kwarg=is_kwarg,
         model=model,
+        deprecated=deprecated,
     )
 
     # Python 2 compatibility
@@ -551,6 +559,11 @@ def _parse_shutdown_functions(client):
     return shutdown_functions
 
 
+def _parse_deprecated(method):
+    """Determine if method is deprecated"""
+    return any("__deprecated__" in t for t in inspect.getmembers(method))
+
+
 def _parse_startup_functions(client):
     # type: (object) -> List[Callable]
     """Get a list of callable fields labeled with the startup annotation
@@ -679,6 +692,13 @@ def _initialize_command(method):
     cmd.name = _method_name(method)
     cmd.display_name = cmd.display_name or _method_name(method)
     cmd.description = cmd.description or _method_docstring(method)
+    cmd.deprecated = cmd.deprecated or _parse_deprecated(method)
+    if cmd.deprecated:
+        cmd.hidden = cmd.deprecated
+        if cmd.description:
+            cmd.description = f"(Deprecated) {cmd.description}"
+        else:
+            cmd.description = "(Deprecated)"
 
     try:
         base_dir = os.path.dirname(inspect.getfile(method))
@@ -902,6 +922,7 @@ def _initialize_parameter(
     is_kwarg=None,
     model=None,
     method=None,
+    deprecated=None,
 ):
     # type: (...) -> Parameter
     """Initialize a Parameter
@@ -942,6 +963,7 @@ def _initialize_parameter(
         type_info=type_info,
         is_kwarg=is_kwarg,
         model=model,
+        deprecated=deprecated,
     )
 
     # Every parameter needs a key, so stop that right here
@@ -968,6 +990,13 @@ def _initialize_parameter(
 
     # Process the raw choices into a Choices object
     param.choices = process_choices(param.choices)
+
+    # Process deprecated
+    if param.deprecated:
+        if param.description:
+            param.description = f"(Deprecated) {param.description}"
+        else:
+            param.description = "(Deprecated)"
 
     # Now deal with nested parameters
     if param.parameters or param.model:

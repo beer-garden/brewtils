@@ -143,6 +143,7 @@ class Command(BaseModel):
         tags=None,
         topics=None,
         allow_any_kwargs=None,
+        deprecated=None,
     ):
         self.name = name
         self.display_name = display_name or name
@@ -159,6 +160,7 @@ class Command(BaseModel):
         self.tags = tags or []
         self.topics = topics or []
         self.allow_any_kwargs = allow_any_kwargs
+        self.deprecated = deprecated
 
     def __str__(self):
         return self.name
@@ -351,6 +353,7 @@ class Parameter(BaseModel):
         regex=None,
         form_input_type=None,
         type_info=None,
+        deprecated=None,
         is_kwarg=None,
         model=None,
     ):
@@ -369,6 +372,7 @@ class Parameter(BaseModel):
         self.regex = regex
         self.form_input_type = form_input_type
         self.type_info = type_info or {}
+        self.deprecated = deprecated
 
         # These are special - they aren't part of the Parameter "API" (they aren't in
         # the serialization schema) but we still need them on this model for consistency
@@ -549,6 +553,9 @@ class RequestFile(BaseModel):
 
 class File(BaseModel):
     schema = "FileSchema"
+
+    CHUNK_SIZE = 255 * 1024
+    MAX_CHUNK_SIZE = 1024 * 1024 * 15  # 15MB
 
     def __init__(
         self,

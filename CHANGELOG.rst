@@ -3,6 +3,7 @@ Brewtils Changelog
 
 3.30.0
 ------
+TBD
 
 ## Major dependency upgrades and dropping 3.6, 3.7, 3.8 Python Support
 

@@ -131,6 +131,7 @@ def nested_parameter_dict():
         "regex": None,
         "form_input_type": None,
         "type_info": {},
+        "deprecated": False,
     }
 
 
@@ -153,6 +154,7 @@ def parameter_dict(nested_parameter_dict, choices_dict):
         "regex": ".*",
         "form_input_type": None,
         "type_info": {},
+        "deprecated": False,
     }
 
 
@@ -184,6 +186,7 @@ def command_dict(parameter_dict, system_id):
         "tags": [],
         "topics": [],
         "allow_any_kwargs": False,
+        "deprecated": False,
     }
 
 

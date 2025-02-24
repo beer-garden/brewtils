@@ -1685,7 +1685,7 @@ class Garden(BaseModel):
         # Implemented not for full model to model comparison, but to allow for
         # quick comparisons for event logic filtering
 
-        if not isinstance(other, Event):
+        if not isinstance(other, Garden):
             return False
 
         if hasattr(self, "status_info") and hasattr(other, "status_info"):

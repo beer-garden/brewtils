@@ -1016,7 +1016,10 @@ def bg_status_info(status_info_dict, ts_dt, bg_status_history):
 
 @pytest.fixture
 def garden_dict(
-    ts_epoch, system_dict, connection_dict, connection_publishing_dict,
+    ts_epoch,
+    system_dict,
+    connection_dict,
+    connection_publishing_dict,
 ):
     """A garden as a dictionary."""
 
@@ -1040,7 +1043,10 @@ def garden_dict(
 
 @pytest.fixture
 def bg_garden(
-    garden_dict, bg_system, bg_connection, bg_connection_publishing,
+    garden_dict,
+    bg_system,
+    bg_connection,
+    bg_connection_publishing,
 ):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)

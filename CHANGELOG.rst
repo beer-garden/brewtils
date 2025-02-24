@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.31.0
+------
+TBD
+
+- Removed status and status info from Garden model since status is now derived from connections 
+
 3.29.1
 ------
 12/31/24

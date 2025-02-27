@@ -386,6 +386,19 @@ class SchemaParser(object):
         Returns:
             A Garden object
         """
+        if from_string:
+            garden = json.loads(garden)
+            from_string = False
+
+        # For mapping models from BG older than 3.31.0
+        for old_key, new_key in [
+            ("has_parent", "has_upstream"),
+            ("parent", "upstream"),
+            ("children", "downstream"),
+        ]:
+            if old_key in garden:
+                garden[new_key] = garden.pop(old_key)
+
         return cls.parse(
             garden, brewtils.models.Garden, from_string=from_string, **kwargs
         )

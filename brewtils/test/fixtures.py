@@ -361,8 +361,8 @@ def child_request_dict(ts_epoch):
         "metadata": {"child": "stuff"},
         "has_parent": True,
         "requester": "user",
-        "source_garden": "parent",
-        "target_garden": "child",
+        "source_garden": "upstream parent",
+        "target_garden": "downstream child",
     }
 
 
@@ -403,8 +403,8 @@ def parent_request_dict(ts_epoch):
         "metadata": {"parent": "stuff"},
         "has_parent": False,
         "requester": "user",
-        "source_garden": "parent",
-        "target_garden": "child",
+        "source_garden": "upstream parent",
+        "target_garden": "downstream child",
     }
 
 
@@ -470,8 +470,8 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "metadata": {"request": "stuff"},
         "has_parent": True,
         "requester": "user",
-        "source_garden": "parent",
-        "target_garden": "child",
+        "source_garden": "upstream parent",
+        "target_garden": "downstream child",
     }
 
 
@@ -1030,9 +1030,9 @@ def garden_dict(
         "connection_type": "http",
         "receiving_connections": [connection_dict],
         "publishing_connections": [connection_publishing_dict],
-        "parent": None,
-        "has_parent": False,
-        "children": [],
+        "upstream": None,
+        "has_upstream": False,
+        "downstream": [],
         "metadata": {},
         "default_user": None,
         "shared_users": True,
@@ -1062,8 +1062,8 @@ def operation_dict(ts_epoch, request_dict):
         "model_type": "Request",
         "args": [request_dict["id"]],
         "kwargs": {"extra": "kwargs"},
-        "target_garden_name": "child",
-        "source_garden_name": "parent",
+        "target_garden_name": "downstream child",
+        "source_garden_name": "upstream parent",
         "source_api": "HTTP",
         "operation_type": "REQUEST_CREATE",
     }

@@ -20,7 +20,7 @@ jobs:
 
       # Need to update if we support other OS's
       - name: Cache PIP Install
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-lint-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
@@ -50,7 +50,7 @@ jobs:
 
       # Need to update if we support other OS's
       - name: Cache PIP Install
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-install-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
@@ -87,7 +87,7 @@ jobs:
 
       # Need to update if we support other OS's
       - name: Cache PIP Install
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-coverage-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}

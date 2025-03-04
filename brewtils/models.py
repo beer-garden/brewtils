@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from zoneinfo import ZoneInfo
 
-import six  # noqa # not in requirements file
 
 from brewtils.errors import ModelError, _deprecate
 
@@ -1096,7 +1095,7 @@ class LoggingConfig(BaseModel):
 
         # In case no formatter is provided, we always want a default.
         formatters = {"default": {"format": self.DEFAULT_FORMAT}}
-        for formatter_name, format_str in six.iteritems(specific_formatters):
+        for formatter_name, format_str in specific_formatters.items():
             formatters[formatter_name] = {"format": format_str}
 
         return formatters

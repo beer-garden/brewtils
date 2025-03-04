@@ -5,7 +5,6 @@ import os
 from io import open
 from typing import Optional, Union
 
-import six
 
 from brewtils.errors import PluginParamError
 
@@ -19,7 +18,7 @@ def resolve_schema(schema=None, base_dir=None):
     """
     if schema is None or isinstance(schema, dict):
         return schema
-    elif isinstance(schema, six.string_types):
+    elif isinstance(schema, str):
         try:
             if schema.startswith("http"):
                 return _load_from_url(schema)
@@ -28,7 +27,7 @@ def resolve_schema(schema=None, base_dir=None):
             else:
                 raise PluginParamError("Schema was not a definition, file path, or URL")
         except Exception as ex:
-            six.raise_from(PluginParamError("Error resolving schema: %s" % ex), ex)
+            raise PluginParamError("Error resolving schema: %s" % ex) from ex
     else:
         raise PluginParamError(
             "Schema specified was not a definition, file path, or URL"
@@ -46,7 +45,7 @@ def resolve_form(form=None, base_dir=None):
         return form
     elif isinstance(form, list):
         return {"type": "fieldset", "items": form}
-    elif isinstance(form, six.string_types):
+    elif isinstance(form, str):
         try:
             if form.startswith("http"):
                 return _load_from_url(form)
@@ -55,7 +54,7 @@ def resolve_form(form=None, base_dir=None):
             else:
                 raise PluginParamError("Form was not a definition, file path, or URL")
         except Exception as ex:
-            six.raise_from(PluginParamError("Error resolving form: %s" % ex), ex)
+            raise PluginParamError("Error resolving form: %s" % ex) from  ex
     else:
         raise PluginParamError("Schema was not a definition, file path, or URL")
 
@@ -69,7 +68,7 @@ def resolve_template(template=None, base_dir=None):
     """
     if template is None:
         return None
-    elif isinstance(template, six.string_types):
+    elif isinstance(template, str):
         try:
             if template.startswith("http"):
                 return _load_from_url(template)
@@ -79,7 +78,7 @@ def resolve_template(template=None, base_dir=None):
                 return template
 
         except Exception as ex:
-            six.raise_from(PluginParamError("Error resolving template: %s" % ex), ex)
+            raise PluginParamError("Error resolving template: %s" % ex) from ex
     else:
         raise PluginParamError(
             "Template specified was not a definition, file path, or URL"
@@ -141,10 +140,7 @@ def _load_from_path(path, base_dir=None):
         with open(file_path, "r") as definition_file:
             return definition_file.read()
     except IOError as ex:
-        six.raise_from(
-            PluginParamError(
+        raise PluginParamError(
                 "%s. Please remember that relative paths will be resolved starting "
                 "from the plugin's current working directory." % ex
-            ),
-            ex,
-        )
+            ) from ex

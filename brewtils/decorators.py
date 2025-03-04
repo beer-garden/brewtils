@@ -7,22 +7,17 @@ import sys
 from types import MethodType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 
-import six
 
 from brewtils.choices import process_choices
 from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
 
-if sys.version_info.major == 2:
-    from funcsigs import Parameter as InspectParameter  # noqa
-    from funcsigs import signature
-else:
-    from inspect import Parameter as InspectParameter  # noqa
-    from inspect import signature
+from inspect import Parameter as InspectParameter  # noqa
+from inspect import signature
 
-    if sys.version_info.major == 3 and sys.version_info.minor >= 8:
-        from typing import get_args
+if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+    from typing import get_args
 
 __all__ = [
     "client",
@@ -639,13 +634,11 @@ def _parse_method(method):
             _signature_validate(method_command, method)
 
         except PluginParamError as ex:
-            six.raise_from(
-                PluginParamError(
+            raise PluginParamError(
                     "Error initializing parameters for command '%s': %s"
                     % (method_command.name, ex)
-                ),
-                ex,
-            )
+                ) from ex
+        
 
         return method_command
 
@@ -687,10 +680,7 @@ def _initialize_command(method):
         cmd.form = resolve_form(cmd.form, base_dir=base_dir)
         cmd.template = resolve_template(cmd.template, base_dir=base_dir)
     except PluginParamError as ex:
-        six.raise_from(
-            PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)),
-            ex,
-        )
+        raise PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)) from ex
 
     return cmd
 

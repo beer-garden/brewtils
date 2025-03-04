@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union
 from hashlib import md5
 
-import six
 import wrapt
 from requests import Response  # noqa # not in requirements file
 
@@ -990,7 +989,7 @@ class EasyClient(object):
         default_file_params = {}
 
         # Establish the file descriptor
-        if isinstance(file_to_upload, six.string_types):
+        if isinstance(file_to_upload, str):
             try:
                 fd = open(file_to_upload, "rb")
             except Exception:

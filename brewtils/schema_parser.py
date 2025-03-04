@@ -4,7 +4,6 @@ import logging
 import typing
 from typing import Any, Dict, Optional, Union
 
-import six  # type: ignore
 from box import Box  # type: ignore
 
 import brewtils.models
@@ -544,7 +543,7 @@ class SchemaParser(object):
         if data is None:
             raise TypeError("Data can not be None")
 
-        if from_string and not isinstance(data, six.string_types):
+        if from_string and not isinstance(data, str):
             raise TypeError("When from_string=True data must be a string-type")
 
         if model_class == brewtils.models.PatchOperation:

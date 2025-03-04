@@ -38,7 +38,6 @@ setup(
         "pika<=1.4,>=1.0.1",
         "requests<3",
         "simplejson<4",
-        "six<2",
         "wrapt",
         "yapconf>=0.3.7",
     ],

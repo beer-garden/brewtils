@@ -3,13 +3,11 @@
 import abc
 from typing import Any
 
-import six
 
 from brewtils.models import Parameter, Resolvable
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ResolverBase(object):
+class ResolverBase(metaclass=abc.ABCMeta):
     """Base for all Resolver implementations"""
 
     def should_upload(self, value, definition):

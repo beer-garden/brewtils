@@ -238,12 +238,7 @@ class TestRequestProcessor(object):
             exc = MyError("bar")
             invoke_mock.side_effect = exc
 
-            # On python version 2, errors with custom attributes do not list those
-            # attributes as arguments.
-            if sys.version_info.major < 3:
-                arguments = []
-            else:
-                arguments = ["bar"]
+            arguments = ["bar"]
 
             processor.process_message(target_mock, request_mock, {})
             invoke_mock.assert_called_once_with(target_mock, request_mock, {})
@@ -268,12 +263,7 @@ class TestRequestProcessor(object):
             thing = MyError(message)
             invoke_mock.side_effect = thing
 
-            # On python version 2, errors with custom attributes do not list those
-            # attributes as arguments.
-            if sys.version_info.major < 3:
-                arguments = []
-            else:
-                arguments = [str(message)]
+            arguments = [str(message)]
 
             processor.process_message(target_mock, request_mock, {})
             invoke_mock.assert_called_once_with(target_mock, request_mock, {})

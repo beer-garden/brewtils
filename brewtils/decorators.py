@@ -635,10 +635,9 @@ def _parse_method(method):
 
         except PluginParamError as ex:
             raise PluginParamError(
-                    "Error initializing parameters for command '%s': %s"
-                    % (method_command.name, ex)
-                ) from ex
-        
+                "Error initializing parameters for command '%s': %s"
+                % (method_command.name, ex)
+            ) from ex
 
         return method_command
 
@@ -680,7 +679,9 @@ def _initialize_command(method):
         cmd.form = resolve_form(cmd.form, base_dir=base_dir)
         cmd.template = resolve_template(cmd.template, base_dir=base_dir)
     except PluginParamError as ex:
-        raise PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)) from ex
+        raise PluginParamError(
+            "Error initializing command '%s': %s" % (cmd.name, ex)
+        ) from ex
 
     return cmd
 

@@ -54,7 +54,7 @@ def resolve_form(form=None, base_dir=None):
             else:
                 raise PluginParamError("Form was not a definition, file path, or URL")
         except Exception as ex:
-            raise PluginParamError("Error resolving form: %s" % ex) from  ex
+            raise PluginParamError("Error resolving form: %s" % ex) from ex
     else:
         raise PluginParamError("Schema was not a definition, file path, or URL")
 
@@ -141,6 +141,6 @@ def _load_from_path(path, base_dir=None):
             return definition_file.read()
     except IOError as ex:
         raise PluginParamError(
-                "%s. Please remember that relative paths will be resolved starting "
-                "from the plugin's current working directory." % ex
-            ) from ex
+            "%s. Please remember that relative paths will be resolved starting "
+            "from the plugin's current working directory." % ex
+        ) from ex

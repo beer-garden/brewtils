@@ -156,10 +156,7 @@ def process_choices(choices):
             )
         else:
             if (
-                (
-                    choice_type == "command"
-                    and not isinstance(value, (str, dict))
-                )
+                (choice_type == "command" and not isinstance(value, (str, dict)))
                 or (choice_type == "url" and not isinstance(value, str))
                 or (choice_type == "static" and not isinstance(value, (list, dict)))
             ):

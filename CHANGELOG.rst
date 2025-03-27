@@ -5,7 +5,7 @@ Brewtils Changelog
 ------
 TBD
 
-- Removed status and status info from Garden model since status is now derived from connections 
+- Removed status and status info from Garden model since status is now derived from connections
 
 3.29.1
 ------

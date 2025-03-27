@@ -484,7 +484,6 @@ class GardenSchema(BaseSchema):
     publishing_connections = fields.Nested(
         "ConnectionSchema", many=True, allow_none=True
     )
-    namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
     has_parent = fields.Bool(allow_none=True)
     parent = fields.Str(allow_none=True)

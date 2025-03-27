@@ -1026,7 +1026,6 @@ def garden_dict(
     return {
         "id": "123f11af55a38e64799fa1c1",
         "name": "garden",
-        "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
         "receiving_connections": [connection_dict],

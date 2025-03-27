@@ -1496,7 +1496,6 @@ class Garden(BaseModel):
         self,
         id=None,  # noqa # shadows built-in
         name=None,
-        namespaces=None,
         systems=None,
         connection_type=None,
         receiving_connections=None,
@@ -1511,7 +1510,6 @@ class Garden(BaseModel):
     ):
         self.id = id
         self.name = name
-        self.namespaces = namespaces or []
         self.systems = systems or []
 
         self.connection_type = connection_type

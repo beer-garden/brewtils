@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import warnings
-from datetime import timezone
 from zoneinfo import ZoneInfo
 
 import pytest
-import pytz
 from pytest_lazyfixture import lazy_fixture
 
 from brewtils.errors import ModelError

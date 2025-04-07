@@ -43,6 +43,7 @@ from brewtils.request_handling import (
 )
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
+from brewtils.rest.system_client import SystemClient
 from brewtils.specification import _CONNECTION_SPEC
 
 # This is what enables request nesting to work easily
@@ -437,6 +438,26 @@ class Plugin(object):
             client_clazz._prefix_topic = self._system.prefix_topic
             client_clazz._requires = self._system.requires
             client_clazz._current_request = client_clazz.current_request
+
+            # Can only inject System Clients if the Client inherits from a class object
+            # TODO: Should we add a configuration to explicitly disable this?
+            if issubclass(client_clazz, object):
+
+                def system_client_getattribute(self, name):
+                    try:
+                        if not name.startswith("_"):
+                            request = get_current_request_read_only()
+                            # Does not support recursive calls
+                            if request and request.command != name:
+                                if self.__class__._bg_commands:
+                                    for bg_command in self.__class__._bg_commands:
+                                        if bg_command.name == name:
+                                            return getattr(SystemClient(), name)
+                    except Exception:
+                        pass
+                    return object.__getattribute__(self, name)
+
+                new_client.__class__.__getattribute__ = system_client_getattribute
         except TypeError:
             if sys.version_info.major != 2:
                 raise

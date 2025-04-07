@@ -407,10 +407,27 @@ class SystemClient(object):
         # tried to pass a parameter without a key:
         # client.command_name(param)
         if args:
-            raise RequestProcessException(
-                "Using positional arguments when creating a request is not allowed. "
-                "Please use keyword arguments instead."
-            )
+            if self.target_self:
+                _command = self._commands[kwargs["_command"]]
+                if _command:
+                    arg_counter = 0
+                    for arg in args:
+                        if arg_counter < len(_command.parameters):
+                            if _command.parameters[arg_counter].key in kwargs:
+                                raise RequestProcessException(
+                                    "Keyword argument overlapped with provided positional argument. Please use all keyword arguments instead."
+                                )
+                            kwargs[_command.parameters[arg_counter].key] = arg
+                            arg_counter = arg_counter + 1
+                        else:
+                            raise RequestProcessException(
+                                "More positional arguments provided that command parameters. Please use all keyword arguments instead."
+                            )
+            else:
+                raise RequestProcessException(
+                    "Using positional arguments when creating a request is not allowed. "
+                    "Please use keyword arguments instead."
+                )
 
         # Need to pop here, otherwise we'll try to send as a request parameter
         raise_on_error = kwargs.pop("_raise_on_error", self._raise_on_error)

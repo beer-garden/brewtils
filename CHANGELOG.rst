@@ -1,6 +1,13 @@
 Brewtils Changelog
 ==================
 
+3.31.0
+------
+TBD
+
+- Added support to auto generate requests when calling functions locally that are annotated with command decorators. This only supports
+  plugin classes that extend `object` and does not support recursive command loops.
+
 3.29.1
 ------
 12/31/24

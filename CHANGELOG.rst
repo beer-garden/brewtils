@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.23.0
+------
+TBD
+
+- Fixed issue trying to check the bytes hash in resolver 
+
 3.29.1
 ------
 12/31/24

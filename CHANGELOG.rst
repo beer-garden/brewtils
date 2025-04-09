@@ -1,11 +1,14 @@
 Brewtils Changelog
 ==================
 
-3.31.0
+3.30.0
 ------
 TBD
 
+- Fixed issue trying to check the bytes hash in resolver 
+- Added `is_newer` support for various models to enable improved event handling in framework 
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
+
 
 3.29.1
 ------

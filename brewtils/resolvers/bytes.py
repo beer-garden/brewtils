@@ -27,8 +27,7 @@ class BytesResolver(ResolverBase):
         if value.details:
             if (
                 "md5_sum" in value.details
-                and value.details["md5_sum"]
-                != md5(file_bytes.decode("utf-8").encode("utf-8")).hexdigest()
+                and value.details["md5_sum"] != md5(file_bytes).hexdigest()
             ):
                 raise ValidationError(
                     "Requested file %s MD5 SUM %s does match actual MD5 SUM %s"

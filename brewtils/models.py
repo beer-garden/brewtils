@@ -274,6 +274,21 @@ class Instance(BaseModel):
     def __repr__(self):
         return "<Instance: name=%s, status=%s>" % (self.name, self.status)
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Instance):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
+            if hasattr(other, "status_info") and hasattr(
+                other.status_info, "heartbeat"
+            ):
+                return self.status_info.is_newer(other.status_info)
+            return True
+
+        return False
+
 
 class Choices(BaseModel):
     schema = "ChoicesSchema"
@@ -458,6 +473,19 @@ class StatusHistory(BaseModel):
             self.heartbeat,
         )
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusHistory):
+            return False
+
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
+            return True
+
+        return False
+
 
 class StatusInfo(BaseModel):
     schema = "StatusInfoSchema"
@@ -484,6 +512,19 @@ class StatusInfo(BaseModel):
             self.heartbeat,
             self.history,
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusInfo):
+            return False
+
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
+            return True
+
+        return False
 
 
 class RequestFile(BaseModel):
@@ -812,6 +853,55 @@ class Request(RequestTemplate):
     def is_json(self):
         return self.output_type and self.output_type.upper() == "JSON"
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Request):
+            return False
+
+        if self._status != other._status:
+
+            if self._status in self.COMPLETED_STATUSES and other._status in [
+                "CREATED",
+                "RECEIVED",
+                "IN_PROGRESS",
+            ]:
+                return True
+
+            if self._status == "IN_PROGRESS" and other._status in [
+                "CREATED",
+                "RECEIVED",
+            ]:
+                return True
+
+            if self._status == "RECEIVED" and other._status == "CREATED":
+                return True
+
+            return False
+
+        self_newest_timestamp = None
+        if hasattr(self, "status_updated_at") and self.status_updated_at:
+            self_newest_timestamp = self.status_updated_at
+
+        if hasattr(self, "updated_at") and self.updated_at:
+            if not self_newest_timestamp or self.updated_at > self_newest_timestamp:
+                self_newest_timestamp = self.updated_at
+
+        if hasattr(self, "created_at") and self.created_at:
+            if not self_newest_timestamp or self.created_at > self_newest_timestamp:
+                self_newest_timestamp = self.created_at
+
+        if hasattr(other, "status_updated_at") and other.status_updated_at:
+            return self_newest_timestamp > other.status_updated_at
+
+        if hasattr(other, "updated_at") and other.updated_at:
+            return self_newest_timestamp > other.updated_at
+
+        if hasattr(other, "created_at") and other.created_at:
+            return self_newest_timestamp > other.created_at
+
+        return False
+
 
 class System(BaseModel):
     schema = "SystemSchema"
@@ -863,6 +953,32 @@ class System(BaseModel):
             self.version,
             self.namespace,
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, System):
+            return False
+
+        self_newest_instance = None
+
+        if hasattr(self, "instances"):
+            for instance in self.instances:
+                if not self_newest_instance:
+                    self_newest_instance = instance
+                elif instance.is_newer(self_newest_instance):
+                    self_newest_instance = instance
+
+        if not self_newest_instance:
+            return False
+
+        if hasattr(other, "instances"):
+
+            for other_instance in other.instances:
+                if other_instance.is_newer(self_newest_instance):
+                    return False
+
+        return True
 
     @property
     def instance_names(self):
@@ -1565,6 +1681,56 @@ class Garden(BaseModel):
             )
         )
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+
+        if not isinstance(other, Garden):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info.is_newer(other.status_info)
+
+        if hasattr(other, "receiving_connections") and hasattr(
+            self, "receiving_connections"
+        ):
+
+            for self_connection in self.receiving_connections:
+                for other_connection in other.receiving_connections:
+                    if (
+                        self_connection.api == other_connection.api
+                        and self_connection.is_newer(other_connection)
+                    ):
+                        return True
+
+        if hasattr(other, "publishing_connections") and hasattr(
+            self, "publishing_connections"
+        ):
+
+            for self_connection in self.publishing_connections:
+                for other_connection in other.publishing_connections:
+                    if (
+                        self_connection.api == other_connection.api
+                        and self_connection.is_newer(other_connection)
+                    ):
+                        return True
+
+        if hasattr(other, "systems") and hasattr(self, "systems"):
+
+            for self_system in self.systems:
+                for other_system in other.systems:
+                    if (
+                        self_system.id == other_system.id
+                        or (
+                            self_system.namespace == other_system.namespace
+                            and self_system.name == other_system.name
+                            and self_system.version == other_system.version
+                        )
+                    ) and self_system.is_newer(other_system):
+                        return True
+
+        return False
+
 
 class Connection(BaseModel):
     schema = "ConnectionSchema"
@@ -1603,6 +1769,15 @@ class Connection(BaseModel):
             self.status,
             self.config,
         )
+
+    def is_newer(self, other):
+        if not isinstance(other, Connection):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info.is_newer(other.status_info)
+
+        return False
 
 
 class Operation(BaseModel):

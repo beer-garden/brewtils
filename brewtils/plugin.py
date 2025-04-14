@@ -294,7 +294,6 @@ class Plugin(object):
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
-        global CLIENT
         # Make sure this is set after self._system
         if client:
             self._set_client(client)

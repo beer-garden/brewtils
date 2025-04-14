@@ -215,6 +215,14 @@ _SYSTEM_SPEC = {
 }
 
 _PLUGIN_SPEC = {
+    "auto_self_client": {
+        "type": "bool",
+        "description": (
+            "Whether to automatically invoke SystemClient for local"
+            "system commands via self"
+        ),
+        "default": True,
+    },
     "instance_name": {
         "type": "str",
         "description": "The instance name",

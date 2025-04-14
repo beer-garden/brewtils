@@ -95,6 +95,7 @@ class Plugin(object):
         - ``require``
         - ``requires``
         - ``requires_timeout``
+        - ``auto_self_client`` (defaults to "true")
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -207,6 +208,9 @@ class Plugin(object):
 
         prefix_topic (str): Prefix for Generated Command Topics
 
+        auto_self_client (bool): Whether to automatically invoke SystemClient for local
+            system commands via self
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
@@ -239,6 +243,8 @@ class Plugin(object):
         # Need to set up logging before loading config
         self._custom_logger = False
         self._logger = self._setup_logging(logger=logger, **kwargs)
+
+        self._auto_self_client = kwargs.pop("auto_self_client", True)
 
         # Need to pop out shutdown functions because these are not processed
         # until shutdown
@@ -441,7 +447,7 @@ class Plugin(object):
 
             # Can only inject System Clients if the Client inherits from a class object
             # TODO: Should we add a configuration to explicitly disable this?
-            if issubclass(client_clazz, object):
+            if self._auto_self_client and issubclass(client_clazz, object):
 
                 def system_client_getattribute(self, name):
                     try:

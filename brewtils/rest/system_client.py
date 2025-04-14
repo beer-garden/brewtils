@@ -415,13 +415,19 @@ class SystemClient(object):
                         if arg_counter < len(_command.parameters):
                             if _command.parameters[arg_counter].key in kwargs:
                                 raise RequestProcessException(
-                                    "Keyword argument overlapped with provided positional argument. Please use all keyword arguments instead."
+                                    (
+                                        "Keyword argument overlapped with provided positional "
+                                        "argument. Please use all keyword arguments instead."
+                                    )
                                 )
                             kwargs[_command.parameters[arg_counter].key] = arg
                             arg_counter = arg_counter + 1
                         else:
                             raise RequestProcessException(
-                                "More positional arguments provided that command parameters. Please use all keyword arguments instead."
+                                (
+                                    "More positional arguments provided that command parameters. "
+                                    "Please use all keyword arguments instead."
+                                )
                             )
             else:
                 raise RequestProcessException(

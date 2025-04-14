@@ -8,6 +8,13 @@ TBD
 - Added support to auto generate requests when calling functions locally that are annotated with command decorators. This only supports
   plugin classes that extend `object` and does not support recursive command loops.
 
+3.30.0
+------
+TBD
+
+- Fixed issue trying to check the bytes hash in resolver 
+- Added `is_newer` support for various models to enable improved event handling in framework 
+
 3.29.1
 ------
 12/31/24

@@ -52,6 +52,8 @@ request_context.current_request = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
+# Global client
+CLIENT = None
 
 
 def get_current_request_read_only():
@@ -301,7 +303,6 @@ class Plugin(object):
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
-        global CLIENT
         # Make sure this is set after self._system
         if client:
             self._set_client(client)
@@ -475,7 +476,8 @@ class Plugin(object):
             )
 
         self._client = new_client
-        brewtils.plugin.CLIENT = new_client
+        global CLIENT
+        CLIENT = new_client
 
     @property
     def system(self):

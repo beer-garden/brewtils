@@ -9,6 +9,7 @@ from hashlib import md5
 import six
 import wrapt
 from requests import Response  # noqa # not in requirements file
+import time
 
 from brewtils.config import get_connection_info
 from brewtils.errors import (
@@ -1058,12 +1059,30 @@ class EasyClient(object):
         file_obj = BytesIO()
         if valid:
             for x in range(meta["number_of_chunks"]):
-                resp = self.client.get_chunked_file(file_id, params={"chunk": x})
-                if resp.ok:
-                    data = resp.json()["data"]
-                    file_obj.write(b64decode(data))
+                delay_time = 0.5
+                total_wait_time = 0
+                attempt = 0
+
+                # This loop will give 2.5 to 3 minutes of wait time
+                # before giving up
+                while attempt < 10:
+                    try:
+                        resp = self.client.get_chunked_file(
+                            file_id, params={"chunk": x}
+                        )
+                        if resp.ok:
+                            break
+                    except Exception:
+                        time.sleep(delay_time)
+                        total_wait_time += delay_time
+                        delay_time = min(delay_time * 2, 30)
+                        attempt = attempt + 1
                 else:
                     raise ValueError("Could not fetch chunk %d" % x)
+
+                data = resp.json()["data"]
+                file_obj.write(b64decode(data))
+
         else:
             raise ValidationError("Requested file %s is incomplete." % file_id)
 

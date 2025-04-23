@@ -1084,7 +1084,7 @@ class EasyClient(object):
                     data = resp.json()["data"]
                     file_obj.write(b64decode(data))
                 else:
-                    raise ValueError("Could not fetch chunk {x}")
+                    raise ValueError(f"Requested file {file_id} is missing chunk {x}")
         else:
             if "missing_chunks" in meta and len(meta["missing_chunks"]) > 0:
                 raise ValidationError(

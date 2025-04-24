@@ -6,7 +6,8 @@ Brewtils Changelog
 TBD
 
 - Fixed issue trying to check the bytes hash in resolver 
-- Added `is_newer` support for various models to enable improved event handling in framework 
+- Added `is_newer` support for various models to enable improved event handling in framework
+- Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
 
 3.29.1
 ------

@@ -496,9 +496,9 @@ class StatusInfo(BaseModel):
 
     def set_status_heartbeat(self, status, max_history=None):
         if (
-            not self.history
-            or status != "NOT_CONFIGURED"
-            or (status != self.history[-1].status)
+            status != "NOT_CONFIGURED"
+            or not self.history
+            or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
         ):
             self.heartbeat = datetime.utcnow()
             self.history.append(

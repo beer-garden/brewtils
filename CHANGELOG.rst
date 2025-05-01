@@ -7,6 +7,7 @@ TBD
 
 - Fixed issue trying to check the bytes hash in resolver 
 - Added `is_newer` support for various models to enable improved event handling in framework 
+- Added Entry Heartbeat event label
 
 3.29.1
 ------

@@ -82,6 +82,7 @@ class Events(Enum):
     GARDEN_SYNC = 30
     ENTRY_STARTED = 31
     ENTRY_STOPPED = 32
+    ENTRY_HEARTBEAT = 60
     JOB_CREATED = 33
     JOB_DELETED = 34
     JOB_PAUSED = 35
@@ -106,7 +107,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 60
+    # Next: 61
 
 
 class Permissions(Enum):

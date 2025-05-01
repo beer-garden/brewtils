@@ -82,6 +82,7 @@ class Events(Enum):
     GARDEN_SYNC = 30
     ENTRY_STARTED = 31
     ENTRY_STOPPED = 32
+    ENTRY_HEARTBEAT = 60
     JOB_CREATED = 33
     JOB_DELETED = 34
     JOB_PAUSED = 35
@@ -106,7 +107,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 60
+    # Next: 61
 
 
 class Permissions(Enum):
@@ -495,11 +496,15 @@ class StatusInfo(BaseModel):
         self.history = history or []
 
     def set_status_heartbeat(self, status, max_history=None):
-
-        self.heartbeat = datetime.utcnow()
-        self.history.append(
-            StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
-        )
+        if (
+            status != "NOT_CONFIGURED"
+            or not self.history
+            or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
+        ):
+            self.heartbeat = datetime.utcnow()
+            self.history.append(
+                StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
+            )
 
         if max_history and max_history > 0 and len(self.history) > max_history:
             self.history = self.history[(max_history * -1) :]

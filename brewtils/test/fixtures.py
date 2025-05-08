@@ -1016,16 +1016,16 @@ def bg_status_info(status_info_dict, ts_dt, bg_status_history):
 
 @pytest.fixture
 def garden_dict(
-    ts_epoch, system_dict, connection_dict, connection_publishing_dict, status_info_dict
+    ts_epoch,
+    system_dict,
+    connection_dict,
+    connection_publishing_dict,
 ):
     """A garden as a dictionary."""
 
     return {
         "id": "123f11af55a38e64799fa1c1",
         "name": "garden",
-        "status": "RUNNING",
-        "status_info": status_info_dict,
-        "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
         "receiving_connections": [connection_dict],
@@ -1042,14 +1042,16 @@ def garden_dict(
 
 @pytest.fixture
 def bg_garden(
-    garden_dict, bg_system, bg_connection, bg_connection_publishing, bg_status_info
+    garden_dict,
+    bg_system,
+    bg_connection,
+    bg_connection_publishing,
 ):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
     dict_copy["publishing_connections"] = [bg_connection_publishing]
-    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Garden(**dict_copy)
 
 

@@ -1613,25 +1613,10 @@ class FileTrigger(BaseModel):
 class Garden(BaseModel):
     schema = "GardenSchema"
 
-    GARDEN_STATUSES = {
-        "INITIALIZING",
-        "RUNNING",
-        "BLOCKED",
-        "STOPPED",
-        "NOT_CONFIGURED",
-        "CONFIGURATION_ERROR",
-        "UNREACHABLE",
-        "ERROR",
-        "UNKNOWN",
-    }
-
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
         name=None,
-        status=None,
-        status_info=None,
-        namespaces=None,
         systems=None,
         connection_type=None,
         receiving_connections=None,
@@ -1646,9 +1631,6 @@ class Garden(BaseModel):
     ):
         self.id = id
         self.name = name
-        self.status = status.upper() if status else None
-        self.status_info = status_info if status_info else StatusInfo()
-        self.namespaces = namespaces or []
         self.systems = systems or []
 
         self.connection_type = connection_type
@@ -1672,11 +1654,10 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, version=%s, parent=%s, has_parent=%s, "
+            "<Garden: garden_name=%s, version=%s, parent=%s, has_parent=%s, "
             "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
-                self.status,
                 self.version,
                 self.parent,
                 self.has_parent,

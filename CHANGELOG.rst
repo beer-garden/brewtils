@@ -7,6 +7,17 @@ TBD
 
 - Renamed parent/child garden naming convention to upstream/downstream to better reflect data direction
 
+3.30.0
+------
+TBD
+
+- Fixed issue trying to check the bytes hash in resolver
+- Added `is_newer` support for various models to enable improved event handling in framework
+- Added reattempt for file chunk download
+- Added Entry Heartbeat event label
+- Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
+- Removed status, status info, and namespaces from Garden model since status is now derived from connections
+
 3.29.1
 ------
 12/31/24

@@ -3,27 +3,31 @@ import warnings
 
 import pytest
 import pytz
+from pytest_lazyfixture import lazy_fixture
+
 from brewtils.errors import ModelError
 from brewtils.models import (
     Choices,
     Command,
+    Connection,
     CronTrigger,
     Instance,
     IntervalTrigger,
     LoggingConfig,
     Parameter,
     PatchOperation,
-    User,
     Queue,
     Request,
     RequestFile,
     RequestTemplate,
     Role,
-    Subscriber,
+    StatusHistory,
     StatusInfo,
+    Subscriber,
+    System,
     Topic,
+    User,
 )
-from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -126,6 +130,22 @@ class TestInstance(object):
         instance = Instance(name="name", status="RUNNING")
         assert "name" in repr(instance)
         assert "RUNNING" in repr(instance)
+
+    def test_is_newer(self):
+        instance1 = Instance(
+            name="name", status="RUNNING", status_info=StatusInfo(heartbeat=1)
+        )
+        instance2 = Instance(
+            name="name", status="RUNNING", status_info=StatusInfo(heartbeat=2)
+        )
+        instance3 = Instance(name="name", status="RUNNING")
+        instance4 = Instance(name="name", status="RUNNING")
+        assert instance2.is_newer(instance1)
+        assert instance2.is_newer(instance3)
+
+        # Unable to determine, so ensure it never returns True
+        assert not instance3.is_newer(instance4)
+        assert not instance4.is_newer(instance3)
 
 
 class TestChoices(object):
@@ -344,6 +364,36 @@ class TestRequest(object):
             if key != "command_type":
                 assert getattr(request, key) == getattr(bg_request_template, key)
 
+    def test_is_newer_status(self):
+        request_created = Request(status="CREATED")
+        request_received = Request(status="RECEIVED")
+        request_in_progress = Request(status="IN_PROGRESS")
+        request_canceled = Request(status="CANCELED")
+        request_success = Request(status="SUCCESS")
+        request_error = Request(status="ERROR")
+        request_invalid = Request(status="INVALID")
+
+        for completed_request in [
+            request_canceled,
+            request_success,
+            request_error,
+            request_invalid,
+        ]:
+            assert completed_request.is_newer(request_created)
+            assert completed_request.is_newer(request_received)
+            assert completed_request.is_newer(request_in_progress)
+
+        assert request_in_progress.is_newer(request_received)
+        assert request_in_progress.is_newer(request_created)
+
+        assert request_received.is_newer(request_created)
+
+    def test_is_newer_timestamp(self):
+
+        assert Request(status_updated_at=2).is_newer(Request(status_updated_at=1))
+        assert Request(updated_at=2).is_newer(Request(updated_at=1))
+        assert Request(created_at=2).is_newer(Request(created_at=1))
+
 
 class TestSystem(object):
     def test_get_command_by_name(self, bg_system, bg_command):
@@ -406,6 +456,23 @@ class TestSystem(object):
         assert "ns" in repr(bg_system)
         assert "system" in repr(bg_system)
         assert "1.0.0" in repr(bg_system)
+
+    def test_is_newer(self):
+        system1 = System(instances=[Instance(status_info=StatusInfo(heartbeat=1))])
+        system2 = System(instances=[Instance(status_info=StatusInfo(heartbeat=2))])
+        system3 = System(
+            instances=[
+                Instance(status_info=StatusInfo(heartbeat=2)),
+                Instance(status_info=StatusInfo(heartbeat=3)),
+            ]
+        )
+        system4 = System(instances=[])
+
+        assert system2.is_newer(system1)
+        assert system3.is_newer(system1)
+        assert system3.is_newer(system2)
+
+        assert not system4.is_newer(system4)
 
 
 class TestPatchOperation(object):
@@ -775,3 +842,73 @@ class TestStatusInfo:
             status_info.set_status_heartbeat("RUNNING", max_history=-1)
 
         assert len(status_info.history) == 10
+
+    def test_is_newer(self):
+        status_info = StatusInfo(heartbeat=1)
+        status_info2 = StatusInfo(heartbeat=2)
+
+        status_info3 = StatusInfo()
+        status_info4 = StatusInfo()
+
+        assert status_info2.is_newer(status_info)
+        assert status_info2.is_newer(status_info3)
+
+        assert not status_info3.is_newer(status_info4)
+        assert not status_info4.is_newer(status_info3)
+
+    def test_set_status_heartbeat(self):
+        status_info = StatusInfo()
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("NOT_CONFIGURED", max_history=5)
+
+        assert len(status_info.history) == 1
+
+        for status in [
+            "NOT_CONFIGURED",
+            "NOT_CONFIGURED",
+            "NOT_CONFIGURED",
+            "RUNNING",
+            "NOT_CONFIGURED",
+            "RUNNING",
+            "RUNNING",
+            "RUNNING",
+        ]:
+            status_info.set_status_heartbeat(status, max_history=10)
+
+        assert len(status_info.history) == 6
+        assert (
+            len([x for x in status_info.history if x.status == "NOT_CONFIGURED"]) == 2
+        )
+        assert len([x for x in status_info.history if x.status == "RUNNING"]) == 4
+
+
+class TestStatusHistory:
+
+    def test_is_newer(self):
+
+        history1 = StatusHistory(status="RUNNING", heartbeat=1)
+        history2 = StatusHistory(status="RUNNING", heartbeat=2)
+        history3 = StatusHistory(status="RUNNING")
+        history4 = StatusHistory(status="RUNNING")
+
+        assert history2.is_newer(history1)
+        assert history2.is_newer(history3)
+
+        assert not history3.is_newer(history4)
+        assert not history4.is_newer(history3)
+
+
+class TestConnection:
+
+    def test_is_newer(self):
+        connection1 = Connection(status="RUNNING", status_info=StatusInfo(heartbeat=1))
+        connection2 = Connection(status="RUNNING", status_info=StatusInfo(heartbeat=2))
+        connection3 = Connection(status="RUNNING")
+        connection4 = Connection(status="RUNNING")
+        assert connection2.is_newer(connection1)
+        assert connection2.is_newer(connection3)
+
+        # Unable to determine, so ensure it never returns True
+        assert not connection3.is_newer(connection4)
+        assert not connection4.is_newer(connection4)

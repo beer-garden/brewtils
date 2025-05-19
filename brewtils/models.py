@@ -82,6 +82,7 @@ class Events(Enum):
     GARDEN_SYNC = 30
     ENTRY_STARTED = 31
     ENTRY_STOPPED = 32
+    ENTRY_HEARTBEAT = 60
     JOB_CREATED = 33
     JOB_DELETED = 34
     JOB_PAUSED = 35
@@ -106,7 +107,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 60
+    # Next: 61
 
 
 class Permissions(Enum):
@@ -273,6 +274,21 @@ class Instance(BaseModel):
 
     def __repr__(self):
         return "<Instance: name=%s, status=%s>" % (self.name, self.status)
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Instance):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
+            if hasattr(other, "status_info") and hasattr(
+                other.status_info, "heartbeat"
+            ):
+                return self.status_info.is_newer(other.status_info)
+            return True
+
+        return False
 
 
 class Choices(BaseModel):
@@ -458,6 +474,19 @@ class StatusHistory(BaseModel):
             self.heartbeat,
         )
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusHistory):
+            return False
+
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
+            return True
+
+        return False
+
 
 class StatusInfo(BaseModel):
     schema = "StatusInfoSchema"
@@ -467,11 +496,15 @@ class StatusInfo(BaseModel):
         self.history = history or []
 
     def set_status_heartbeat(self, status, max_history=None):
-
-        self.heartbeat = datetime.utcnow()
-        self.history.append(
-            StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
-        )
+        if (
+            status != "NOT_CONFIGURED"
+            or not self.history
+            or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
+        ):
+            self.heartbeat = datetime.utcnow()
+            self.history.append(
+                StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
+            )
 
         if max_history and max_history > 0 and len(self.history) > max_history:
             self.history = self.history[(max_history * -1) :]
@@ -484,6 +517,19 @@ class StatusInfo(BaseModel):
             self.heartbeat,
             self.history,
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusInfo):
+            return False
+
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
+            return True
+
+        return False
 
 
 class RequestFile(BaseModel):
@@ -812,6 +858,55 @@ class Request(RequestTemplate):
     def is_json(self):
         return self.output_type and self.output_type.upper() == "JSON"
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Request):
+            return False
+
+        if self._status != other._status:
+
+            if self._status in self.COMPLETED_STATUSES and other._status in [
+                "CREATED",
+                "RECEIVED",
+                "IN_PROGRESS",
+            ]:
+                return True
+
+            if self._status == "IN_PROGRESS" and other._status in [
+                "CREATED",
+                "RECEIVED",
+            ]:
+                return True
+
+            if self._status == "RECEIVED" and other._status == "CREATED":
+                return True
+
+            return False
+
+        self_newest_timestamp = None
+        if hasattr(self, "status_updated_at") and self.status_updated_at:
+            self_newest_timestamp = self.status_updated_at
+
+        if hasattr(self, "updated_at") and self.updated_at:
+            if not self_newest_timestamp or self.updated_at > self_newest_timestamp:
+                self_newest_timestamp = self.updated_at
+
+        if hasattr(self, "created_at") and self.created_at:
+            if not self_newest_timestamp or self.created_at > self_newest_timestamp:
+                self_newest_timestamp = self.created_at
+
+        if hasattr(other, "status_updated_at") and other.status_updated_at:
+            return self_newest_timestamp > other.status_updated_at
+
+        if hasattr(other, "updated_at") and other.updated_at:
+            return self_newest_timestamp > other.updated_at
+
+        if hasattr(other, "created_at") and other.created_at:
+            return self_newest_timestamp > other.created_at
+
+        return False
+
 
 class System(BaseModel):
     schema = "SystemSchema"
@@ -863,6 +958,32 @@ class System(BaseModel):
             self.version,
             self.namespace,
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, System):
+            return False
+
+        self_newest_instance = None
+
+        if hasattr(self, "instances"):
+            for instance in self.instances:
+                if not self_newest_instance:
+                    self_newest_instance = instance
+                elif instance.is_newer(self_newest_instance):
+                    self_newest_instance = instance
+
+        if not self_newest_instance:
+            return False
+
+        if hasattr(other, "instances"):
+
+            for other_instance in other.instances:
+                if other_instance.is_newer(self_newest_instance):
+                    return False
+
+        return True
 
     @property
     def instance_names(self):
@@ -1492,25 +1613,10 @@ class FileTrigger(BaseModel):
 class Garden(BaseModel):
     schema = "GardenSchema"
 
-    GARDEN_STATUSES = {
-        "INITIALIZING",
-        "RUNNING",
-        "BLOCKED",
-        "STOPPED",
-        "NOT_CONFIGURED",
-        "CONFIGURATION_ERROR",
-        "UNREACHABLE",
-        "ERROR",
-        "UNKNOWN",
-    }
-
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
         name=None,
-        status=None,
-        status_info=None,
-        namespaces=None,
         systems=None,
         connection_type=None,
         receiving_connections=None,
@@ -1525,9 +1631,6 @@ class Garden(BaseModel):
     ):
         self.id = id
         self.name = name
-        self.status = status.upper() if status else None
-        self.status_info = status_info if status_info else StatusInfo()
-        self.namespaces = namespaces or []
         self.systems = systems or []
 
         self.connection_type = connection_type
@@ -1551,11 +1654,10 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, version=%s, upstream=%s, has_upstream=%s, "
+            "<Garden: garden_name=%s, version=%s, parent=%s, has_parent=%s, "
             "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
-                self.status,
                 self.version,
                 self.upstream,
                 self.has_upstream,
@@ -1564,6 +1666,56 @@ class Garden(BaseModel):
                 self.publishing_connections,
             )
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+
+        if not isinstance(other, Garden):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info.is_newer(other.status_info)
+
+        if hasattr(other, "receiving_connections") and hasattr(
+            self, "receiving_connections"
+        ):
+
+            for self_connection in self.receiving_connections:
+                for other_connection in other.receiving_connections:
+                    if (
+                        self_connection.api == other_connection.api
+                        and self_connection.is_newer(other_connection)
+                    ):
+                        return True
+
+        if hasattr(other, "publishing_connections") and hasattr(
+            self, "publishing_connections"
+        ):
+
+            for self_connection in self.publishing_connections:
+                for other_connection in other.publishing_connections:
+                    if (
+                        self_connection.api == other_connection.api
+                        and self_connection.is_newer(other_connection)
+                    ):
+                        return True
+
+        if hasattr(other, "systems") and hasattr(self, "systems"):
+
+            for self_system in self.systems:
+                for other_system in other.systems:
+                    if (
+                        self_system.id == other_system.id
+                        or (
+                            self_system.namespace == other_system.namespace
+                            and self_system.name == other_system.name
+                            and self_system.version == other_system.version
+                        )
+                    ) and self_system.is_newer(other_system):
+                        return True
+
+        return False
 
 
 class Connection(BaseModel):
@@ -1603,6 +1755,15 @@ class Connection(BaseModel):
             self.status,
             self.config,
         )
+
+    def is_newer(self, other):
+        if not isinstance(other, Connection):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info.is_newer(other.status_info)
+
+        return False
 
 
 class Operation(BaseModel):

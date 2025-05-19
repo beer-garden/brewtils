@@ -87,6 +87,7 @@ class Events(Enum):
     JOB_DELETED = 34
     JOB_PAUSED = 35
     JOB_RESUMED = 36
+    JOB_COUNTER_UPDATED = 61
     PLUGIN_LOGGER_FILE_CHANGE = 37
     RUNNER_STARTED = 38
     RUNNER_STOPPED = 39
@@ -107,7 +108,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 61
+    # Next: 62
 
 
 class Permissions(Enum):

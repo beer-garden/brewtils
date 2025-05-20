@@ -354,9 +354,11 @@ def child_request_dict(ts_epoch):
         "status": "CREATED",
         "hidden": True,
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
+        "expiration_at": ts_epoch,
         "error_class": None,
         "metadata": {"child": "stuff"},
         "has_parent": True,
@@ -373,6 +375,8 @@ def child_request(child_request_dict, ts_dt):
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt
+    dict_copy["expiration_at"] = ts_dt
+
     return Request(**dict_copy)
 
 
@@ -395,10 +399,12 @@ def parent_request_dict(ts_epoch):
         "output_type": "STRING",
         "status": "CREATED",
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "hidden": False,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
+        "expiration_at": ts_epoch,
         "error_class": None,
         "metadata": {"parent": "stuff"},
         "has_parent": False,
@@ -415,6 +421,7 @@ def parent_request(parent_request_dict, ts_dt):
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt
+    dict_copy["expiration_at"] = ts_dt
     return Request(**dict_copy)
 
 
@@ -463,9 +470,11 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "status": "CREATED",
         "hidden": False,
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
+        "expiration_at": ts_epoch,
         "error_class": "ValueError",
         "metadata": {"request": "stuff"},
         "has_parent": True,
@@ -484,6 +493,7 @@ def bg_request(request_dict, parent_request, child_request, ts_dt):
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt
+    dict_copy["expiration_at"] = ts_dt
     return Request(**dict_copy)
 
 

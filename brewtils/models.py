@@ -771,11 +771,13 @@ class Request(RequestTemplate):
         output_type=None,
         status=None,
         command_type=None,
+        root_command_type=None,
         created_at=None,
         error_class=None,
         metadata=None,
         hidden=None,
         updated_at=None,
+        expiration_at=None,
         status_updated_at=None,
         has_parent=None,
         requester=None,
@@ -804,12 +806,14 @@ class Request(RequestTemplate):
         self.hidden = hidden
         self.created_at = created_at
         self.updated_at = updated_at
+        self.expiration_at = expiration_at
         self.status_updated_at = status_updated_at
         self.error_class = error_class
         self.has_parent = has_parent
         self.requester = requester
         self.source_garden = source_garden
         self.target_garden = target_garden
+        self.root_command_type = root_command_type
 
     @classmethod
     def from_template(cls, template, **kwargs):

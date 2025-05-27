@@ -1169,6 +1169,7 @@ def _signature_validate(cmd, method):
     Raises:
         PluginParamError: There was a validation problem
     """
+
     for param in cmd.parameters:
         sig_param = None
         has_kwargs = False
@@ -1183,22 +1184,38 @@ def _signature_validate(cmd, method):
             method, param.key
         ) and param.type != _parameter_type_hint(method, param.key):
             raise PluginParamError(
+                f"Command {method.__name__} Parameter {param.key},"
                 "Parameter Type assigned in the @parameter(type=?) does not match "
                 "either the function Type Hint or the Doc String definition. "
-                "Please evaluate your type matching."
+                f"Please evaluate your type matching"
             )
 
         # Couldn't find the parameter. That's OK if this parameter is meant to be part
         # of the **kwargs AND the function has a **kwargs parameter.
         if sig_param is None:
-            if not param.is_kwarg:
+            if not has_kwargs and not param.is_kwarg:
                 raise PluginParamError(
-                    "Parameter was not not marked as part of kwargs and wasn't found "
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "wasn't found in the method signature and command "
+                    "does not declare a **kwargs signature parameter"
+                )
+            elif not has_kwargs and param.is_kwarg:
+                raise PluginParamError(
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "wasn't found in the method signature and command "
+                    "does not declare a **kwargs signature parameter, "
+                    "but was marked as part of kwargs (is_kwarg=True)"
+                )
+            elif not param.is_kwarg:
+                raise PluginParamError(
+                    f"Command {method.__name__} Parameter {param.key} "
+                    f"was not marked as part of kwargs and wasn't found "
                     "in the method signature (should is_kwarg be True?)"
                 )
             elif not has_kwargs:
                 raise PluginParamError(
-                    "Parameter was declared as a kwarg (is_kwarg=True) but the method "
+                    f"Command {method.__name__} Parameter {param.key} "
+                    f"was declared as a kwarg (is_kwarg=True) but the method "
                     "signature does not declare a **kwargs parameter"
                 )
 
@@ -1207,14 +1224,16 @@ def _signature_validate(cmd, method):
         else:
             if param.is_kwarg:
                 raise PluginParamError(
-                    "Parameter was marked as part of kwargs but was found in the "
+                    f"Command {method.__name__} Parameter {param.key} "
+                    f"was marked as part of kwargs but was found in the "
                     "method signature (should is_kwarg be False?)"
                 )
 
             # I don't think this is even possible in Python < 3.8
             if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
                 raise PluginParamError(
-                    "Sorry, positional-only type parameters are not supported"
+                    f"Command {method.__name__} Parameter {param.key}, "
+                    "positional-only type parameters are not supported"
                 )
 
 

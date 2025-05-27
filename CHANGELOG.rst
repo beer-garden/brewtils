@@ -12,6 +12,7 @@ TBD
 - Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
 - Added expiration_at and root_command_type to Request model
+- Updated command signature validation error messages to include command name and parameter name
 
 3.29.1
 ------

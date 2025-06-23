@@ -324,11 +324,13 @@ class RequestSchema(RequestTemplateSchema):
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch")
     updated_at = DateTime(allow_none=True, format="epoch")
+    expiration_at = DateTime(allow_none=True, format="epoch")
     status_updated_at = DateTime(allow_none=True, format="epoch")
     has_parent = fields.Bool(allow_none=True)
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
     target_garden = fields.String(allow_none=True)
+    root_command_type = fields.String(allow_none=True)
 
 
 class StatusHistorySchema(BaseSchema):
@@ -470,8 +472,6 @@ class ConnectionSchema(BaseSchema):
 class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
-    status = fields.Str(allow_none=True)
-    status_info = fields.Nested(lambda: StatusInfoSchema(), allow_none=True)
     connection_type = fields.Str(allow_none=True)
     receiving_connections = fields.List(
         fields.Nested(lambda: ConnectionSchema()), allow_none=True
@@ -479,7 +479,6 @@ class GardenSchema(BaseSchema):
     publishing_connections = fields.List(
         fields.Nested(lambda: ConnectionSchema()), allow_none=True
     )
-    namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.List(fields.Nested(lambda: SystemSchema()), allow_none=True)
     has_parent = fields.Bool(allow_none=True)
     parent = fields.Str(allow_none=True)

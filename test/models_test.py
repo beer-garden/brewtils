@@ -864,6 +864,32 @@ class TestStatusInfo:
         assert not status_info3.is_newer(status_info4)
         assert not status_info4.is_newer(status_info3)
 
+    def test_set_status_heartbeat(self):
+        status_info = StatusInfo()
+
+        for _ in range(10):
+            status_info.set_status_heartbeat("NOT_CONFIGURED", max_history=5)
+
+        assert len(status_info.history) == 1
+
+        for status in [
+            "NOT_CONFIGURED",
+            "NOT_CONFIGURED",
+            "NOT_CONFIGURED",
+            "RUNNING",
+            "NOT_CONFIGURED",
+            "RUNNING",
+            "RUNNING",
+            "RUNNING",
+        ]:
+            status_info.set_status_heartbeat(status, max_history=10)
+
+        assert len(status_info.history) == 6
+        assert (
+            len([x for x in status_info.history if x.status == "NOT_CONFIGURED"]) == 2
+        )
+        assert len([x for x in status_info.history if x.status == "RUNNING"]) == 4
+
 
 class TestStatusHistory:
 

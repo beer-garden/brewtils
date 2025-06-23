@@ -8,6 +8,7 @@ from hashlib import md5
 
 import wrapt
 from requests import Response  # noqa # not in requirements file
+import time
 
 from brewtils.config import get_connection_info
 from brewtils.errors import (
@@ -1053,18 +1054,50 @@ class EasyClient(object):
         Returns:
             A file object
         """
-        (valid, meta) = self._check_chunked_file_validity(file_id)
+        delay_time = 0.5
+        total_wait_time = 0
+
+        # This loop will give 2.5 to 3 minutes of wait time
+        # before giving up
+        for _ in range(10):
+
+            (valid, meta) = self._check_chunked_file_validity(file_id)
+            if valid:
+                break
+
+            if "missing_chunks" in meta and len(meta["missing_chunks"]) == 0:
+                # All of the chunks are present but something else failed
+                break
+
+            time.sleep(delay_time)
+            total_wait_time += delay_time
+            delay_time = min(delay_time * 2, 30)
+
         file_obj = BytesIO()
         if valid:
             for x in range(meta["number_of_chunks"]):
+
                 resp = self.client.get_chunked_file(file_id, params={"chunk": x})
+
                 if resp.ok:
                     data = resp.json()["data"]
                     file_obj.write(b64decode(data))
                 else:
-                    raise ValueError("Could not fetch chunk %d" % x)
+                    raise ValueError(f"Requested file {file_id} is missing chunk {x}")
         else:
-            raise ValidationError("Requested file %s is incomplete." % file_id)
+            if "missing_chunks" in meta and len(meta["missing_chunks"]) > 0:
+                raise ValidationError(
+                    f"Requested file {file_id} is missing chunks {meta['missing_chunks']}"
+                )
+
+            if "chunks_ok" in meta and not meta["chunks_ok"]:
+                raise ValidationError(
+                    f"Requested file {file_id} has mismatched chunks lengths"
+                )
+
+            if "size_ok" in meta and not meta["size_ok"]:
+                raise ValidationError(f"Requested file {file_id} has mismatched size")
+            raise ValidationError(f"Requested file {file_id} is incomplete.")
 
         file_obj.seek(0)
 
@@ -1073,8 +1106,10 @@ class EasyClient(object):
             and meta["md5_sum"] != md5(file_obj.getbuffer()).hexdigest()
         ):
             raise ValidationError(
-                "Requested file %s MD5 SUM %s does match actual MD5 SUM %s"
-                % (file_id, meta["md5_sum"], md5(file_obj.getbuffer()).hexdigest())
+                (
+                    f"Requested file {file_id} MD5 SUM {meta['md5_sum']} "
+                    f"does match actual MD5 SUM {md5(file_obj.getbuffer()).hexdigest()}"
+                )
             )
 
         return file_obj

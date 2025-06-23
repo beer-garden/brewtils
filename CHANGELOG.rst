@@ -5,8 +5,13 @@ Brewtils Changelog
 ------
 TBD
 
-- Fixed issue trying to check the bytes hash in resolver 
-- Added `is_newer` support for various models to enable improved event handling in framework 
+- Fixed issue trying to check the bytes hash in resolver
+- Added `is_newer` support for various models to enable improved event handling in framework
+- Added reattempt for file chunk download
+- Added Entry Heartbeat event label
+- Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
+- Removed status, status info, and namespaces from Garden model since status is now derived from connections
+- Added expiration_at and root_command_type to Request model
 
 3.29.1
 ------

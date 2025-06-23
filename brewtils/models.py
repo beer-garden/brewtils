@@ -935,6 +935,7 @@ class System(BaseModel):
         prefix_topic=None,
         requires=None,
         requires_timeout=None,
+        garden_name=None,
     ):
         self.name = name
         self.description = description
@@ -953,15 +954,17 @@ class System(BaseModel):
         self.prefix_topic = prefix_topic
         self.requires = requires or []
         self.requires_timeout = requires_timeout
+        self.garden_name = garden_name
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s, namespace=%s>" % (
+        return "<System: name=%s, version=%s, namespace=%s, garden=%s>" % (
             self.name,
             self.version,
             self.namespace,
+            self.garden_name,
         )
 
     def is_newer(self, other):

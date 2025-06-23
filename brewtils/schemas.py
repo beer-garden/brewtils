@@ -236,6 +236,7 @@ class SystemSchema(BaseSchema):
     prefix_topic = fields.Str(allow_none=True)
     requires = fields.List(fields.Str(), allow_none=True)
     requires_timeout = fields.Integer(allow_none=True)
+    garden_name = fields.Str(allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):

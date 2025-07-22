@@ -329,7 +329,6 @@ class RequestSchema(RequestTemplateSchema):
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    expiration_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     status_updated_at = DateTime(
         allow_none=True, format="epoch", example="1500065932000"
     )
@@ -337,7 +336,6 @@ class RequestSchema(RequestTemplateSchema):
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
     target_garden = fields.String(allow_none=True)
-    root_command_type = fields.String(allow_none=True)
 
 
 class StatusHistorySchema(BaseSchema):

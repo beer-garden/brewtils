@@ -1,7 +1,7 @@
 Brewtils Changelog
 ==================
 
-3.30.0
+3.31.0
 ------
 TBD
 
@@ -10,19 +10,17 @@ TBD
 - Upgraded all dependencies to latest versions
 - Dropped support for Python 3.6, 3.7, and 3.8
 
-3.29.3
+3.30.0
 ------
-1/31/25
+TBD
 
-- Added deprecated decorator and deprecated kwarg to command and parameter decorators
-- Added `is_newer` support for various models to enable improved event handling in framework 
-- Added static chunk size to File model
-- Updating Pypi release process
-
-3.29.3
-------
-
-- Failed Pypi Release Process
+- Fixed issue trying to check the bytes hash in resolver
+- Added `is_newer` support for various models to enable improved event handling in framework
+- Added reattempt for file chunk download
+- Added Entry Heartbeat event label
+- Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
+- Removed status, status info, and namespaces from Garden model since status is now derived from connections
+- Added expiration_at and root_command_type to Request model
 
 3.29.1
 ------

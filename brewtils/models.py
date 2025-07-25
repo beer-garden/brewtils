@@ -73,6 +73,7 @@ class Events(Enum):
     GARDEN_CONFIGURED = 53
     GARDEN_UPDATED = 20
     GARDEN_REMOVED = 21
+    GARDEN_UPSERT = 62
     FILE_CREATED = 24
     GARDEN_STARTED = 25
     GARDEN_STOPPED = 26
@@ -108,7 +109,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 62
+    # Next: 63
 
 
 class Permissions(Enum):

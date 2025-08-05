@@ -336,6 +336,7 @@ class RequestSchema(RequestTemplateSchema):
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
     target_garden = fields.String(allow_none=True)
+    root_command_type = fields.String(allow_none=True)
 
 
 class StatusHistorySchema(BaseSchema):

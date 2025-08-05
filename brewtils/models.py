@@ -772,6 +772,7 @@ class Request(RequestTemplate):
         output_type=None,
         status=None,
         command_type=None,
+        root_command_type=None,
         created_at=None,
         error_class=None,
         metadata=None,
@@ -811,6 +812,7 @@ class Request(RequestTemplate):
         self.requester = requester
         self.source_garden = source_garden
         self.target_garden = target_garden
+        self.root_command_type = root_command_type
 
     @classmethod
     def from_template(cls, template, **kwargs):

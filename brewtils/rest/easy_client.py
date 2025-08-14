@@ -4,7 +4,12 @@ from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union
-from hashlib import file_digest, md5
+
+try:
+    from hashlib import file_digest, md5
+except ImportError:
+    from hashlib import md5
+    from brewtils.rest import file_digest
 
 import six
 import wrapt

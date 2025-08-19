@@ -272,6 +272,7 @@ class FileChunkSchema(BaseSchema):
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
     owner = fields.Nested("FileSchema", allow_none=True)
+    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
 
 
 class FileStatusSchema(BaseSchema):

@@ -607,12 +607,14 @@ class FileChunk(BaseModel):
         offset=None,
         data=None,
         owner=None,
+        created_at=None,
     ):
         self.id = id
         self.file_id = file_id
         self.offset = offset
         self.data = data
         self.owner = owner
+        self.created_at = created_at
 
     def __str__(self):
         return self.data

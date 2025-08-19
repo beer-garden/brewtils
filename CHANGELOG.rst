@@ -12,7 +12,7 @@ TBD
 - Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
 - Added root_command_type to Request model
-- Added created_at to File model
+- Added created_at to File and File Chunk model
 
 3.29.1
 ------

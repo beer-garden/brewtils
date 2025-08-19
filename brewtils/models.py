@@ -561,6 +561,7 @@ class File(BaseModel):
         id=None,  # noqa # shadows built-in
         owner_id=None,
         owner_type=None,
+        created_at=None,
         updated_at=None,
         file_name=None,
         file_size=None,
@@ -577,6 +578,7 @@ class File(BaseModel):
         self.owner = owner
         self.job = job
         self.request = request
+        self.created_at = created_at
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size

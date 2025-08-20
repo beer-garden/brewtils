@@ -264,6 +264,8 @@ class FileSchema(BaseSchema):
     chunks = fields.Dict(allow_none=True)
     chunk_size = fields.Int(allow_none=False)
     md5_sum = fields.Str(allow_none=True)
+    status = fields.Str(allow_none=True)
+    root_command_type = fields.Str(allow_none=True)
 
 
 class FileChunkSchema(BaseSchema):
@@ -272,7 +274,9 @@ class FileChunkSchema(BaseSchema):
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
     owner = fields.Nested("FileSchema", allow_none=True)
-    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    status = fields.Str(allow_none=True)
+    root_command_type = fields.Str(allow_none=True)
 
 
 class FileStatusSchema(BaseSchema):

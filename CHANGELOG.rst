@@ -12,6 +12,9 @@ TBD
 - Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
 - Added root_command_type to Request model
+- Updated command signature validation error messages to include command name and parameter name
+- Fixed bug generating MD5 Hash from SystemClient uploaded Base64 Parameters
+- Fixed bug for Local System Client that doesn't load System object prior to executing command
 
 3.29.1
 ------

@@ -778,7 +778,6 @@ class Request(RequestTemplate):
         metadata=None,
         hidden=None,
         updated_at=None,
-        expiration_at=None,
         status_updated_at=None,
         has_parent=None,
         requester=None,
@@ -807,7 +806,6 @@ class Request(RequestTemplate):
         self.hidden = hidden
         self.created_at = created_at
         self.updated_at = updated_at
-        self.expiration_at = expiration_at
         self.status_updated_at = status_updated_at
         self.error_class = error_class
         self.has_parent = has_parent

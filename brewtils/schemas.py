@@ -329,7 +329,6 @@ class RequestSchema(RequestTemplateSchema):
     error_class = fields.Str(allow_none=True)
     created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    expiration_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     status_updated_at = DateTime(
         allow_none=True, format="epoch", example="1500065932000"
     )

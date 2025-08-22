@@ -42,3 +42,18 @@ def normalize_url_prefix(url_prefix):
         new_url_prefix += "/"
 
     return new_url_prefix
+
+
+def file_digest(f, digest="md5"):
+    if digest != "md5":
+        raise ValueError(f"Digest '{digest}' not supported at this time")
+
+    import hashlib
+
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(65536)
+        if not data:
+            break
+        md5.update(data)
+    return md5

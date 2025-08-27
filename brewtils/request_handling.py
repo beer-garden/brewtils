@@ -72,10 +72,14 @@ class LocalRequestProcessor(object):
                     if parameter.key not in request.parameters:
                         request.parameters[parameter.key] = parameter.default
             request.command_type = command.command_type
+            request.hidden = command.hidden
+
+        request.status = "CREATED"
+        request = self._ez_client.put_request(request)
 
         request.status = "IN_PROGRESS"
-
         request = self._ez_client.put_request(request)
+
         brewtils.plugin.request_context.current_request = request
 
         try:

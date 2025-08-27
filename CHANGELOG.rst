@@ -13,6 +13,12 @@ TBD
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
 - Added expiration_at and root_command_type to Request model
 - Added Garden Name to System Model (#556)
+- Added root_command_type to Request model
+- Added updated_at/created_at to File and File Chunk model
+- Updated command signature validation error messages to include command name and parameter name
+- Fixed bug generating MD5 Hash from SystemClient uploaded Base64 Parameters
+- Fixed bug for Local System Client that doesn't load System object prior to executing command
+- Updated Local Request Handler to emulate all stages of Request lifecycle
 
 3.29.1
 ------

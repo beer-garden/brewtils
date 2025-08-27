@@ -514,6 +514,9 @@ class SystemClient(object):
         self._commands = {command.name: command for command in self._system.commands}
         self._loaded = True
 
+        if self.target_self:
+            self.local_request_handler._system = self._system
+
     def _wait_for_request(self, request, raise_on_error, timeout):
         # type: (Request, bool, int) -> Request
         """Poll the server until the request is completed or errors"""

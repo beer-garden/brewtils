@@ -561,6 +561,7 @@ class File(BaseModel):
         id=None,  # noqa # shadows built-in
         owner_id=None,
         owner_type=None,
+        created_at=None,
         updated_at=None,
         file_name=None,
         file_size=None,
@@ -570,6 +571,8 @@ class File(BaseModel):
         job=None,
         request=None,
         md5_sum=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.owner_id = owner_id
@@ -577,12 +580,15 @@ class File(BaseModel):
         self.owner = owner
         self.job = job
         self.request = request
+        self.created_at = created_at
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks
         self.chunk_size = chunk_size
         self.md5_sum = md5_sum
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.file_name
@@ -605,12 +611,20 @@ class FileChunk(BaseModel):
         offset=None,
         data=None,
         owner=None,
+        created_at=None,
+        updated_at=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.file_id = file_id
         self.offset = offset
         self.data = data
         self.owner = owner
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.data

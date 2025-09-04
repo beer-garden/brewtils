@@ -4,7 +4,12 @@ from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union
-from hashlib import md5
+
+try:
+    from hashlib import file_digest, md5
+except ImportError:
+    from hashlib import md5
+    from brewtils.rest import file_digest
 
 import wrapt
 from requests import Response  # noqa # not in requirements file
@@ -1000,7 +1005,9 @@ class EasyClient(object):
             fd = file_to_upload
             require_close = False
 
-        default_file_params["md5_sum"] = md5(fd.getbuffer()).hexdigest()
+        hash_digest = file_digest(fd, "md5")
+        default_file_params["md5_sum"] = hash_digest.hexdigest()
+        fd.seek(0)
 
         try:
             default_file_params["file_name"] = desired_filename or fd.name

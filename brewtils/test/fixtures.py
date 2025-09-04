@@ -267,6 +267,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "prefix_topic": "custom_topic",
         "requires": ["SystemA"],
         "requires_timeout": 300,
+        "garden_name": "garden",
     }
 
 
@@ -352,7 +353,6 @@ def child_request_dict(ts_epoch):
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
-        "expiration_at": ts_epoch,
         "error_class": None,
         "metadata": {"child": "stuff"},
         "has_parent": True,
@@ -369,8 +369,6 @@ def child_request(child_request_dict, ts_dt):
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt
-    dict_copy["expiration_at"] = ts_dt
-
     return Request(**dict_copy)
 
 
@@ -398,7 +396,6 @@ def parent_request_dict(ts_epoch):
         "hidden": False,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
-        "expiration_at": ts_epoch,
         "error_class": None,
         "metadata": {"parent": "stuff"},
         "has_parent": False,
@@ -415,7 +412,6 @@ def parent_request(parent_request_dict, ts_dt):
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt
-    dict_copy["expiration_at"] = ts_dt
     return Request(**dict_copy)
 
 
@@ -468,7 +464,6 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
-        "expiration_at": ts_epoch,
         "error_class": "ValueError",
         "metadata": {"request": "stuff"},
         "has_parent": True,
@@ -487,7 +482,6 @@ def bg_request(request_dict, parent_request, child_request, ts_dt):
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt
-    dict_copy["expiration_at"] = ts_dt
     return Request(**dict_copy)
 
 

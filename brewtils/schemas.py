@@ -489,8 +489,10 @@ class GardenSchema(BaseSchema):
     systems = fields.List(fields.Nested(lambda: SystemSchema()), allow_none=True)
     has_parent = fields.Bool(allow_none=True)
     parent = fields.Str(allow_none=True)
+    # TODO: Figure out why we had parent excluded in: 
+    # fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
     children = fields.List(
-        fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
+        fields.Nested(lambda: GardenSchema()), allow_none=True
     )
     metadata = fields.Dict(allow_none=True)
     default_user = fields.Str(allow_none=True)

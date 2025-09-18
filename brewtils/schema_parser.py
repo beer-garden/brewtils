@@ -556,16 +556,12 @@ class SchemaParser(object):
                 )
             kwargs["many"] = True
 
-        try:
-            schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
+        schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
-            schema.context["models"] = cls._models
+        schema.context["models"] = cls._models
 
-            return schema.loads(data) if from_string else schema.load(data)
-        except Exception as ex:
+        return schema.loads(data) if from_string else schema.load(data)
 
-            cls.logger.error(f"Failed to parse {type(model_class)} with data: {data}")
-            raise ex
 
     # Serialization methods
     @classmethod

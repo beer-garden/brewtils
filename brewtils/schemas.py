@@ -104,13 +104,15 @@ class DateTime(fields.DateTime):
     @staticmethod
     def to_epoch(value):
         # If already in epoch form just return it
-        if isinstance(value, int) or isinstance(value, float):
+        if isinstance(value, int):
             return value
 
-        if value.tzinfo is not None and value.tzinfo is not datetime.timezone.utc:
-            value = value.replace(tzinfo=datetime.timezone.utc)
+        if not isinstance(value, float):
+            if value.tzinfo is not None and value.tzinfo is not datetime.timezone.utc:
+                value = value.replace(tzinfo=datetime.timezone.utc)
+            value = utils.timestamp_ms(value)
 
-        return utils.timestamp_ms(value)
+        return int(value)
 
     @staticmethod
     def from_epoch(value):
@@ -489,11 +491,9 @@ class GardenSchema(BaseSchema):
     systems = fields.List(fields.Nested(lambda: SystemSchema()), allow_none=True)
     has_parent = fields.Bool(allow_none=True)
     parent = fields.Str(allow_none=True)
-    # TODO: Figure out why we had parent excluded in: 
+    # TODO: Figure out why we had parent excluded in:
     # fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
-    children = fields.List(
-        fields.Nested(lambda: GardenSchema()), allow_none=True
-    )
+    children = fields.List(fields.Nested(lambda: GardenSchema()), allow_none=True)
     metadata = fields.Dict(allow_none=True)
     default_user = fields.Str(allow_none=True)
     shared_users = fields.Bool(allow_none=True)

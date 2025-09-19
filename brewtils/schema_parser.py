@@ -562,7 +562,6 @@ class SchemaParser(object):
 
         return schema.loads(data) if from_string else schema.load(data)
 
-
     # Serialization methods
     @classmethod
     def serialize_system(cls, system, to_string=True, include_commands=True, **kwargs):

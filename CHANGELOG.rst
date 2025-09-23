@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.30.0
 ------
-TBD
+9/23/25
 
 - Added `is_newer` support for various models to enable improved event handling in framework
 - Added reattempt for file chunk download

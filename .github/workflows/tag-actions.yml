@@ -24,7 +24,6 @@ jobs:
 
 
   pypi-publish:
-    if: false
     name: PyPI Publish
     runs-on: ubuntu-22.04
     environment:
@@ -66,7 +65,7 @@ jobs:
   pypi-verify:
     name: Verify PyPI Publish
     runs-on: ubuntu-22.04
-    # needs: pypi-publish
+    needs: pypi-publish
 
     steps:
       - name: Set up Python

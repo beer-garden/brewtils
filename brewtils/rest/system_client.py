@@ -424,8 +424,10 @@ class SystemClient(object):
 
             if not self.target_self:
                 request = self._easy_client.create_request(
-                    request, blocking=blocking, timeout=timeout,
-                    target_garden=self._system.garden_name
+                    request,
+                    blocking=blocking,
+                    timeout=timeout,
+                    target_garden=self._system.garden_name,
                 )
 
         except ValidationError:

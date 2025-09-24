@@ -550,8 +550,8 @@ class RestClient(object):
             Requests Response object
         """
         headers = self.JSON_HEADERS
-        if kwargs.get('target_garden'):
-            headers = {**headers, **{'Target-Garden': kwargs['target_garden']}}
+        if kwargs.get("target_garden"):
+            headers = {**headers, **{"Target-Garden": kwargs["target_garden"]}}
         return self.session.post(
             self.request_url, data=payload, headers=headers, params=kwargs
         )

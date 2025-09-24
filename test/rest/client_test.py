@@ -225,10 +225,11 @@ class TestRestClient(object):
 
     def test_patch_garden(self, client, session_mock):
         client.patch_garden("gardenname", "payload")
+        headers = {**client.JSON_HEADERS, **{"Target-Garden": "gardenname"}}
         session_mock.patch.assert_called_with(
             client.garden_url + "gardenname",
             data="payload",
-            headers=client.JSON_HEADERS,
+            headers=headers,
         )
 
     def test_delete_garden(self, client, session_mock):

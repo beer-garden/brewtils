@@ -365,7 +365,7 @@ class RestClient(object):
         return self.session.patch(
             self.garden_url + quote(garden_name),
             data=payload,
-            headers=self.JSON_HEADERS,
+            headers={**self.JSON_HEADERS, **{"Target-Garden": garden_name}},
         )
 
     @enable_auth
@@ -549,8 +549,11 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
+        headers = self.JSON_HEADERS
+        if kwargs.get('target_garden'):
+            headers = {**headers, **{'Target-Garden': kwargs['target_garden']}}
         return self.session.post(
-            self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
+            self.request_url, data=payload, headers=headers, params=kwargs
         )
 
     @enable_auth

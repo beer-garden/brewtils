@@ -428,8 +428,8 @@ class RestClient(object):
         )
 
     @enable_auth
-    def delete_system(self, system_id):
-        # type: (str) -> Response
+    def delete_system(self, system_id, **kwargs):
+        # type: (str, Any) -> Response
         """Performs a DELETE on a System URL
 
         Args:
@@ -438,6 +438,9 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
+        if kwargs.get("target_garden"):
+            headers = {"Target-Garden": kwargs["target_garden"]}
+            return self.session.delete(self.system_url + system_id, headers=headers)
         return self.session.delete(self.system_url + system_id)
 
     @enable_auth
@@ -454,8 +457,8 @@ class RestClient(object):
         return self.session.get(self.instance_url + instance_id)
 
     @enable_auth
-    def patch_instance(self, instance_id, payload):
-        # type: (str, str) -> Response
+    def patch_instance(self, instance_id, payload, **kwargs):
+        # type: (str, str, *Any) -> Response
         """Performs a PATCH on the instance URL
 
         Args:
@@ -465,10 +468,13 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
+        headers = self.JSON_HEADERS
+        if kwargs.get("target_garden"):
+            headers = {**headers, **{"Target-Garden": kwargs["target_garden"]}}
         return self.session.patch(
             self.instance_url + str(instance_id),
             data=payload,
-            headers=self.JSON_HEADERS,
+            headers=headers,
         )
 
     @enable_auth

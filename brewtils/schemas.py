@@ -59,6 +59,8 @@ model_schema_map = {}
 schema_model_map = {}
 
 
+# This is copied from issue in marshmallow-polyfield repo:
+# https://github.com/Bachmann1234/marshmallow-polyfield/issues/45
 class PolyField(fields.Field):
     """
     Polymorphic field that expects two selectors that define which

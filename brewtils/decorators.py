@@ -6,7 +6,7 @@ import os
 import sys
 from inspect import Parameter as InspectParameter  # noqa
 from inspect import signature
-from types import MethodType
+from types import MethodType  # noqa
 from typing import (  # noqa
     Any,
     Callable,

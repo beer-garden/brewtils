@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import typing
+import typing  # noqa
 from typing import Any, Dict, Optional, Union  # noqa
 
 from box import Box  # type: ignore
 
 import brewtils.models
 import brewtils.schemas
-from brewtils.models import BaseModel
+from brewtils.models import BaseModel  # noqa
 
 try:
     from collections.abc import Iterable  # type: ignore  # noqa

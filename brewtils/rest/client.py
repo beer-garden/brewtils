@@ -3,7 +3,7 @@
 import functools
 import json
 from base64 import b64encode
-from typing import Any, List
+from typing import Any, List  # noqa
 
 import requests.exceptions
 import urllib3

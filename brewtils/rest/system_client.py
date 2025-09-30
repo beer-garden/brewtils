@@ -17,7 +17,7 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.models import Request, System
+from brewtils.models import Request, System  # noqa
 from brewtils.request_handling import LocalRequestProcessor
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient

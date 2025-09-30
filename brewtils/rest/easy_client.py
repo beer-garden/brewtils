@@ -2,7 +2,7 @@
 import json
 from base64 import b64decode
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path  # noqa
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union  # noqa
 
 try:

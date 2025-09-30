@@ -4,17 +4,25 @@ import functools
 import inspect
 import os
 import sys
+from inspect import Parameter as InspectParameter  # noqa
+from inspect import signature
 from types import MethodType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
-
+from typing import (  # noqa
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from brewtils.choices import process_choices
 from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
-
-from inspect import Parameter as InspectParameter  # noqa
-from inspect import signature
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import get_args

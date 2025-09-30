@@ -2,7 +2,7 @@
 import json
 import logging
 import typing
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union  # noqa
 
 from box import Box  # type: ignore
 

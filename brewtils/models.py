@@ -5,7 +5,6 @@ from datetime import datetime
 from enum import Enum
 from zoneinfo import ZoneInfo
 
-
 from brewtils.errors import ModelError, _deprecate
 
 __all__ = [

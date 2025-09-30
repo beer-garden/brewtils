@@ -3,8 +3,7 @@
 import json
 import os
 from io import open
-from typing import Optional, Union
-
+from typing import Optional, Union  # noqa
 
 from brewtils.errors import PluginParamError
 

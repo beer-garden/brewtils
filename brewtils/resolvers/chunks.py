@@ -3,7 +3,6 @@
 import io
 import sys
 
-
 from brewtils.resolvers import ResolverBase
 
 

@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import abc
-from typing import Any
+from typing import Any  # noqa
 
-
-from brewtils.models import Parameter, Resolvable
+from brewtils.models import Parameter, Resolvable  # noqa
 
 
 class ResolverBase(metaclass=abc.ABCMeta):

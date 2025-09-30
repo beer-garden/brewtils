@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import TYPE_CHECKING
+from typing import Callable, Iterable, Optional, Union  # noqa
 
 from lark import Lark, Transformer
 
@@ -18,9 +18,6 @@ try:
 except ImportError:
     GrammarError = ParseError
     LexError = ParseError
-
-if TYPE_CHECKING:
-    from typing import Callable, Iterable, Optional, Union
 
 
 choices_grammar = r"""

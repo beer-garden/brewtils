@@ -4,7 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional  # noqa
 
 from packaging.version import InvalidVersion, parse
 

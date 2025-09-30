@@ -3,7 +3,7 @@ import json
 from base64 import b64decode
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, List, NoReturn, Optional, Type, Union
+from typing import Any, Callable, List, NoReturn, Optional, Type, Union  # noqa
 
 try:
     from hashlib import file_digest, md5
@@ -11,13 +11,14 @@ except ImportError:
     from hashlib import md5
     from brewtils.rest import file_digest
 
-import wrapt
-from requests import Response  # noqa # not in requirements file
 import time
 
+import wrapt
+from requests import Response  # noqa # not in requirements file
+
 from brewtils.config import get_connection_info
+from brewtils.errors import BrewtilsException  # noqa
 from brewtils.errors import (
-    BrewtilsException,
     ConflictError,
     DeleteError,
     FetchError,
@@ -30,7 +31,7 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import BaseModel, Event, Job, PatchOperation
+from brewtils.models import BaseModel, Event, Job, PatchOperation  # noqa
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 

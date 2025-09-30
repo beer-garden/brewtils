@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from zoneinfo import ZoneInfo
 
@@ -507,7 +507,7 @@ class StatusInfo(BaseModel):
             )
 
         if max_history and max_history > 0 and len(self.history) > max_history:
-            self.history = self.history[(max_history * -1) :]
+            self.history = self.history[(max_history * -1):]
 
     def __str__(self):
         return self.heartbeat

@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from marshmallow.exceptions import ValidationError
 from mock import Mock
-from pytest_lazyfixture import lazy_fixture
 
 from brewtils.models import System
 from brewtils.schemas import (

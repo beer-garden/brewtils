@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import sys
 import threading
 
 import pytest
@@ -23,7 +22,7 @@ from brewtils.errors import (
     SuppressStacktrace,
     TooLargeError,
 )
-from brewtils.models import Command, Request, System, Parameter
+from brewtils.models import Request
 from brewtils.request_handling import (
     HTTPRequestUpdater,
     LocalRequestProcessor,

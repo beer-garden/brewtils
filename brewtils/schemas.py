@@ -63,12 +63,12 @@ schema_model_map = {}
 # https://github.com/Bachmann1234/marshmallow-polyfield/issues/45
 class PolyField(fields.Field):
     """
-    Polymorphic field that expects two selectors that define which
-    schema is used for serialization and deserialization.
-    The serialization selector is given the value to be serialized and the object the value was pulled from.
-    The deserialization selector is given the value to be deserialized and the raw input data passed
-    to the `Schema.load <marshmallow.Schema.load>`.
-    Both selectors may return either a marshmallow Schema instance or a Schema class.
+    Polymorphic field that expects two selectors that define which schema is used for
+    serialization and deserialization. The serialization selector is given the value
+    to be serialized and the object the value was pulled from. The deserialization
+    selector is given the value to be deserialized and the raw input data passed to
+    the `Schema.load <marshmallow.Schema.load>`. Both selectors may return either
+    a marshmallow Schema instance or a Schema class.
     """
 
     def __init__(
@@ -93,7 +93,8 @@ class PolyField(fields.Field):
         if isinstance(schema, type) and issubclass(schema, Schema):
             return schema()
         raise TypeError(
-            f"Selector must return a marshmallow Schema instance or Schema class, got {type(schema)}"
+            ("Selector must return a marshmallow Schema "
+             f"instance or Schema class, got {type(schema)}")
         )
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -186,10 +187,6 @@ class DateTime(fields.DateTime):
             return value
 
         return utils.from_timestamp_ms(value).replace(tzinfo=datetime.timezone.utc)
-
-
-class BaseSchema(typing.TypedDict):
-    models: typing.Dict
 
 
 class BaseSchema(Schema):

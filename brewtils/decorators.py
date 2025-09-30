@@ -1008,7 +1008,7 @@ def _format_type(param_type):
 
 
 def _initialize_parameters(parameter_list, method=None):
-    # type: (Iterable[Parameter, object, dict], obj) -> List[Parameter]
+    # type: (Iterable[Parameter, object, dict], object) -> List[Parameter]
     """Initialize Parameters from a list of parameter definitions
 
     This exists for backwards compatibility with the old way of specifying Models.

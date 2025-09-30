@@ -221,7 +221,7 @@ class BaseSchema(Schema):
 class ChoicesSchema(BaseSchema):
     type = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
-    value = fields.List(fields.Raw(), allow_none=True)
+    value = fields.Raw(allow_none=True)
     strict = fields.Bool(allow_none=True, dump_default=False)
     details = fields.Dict(allow_none=True)
 

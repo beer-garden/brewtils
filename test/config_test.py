@@ -4,6 +4,7 @@ import copy
 import logging
 import os
 import warnings
+from unittest.mock import patch
 
 import pytest
 from mock import Mock
@@ -107,11 +108,9 @@ class TestLoadConfig(object):
         assert config.bg_host == "the_host"
 
     def test_cli_from_sys(self, monkeypatch):
-        cli_args = ["filename", "--bg-host", "the_host"]
-        monkeypatch.setattr(argparse, "_sys", Mock(argv=cli_args))
-
-        config = load_config()
-        assert config.bg_host == "the_host"
+        with patch.object(argparse._sys, "argv", ["filename", "--bg-host", "the_host"]):
+            config = load_config()
+            assert config.bg_host == "the_host"
 
     def test_ignore_cli(self, monkeypatch):
         cli_args = ["filename", "--bg-host", "the_host"]

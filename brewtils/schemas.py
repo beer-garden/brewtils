@@ -93,8 +93,10 @@ class PolyField(fields.Field):
         if isinstance(schema, type) and issubclass(schema, Schema):
             return schema()
         raise TypeError(
-            ("Selector must return a marshmallow Schema "
-             f"instance or Schema class, got {type(schema)}")
+            (
+                "Selector must return a marshmallow Schema "
+                f"instance or Schema class, got {type(schema)}"
+            )
         )
 
     def _deserialize(self, value, attr, data, **kwargs):

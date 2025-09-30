@@ -238,6 +238,7 @@ class SystemSchema(BaseSchema):
     prefix_topic = fields.Str(allow_none=True)
     requires = fields.List(fields.Str(), allow_none=True)
     requires_timeout = fields.Integer(allow_none=True)
+    garden_name = fields.Str(allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):
@@ -259,12 +260,15 @@ class FileSchema(BaseSchema):
     owner = fields.Raw(allow_none=True)
     job = fields.Nested("JobSchema", allow_none=True)
     request = fields.Nested("RequestSchema", allow_none=True)
+    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
     chunk_size = fields.Int(allow_none=False)
     md5_sum = fields.Str(allow_none=True)
+    status = fields.Str(allow_none=True)
+    root_command_type = fields.Str(allow_none=True)
 
 
 class FileChunkSchema(BaseSchema):
@@ -273,6 +277,10 @@ class FileChunkSchema(BaseSchema):
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
     owner = fields.Nested("FileSchema", allow_none=True)
+    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    status = fields.Str(allow_none=True)
+    root_command_type = fields.Str(allow_none=True)
 
 
 class FileStatusSchema(BaseSchema):
@@ -338,6 +346,7 @@ class RequestSchema(RequestTemplateSchema):
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
     target_garden = fields.String(allow_none=True)
+    root_command_type = fields.String(allow_none=True)
 
 
 class StatusHistorySchema(BaseSchema):
@@ -479,8 +488,6 @@ class ConnectionSchema(BaseSchema):
 class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
-    status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
     connection_type = fields.Str(allow_none=True)
     receiving_connections = fields.Nested(
         "ConnectionSchema", many=True, allow_none=True
@@ -488,7 +495,6 @@ class GardenSchema(BaseSchema):
     publishing_connections = fields.Nested(
         "ConnectionSchema", many=True, allow_none=True
     )
-    namespaces = fields.List(fields.Str(), allow_none=True)
     systems = fields.Nested("SystemSchema", many=True, allow_none=True)
     has_upstream = fields.Bool(allow_none=True)
     upstream = fields.Str(allow_none=True)

@@ -82,10 +82,12 @@ class Events(Enum):
     GARDEN_SYNC = 30
     ENTRY_STARTED = 31
     ENTRY_STOPPED = 32
+    ENTRY_HEARTBEAT = 60
     JOB_CREATED = 33
     JOB_DELETED = 34
     JOB_PAUSED = 35
     JOB_RESUMED = 36
+    JOB_COUNTER_UPDATED = 61
     PLUGIN_LOGGER_FILE_CHANGE = 37
     RUNNER_STARTED = 38
     RUNNER_STOPPED = 39
@@ -106,7 +108,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 60
+    # Next: 62
 
 
 class Permissions(Enum):
@@ -499,11 +501,15 @@ class StatusInfo(BaseModel):
         self.history = history or []
 
     def set_status_heartbeat(self, status, max_history=None):
-
-        self.heartbeat = datetime.utcnow()
-        self.history.append(
-            StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
-        )
+        if (
+            status != "NOT_CONFIGURED"
+            or not self.history
+            or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
+        ):
+            self.heartbeat = datetime.utcnow()
+            self.history.append(
+                StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
+            )
 
         if max_history and max_history > 0 and len(self.history) > max_history:
             self.history = self.history[(max_history * -1) :]
@@ -562,6 +568,7 @@ class File(BaseModel):
         id=None,  # noqa # shadows built-in
         owner_id=None,
         owner_type=None,
+        created_at=None,
         updated_at=None,
         file_name=None,
         file_size=None,
@@ -571,6 +578,8 @@ class File(BaseModel):
         job=None,
         request=None,
         md5_sum=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.owner_id = owner_id
@@ -578,12 +587,15 @@ class File(BaseModel):
         self.owner = owner
         self.job = job
         self.request = request
+        self.created_at = created_at
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks
         self.chunk_size = chunk_size
         self.md5_sum = md5_sum
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.file_name
@@ -606,12 +618,20 @@ class FileChunk(BaseModel):
         offset=None,
         data=None,
         owner=None,
+        created_at=None,
+        updated_at=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.file_id = file_id
         self.offset = offset
         self.data = data
         self.owner = owner
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.data
@@ -773,6 +793,7 @@ class Request(RequestTemplate):
         output_type=None,
         status=None,
         command_type=None,
+        root_command_type=None,
         created_at=None,
         error_class=None,
         metadata=None,
@@ -812,6 +833,7 @@ class Request(RequestTemplate):
         self.requester = requester
         self.source_garden = source_garden
         self.target_garden = target_garden
+        self.root_command_type = root_command_type
 
     @classmethod
     def from_template(cls, template, **kwargs):
@@ -932,6 +954,7 @@ class System(BaseModel):
         prefix_topic=None,
         requires=None,
         requires_timeout=None,
+        garden_name=None,
     ):
         self.name = name
         self.description = description
@@ -950,15 +973,17 @@ class System(BaseModel):
         self.prefix_topic = prefix_topic
         self.requires = requires or []
         self.requires_timeout = requires_timeout
+        self.garden_name = garden_name
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s, namespace=%s>" % (
+        return "<System: name=%s, version=%s, namespace=%s, garden=%s>" % (
             self.name,
             self.version,
             self.namespace,
+            self.garden_name,
         )
 
     def is_newer(self, other):
@@ -1615,25 +1640,10 @@ class FileTrigger(BaseModel):
 class Garden(BaseModel):
     schema = "GardenSchema"
 
-    GARDEN_STATUSES = {
-        "INITIALIZING",
-        "RUNNING",
-        "BLOCKED",
-        "STOPPED",
-        "NOT_CONFIGURED",
-        "CONFIGURATION_ERROR",
-        "UNREACHABLE",
-        "ERROR",
-        "UNKNOWN",
-    }
-
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
         name=None,
-        status=None,
-        status_info=None,
-        namespaces=None,
         systems=None,
         connection_type=None,
         receiving_connections=None,
@@ -1648,9 +1658,6 @@ class Garden(BaseModel):
     ):
         self.id = id
         self.name = name
-        self.status = status.upper() if status else None
-        self.status_info = status_info if status_info else StatusInfo()
-        self.namespaces = namespaces or []
         self.systems = systems or []
 
         self.connection_type = connection_type
@@ -1674,11 +1681,10 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, version=%s, upstream=%s, has_upstream=%s, "
+            "<Garden: garden_name=%s, version=%s, parent=%s, has_parent=%s, "
             "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
-                self.status,
                 self.version,
                 self.upstream,
                 self.has_upstream,
@@ -1692,7 +1698,7 @@ class Garden(BaseModel):
         # Implemented not for full model to model comparison, but to allow for
         # quick comparisons for event logic filtering
 
-        if not isinstance(other, Event):
+        if not isinstance(other, Garden):
             return False
 
         if hasattr(self, "status_info") and hasattr(other, "status_info"):

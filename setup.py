@@ -23,6 +23,7 @@ setup(
     version=find_version(),
     description="Beer-garden plugin and utility library",
     long_description=readme,
+    long_description_content_type="text/x-rst",
     url="https://beer-garden.io/",
     author="The Beer-garden Team",
     author_email=" ",

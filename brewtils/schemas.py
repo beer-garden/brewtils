@@ -13,8 +13,7 @@ from marshmallow import (
     pre_load,
     utils,
 )
-
-import brewtils.models
+from marshmallow.experimental.context import Context
 
 __all__ = [
     "SystemSchema",
@@ -56,7 +55,6 @@ __all__ = [
 from brewtils.models import Job
 
 model_schema_map = {}
-schema_model_map = {}
 
 
 # This is copied from issue in marshmallow-polyfield repo:
@@ -191,13 +189,19 @@ class DateTime(fields.DateTime):
         return utils.from_timestamp_ms(value).replace(tzinfo=datetime.timezone.utc)
 
 
+class BrewtilsContext(typing.TypedDict):
+    models: typing.Dict[str, typing.Any]
+
+
 class BaseSchema(Schema):
 
     @post_load
     def make_object(self, data, **_):
         try:
-            model_class = schema_model_map[self.__class__.__name__]
-        except KeyError:
+            model_class = Context[BrewtilsContext].get()["models"][
+                self.__class__.__name__
+            ]
+        except (KeyError, LookupError):
             return data
 
         return model_class(**data)
@@ -707,47 +711,6 @@ class UserSchema(BaseSchema):
     protected = fields.Boolean(allow_none=True)
     file_generated = fields.Boolean(allow_none=True)
 
-
-schema_model_map.update(
-    {
-        "ChoicesSchema": brewtils.models.Choices,
-        "CommandSchema": brewtils.models.Command,
-        "ConnectionSchema": brewtils.models.Connection,
-        "CronTriggerSchema": brewtils.models.CronTrigger,
-        "DateTriggerSchema": brewtils.models.DateTrigger,
-        "EventSchema": brewtils.models.Event,
-        "FileTriggerSchema": brewtils.models.FileTrigger,
-        "GardenSchema": brewtils.models.Garden,
-        "InstanceSchema": brewtils.models.Instance,
-        "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
-        "JobSchema": brewtils.models.Job,
-        "JobExport": brewtils.models.Job,
-        "LoggingConfigSchema": brewtils.models.LoggingConfig,
-        "QueueSchema": brewtils.models.Queue,
-        "ParameterSchema": brewtils.models.Parameter,
-        "PatchSchema": brewtils.models.PatchOperation,
-        "UserTokenSchema": brewtils.models.UserToken,
-        "RequestSchema": brewtils.models.Request,
-        "RequestFileSchema": brewtils.models.RequestFile,
-        "FileSchema": brewtils.models.File,
-        "FileChunkSchema": brewtils.models.FileChunk,
-        "FileStatusSchema": brewtils.models.FileStatus,
-        "RequestTemplateSchema": brewtils.models.RequestTemplate,
-        "SystemSchema": brewtils.models.System,
-        "OperationSchema": brewtils.models.Operation,
-        "RunnerSchema": brewtils.models.Runner,
-        "ResolvableSchema": brewtils.models.Resolvable,
-        "RoleSchema": brewtils.models.Role,
-        "UpstreamRoleSchema": brewtils.models.UpstreamRole,
-        "UserSchema": brewtils.models.User,
-        "AliasUserMapSchema": brewtils.models.AliasUserMap,
-        "SubscriberSchema": brewtils.models.Subscriber,
-        "TopicSchema": brewtils.models.Topic,
-        "StatusInfoSchema": brewtils.models.StatusInfo,
-        "StatusHistorySchema": brewtils.models.StatusHistory,
-        "ReplicationSchema": brewtils.models.Replication,
-    }
-)
 
 model_schema_map.update(
     {

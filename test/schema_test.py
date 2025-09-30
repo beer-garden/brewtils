@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+from marshmallow.experimental.context import Context
 from mock import Mock
 
 from brewtils.models import System
+from brewtils.schema_parser import SchemaParser
 from brewtils.schemas import (
     BaseSchema,
+    BrewtilsContext,
     SystemSchema,
     _deserialize_model,
     _serialize_model,
     model_schema_map,
-    schema_model_map,
 )
 
 
@@ -21,7 +23,8 @@ class TestSchemas(object):
 
     def test_make_object_with_model(self):
         schema = SystemSchema()
-        value = schema.make_object({"name": "name"})
+        with Context[BrewtilsContext]({"models": {"SystemSchema": System}}):
+            value = schema.make_object({"name": "name"})
         assert isinstance(value, System)
 
     def test_get_attributes(self):
@@ -66,5 +69,5 @@ class TestFields(object):
     def test_deserialize_mapping(self):
         models = list(set(model_schema_map[dic] for dic in model_schema_map))
         assert len(models) == len(
-            schema_model_map
+            SchemaParser._models
         ), "Missing mapped schema for deserialization"

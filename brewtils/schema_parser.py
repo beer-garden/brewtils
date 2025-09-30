@@ -5,6 +5,7 @@ import typing  # noqa
 from typing import Any, Dict, Optional, Union  # noqa
 
 from box import Box  # type: ignore
+from marshmallow.experimental.context import Context
 
 import brewtils.models
 import brewtils.schemas
@@ -20,6 +21,45 @@ class SchemaParser(object):
     """Serialize and deserialize Brewtils models"""
 
     logger = logging.getLogger(__name__)
+
+    _models = {
+        "ChoicesSchema": brewtils.models.Choices,
+        "CommandSchema": brewtils.models.Command,
+        "ConnectionSchema": brewtils.models.Connection,
+        "CronTriggerSchema": brewtils.models.CronTrigger,
+        "DateTriggerSchema": brewtils.models.DateTrigger,
+        "EventSchema": brewtils.models.Event,
+        "FileTriggerSchema": brewtils.models.FileTrigger,
+        "GardenSchema": brewtils.models.Garden,
+        "InstanceSchema": brewtils.models.Instance,
+        "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
+        "JobSchema": brewtils.models.Job,
+        "JobExport": brewtils.models.Job,
+        "LoggingConfigSchema": brewtils.models.LoggingConfig,
+        "QueueSchema": brewtils.models.Queue,
+        "ParameterSchema": brewtils.models.Parameter,
+        "PatchSchema": brewtils.models.PatchOperation,
+        "UserTokenSchema": brewtils.models.UserToken,
+        "RequestSchema": brewtils.models.Request,
+        "RequestFileSchema": brewtils.models.RequestFile,
+        "FileSchema": brewtils.models.File,
+        "FileChunkSchema": brewtils.models.FileChunk,
+        "FileStatusSchema": brewtils.models.FileStatus,
+        "RequestTemplateSchema": brewtils.models.RequestTemplate,
+        "SystemSchema": brewtils.models.System,
+        "OperationSchema": brewtils.models.Operation,
+        "RunnerSchema": brewtils.models.Runner,
+        "ResolvableSchema": brewtils.models.Resolvable,
+        "RoleSchema": brewtils.models.Role,
+        "UpstreamRoleSchema": brewtils.models.UpstreamRole,
+        "UserSchema": brewtils.models.User,
+        "AliasUserMapSchema": brewtils.models.AliasUserMap,
+        "SubscriberSchema": brewtils.models.Subscriber,
+        "TopicSchema": brewtils.models.Topic,
+        "StatusInfoSchema": brewtils.models.StatusInfo,
+        "StatusHistorySchema": brewtils.models.StatusHistory,
+        "ReplicationSchema": brewtils.models.Replication,
+    }
 
     # Deserialization methods
     @classmethod
@@ -519,7 +559,8 @@ class SchemaParser(object):
 
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
-        return schema.loads(data) if from_string else schema.load(data)
+        with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
+            return schema.loads(data) if from_string else schema.load(data)
 
     # Serialization methods
     @classmethod

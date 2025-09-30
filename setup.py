@@ -30,23 +30,21 @@ setup(
     packages=find_packages(exclude=["test", "test.*"]),
     package_data={"": ["README.md"]},
     install_requires=[
-        "appdirs<2",
-        "lark-parser<1",
-        "marshmallow<4,>=3.3",
-        "marshmallow-polyfield<6",
-        "packaging",
-        "pika<=1.4,>=1.0.1",
-        "requests<3",
-        "simplejson<4",
-        "wrapt",
-        "yapconf>=0.3.7",
+        "appdirs<2", # Latest 1.4.4
+        "lark-parser<1", # Latest 0.12.0
+        "marshmallow<4,>=3.3", # Latest 4.0.1, can't upgrade due to polyfield doesn't support 4
+        "marshmallow-polyfield<6", # Latest 5.11
+        "packaging", # Latest 25.0
+        "pika<=1.4,>=1.0.1", # Latest 1.3.2
+        "requests<3", # Latest 2.32.5
+        "simplejson<4", # Latest 3.20.2
+        "wrapt", # Latest 1.17.3
+        "yapconf<1.0,>=0.3.7", # Latest 0.4.0
     ],
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",

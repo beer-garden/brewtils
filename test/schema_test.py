@@ -6,13 +6,13 @@ from mock import Mock
 from pytest_lazyfixture import lazy_fixture
 
 from brewtils.models import System
-from brewtils.schema_parser import SchemaParser
 from brewtils.schemas import (
     BaseSchema,
     SystemSchema,
     _deserialize_model,
     _serialize_model,
     model_schema_map,
+    schema_model_map,
 )
 
 
@@ -22,7 +22,7 @@ class TestSchemas(object):
         assert "input" == base_schema.make_object("input")
 
     def test_make_object_with_model(self):
-        schema = SystemSchema(context={"models": {"SystemSchema": System}})
+        schema = SystemSchema()
         value = schema.make_object({"name": "name"})
         assert isinstance(value, System)
 
@@ -68,5 +68,5 @@ class TestFields(object):
     def test_deserialize_mapping(self):
         models = list(set(model_schema_map[dic] for dic in model_schema_map))
         assert len(models) == len(
-            SchemaParser._models
+            schema_model_map
         ), "Missing mapped schema for deserialization"

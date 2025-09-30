@@ -1,10 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import typing
 from functools import partial
 
-from marshmallow import Schema, fields, post_load, pre_load, utils, EXCLUDE
-from marshmallow_polyfield import PolyField
+from marshmallow import (
+    EXCLUDE,
+    Schema,
+    ValidationError,
+    fields,
+    post_load,
+    pre_load,
+    utils,
+)
+
+import brewtils.models
 
 __all__ = [
     "SystemSchema",
@@ -46,6 +56,57 @@ __all__ = [
 from brewtils.models import Job
 
 model_schema_map = {}
+schema_model_map = {}
+
+
+class PolyField(fields.Field):
+    """
+    Polymorphic field that expects two selectors that define which
+    schema is used for serialization and deserialization.
+    The serialization selector is given the value to be serialized and the object the value was pulled from.
+    The deserialization selector is given the value to be deserialized and the raw input data passed
+    to the `Schema.load <marshmallow.Schema.load>`.
+    Both selectors may return either a marshmallow Schema instance or a Schema class.
+    """
+
+    def __init__(
+        self,
+        *,
+        serialization_schema_selector: typing.Callable[
+            [typing.Any, typing.Any], Schema | typing.Type[Schema]
+        ],
+        deserialization_schema_selector: typing.Callable[
+            [typing.Any, typing.Any], Schema | typing.Type[Schema]
+        ],
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self._ser_selector = serialization_schema_selector
+        self._deser_selector = deserialization_schema_selector
+
+    @staticmethod
+    def _ensure_schema(schema: typing.Any) -> Schema:
+        if isinstance(schema, Schema):
+            return schema
+        if isinstance(schema, type) and issubclass(schema, Schema):
+            return schema()
+        raise TypeError(
+            f"Selector must return a marshmallow Schema instance or Schema class, got {type(schema)}"
+        )
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        if value is None:
+            if self.allow_none:
+                return None
+            raise ValidationError(self.default_error_messages["null"])
+        schema = self._ensure_schema(self._deser_selector(value, data))
+        return schema.load(value)
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if value is None:
+            return None
+        schema = self._ensure_schema(self._ser_selector(value, obj))
+        return schema.dump(value)
 
 
 def _serialize_model(_, obj, type_field=None, allowed_types=None):
@@ -86,7 +147,7 @@ class ModelField(PolyField):
             deserialization_schema_selector=partial(
                 _deserialize_model, type_field=type_field, allowed_types=allowed_types
             ),
-            **kwargs
+            **kwargs,
         )
 
 
@@ -125,12 +186,16 @@ class DateTime(fields.DateTime):
         return utils.from_timestamp_ms(value).replace(tzinfo=datetime.timezone.utc)
 
 
+class BaseSchema(typing.TypedDict):
+    models: typing.Dict
+
+
 class BaseSchema(Schema):
 
     @post_load
     def make_object(self, data, **_):
         try:
-            model_class = self.context["models"][self.__class__.__name__]
+            model_class = schema_model_map[self.__class__.__name__]
         except KeyError:
             return data
 
@@ -141,7 +206,7 @@ class BaseSchema(Schema):
         return [
             key
             for key, value in cls._declared_fields.items()
-            if isinstance(value, fields.FieldABC)
+            if isinstance(value, fields.Field)
         ]
 
     class Meta:
@@ -151,7 +216,7 @@ class BaseSchema(Schema):
 class ChoicesSchema(BaseSchema):
     type = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
-    value = fields.Raw(allow_none=True, many=True)
+    value = fields.List(fields.Raw(), allow_none=True)
     strict = fields.Bool(allow_none=True, dump_default=False)
     details = fields.Dict(allow_none=True)
 
@@ -261,8 +326,8 @@ class FileChunkSchema(BaseSchema):
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
     owner = fields.Nested("FileSchema", allow_none=True)
-    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    created_at = DateTime(allow_none=True, format="epoch")
+    updated_at = DateTime(allow_none=True, format="epoch")
     status = fields.Str(allow_none=True)
     root_command_type = fields.Str(allow_none=True)
 
@@ -357,7 +422,7 @@ class PatchSchema(BaseSchema):
     path = fields.Str(allow_none=True)
     value = fields.Raw(allow_none=True)
 
-    @pre_load(pass_many=True)
+    @pre_load(pass_collection=True)
     def unwrap_envelope(self, data, many, **_):
         """Helper function for parsing the different patch formats.
 
@@ -641,6 +706,47 @@ class UserSchema(BaseSchema):
     protected = fields.Boolean(allow_none=True)
     file_generated = fields.Boolean(allow_none=True)
 
+
+schema_model_map.update(
+    {
+        "ChoicesSchema": brewtils.models.Choices,
+        "CommandSchema": brewtils.models.Command,
+        "ConnectionSchema": brewtils.models.Connection,
+        "CronTriggerSchema": brewtils.models.CronTrigger,
+        "DateTriggerSchema": brewtils.models.DateTrigger,
+        "EventSchema": brewtils.models.Event,
+        "FileTriggerSchema": brewtils.models.FileTrigger,
+        "GardenSchema": brewtils.models.Garden,
+        "InstanceSchema": brewtils.models.Instance,
+        "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
+        "JobSchema": brewtils.models.Job,
+        "JobExport": brewtils.models.Job,
+        "LoggingConfigSchema": brewtils.models.LoggingConfig,
+        "QueueSchema": brewtils.models.Queue,
+        "ParameterSchema": brewtils.models.Parameter,
+        "PatchSchema": brewtils.models.PatchOperation,
+        "UserTokenSchema": brewtils.models.UserToken,
+        "RequestSchema": brewtils.models.Request,
+        "RequestFileSchema": brewtils.models.RequestFile,
+        "FileSchema": brewtils.models.File,
+        "FileChunkSchema": brewtils.models.FileChunk,
+        "FileStatusSchema": brewtils.models.FileStatus,
+        "RequestTemplateSchema": brewtils.models.RequestTemplate,
+        "SystemSchema": brewtils.models.System,
+        "OperationSchema": brewtils.models.Operation,
+        "RunnerSchema": brewtils.models.Runner,
+        "ResolvableSchema": brewtils.models.Resolvable,
+        "RoleSchema": brewtils.models.Role,
+        "UpstreamRoleSchema": brewtils.models.UpstreamRole,
+        "UserSchema": brewtils.models.User,
+        "AliasUserMapSchema": brewtils.models.AliasUserMap,
+        "SubscriberSchema": brewtils.models.Subscriber,
+        "TopicSchema": brewtils.models.Topic,
+        "StatusInfoSchema": brewtils.models.StatusInfo,
+        "StatusHistorySchema": brewtils.models.StatusHistory,
+        "ReplicationSchema": brewtils.models.Replication,
+    }
+)
 
 model_schema_map.update(
     {

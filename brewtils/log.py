@@ -182,10 +182,25 @@ def read_log_file(log_file, start_line=None, end_line=None):
     Returns:
         Lines read from the file
     """
+    lines_total = 0
     with open(log_file, "r") as f:
+        lines_total = len(f.readlines())
+        f.seek(0)
         raw_logs = f.readlines()
 
-    return "".join(raw_logs[start_line:end_line])
+    if start_line is not None and start_line < 0:
+        start_line = lines_total + start_line
+
+    if end_line is None or end_line > lines_total:
+        last_read_line = lines_total
+    else:
+        last_read_line = end_line
+
+    return {
+        "logs": "".join(raw_logs[start_line:end_line]),
+        "start_line": start_line,
+        "end_line": last_read_line,
+    }
 
 
 # DEPRECATED

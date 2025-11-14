@@ -200,10 +200,10 @@ def read_log_file(log_file, start_line=None, end_line=None):
             # Calculate actual start line if negative
             if start_line < 0:
 
-                lines_total = 0
-                for lines_total, _ in enumerate(f):
-                    pass
-                start_line = lines_total + start_line
+                lines_total = sum(1 for _ in f)
+                if lines_total > 0:
+                    lines_total -= 1  # Adjust for 0 indexing
+                    start_line = lines_total + start_line
 
                 # If start_line is still negative, set to 0
                 if start_line < 0:

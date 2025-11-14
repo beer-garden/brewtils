@@ -182,22 +182,51 @@ def read_log_file(log_file, start_line=None, end_line=None):
     Returns:
         Lines read from the file
     """
-    lines_total = 0
+
+    log_file_return = []
+    last_read_line = 0
+
     with open(log_file, "r") as f:
-        lines_total = len(f.readlines())
-        f.seek(0)
-        raw_logs = f.readlines()
 
-    if start_line is not None and start_line < 0:
-        start_line = lines_total + start_line
+        if start_line is None:
+            start_line = 0
 
-    if end_line is None or end_line > lines_total:
-        last_read_line = lines_total
-    else:
-        last_read_line = end_line
+        # Read entire file with no calculations
+        if start_line == 0 and end_line is None:
+            log_file_return = f.readlines()
+            last_read_line = len(log_file_return) - 1
+
+        else:
+            # Calculate actual start line if negative
+            if start_line < 0:
+
+                lines_total = 0
+                for lines_total, _ in enumerate(f):
+                    pass
+                start_line = lines_total + start_line
+
+                # If start_line is still negative, set to 0
+                if start_line < 0:
+                    start_line = 0
+
+                f.seek(0)
+
+            # Find subsection of logs file to return
+            current_line = 0
+            for current_line, line in enumerate(f):
+                if start_line is not None and current_line < start_line:
+                    continue
+                if end_line is not None and current_line > end_line:
+                    break
+                last_read_line = current_line
+                log_file_return.append(line)
+
+            # If nothing was returned, set last_read_line to end of file
+            if len(log_file_return) == 0:
+                last_read_line = current_line
 
     return {
-        "logs": "".join(raw_logs[start_line:end_line]),
+        "logs": "".join(log_file_return),
         "start_line": start_line,
         "end_line": last_read_line,
     }

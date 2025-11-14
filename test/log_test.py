@@ -103,21 +103,39 @@ class TestReadLogFile(object):
 
         assert log_lines["logs"] == "".join(lines)
         assert log_lines["start_line"] == 0
-        assert log_lines["end_line"] == 10
+        assert log_lines["end_line"] == 9
+
+        log_lines = read_log_file(log_file, start_line=None, end_line=None)
+
+        assert log_lines["logs"] == "".join(lines)
+        assert log_lines["start_line"] == 0
+        assert log_lines["end_line"] == 9
 
     def test_read_tail(self, log_file, lines):
         log_lines = read_log_file(log_file, start_line=-7, end_line=None)
 
-        assert log_lines["logs"] == "".join(lines[3:])
-        assert log_lines["start_line"] == 3
-        assert log_lines["end_line"] == 10
+        assert log_lines["logs"] == "".join(lines[2:])
+        assert log_lines["start_line"] == 2
+        assert log_lines["end_line"] == 9
+
+        log_lines = read_log_file(log_file, start_line=-12, end_line=None)
+
+        assert log_lines["logs"] == "".join(lines)
+        assert log_lines["start_line"] == 0
+        assert log_lines["end_line"] == 9
 
     def test_read_range(self, log_file, lines):
         log_lines = read_log_file(log_file, start_line=1, end_line=4)
 
-        assert log_lines["logs"] == "".join(lines[1:4])
+        assert log_lines["logs"] == "".join(lines[1:5])
         assert log_lines["start_line"] == 1
         assert log_lines["end_line"] == 4
+
+        log_lines = read_log_file(log_file, start_line=5, end_line=7)
+
+        assert log_lines["logs"] == "".join(lines[5:8])
+        assert log_lines["start_line"] == 5
+        assert log_lines["end_line"] == 7
 
 
 class TestDeprecated(object):

@@ -4,7 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional  # noqa
 
 from packaging.version import InvalidVersion, parse
 
@@ -17,7 +17,7 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.models import Request, System
+from brewtils.models import Request, System  # noqa
 from brewtils.request_handling import LocalRequestProcessor
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient

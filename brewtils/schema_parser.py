@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import typing
-from typing import Any, Dict, Optional, Union
+import typing  # noqa
+from typing import Any, Dict, Optional, Union  # noqa
 
-import six  # type: ignore
 from box import Box  # type: ignore
+from marshmallow.experimental.context import Context
 
 import brewtils.models
 import brewtils.schemas
-from brewtils.models import BaseModel
+from brewtils.models import BaseModel  # noqa
 
 try:
     from collections.abc import Iterable  # type: ignore  # noqa
@@ -19,6 +19,8 @@ except ImportError:  # pragma: no cover
 
 class SchemaParser(object):
     """Serialize and deserialize Brewtils models"""
+
+    logger = logging.getLogger(__name__)
 
     _models = {
         "ChoicesSchema": brewtils.models.Choices,
@@ -58,8 +60,6 @@ class SchemaParser(object):
         "StatusHistorySchema": brewtils.models.StatusHistory,
         "ReplicationSchema": brewtils.models.Replication,
     }
-
-    logger = logging.getLogger(__name__)
 
     # Deserialization methods
     @classmethod
@@ -370,9 +370,9 @@ class SchemaParser(object):
         schema = brewtils.schemas.JobExportInputSchema(**kwargs)
 
         if from_string:
-            return schema.loads(job_id_json).data
+            return schema.loads(job_id_json)
         else:
-            return schema.load(job_id_json).data
+            return schema.load(job_id_json)
 
     @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):
@@ -544,7 +544,7 @@ class SchemaParser(object):
         if data is None:
             raise TypeError("Data can not be None")
 
-        if from_string and not isinstance(data, six.string_types):
+        if from_string and not isinstance(data, str):
             raise TypeError("When from_string=True data must be a string-type")
 
         if model_class == brewtils.models.PatchOperation:
@@ -559,9 +559,8 @@ class SchemaParser(object):
 
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
-        schema.context["models"] = cls._models
-
-        return schema.loads(data).data if from_string else schema.load(data).data
+        with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
+            return schema.loads(data) if from_string else schema.load(data)
 
     # Serialization methods
     @classmethod
@@ -1162,7 +1161,7 @@ class SchemaParser(object):
 
             schema = getattr(brewtils.schemas, schema_name)(**kwargs)
 
-            return schema.dumps(model).data if to_string else schema.dump(model).data
+            return schema.dumps(model) if to_string else schema.dump(model)
 
         # Explicitly force to_string to False so only original call returns a string
         multiple = [

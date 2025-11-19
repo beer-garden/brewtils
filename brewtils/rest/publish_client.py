@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from typing import Optional  # noqa
 
 import brewtils.plugin
 from brewtils.errors import BrewtilsException

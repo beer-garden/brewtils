@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union  # noqa
 
-import six
 from lark import Lark, Transformer
 
 # Lark added some new errors in later versions
@@ -101,14 +100,14 @@ def parse(input_string, parse_as=None):
 
 
 def _determine_display(display_value):
-    if isinstance(display_value, six.string_types):
+    if isinstance(display_value, str):
         return "typeahead"
 
     return "select" if len(display_value) <= 50 else "typeahead"
 
 
 def _determine_type(type_value):
-    if isinstance(type_value, six.string_types):
+    if isinstance(type_value, str):
         return "url" if type_value.startswith("http") else "command"
 
     return "static"
@@ -157,11 +156,8 @@ def process_choices(choices):
             )
         else:
             if (
-                (
-                    choice_type == "command"
-                    and not isinstance(value, (six.string_types, dict))
-                )
-                or (choice_type == "url" and not isinstance(value, six.string_types))
+                (choice_type == "command" and not isinstance(value, (str, dict)))
+                or (choice_type == "url" and not isinstance(value, str))
                 or (choice_type == "static" and not isinstance(value, (list, dict)))
             ):
                 allowed_types = {
@@ -204,7 +200,7 @@ def process_choices(choices):
     unparsed_value = ""
     try:
         if choice_type == "command":
-            if isinstance(value, six.string_types):
+            if isinstance(value, str):
                 unparsed_value = value
             else:
                 unparsed_value = value["command"]

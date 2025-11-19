@@ -6,7 +6,7 @@ sphinx ~= 6.2.1
 sphinx_rtd_theme < 1
 
 # Test and Lint Dependencies
-black ; python_version > "3.5"
+black
 coverage < 6
 flake8 < 4
 mock < 5

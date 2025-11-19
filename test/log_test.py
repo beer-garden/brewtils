@@ -150,8 +150,19 @@ class TestDeprecated(object):
 
             assert "config" == get_logging_config(**params)
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "4.0, please consider using 'EasyClient.get_logging_config' and"
+                    in str(warning.message)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_convert_logging_config(self):
         handlers = {"hand1": {}, "handler2": {}}
@@ -175,8 +186,19 @@ class TestDeprecated(object):
             assert "level" == python_config["root"]["level"]
             assert set(handlers) == set(python_config["root"]["handlers"])
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "4.0, please consider using 'configure_logging' instead."
+                    in str(warning.message)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_convert_logging_config_default(self):
         log_config = LoggingConfig(level="level", handlers={}, formatters={})
@@ -188,8 +210,19 @@ class TestDeprecated(object):
             assert python_config["handlers"] == DEFAULT_HANDLERS
             assert python_config["formatters"] == DEFAULT_FORMATTERS
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "4.0, please consider using 'configure_logging' instead."
+                    in str(warning.message)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_setup_logger(self, params, monkeypatch):
         log_conf = Mock()
@@ -204,12 +237,19 @@ class TestDeprecated(object):
             setup_logger(**params)
             conf_mock.assert_called_once_with(log_conf.return_value)
 
-            assert len(w) == 1
+            assert len(w) > 0
 
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'configure_logging'" in str(warning)
-            assert "4.0" in str(warning)
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "'configure_logging'" in str(warning)
+                    and "4.0" in str(warning)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_get_python_logging_config(self, params, monkeypatch):
         monkeypatch.setattr("brewtils.get_easy_client", Mock())
@@ -221,9 +261,16 @@ class TestDeprecated(object):
             warnings.simplefilter("always")
 
             assert "config" == get_python_logging_config(**params)
-            assert len(w) == 1
+            assert len(w) > 0
 
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'get_logging_config'" in str(warning)
-            assert "4.0" in str(warning)
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "'get_logging_config'" in str(warning)
+                    and "4.0" in str(warning)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings

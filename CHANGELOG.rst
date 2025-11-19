@@ -1,11 +1,11 @@
 Brewtils Changelog
 ==================
 
-TBD
+3.31.0rc1
 ------
 TBD
 
-- Updated Logs read to return dictionary with logs, start line, and end line in output object
+- Updated Logs read to return dictionary with logs, start line, and end line in output object (#568)
 
 3.30.0
 ------

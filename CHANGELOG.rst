@@ -5,6 +5,8 @@ Brewtils Changelog
 ------
 TBD
 
+- Updated Logs read to return dictionary with logs, start line, and end line in output object (#568)
+
 3.30.0
 ------
 9/23/25

@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.31.0
+------
+TBD
+
+- Added ERROR to list of valid instance statuses
+
 3.30.0
 ------
 9/23/25

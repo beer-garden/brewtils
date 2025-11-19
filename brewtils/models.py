@@ -246,6 +246,7 @@ class Instance(BaseModel):
         "STOPPING",
         "UNKNOWN",
         "AWAITING_SYSTEM",
+        "ERROR",
     }
 
     def __init__(

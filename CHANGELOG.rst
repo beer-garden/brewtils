@@ -6,6 +6,7 @@ Brewtils Changelog
 TBD
 
 - Updated Logs read to return dictionary with logs, start line, and end line in output object (#568)
+- Added ERROR to list of valid instance statuses(#569)
 
 3.30.0
 ------

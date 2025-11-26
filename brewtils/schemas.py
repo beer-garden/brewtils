@@ -645,6 +645,7 @@ class UserSchema(BaseSchema):
     metadata = fields.Dict(allow_none=True)
     protected = fields.Boolean(allow_none=True)
     file_generated = fields.Boolean(allow_none=True)
+    preferences = fields.Dict(allow_none=True)
 
 
 model_schema_map.update(

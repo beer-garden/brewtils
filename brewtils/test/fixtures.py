@@ -273,6 +273,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "prefix_topic": "custom_topic",
         "requires": ["SystemA"],
         "requires_timeout": 300,
+        "garden_name": "garden",
     }
 
 
@@ -354,6 +355,7 @@ def child_request_dict(ts_epoch):
         "status": "CREATED",
         "hidden": True,
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
@@ -395,6 +397,7 @@ def parent_request_dict(ts_epoch):
         "output_type": "STRING",
         "status": "CREATED",
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "hidden": False,
         "updated_at": ts_epoch,
@@ -463,6 +466,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "status": "CREATED",
         "hidden": False,
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,

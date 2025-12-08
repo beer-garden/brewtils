@@ -9,14 +9,23 @@ TBD
 
 3.30.0
 ------
-TBD
+9/23/25
 
-- Fixed issue trying to check the bytes hash in resolver
 - Added `is_newer` support for various models to enable improved event handling in framework
 - Added reattempt for file chunk download
 - Added Entry Heartbeat event label
+- Added expiration_at and root_command_type to Request model
+- Added Garden Name to System Model (#556)
+- Added root_command_type to Request model
+- Added updated_at/created_at to File and File Chunk model
 - Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
+- Updated command signature validation error messages to include command name and parameter name
+- Updated Local Request Handler to emulate all stages of Request lifecycle (status and routing)
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
+- Fixed issue trying to check the bytes hash in resolver
+- Fixed bug generating MD5 Hash from SystemClient uploaded Base64 Parameters
+- Fixed bug for Local System Client that doesn't load System object prior to executing command
+
 
 3.29.1
 ------

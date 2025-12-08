@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.31.0
+------
+TBD
+
+- Added static chunk size to File model
+
 3.30.0
 ------
 9/23/25

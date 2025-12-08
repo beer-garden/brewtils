@@ -556,6 +556,9 @@ class RequestFile(BaseModel):
 class File(BaseModel):
     schema = "FileSchema"
 
+    CHUNK_SIZE = 255 * 1024
+    MAX_CHUNK_SIZE = 1024 * 1024 * 15  # 15MB
+
     def __init__(
         self,
         id=None,  # noqa # shadows built-in

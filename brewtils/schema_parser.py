@@ -11,10 +11,8 @@ import brewtils.models
 import brewtils.schemas
 from brewtils.models import BaseModel  # noqa
 
-try:
-    from collections.abc import Iterable  # type: ignore  # noqa
-except ImportError:  # pragma: no cover
-    from collections import Iterable
+from collections.abc import Iterable  # type: ignore  # noqa
+
 
 
 class SchemaParser(object):

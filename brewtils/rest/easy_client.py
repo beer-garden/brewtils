@@ -5,11 +5,8 @@ from io import BytesIO
 from pathlib import Path  # noqa
 from typing import Any, Callable, List, NoReturn, Optional, Type, Union  # noqa
 
-try:
-    from hashlib import file_digest, md5
-except ImportError:
-    from hashlib import md5
-    from brewtils.rest import file_digest
+from hashlib import file_digest, md5
+
 
 import time
 

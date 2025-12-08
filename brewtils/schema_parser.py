@@ -14,7 +14,6 @@ from brewtils.models import BaseModel  # noqa
 from collections.abc import Iterable  # type: ignore  # noqa
 
 
-
 class SchemaParser(object):
     """Serialize and deserialize Brewtils models"""
 

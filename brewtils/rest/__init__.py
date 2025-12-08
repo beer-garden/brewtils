@@ -42,5 +42,3 @@ def normalize_url_prefix(url_prefix):
         new_url_prefix += "/"
 
     return new_url_prefix
-
-

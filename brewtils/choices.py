@@ -9,7 +9,6 @@ from lark import ParseError
 from lark import GrammarError, LexError
 
 
-
 choices_grammar = r"""
     func: CNAME [func_args]
     url: ADDRESS [url_args]

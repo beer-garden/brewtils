@@ -253,7 +253,7 @@ class TestInit(object):
             client,
             system=bg_system,
             max_concurrent=1,
-            **get_connection_info(cli_args=args)
+            **get_connection_info(cli_args=args),
         )
 
         assert plugin._config.bg_host == "remotehost"

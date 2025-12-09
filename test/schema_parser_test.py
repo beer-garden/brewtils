@@ -7,7 +7,7 @@ import copy
 
 import pytest
 from marshmallow.exceptions import MarshmallowError
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 import brewtils.models
 from brewtils.models import System

@@ -81,13 +81,13 @@ clean: clean-build clean-docs clean-python clean-test ## remove everything but s
 
 # Formatting
 format: ## Run black formatter in-line
-	black $(MODULE_NAME) $(TEST_DIR)
+	black -t py311 -t py312 -t py313 $(MODULE_NAME) $(TEST_DIR)
 
 
 # Linting
 lint: ## check style with flake8
 	flake8 --ignore=F824,W503 $(MODULE_NAME) $(TEST_DIR)
-	black --check --diff $(MODULE_NAME) $(TEST_DIR)
+	black -t py311 -t py312 -t py313 --check --diff $(MODULE_NAME) $(TEST_DIR)
 
 
 # Testing / Coverage

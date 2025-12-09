@@ -7,9 +7,9 @@ sphinx_rtd_theme < 1
 
 # Test and Lint Dependencies
 black
-coverage < 6
-flake8 < 4
-mock < 5
-pytest < 8
-pytest-lazy-fixture < 1
-requests-mock < 2
+coverage
+flake8
+mock
+pytest
+pytest-lazy-fixtures
+requests-mock

@@ -4,10 +4,8 @@ import pytest
 
 from brewtils.errors import PluginParamError
 
-try:
-    from lark import ParseError
-except ImportError:
-    from lark.common import ParseError
+from lark import ParseError
+
 
 from brewtils.choices import parse, process_choices
 

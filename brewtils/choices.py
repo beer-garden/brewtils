@@ -2,22 +2,11 @@
 from typing import Callable, Iterable, Optional, Union  # noqa
 
 from lark import Lark, Transformer
-
-# Lark added some new errors in later versions
-# Lark also moved around their error in 0.6.0
 from brewtils.errors import PluginParamError
 from brewtils.models import Choices
 
-try:
-    from lark import ParseError
-except ImportError:
-    from lark.common import ParseError
-
-try:
-    from lark import GrammarError, LexError
-except ImportError:
-    GrammarError = ParseError
-    LexError = ParseError
+from lark import ParseError
+from lark import GrammarError, LexError
 
 
 choices_grammar = r"""

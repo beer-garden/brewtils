@@ -1,9 +1,9 @@
 Brewtils Changelog
 ==================
 
-3.31.0rc1
+3.31.0
 ------
-TBD
+12/11/25
 
 ## Major dependency upgrades and dropping 3.6, 3.7, 3.8, 3.9, 3.10 Python Support
 

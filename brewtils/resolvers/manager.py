@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List, Mapping  # noqa
 
-try:
-    from collections import Mapping as CollectionsMapping
-except ImportError:
-    from collections.abc import Mapping as CollectionsMapping
+
+from collections.abc import Mapping as CollectionsMapping
 
 from brewtils.errors import RequestProcessException
-from brewtils.models import Parameter, Resolvable
+from brewtils.models import Parameter, Resolvable  # noqa
 from brewtils.resolvers.bytes import BytesResolver
 from brewtils.resolvers.chunks import ChunksResolver
 from brewtils.resolvers.identity import IdentityResolver

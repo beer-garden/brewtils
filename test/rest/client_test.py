@@ -57,7 +57,18 @@ class TestRestClient(object):
                 "host", 80, api_version=1, url_prefix=url_prefix, ssl_enabled=False
             )
             assert test_client.version_url == client.version_url
-            assert len(w) == 2
+
+            assert len(w) > 0
+
+            found_expected_warnings = 0
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "as a positional argument is deprecated" in str(warning.message)
+                ):
+                    found_expected_warnings += 1
+
+            assert found_expected_warnings == 2
 
     @pytest.mark.parametrize(
         "kwargs", [({"bg_port": 80}), ({"bg_host": "host", "api_version": -1})]
@@ -193,8 +204,17 @@ class TestRestClient(object):
 
             client.get_version(timeout=5)
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if warning.category == DeprecationWarning and "get_version" in str(
+                    warning.message
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_get_config(self, client, session_mock):
         client.get_config()
@@ -206,8 +226,17 @@ class TestRestClient(object):
 
             client.get_config(timeout=5)
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if warning.category == DeprecationWarning and "get_config" in str(
+                    warning.message
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_get_garden(self, client, session_mock):
         client.get_garden("name!")

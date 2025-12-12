@@ -59,7 +59,7 @@ class PikaClient(object):
         exchange_type="topic",
         ssl=None,
         blocked_connection_timeout=None,
-        **kwargs
+        **kwargs,
     ):
         self._host = host
         self._port = port
@@ -260,7 +260,7 @@ class PikaConsumer(RequestConsumer):
         panic_event=None,
         logger=None,
         thread_name=None,
-        **kwargs
+        **kwargs,
     ):
         self._connection = None
         self._channel = None

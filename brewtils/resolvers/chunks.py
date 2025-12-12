@@ -3,8 +3,6 @@
 import io
 import sys
 
-import six
-
 from brewtils.resolvers import ResolverBase
 
 
@@ -27,7 +25,7 @@ class ChunksResolver(ResolverBase):
             else:
                 file_types = (io.IOBase,)
 
-            if isinstance(value, six.string_types) or isinstance(value, file_types):
+            if isinstance(value, str) or isinstance(value, file_types):
                 return True
 
         return False

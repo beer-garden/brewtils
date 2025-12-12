@@ -7,7 +7,6 @@ import sys
 import threading
 from concurrent.futures.thread import ThreadPoolExecutor
 
-import six
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
@@ -160,7 +159,7 @@ class LocalRequestProcessor(object):
 
     @staticmethod
     def _format_output(output):
-        if isinstance(output, six.string_types):
+        if isinstance(output, str):
             return output
 
         try:
@@ -388,7 +387,7 @@ class RequestProcessor(object):
 
     @staticmethod
     def _format_output(output):
-        if isinstance(output, six.string_types):
+        if isinstance(output, str):
             return output
 
         try:
@@ -425,8 +424,7 @@ class AdminProcessor(RequestProcessor):
         self._updater.update_request(request, headers)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RequestConsumer(threading.Thread):
+class RequestConsumer(threading.Thread, metaclass=abc.ABCMeta):
     """Base class for consumers
 
     Classes deriving from this are expected to provide a concrete implementation for a
@@ -486,8 +484,7 @@ class RequestConsumer(threading.Thread):
         raise ValueError("Unknown connection type '%s'" % connection_type)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RequestUpdater(object):
+class RequestUpdater(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_request(self, request, headers):
         pass

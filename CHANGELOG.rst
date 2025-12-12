@@ -3,6 +3,16 @@ Brewtils Changelog
 
 - Added support for preferences in User model
 
+3.31.0
+------
+12/11/25
+
+## Major dependency upgrades and dropping 3.6, 3.7, 3.8, 3.9, 3.10 Python Support
+
+- Upgraded all dependencies to latest versions (#543)
+- Updated Logs read to return dictionary with logs, start line, and end line in output object (#568)
+- Added ERROR to list of valid instance statuses(#569)
+
 3.30.0
 ------
 9/23/25

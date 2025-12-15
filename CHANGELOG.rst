@@ -32,10 +32,13 @@ TBD
 - Updated command signature validation error messages to include command name and parameter name
 - Updated Local Request Handler to emulate all stages of Request lifecycle (status and routing)
 - Removed status, status info, and namespaces from Garden model since status is now derived from connections
+<<<<<<< HEAD
 - Fixed issue trying to check the bytes hash in resolver
 - Fixed bug generating MD5 Hash from SystemClient uploaded Base64 Parameters
 - Fixed bug for Local System Client that doesn't load System object prior to executing command
 
+=======
+>>>>>>> 3106b2c2a5c22a0a09c9078da0ae299c85439811
 
 3.29.1
 ------

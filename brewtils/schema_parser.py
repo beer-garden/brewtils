@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import typing
-from typing import Any, Dict, Optional, Union
+import typing  # noqa
+from typing import Any, Dict, Optional, Union  # noqa
 
-import six  # type: ignore
 from box import Box  # type: ignore
+from marshmallow.experimental.context import Context
 
 import brewtils.models
 import brewtils.schemas
-from brewtils.models import BaseModel
+from brewtils.models import BaseModel  # noqa
 
-try:
-    from collections.abc import Iterable  # type: ignore  # noqa
-except ImportError:  # pragma: no cover
-    from collections import Iterable
+from collections.abc import Iterable  # type: ignore  # noqa
 
 
 class SchemaParser(object):
     """Serialize and deserialize Brewtils models"""
+
+    logger = logging.getLogger(__name__)
 
     _models = {
         "ChoicesSchema": brewtils.models.Choices,
@@ -58,8 +57,6 @@ class SchemaParser(object):
         "StatusHistorySchema": brewtils.models.StatusHistory,
         "ReplicationSchema": brewtils.models.Replication,
     }
-
-    logger = logging.getLogger(__name__)
 
     # Deserialization methods
     @classmethod
@@ -224,7 +221,7 @@ class SchemaParser(object):
             logging_config,
             brewtils.models.LoggingConfig,
             from_string=from_string,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -319,7 +316,7 @@ class SchemaParser(object):
             alias_user_map,
             brewtils.models.AliasUserMap,
             from_string=from_string,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -370,9 +367,9 @@ class SchemaParser(object):
         schema = brewtils.schemas.JobExportInputSchema(**kwargs)
 
         if from_string:
-            return schema.loads(job_id_json).data
+            return schema.loads(job_id_json)
         else:
-            return schema.load(job_id_json).data
+            return schema.load(job_id_json)
 
     @classmethod
     def parse_garden(cls, garden, from_string=False, **kwargs):
@@ -515,7 +512,7 @@ class SchemaParser(object):
             status_history,
             brewtils.models.StatusHistory,
             from_string=from_string,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -540,7 +537,7 @@ class SchemaParser(object):
         data,  # type: Optional[Union[str, Dict[str, Any]]]
         model_class,  # type: Any
         from_string=False,  # type: bool
-        **kwargs  # type: Any
+        **kwargs,  # type: Any
     ):  # type: (...) -> Union[str, Dict[str, Any]]
         """Convert a JSON string or dictionary into a model object
 
@@ -557,7 +554,7 @@ class SchemaParser(object):
         if data is None:
             raise TypeError("Data can not be None")
 
-        if from_string and not isinstance(data, six.string_types):
+        if from_string and not isinstance(data, str):
             raise TypeError("When from_string=True data must be a string-type")
 
         if model_class == brewtils.models.PatchOperation:
@@ -572,9 +569,8 @@ class SchemaParser(object):
 
         schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
-        schema.context["models"] = cls._models
-
-        return schema.loads(data).data if from_string else schema.load(data).data
+        with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
+            return schema.loads(data) if from_string else schema.load(data)
 
     # Serialization methods
     @classmethod
@@ -601,7 +597,7 @@ class SchemaParser(object):
             system,
             to_string=to_string,
             schema_name=brewtils.models.System.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -621,7 +617,7 @@ class SchemaParser(object):
             instance,
             to_string=to_string,
             schema_name=brewtils.models.Instance.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -641,7 +637,7 @@ class SchemaParser(object):
             command,
             to_string=to_string,
             schema_name=brewtils.models.Command.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -661,7 +657,7 @@ class SchemaParser(object):
             connection,
             to_string=to_string,
             schema_name=brewtils.models.Connection.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -681,7 +677,7 @@ class SchemaParser(object):
             parameter,
             to_string=to_string,
             schema_name=brewtils.models.Parameter.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -701,7 +697,7 @@ class SchemaParser(object):
             request_file,
             to_string=to_string,
             schema_name=brewtils.models.RequestFile.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -721,7 +717,7 @@ class SchemaParser(object):
             request,
             to_string=to_string,
             schema_name=brewtils.models.Request.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -741,7 +737,7 @@ class SchemaParser(object):
             patch,
             to_string=to_string,
             schema_name=brewtils.models.PatchOperation.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -761,7 +757,7 @@ class SchemaParser(object):
             logging_config,
             to_string=to_string,
             schema_name=brewtils.models.LoggingConfig.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -781,7 +777,7 @@ class SchemaParser(object):
             event,
             to_string=to_string,
             schema_name=brewtils.models.Event.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -801,7 +797,7 @@ class SchemaParser(object):
             queue,
             to_string=to_string,
             schema_name=brewtils.models.Queue.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -855,7 +851,7 @@ class SchemaParser(object):
             role,
             to_string=to_string,
             schema_name=brewtils.models.UpstreamRole.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -875,7 +871,7 @@ class SchemaParser(object):
             alias_user_map,
             to_string=to_string,
             schema_name=brewtils.models.AliasUserMap.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -895,7 +891,7 @@ class SchemaParser(object):
             user_token,
             to_string=to_string,
             schema_name=brewtils.models.UserToken.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -971,7 +967,7 @@ class SchemaParser(object):
             garden,
             to_string=to_string,
             schema_name=brewtils.models.Garden.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -991,7 +987,7 @@ class SchemaParser(object):
             operation,
             to_string=to_string,
             schema_name=brewtils.models.Operation.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1011,7 +1007,7 @@ class SchemaParser(object):
             runner,
             to_string=to_string,
             schema_name=brewtils.models.Runner.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1031,7 +1027,7 @@ class SchemaParser(object):
             resolvable,
             to_string=to_string,
             schema_name=brewtils.models.Resolvable.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1051,7 +1047,7 @@ class SchemaParser(object):
             subscriber,
             to_string=to_string,
             schema_name=brewtils.models.Subscriber.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1071,7 +1067,7 @@ class SchemaParser(object):
             topic,
             to_string=to_string,
             schema_name=brewtils.models.Topic.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1091,7 +1087,7 @@ class SchemaParser(object):
             status_info,
             to_string=to_string,
             schema_name=brewtils.models.StatusInfo.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1111,7 +1107,7 @@ class SchemaParser(object):
             status_history,
             to_string=to_string,
             schema_name=brewtils.models.StatusHistory.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1131,7 +1127,7 @@ class SchemaParser(object):
             replication,
             to_string=to_string,
             schema_name=brewtils.models.Replication.schema,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -1140,7 +1136,7 @@ class SchemaParser(object):
         model,  # type: Union[BaseModel, typing.Iterable[BaseModel], dict]
         to_string=False,  # type: bool
         schema_name=None,  # type: Optional[str]
-        **kwargs  # type: Any
+        **kwargs,  # type: Any
     ):
         # type: (...) -> Union[Dict[str, Any], Optional[str]]
         """Convert a model object or list of models into a dictionary or JSON string.
@@ -1175,7 +1171,7 @@ class SchemaParser(object):
 
             schema = getattr(brewtils.schemas, schema_name)(**kwargs)
 
-            return schema.dumps(model).data if to_string else schema.dump(model).data
+            return schema.dumps(model) if to_string else schema.dump(model)
 
         # Explicitly force to_string to False so only original call returns a string
         multiple = [

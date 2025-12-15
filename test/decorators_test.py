@@ -36,10 +36,7 @@ from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter
 from brewtils.test.comparable import assert_command_equal, assert_parameter_equal
 
-if sys.version_info.major == 2:
-    from funcsigs import signature  # noqa
-else:
-    from inspect import signature  # noqa
+from inspect import signature  # noqa
 
 
 @pytest.fixture
@@ -1340,23 +1337,47 @@ class TestSignatureValidate(object):
 
     class TestFailure(object):
         def test_mismatch_is_kwarg_true(self, cmd):
-            with pytest.raises(PluginParamError):
+            with pytest.raises(PluginParamError) as exception_info:
                 _signature_validate(
                     Command(parameters=[Parameter(key="foo", is_kwarg=True)]), cmd
                 )
 
+            assert str(exception_info.value) == (
+                "Command cmd Parameter foo was marked as part of kwargs but "
+                "was found in the method signature (should is_kwarg be False?)"
+            )
+
         def test_mismatch_is_kwarg_false(self, cmd_kwargs):
-            with pytest.raises(PluginParamError):
+            with pytest.raises(PluginParamError) as exception_info:
                 _signature_validate(
                     Command(parameters=[Parameter(key="foo", is_kwarg=False)]),
                     cmd_kwargs,
                 )
+            assert str(exception_info.value) == (
+                "Command cmd Parameter foo was not marked as part of kwargs "
+                "and wasn't found in the method signature (should is_kwarg be True?)"
+            )
 
         def test_no_kwargs_in_signature(self, cmd):
-            with pytest.raises(PluginParamError):
+            with pytest.raises(PluginParamError) as exception_info:
                 _signature_validate(
                     Command(parameters=[Parameter(key="extra", is_kwarg=True)]), cmd
                 )
+            assert str(exception_info.value) == (
+                "Command cmd Parameter extra wasn't found in the method signature "
+                "and command does not declare a **kwargs signature parameter, but "
+                "was marked as part of kwargs (is_kwarg=True)"
+            )
+
+        def test_no_parameter_in_signature(self, cmd):
+            with pytest.raises(PluginParamError) as exception_info:
+                _signature_validate(
+                    Command(parameters=[Parameter(key="extra", is_kwarg=False)]), cmd
+                )
+            assert str(exception_info.value) == (
+                "Command cmd Parameter extra wasn't found in the method signature "
+                "and command does not declare a **kwargs signature parameter"
+            )
 
         @pytest.mark.skipif(sys.version_info < (3, 8), reason="Requires Python 3.8")
         def test_positional_only(self):
@@ -1378,10 +1399,15 @@ class TestSignatureValidate(object):
             exec(class_dec, globals(), exec_locals)
             # fmt: on
 
-            with pytest.raises(PluginParamError):
+            with pytest.raises(PluginParamError) as exception_info:
                 _signature_validate(
                     Command(parameters=[Parameter(key="foo")]), exec_locals["Tester"].c
                 )  # noqa
+
+            assert (
+                str(exception_info.value)
+                == "Command c Parameter foo, positional-only type parameters are not supported"
+            )
 
 
 class TestDeprecations(object):

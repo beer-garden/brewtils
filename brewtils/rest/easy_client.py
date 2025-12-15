@@ -2,18 +2,20 @@
 import json
 from base64 import b64decode
 from io import BytesIO
-from pathlib import Path
-from typing import Any, Callable, List, NoReturn, Optional, Type, Union
-from hashlib import md5
+from pathlib import Path  # noqa
+from typing import Any, Callable, List, NoReturn, Optional, Type, Union  # noqa
 
-import six
-import wrapt
-from requests import Response  # noqa # not in requirements file
+from hashlib import file_digest, md5
+
+
 import time
 
+import wrapt
+from requests import Response  # noqa # not in requirements file
+
 from brewtils.config import get_connection_info
+from brewtils.errors import BrewtilsException  # noqa
 from brewtils.errors import (
-    BrewtilsException,
     ConflictError,
     DeleteError,
     FetchError,
@@ -26,7 +28,7 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import BaseModel, Event, Job, PatchOperation
+from brewtils.models import BaseModel, Event, Job, PatchOperation  # noqa
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 
@@ -991,7 +993,7 @@ class EasyClient(object):
         default_file_params = {}
 
         # Establish the file descriptor
-        if isinstance(file_to_upload, six.string_types):
+        if isinstance(file_to_upload, str):
             try:
                 fd = open(file_to_upload, "rb")
             except Exception:
@@ -1001,7 +1003,9 @@ class EasyClient(object):
             fd = file_to_upload
             require_close = False
 
-        default_file_params["md5_sum"] = md5(fd.getbuffer()).hexdigest()
+        hash_digest = file_digest(fd, "md5")
+        default_file_params["md5_sum"] = hash_digest.hexdigest()
+        fd.seek(0)
 
         try:
             default_file_params["file_name"] = desired_filename or fd.name

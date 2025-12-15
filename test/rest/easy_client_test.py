@@ -308,8 +308,17 @@ class TestInstances(object):
             client.get_instance_status("id")
             rest_client.get_instance.assert_called_once_with("id")
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if warning.category == DeprecationWarning and "get_instance" in str(
+                    warning.message
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_initialize(self, client, rest_client, success):
         rest_client.patch_instance.return_value = success
@@ -333,8 +342,17 @@ class TestInstances(object):
             client.update_instance_status("id", "status")
             rest_client.patch_instance.assert_called_once_with("id", ANY)
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if warning.category == DeprecationWarning and "update_instance" in str(
+                    warning.message
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_heartbeat(self, client, rest_client, success):
         rest_client.patch_instance.return_value = success

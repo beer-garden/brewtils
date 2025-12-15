@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.11', '3.12', '3.13', '3.14.0-rc.3']
         os: ['ubuntu-latest']
     name: PyTests OS ${{ matrix.os }} - Python ${{ matrix.python-version }}
     steps:
@@ -109,3 +109,34 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
+
+  PreReleaseCheck:
+    name: Pre-Release Check
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Cache PIP Install
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-build-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-3.7-pip-build
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+
+      - name: Make Package
+        run: make package
+
+      - name: Check Package
+        run: twine check dist/*

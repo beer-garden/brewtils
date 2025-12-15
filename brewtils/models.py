@@ -3,9 +3,7 @@
 import copy
 from datetime import datetime
 from enum import Enum
-
-import pytz  # noqa # not in requirements file
-import six  # noqa # not in requirements file
+from zoneinfo import ZoneInfo
 
 from brewtils.errors import ModelError, _deprecate
 
@@ -87,6 +85,7 @@ class Events(Enum):
     JOB_DELETED = 34
     JOB_PAUSED = 35
     JOB_RESUMED = 36
+    JOB_COUNTER_UPDATED = 61
     PLUGIN_LOGGER_FILE_CHANGE = 37
     RUNNER_STARTED = 38
     RUNNER_STOPPED = 39
@@ -107,7 +106,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 61
+    # Next: 62
 
 
 class Permissions(Enum):
@@ -245,6 +244,7 @@ class Instance(BaseModel):
         "STOPPING",
         "UNKNOWN",
         "AWAITING_SYSTEM",
+        "ERROR",
     }
 
     def __init__(
@@ -507,7 +507,7 @@ class StatusInfo(BaseModel):
             )
 
         if max_history and max_history > 0 and len(self.history) > max_history:
-            self.history = self.history[(max_history * -1) :]
+            self.history = self.history[(max_history * -1) :]  # noqa
 
     def __str__(self):
         return self.heartbeat
@@ -560,6 +560,7 @@ class File(BaseModel):
         id=None,  # noqa # shadows built-in
         owner_id=None,
         owner_type=None,
+        created_at=None,
         updated_at=None,
         file_name=None,
         file_size=None,
@@ -569,6 +570,8 @@ class File(BaseModel):
         job=None,
         request=None,
         md5_sum=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.owner_id = owner_id
@@ -576,12 +579,15 @@ class File(BaseModel):
         self.owner = owner
         self.job = job
         self.request = request
+        self.created_at = created_at
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks
         self.chunk_size = chunk_size
         self.md5_sum = md5_sum
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.file_name
@@ -604,12 +610,20 @@ class FileChunk(BaseModel):
         offset=None,
         data=None,
         owner=None,
+        created_at=None,
+        updated_at=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.file_id = file_id
         self.offset = offset
         self.data = data
         self.owner = owner
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.data
@@ -771,6 +785,7 @@ class Request(RequestTemplate):
         output_type=None,
         status=None,
         command_type=None,
+        root_command_type=None,
         created_at=None,
         error_class=None,
         metadata=None,
@@ -810,6 +825,7 @@ class Request(RequestTemplate):
         self.requester = requester
         self.source_garden = source_garden
         self.target_garden = target_garden
+        self.root_command_type = root_command_type
 
     @classmethod
     def from_template(cls, template, **kwargs):
@@ -930,6 +946,7 @@ class System(BaseModel):
         prefix_topic=None,
         requires=None,
         requires_timeout=None,
+        garden_name=None,
     ):
         self.name = name
         self.description = description
@@ -948,15 +965,17 @@ class System(BaseModel):
         self.prefix_topic = prefix_topic
         self.requires = requires or []
         self.requires_timeout = requires_timeout
+        self.garden_name = garden_name
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s, namespace=%s>" % (
+        return "<System: name=%s, version=%s, namespace=%s, garden=%s>" % (
             self.name,
             self.version,
             self.namespace,
+            self.garden_name,
         )
 
     def is_newer(self, other):
@@ -1217,7 +1236,7 @@ class LoggingConfig(BaseModel):
 
         # In case no formatter is provided, we always want a default.
         formatters = {"default": {"format": self.DEFAULT_FORMAT}}
-        for formatter_name, format_str in six.iteritems(specific_formatters):
+        for formatter_name, format_str in specific_formatters.items():
             formatters[formatter_name] = {"format": format_str}
 
         return formatters
@@ -1385,7 +1404,7 @@ class Job(BaseModel):
 class DateTrigger(BaseModel):
     schema = "DateTriggerSchema"
 
-    def __init__(self, run_date=None, timezone=None):
+    def __init__(self, run_date=None, timezone="UTC"):
         self.run_date = run_date
         self.timezone = timezone
 
@@ -1401,9 +1420,10 @@ class DateTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
 
-        return {"timezone": tz, "run_date": tz.localize(self.run_date)}
+        tz = ZoneInfo(self.timezone.upper())
+
+        return {"timezone": tz, "run_date": self.run_date.replace(tzinfo=tz)}
 
 
 class IntervalTrigger(BaseModel):
@@ -1418,7 +1438,7 @@ class IntervalTrigger(BaseModel):
         seconds=None,
         start_date=None,
         end_date=None,
-        timezone=None,
+        timezone="UTC",
         jitter=None,
         reschedule_on_finish=None,
     ):
@@ -1460,14 +1480,16 @@ class IntervalTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
+        tz = ZoneInfo(self.timezone.upper())
 
         kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
         kwargs.update(
             {
                 "timezone": tz,
-                "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.end_date) if self.end_date else None,
+                "start_date": (
+                    self.start_date.replace(tzinfo=tz) if self.start_date else None
+                ),
+                "end_date": self.end_date.replace(tzinfo=tz) if self.end_date else None,
             }
         )
 
@@ -1489,7 +1511,7 @@ class CronTrigger(BaseModel):
         second=None,
         start_date=None,
         end_date=None,
-        timezone=None,
+        timezone="UTC",
         jitter=None,
     ):
         self.year = year
@@ -1536,14 +1558,16 @@ class CronTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
+        tz = ZoneInfo(self.timezone.upper())
 
         kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
         kwargs.update(
             {
                 "timezone": tz,
-                "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.end_date) if self.end_date else None,
+                "start_date": (
+                    self.start_date.replace(tzinfo=tz) if self.start_date else None
+                ),
+                "end_date": self.end_date.replace(tzinfo=tz) if self.end_date else None,
             }
         )
 

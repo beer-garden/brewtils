@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 
-import calendar
 import datetime
+import typing
 from functools import partial
 
-import marshmallow
-import simplejson
-from marshmallow import Schema, fields, post_load, pre_load
-from marshmallow.utils import UTC
-from marshmallow_polyfield import PolyField
+from marshmallow import (
+    EXCLUDE,
+    Schema,
+    ValidationError,
+    fields,
+    post_load,
+    pre_load,
+    utils,
+)
+from marshmallow.experimental.context import Context
 
 __all__ = [
     "SystemSchema",
@@ -52,6 +57,61 @@ from brewtils.models import Job
 model_schema_map = {}
 
 
+# This is copied from issue in marshmallow-polyfield repo:
+# https://github.com/Bachmann1234/marshmallow-polyfield/issues/45
+class PolyField(fields.Field):
+    """
+    Polymorphic field that expects two selectors that define which schema is used for
+    serialization and deserialization. The serialization selector is given the value
+    to be serialized and the object the value was pulled from. The deserialization
+    selector is given the value to be deserialized and the raw input data passed to
+    the `Schema.load <marshmallow.Schema.load>`. Both selectors may return either
+    a marshmallow Schema instance or a Schema class.
+    """
+
+    def __init__(
+        self,
+        *,
+        serialization_schema_selector: typing.Callable[
+            [typing.Any, typing.Any], Schema | typing.Type[Schema]
+        ],
+        deserialization_schema_selector: typing.Callable[
+            [typing.Any, typing.Any], Schema | typing.Type[Schema]
+        ],
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self._ser_selector = serialization_schema_selector
+        self._deser_selector = deserialization_schema_selector
+
+    @staticmethod
+    def _ensure_schema(schema: typing.Any) -> Schema:
+        if isinstance(schema, Schema):
+            return schema
+        if isinstance(schema, type) and issubclass(schema, Schema):
+            return schema()
+        raise TypeError(
+            (
+                "Selector must return a marshmallow Schema "
+                f"instance or Schema class, got {type(schema)}"
+            )
+        )
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        if value is None:
+            if self.allow_none:
+                return None
+            raise ValidationError(self.default_error_messages["null"])
+        schema = self._ensure_schema(self._deser_selector(value, data))
+        return schema.load(value)
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if value is None:
+            return None
+        schema = self._ensure_schema(self._ser_selector(value, obj))
+        return schema.dump(value)
+
+
 def _serialize_model(_, obj, type_field=None, allowed_types=None):
     model_type = getattr(obj, type_field)
 
@@ -90,65 +150,58 @@ class ModelField(PolyField):
             deserialization_schema_selector=partial(
                 _deserialize_model, type_field=type_field, allowed_types=allowed_types
             ),
-            **kwargs
+            **kwargs,
         )
 
 
 class DateTime(fields.DateTime):
-    """Class that adds methods for (de)serializing DateTime fields as an epoch"""
+    """Class that adds methods for (de)serializing DateTime fields as an epoch
+
+    This is required for going from Mongo Model objects to Marshmallow model Objects
+    """
 
     def __init__(self, format="epoch", **kwargs):
-        self.DATEFORMAT_SERIALIZATION_FUNCS["epoch"] = self.to_epoch
-        self.DATEFORMAT_DESERIALIZATION_FUNCS["epoch"] = self.from_epoch
+        self.SERIALIZATION_FUNCS["epoch"] = self.to_epoch
+        self.DESERIALIZATION_FUNCS["epoch"] = self.from_epoch
         super(DateTime, self).__init__(format=format, **kwargs)
 
     @staticmethod
-    def to_epoch(dt, localtime=False):
+    def to_epoch(value):
         # If already in epoch form just return it
-        if isinstance(dt, int):
-            return dt
+        if isinstance(value, int):
+            return value
 
-        if localtime and dt.tzinfo is not None:
-            localized = dt
-        else:
-            if dt.tzinfo is None:
-                localized = UTC.localize(dt)
-            else:
-                localized = dt.astimezone(UTC)
-        return (calendar.timegm(localized.timetuple()) * 1000) + int(
-            localized.microsecond / 1000
-        )
+        if not isinstance(value, float):
+            if value.tzinfo is not None and value.tzinfo is not datetime.timezone.utc:
+                value = value.replace(tzinfo=datetime.timezone.utc)
+            value = utils.timestamp_ms(value)
+
+        return int(value)
 
     @staticmethod
-    def from_epoch(epoch):
+    def from_epoch(value):
         # If already in datetime form just return it
-        if isinstance(epoch, datetime.datetime):
-            return epoch
+        if isinstance(value, datetime.datetime):
+            if value.tzinfo is None:
+                return value.replace(tzinfo=datetime.timezone.utc)
+            return value
 
-        # utcfromtimestamp will correctly parse milliseconds in Python 3,
-        # but in Python 2 we need to help it
-        seconds, millis = divmod(epoch, 1000)
-        return datetime.datetime.utcfromtimestamp(seconds).replace(
-            microsecond=millis * 1000
-        )
+        return utils.from_timestamp_ms(value).replace(tzinfo=datetime.timezone.utc)
+
+
+class BrewtilsContext(typing.TypedDict):
+    models: typing.Dict[str, typing.Any]
 
 
 class BaseSchema(Schema):
-    class Meta:
-        version_nums = marshmallow.__version__.split(".")
-        if int(version_nums[0]) <= 2 and int(version_nums[1]) < 17:  # pragma: no cover
-            json_module = simplejson
-        else:
-            render_module = simplejson
-
-    def __init__(self, strict=True, **kwargs):
-        super(BaseSchema, self).__init__(strict=strict, **kwargs)
 
     @post_load
-    def make_object(self, data):
+    def make_object(self, data, **_):
         try:
-            model_class = self.context["models"][self.__class__.__name__]
-        except KeyError:
+            model_class = Context[BrewtilsContext].get()["models"][
+                self.__class__.__name__
+            ]
+        except (KeyError, LookupError):
             return data
 
         return model_class(**data)
@@ -158,15 +211,18 @@ class BaseSchema(Schema):
         return [
             key
             for key, value in cls._declared_fields.items()
-            if isinstance(value, fields.FieldABC)
+            if isinstance(value, fields.Field)
         ]
+
+    class Meta:
+        unknown = EXCLUDE
 
 
 class ChoicesSchema(BaseSchema):
     type = fields.Str(allow_none=True)
     display = fields.Str(allow_none=True)
-    value = fields.Raw(allow_none=True, many=True)
-    strict = fields.Bool(allow_none=True, default=False)
+    value = fields.Raw(allow_none=True)
+    strict = fields.Bool(allow_none=True, dump_default=False)
     details = fields.Dict(allow_none=True)
 
 
@@ -178,8 +234,8 @@ class ParameterSchema(BaseSchema):
     optional = fields.Bool(allow_none=True)
     default = fields.Raw(allow_none=True)
     description = fields.Str(allow_none=True)
-    choices = fields.Nested("ChoicesSchema", allow_none=True, many=False)
-    parameters = fields.Nested("self", many=True, allow_none=True)
+    choices = fields.Nested(lambda: ChoicesSchema, allow_none=True)
+    parameters = fields.List(fields.Nested(lambda: ParameterSchema), allow_none=True)
     nullable = fields.Bool(allow_none=True)
     maximum = fields.Int(allow_none=True)
     minimum = fields.Int(allow_none=True)
@@ -193,7 +249,7 @@ class CommandSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     display_name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
-    parameters = fields.Nested("ParameterSchema", many=True)
+    parameters = fields.List(fields.Nested(lambda: ParameterSchema()), allow_none=True)
     command_type = fields.Str(allow_none=True)
     output_type = fields.Str(allow_none=True)
     schema = fields.Dict(allow_none=True)
@@ -213,7 +269,7 @@ class InstanceSchema(BaseSchema):
     name = fields.Str(allow_none=True)
     description = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    status_info = fields.Nested(lambda: StatusInfoSchema(), allow_none=True)
     queue_type = fields.Str(allow_none=True)
     queue_info = fields.Dict(allow_none=True)
     icon_name = fields.Str(allow_none=True)
@@ -227,8 +283,8 @@ class SystemSchema(BaseSchema):
     version = fields.Str(allow_none=True)
     max_instances = fields.Integer(allow_none=True)
     icon_name = fields.Str(allow_none=True)
-    instances = fields.Nested("InstanceSchema", many=True, allow_none=True)
-    commands = fields.Nested("CommandSchema", many=True, allow_none=True)
+    instances = fields.List(fields.Nested(lambda: InstanceSchema()), allow_none=True)
+    commands = fields.List(fields.Nested(lambda: CommandSchema()), allow_none=True)
     display_name = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
     namespace = fields.Str(allow_none=True)
@@ -238,6 +294,7 @@ class SystemSchema(BaseSchema):
     prefix_topic = fields.Str(allow_none=True)
     requires = fields.List(fields.Str(), allow_none=True)
     requires_timeout = fields.Integer(allow_none=True)
+    garden_name = fields.Str(allow_none=True)
 
 
 class SystemDomainIdentifierSchema(BaseSchema):
@@ -259,12 +316,15 @@ class FileSchema(BaseSchema):
     owner = fields.Raw(allow_none=True)
     job = fields.Nested("JobSchema", allow_none=True)
     request = fields.Nested("RequestSchema", allow_none=True)
-    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    created_at = DateTime(allow_none=True, format="epoch")
+    updated_at = DateTime(allow_none=True, format="epoch")
     file_name = fields.Str(allow_none=True)
     file_size = fields.Int(allow_none=False)
     chunks = fields.Dict(allow_none=True)
     chunk_size = fields.Int(allow_none=False)
     md5_sum = fields.Str(allow_none=True)
+    status = fields.Str(allow_none=True)
+    root_command_type = fields.Str(allow_none=True)
 
 
 class FileChunkSchema(BaseSchema):
@@ -273,6 +333,10 @@ class FileChunkSchema(BaseSchema):
     offset = fields.Int(allow_none=False)
     data = fields.Str(allow_none=False)
     owner = fields.Nested("FileSchema", allow_none=True)
+    created_at = DateTime(allow_none=True, format="epoch")
+    updated_at = DateTime(allow_none=True, format="epoch")
+    status = fields.Str(allow_none=True)
+    root_command_type = fields.Str(allow_none=True)
 
 
 class FileStatusSchema(BaseSchema):
@@ -321,33 +385,43 @@ class RequestTemplateSchema(BaseSchema):
 class RequestSchema(RequestTemplateSchema):
     id = fields.Str(allow_none=True)
     is_event = fields.Bool(allow_none=True)
-    parent = fields.Nested("self", exclude=("children",), allow_none=True)
-    children = fields.Nested(
-        "self", exclude=("parent", "children"), many=True, default=None, allow_none=True
+    parent = fields.Nested(
+        lambda: RequestSchema(exclude=("children",)), allow_none=True
+    )
+    children = fields.List(
+        fields.Nested(
+            lambda: RequestSchema(
+                exclude=(
+                    "parent",
+                    "children",
+                )
+            )
+        ),
+        dump_default=None,
+        allow_none=True,
     )
     output = fields.Str(allow_none=True)
     hidden = fields.Boolean(allow_none=True)
     status = fields.Str(allow_none=True)
     error_class = fields.Str(allow_none=True)
-    created_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    updated_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    status_updated_at = DateTime(
-        allow_none=True, format="epoch", example="1500065932000"
-    )
+    created_at = DateTime(allow_none=True, format="epoch")
+    updated_at = DateTime(allow_none=True, format="epoch")
+    status_updated_at = DateTime(allow_none=True, format="epoch")
     has_parent = fields.Bool(allow_none=True)
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
     target_garden = fields.String(allow_none=True)
+    root_command_type = fields.String(allow_none=True)
 
 
 class StatusHistorySchema(BaseSchema):
-    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    heartbeat = DateTime(allow_none=True, format="epoch")
     status = fields.Str(allow_none=True)
 
 
 class StatusInfoSchema(BaseSchema):
-    heartbeat = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    history = fields.Nested("StatusHistorySchema", many=True, allow_none=True)
+    heartbeat = DateTime(allow_none=True, format="epoch")
+    history = fields.List(fields.Nested(lambda: StatusHistorySchema()), allow_none=True)
 
 
 class PatchSchema(BaseSchema):
@@ -355,8 +429,8 @@ class PatchSchema(BaseSchema):
     path = fields.Str(allow_none=True)
     value = fields.Raw(allow_none=True)
 
-    @pre_load(pass_many=True)
-    def unwrap_envelope(self, data, many):
+    @pre_load(pass_collection=True)
+    def unwrap_envelope(self, data, many, **_):
         """Helper function for parsing the different patch formats.
 
         This exists because previously multiple patches serialized like::
@@ -399,7 +473,7 @@ class EventSchema(BaseSchema):
     namespace = fields.Str(allow_none=True)
     garden = fields.Str(allow_none=True)
     metadata = fields.Dict(allow_none=True)
-    timestamp = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    timestamp = DateTime(allow_none=True, format="epoch")
 
     payload_type = fields.Str(allow_none=True)
     payload = ModelField(allow_none=True, type_field="payload_type")
@@ -421,13 +495,13 @@ class QueueSchema(BaseSchema):
 class UserTokenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     uuid = fields.Str(allow_none=True)
-    issued_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    issued_at = DateTime(allow_none=True, format="epoch")
+    expires_at = DateTime(allow_none=True, format="epoch")
     username = fields.Str(allow_none=True)
 
 
 class DateTriggerSchema(BaseSchema):
-    run_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    run_date = DateTime(allow_none=True, format="epoch")
     timezone = fields.Str(allow_none=True)
 
 
@@ -437,8 +511,8 @@ class IntervalTriggerSchema(BaseSchema):
     hours = fields.Int(allow_none=True)
     minutes = fields.Int(allow_none=True)
     seconds = fields.Int(allow_none=True)
-    start_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    end_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    start_date = DateTime(allow_none=True, format="epoch")
+    end_date = DateTime(allow_none=True, format="epoch")
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
     reschedule_on_finish = fields.Bool(allow_none=True)
@@ -453,8 +527,8 @@ class CronTriggerSchema(BaseSchema):
     hour = fields.Str(allow_none=True)
     minute = fields.Str(allow_none=True)
     second = fields.Str(allow_none=True)
-    start_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
-    end_date = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    start_date = DateTime(allow_none=True, format="epoch")
+    end_date = DateTime(allow_none=True, format="epoch")
     timezone = fields.Str(allow_none=True)
     jitter = fields.Int(allow_none=True)
 
@@ -472,29 +546,26 @@ class FileTriggerSchema(BaseSchema):
 class ConnectionSchema(BaseSchema):
     api = fields.Str(allow_none=True)
     status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
+    status_info = fields.Nested(lambda: StatusInfoSchema(), allow_none=True)
     config = fields.Dict(allow_none=True)
 
 
 class GardenSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     name = fields.Str(allow_none=True)
-    status = fields.Str(allow_none=True)
-    status_info = fields.Nested("StatusInfoSchema", allow_none=True)
     connection_type = fields.Str(allow_none=True)
-    receiving_connections = fields.Nested(
-        "ConnectionSchema", many=True, allow_none=True
+    receiving_connections = fields.List(
+        fields.Nested(lambda: ConnectionSchema()), allow_none=True
     )
-    publishing_connections = fields.Nested(
-        "ConnectionSchema", many=True, allow_none=True
+    publishing_connections = fields.List(
+        fields.Nested(lambda: ConnectionSchema()), allow_none=True
     )
-    namespaces = fields.List(fields.Str(), allow_none=True)
-    systems = fields.Nested("SystemSchema", many=True, allow_none=True)
+    systems = fields.List(fields.Nested(lambda: SystemSchema()), allow_none=True)
     has_parent = fields.Bool(allow_none=True)
     parent = fields.Str(allow_none=True)
-    children = fields.Nested(
-        "self", exclude=("parent"), many=True, default=None, allow_none=True
-    )
+    # TODO: Figure out why we had parent excluded in:
+    # fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
+    children = fields.List(fields.Nested(lambda: GardenSchema()), allow_none=True)
     metadata = fields.Dict(allow_none=True)
     default_user = fields.Str(allow_none=True)
     shared_users = fields.Bool(allow_none=True)
@@ -513,7 +584,7 @@ class JobSchema(BaseSchema):
     request_template = fields.Nested("RequestTemplateSchema", allow_none=True)
     misfire_grace_time = fields.Int(allow_none=True)
     coalesce = fields.Bool(allow_none=True)
-    next_run_time = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    next_run_time = DateTime(allow_none=True, format="epoch")
     success_count = fields.Int(allow_none=True)
     error_count = fields.Int(allow_none=True)
     canceled_count = fields.Int(allow_none=True)
@@ -626,7 +697,7 @@ class TopicSchema(BaseSchema):
 class ReplicationSchema(BaseSchema):
     id = fields.Str(allow_none=True)
     replication_id = fields.Str(allow_none=True)
-    expires_at = DateTime(allow_none=True, format="epoch", example="1500065932000")
+    expires_at = DateTime(allow_none=True, format="epoch")
 
 
 class UserSchema(BaseSchema):

@@ -5,8 +5,6 @@ import logging
 import warnings
 from functools import partial
 
-from six import string_types
-
 # Helper to make deprecation easy
 _deprecate = partial(warnings.warn, category=DeprecationWarning, stacklevel=2)
 
@@ -324,9 +322,9 @@ def parse_exception_as_json(exc):
 def _jsonify_value(value):
     """Attempt to JSONify a value, returns success and then a string"""
     try:
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             v = json.loads(value)
-            if isinstance(v, string_types):
+            if isinstance(v, str):
                 return True, value
             else:
                 return True, v

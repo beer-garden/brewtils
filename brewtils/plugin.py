@@ -51,6 +51,8 @@ request_context.current_request = None
 
 # Global config, used to simplify BG client creation and sanity checks.
 CONFIG = Box(default_box=True)
+# Global client
+CLIENT = None
 
 
 def get_current_request_read_only():
@@ -294,7 +296,6 @@ class Plugin(object):
         # Now set up the system
         self._system = self._setup_system(system, kwargs)
 
-        global CLIENT
         # Make sure this is set after self._system
         if client:
             self._set_client(client)
@@ -422,33 +423,24 @@ class Plugin(object):
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
-        try:
-            # Put some attributes on the Client class
-            client_clazz = type(new_client)
-            client_clazz.current_request = property(
-                lambda _: request_context.current_request
-            )
+        # Put some attributes on the Client class
+        client_clazz = type(new_client)
+        client_clazz.current_request = property(
+            lambda _: request_context.current_request
+        )
 
-            # Add for back-compatibility
-            client_clazz._bg_name = self._system.name
-            client_clazz._bg_version = self._system.version
-            client_clazz._bg_commands = self._system.commands
-            client_clazz._groups = self._system.groups
-            client_clazz._prefix_topic = self._system.prefix_topic
-            client_clazz._requires = self._system.requires
-            client_clazz._current_request = client_clazz.current_request
-        except TypeError:
-            if sys.version_info.major != 2:
-                raise
-
-            self._logger.warning(
-                "Unable to assign attributes to Client class - current_request will "
-                "not be available. If you're using an old-style class declaration "
-                "it's recommended to switch to new-style if possible."
-            )
+        # Add for back-compatibility
+        client_clazz._bg_name = self._system.name
+        client_clazz._bg_version = self._system.version
+        client_clazz._bg_commands = self._system.commands
+        client_clazz._groups = self._system.groups
+        client_clazz._prefix_topic = self._system.prefix_topic
+        client_clazz._requires = self._system.requires
+        client_clazz._current_request = client_clazz.current_request
 
         self._client = new_client
-        brewtils.plugin.CLIENT = new_client
+        global CLIENT
+        CLIENT = new_client
 
     @property
     def system(self):

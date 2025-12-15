@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from typing import Optional  # noqa
 
 import brewtils.plugin
 from brewtils.errors import BrewtilsException
@@ -80,7 +81,7 @@ class PublishClient(object):
 
         Args:
             _topic (str): The topic to publish to, default is Plugin level topic
-                {Namespace}.{System}.{Version}.{Instance}
+                {Garden}.{Namespace}.{System}.{Version}.{Instance}
             _regex_only (bool): If the request will be resolved against only annotated topics
             from the @subscribe command
             _propagate (bool): If the request will be pushed up to the parent to be resolved.

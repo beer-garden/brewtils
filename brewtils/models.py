@@ -3,9 +3,7 @@
 import copy
 from datetime import datetime
 from enum import Enum
-
-import pytz  # noqa # not in requirements file
-import six  # noqa # not in requirements file
+from zoneinfo import ZoneInfo
 
 from brewtils.errors import ModelError, _deprecate
 
@@ -82,10 +80,12 @@ class Events(Enum):
     GARDEN_SYNC = 30
     ENTRY_STARTED = 31
     ENTRY_STOPPED = 32
+    ENTRY_HEARTBEAT = 60
     JOB_CREATED = 33
     JOB_DELETED = 34
     JOB_PAUSED = 35
     JOB_RESUMED = 36
+    JOB_COUNTER_UPDATED = 61
     PLUGIN_LOGGER_FILE_CHANGE = 37
     RUNNER_STARTED = 38
     RUNNER_STOPPED = 39
@@ -106,7 +106,7 @@ class Events(Enum):
     REPLICATION_UPDATED = 58
     DIRECTORY_FILE_CHANGE = 59
 
-    # Next: 60
+    # Next: 62
 
 
 class Permissions(Enum):
@@ -246,6 +246,7 @@ class Instance(BaseModel):
         "STOPPING",
         "UNKNOWN",
         "AWAITING_SYSTEM",
+        "ERROR",
     }
 
     def __init__(
@@ -275,6 +276,21 @@ class Instance(BaseModel):
 
     def __repr__(self):
         return "<Instance: name=%s, status=%s>" % (self.name, self.status)
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Instance):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
+            if hasattr(other, "status_info") and hasattr(
+                other.status_info, "heartbeat"
+            ):
+                return self.status_info.is_newer(other.status_info)
+            return True
+
+        return False
 
 
 class Choices(BaseModel):
@@ -462,6 +478,19 @@ class StatusHistory(BaseModel):
             self.heartbeat,
         )
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusHistory):
+            return False
+
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
+            return True
+
+        return False
+
 
 class StatusInfo(BaseModel):
     schema = "StatusInfoSchema"
@@ -471,14 +500,18 @@ class StatusInfo(BaseModel):
         self.history = history or []
 
     def set_status_heartbeat(self, status, max_history=None):
-
-        self.heartbeat = datetime.utcnow()
-        self.history.append(
-            StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
-        )
+        if (
+            status != "NOT_CONFIGURED"
+            or not self.history
+            or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
+        ):
+            self.heartbeat = datetime.utcnow()
+            self.history.append(
+                StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
+            )
 
         if max_history and max_history > 0 and len(self.history) > max_history:
-            self.history = self.history[(max_history * -1) :]
+            self.history = self.history[(max_history * -1) :]  # noqa
 
     def __str__(self):
         return self.heartbeat
@@ -488,6 +521,19 @@ class StatusInfo(BaseModel):
             self.heartbeat,
             self.history,
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, StatusInfo):
+            return False
+
+        if hasattr(self, "heartbeat") and self.heartbeat:
+            if hasattr(other, "heartbeat") and other.heartbeat:
+                return self.heartbeat > other.heartbeat
+            return True
+
+        return False
 
 
 class RequestFile(BaseModel):
@@ -518,6 +564,7 @@ class File(BaseModel):
         id=None,  # noqa # shadows built-in
         owner_id=None,
         owner_type=None,
+        created_at=None,
         updated_at=None,
         file_name=None,
         file_size=None,
@@ -527,6 +574,8 @@ class File(BaseModel):
         job=None,
         request=None,
         md5_sum=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.owner_id = owner_id
@@ -534,12 +583,15 @@ class File(BaseModel):
         self.owner = owner
         self.job = job
         self.request = request
+        self.created_at = created_at
         self.updated_at = updated_at
         self.file_name = file_name
         self.file_size = file_size
         self.chunks = chunks
         self.chunk_size = chunk_size
         self.md5_sum = md5_sum
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.file_name
@@ -562,12 +614,20 @@ class FileChunk(BaseModel):
         offset=None,
         data=None,
         owner=None,
+        created_at=None,
+        updated_at=None,
+        status=None,
+        root_command_type=None,
     ):
         self.id = id
         self.file_id = file_id
         self.offset = offset
         self.data = data
         self.owner = owner
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.status = status
+        self.root_command_type = root_command_type
 
     def __str__(self):
         return self.data
@@ -729,6 +789,7 @@ class Request(RequestTemplate):
         output_type=None,
         status=None,
         command_type=None,
+        root_command_type=None,
         created_at=None,
         error_class=None,
         metadata=None,
@@ -768,6 +829,7 @@ class Request(RequestTemplate):
         self.requester = requester
         self.source_garden = source_garden
         self.target_garden = target_garden
+        self.root_command_type = root_command_type
 
     @classmethod
     def from_template(cls, template, **kwargs):
@@ -816,6 +878,55 @@ class Request(RequestTemplate):
     def is_json(self):
         return self.output_type and self.output_type.upper() == "JSON"
 
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Request):
+            return False
+
+        if self._status != other._status:
+
+            if self._status in self.COMPLETED_STATUSES and other._status in [
+                "CREATED",
+                "RECEIVED",
+                "IN_PROGRESS",
+            ]:
+                return True
+
+            if self._status == "IN_PROGRESS" and other._status in [
+                "CREATED",
+                "RECEIVED",
+            ]:
+                return True
+
+            if self._status == "RECEIVED" and other._status == "CREATED":
+                return True
+
+            return False
+
+        self_newest_timestamp = None
+        if hasattr(self, "status_updated_at") and self.status_updated_at:
+            self_newest_timestamp = self.status_updated_at
+
+        if hasattr(self, "updated_at") and self.updated_at:
+            if not self_newest_timestamp or self.updated_at > self_newest_timestamp:
+                self_newest_timestamp = self.updated_at
+
+        if hasattr(self, "created_at") and self.created_at:
+            if not self_newest_timestamp or self.created_at > self_newest_timestamp:
+                self_newest_timestamp = self.created_at
+
+        if hasattr(other, "status_updated_at") and other.status_updated_at:
+            return self_newest_timestamp > other.status_updated_at
+
+        if hasattr(other, "updated_at") and other.updated_at:
+            return self_newest_timestamp > other.updated_at
+
+        if hasattr(other, "created_at") and other.created_at:
+            return self_newest_timestamp > other.created_at
+
+        return False
+
 
 class System(BaseModel):
     schema = "SystemSchema"
@@ -839,6 +950,7 @@ class System(BaseModel):
         prefix_topic=None,
         requires=None,
         requires_timeout=None,
+        garden_name=None,
     ):
         self.name = name
         self.description = description
@@ -857,16 +969,44 @@ class System(BaseModel):
         self.prefix_topic = prefix_topic
         self.requires = requires or []
         self.requires_timeout = requires_timeout
+        self.garden_name = garden_name
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
 
     def __repr__(self):
-        return "<System: name=%s, version=%s, namespace=%s>" % (
+        return "<System: name=%s, version=%s, namespace=%s, garden=%s>" % (
             self.name,
             self.version,
             self.namespace,
+            self.garden_name,
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, System):
+            return False
+
+        self_newest_instance = None
+
+        if hasattr(self, "instances"):
+            for instance in self.instances:
+                if not self_newest_instance:
+                    self_newest_instance = instance
+                elif instance.is_newer(self_newest_instance):
+                    self_newest_instance = instance
+
+        if not self_newest_instance:
+            return False
+
+        if hasattr(other, "instances"):
+
+            for other_instance in other.instances:
+                if other_instance.is_newer(self_newest_instance):
+                    return False
+
+        return True
 
     @property
     def instance_names(self):
@@ -1100,7 +1240,7 @@ class LoggingConfig(BaseModel):
 
         # In case no formatter is provided, we always want a default.
         formatters = {"default": {"format": self.DEFAULT_FORMAT}}
-        for formatter_name, format_str in six.iteritems(specific_formatters):
+        for formatter_name, format_str in specific_formatters.items():
             formatters[formatter_name] = {"format": format_str}
 
         return formatters
@@ -1268,7 +1408,7 @@ class Job(BaseModel):
 class DateTrigger(BaseModel):
     schema = "DateTriggerSchema"
 
-    def __init__(self, run_date=None, timezone=None):
+    def __init__(self, run_date=None, timezone="UTC"):
         self.run_date = run_date
         self.timezone = timezone
 
@@ -1284,9 +1424,10 @@ class DateTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
 
-        return {"timezone": tz, "run_date": tz.localize(self.run_date)}
+        tz = ZoneInfo(self.timezone.upper())
+
+        return {"timezone": tz, "run_date": self.run_date.replace(tzinfo=tz)}
 
 
 class IntervalTrigger(BaseModel):
@@ -1301,7 +1442,7 @@ class IntervalTrigger(BaseModel):
         seconds=None,
         start_date=None,
         end_date=None,
-        timezone=None,
+        timezone="UTC",
         jitter=None,
         reschedule_on_finish=None,
     ):
@@ -1343,14 +1484,16 @@ class IntervalTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
+        tz = ZoneInfo(self.timezone.upper())
 
         kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
         kwargs.update(
             {
                 "timezone": tz,
-                "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.end_date) if self.end_date else None,
+                "start_date": (
+                    self.start_date.replace(tzinfo=tz) if self.start_date else None
+                ),
+                "end_date": self.end_date.replace(tzinfo=tz) if self.end_date else None,
             }
         )
 
@@ -1372,7 +1515,7 @@ class CronTrigger(BaseModel):
         second=None,
         start_date=None,
         end_date=None,
-        timezone=None,
+        timezone="UTC",
         jitter=None,
     ):
         self.year = year
@@ -1419,14 +1562,16 @@ class CronTrigger(BaseModel):
 
     @property
     def scheduler_kwargs(self):
-        tz = pytz.timezone(self.timezone)
+        tz = ZoneInfo(self.timezone.upper())
 
         kwargs = {key: getattr(self, key) for key in self.scheduler_attributes}
         kwargs.update(
             {
                 "timezone": tz,
-                "start_date": tz.localize(self.start_date) if self.start_date else None,
-                "end_date": tz.localize(self.end_date) if self.end_date else None,
+                "start_date": (
+                    self.start_date.replace(tzinfo=tz) if self.start_date else None
+                ),
+                "end_date": self.end_date.replace(tzinfo=tz) if self.end_date else None,
             }
         )
 
@@ -1496,25 +1641,10 @@ class FileTrigger(BaseModel):
 class Garden(BaseModel):
     schema = "GardenSchema"
 
-    GARDEN_STATUSES = {
-        "INITIALIZING",
-        "RUNNING",
-        "BLOCKED",
-        "STOPPED",
-        "NOT_CONFIGURED",
-        "CONFIGURATION_ERROR",
-        "UNREACHABLE",
-        "ERROR",
-        "UNKNOWN",
-    }
-
     def __init__(
         self,
         id=None,  # noqa # shadows built-in
         name=None,
-        status=None,
-        status_info=None,
-        namespaces=None,
         systems=None,
         connection_type=None,
         receiving_connections=None,
@@ -1529,9 +1659,6 @@ class Garden(BaseModel):
     ):
         self.id = id
         self.name = name
-        self.status = status.upper() if status else None
-        self.status_info = status_info if status_info else StatusInfo()
-        self.namespaces = namespaces or []
         self.systems = systems or []
 
         self.connection_type = connection_type
@@ -1555,11 +1682,10 @@ class Garden(BaseModel):
 
     def __repr__(self):
         return (
-            "<Garden: garden_name=%s, status=%s, version=%s, parent=%s, has_parent=%s, "
+            "<Garden: garden_name=%s, version=%s, parent=%s, has_parent=%s, "
             "connection_type=%s, receiving_connections=%s, publishing_connections=%s>"
             % (
                 self.name,
-                self.status,
                 self.version,
                 self.parent,
                 self.has_parent,
@@ -1568,6 +1694,56 @@ class Garden(BaseModel):
                 self.publishing_connections,
             )
         )
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+
+        if not isinstance(other, Garden):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info.is_newer(other.status_info)
+
+        if hasattr(other, "receiving_connections") and hasattr(
+            self, "receiving_connections"
+        ):
+
+            for self_connection in self.receiving_connections:
+                for other_connection in other.receiving_connections:
+                    if (
+                        self_connection.api == other_connection.api
+                        and self_connection.is_newer(other_connection)
+                    ):
+                        return True
+
+        if hasattr(other, "publishing_connections") and hasattr(
+            self, "publishing_connections"
+        ):
+
+            for self_connection in self.publishing_connections:
+                for other_connection in other.publishing_connections:
+                    if (
+                        self_connection.api == other_connection.api
+                        and self_connection.is_newer(other_connection)
+                    ):
+                        return True
+
+        if hasattr(other, "systems") and hasattr(self, "systems"):
+
+            for self_system in self.systems:
+                for other_system in other.systems:
+                    if (
+                        self_system.id == other_system.id
+                        or (
+                            self_system.namespace == other_system.namespace
+                            and self_system.name == other_system.name
+                            and self_system.version == other_system.version
+                        )
+                    ) and self_system.is_newer(other_system):
+                        return True
+
+        return False
 
 
 class Connection(BaseModel):
@@ -1607,6 +1783,15 @@ class Connection(BaseModel):
             self.status,
             self.config,
         )
+
+    def is_newer(self, other):
+        if not isinstance(other, Connection):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(other, "status_info"):
+            return self.status_info.is_newer(other.status_info)
+
+        return False
 
 
 class Operation(BaseModel):

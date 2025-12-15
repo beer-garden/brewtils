@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
-import pytz
 
 from brewtils.models import (
     AliasUserMap,
@@ -49,8 +49,8 @@ def system_id():
 
 @pytest.fixture
 def ts_dt():
-    """Jan 1, 2016 as a naive datetime."""
-    return datetime(2016, 1, 1)
+    """Jan 1, 2016 as a UTC timezone-aware datetime."""
+    return datetime(2016, 1, 1, tzinfo=timezone.utc)
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def ts_epoch():
 @pytest.fixture
 def ts_dt_utc(ts_epoch):
     """Jan 1, 2016 UTC as timezone-aware datetime."""
-    return datetime.fromtimestamp(ts_epoch / 1000, tz=pytz.utc)
+    return datetime.fromtimestamp(ts_epoch / 1000, tz=timezone.utc)
 
 
 @pytest.fixture
@@ -74,13 +74,7 @@ def ts_epoch_eastern():
 @pytest.fixture
 def ts_dt_eastern():
     """Jan 1, 2016 US/Eastern as timezone-aware datetime."""
-    return datetime(2016, 1, 1, tzinfo=pytz.timezone("US/Eastern"))
-
-
-@pytest.fixture
-def ts_2_dt(ts_2_epoch):
-    """Feb 2, 2017 as a naive datetime."""
-    return datetime(2017, 2, 2)
+    return datetime(2016, 1, 1, tzinfo=ZoneInfo("US/Eastern"))
 
 
 @pytest.fixture
@@ -92,7 +86,7 @@ def ts_2_epoch():
 @pytest.fixture
 def ts_2_dt_utc(ts_2_epoch):
     """Feb 2, 2017 UTC as timezone-aware datetime."""
-    return datetime.fromtimestamp(ts_2_epoch / 1000, tz=pytz.utc)
+    return datetime.fromtimestamp(ts_2_epoch / 1000, tz=timezone.utc)
 
 
 @pytest.fixture
@@ -276,6 +270,7 @@ def system_dict(instance_dict, command_dict, command_dict_2, system_id):
         "prefix_topic": "custom_topic",
         "requires": ["SystemA"],
         "requires_timeout": 300,
+        "garden_name": "garden",
     }
 
 
@@ -357,6 +352,7 @@ def child_request_dict(ts_epoch):
         "status": "CREATED",
         "hidden": True,
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
@@ -398,6 +394,7 @@ def parent_request_dict(ts_epoch):
         "output_type": "STRING",
         "status": "CREATED",
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "hidden": False,
         "updated_at": ts_epoch,
@@ -466,6 +463,7 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "status": "CREATED",
         "hidden": False,
         "command_type": "ACTION",
+        "root_command_type": "ACTION",
         "created_at": ts_epoch,
         "updated_at": ts_epoch,
         "status_updated_at": ts_epoch,
@@ -862,11 +860,11 @@ def interval_trigger_dict(ts_epoch, ts_2_epoch):
 
 
 @pytest.fixture
-def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt):
+def bg_interval_trigger(interval_trigger_dict, ts_dt, ts_2_dt_utc):
     """An interval trigger as a model."""
     dict_copy = copy.deepcopy(interval_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_2_dt
+    dict_copy["end_date"] = ts_2_dt_utc
     return IntervalTrigger(**dict_copy)
 
 
@@ -896,11 +894,11 @@ def cron_trigger_dict(ts_epoch, ts_2_epoch):
 
 
 @pytest.fixture
-def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt):
+def bg_cron_trigger(cron_trigger_dict, ts_dt, ts_2_dt_utc):
     """A cron trigger as a model."""
     dict_copy = copy.deepcopy(cron_trigger_dict)
     dict_copy["start_date"] = ts_dt
-    dict_copy["end_date"] = ts_2_dt
+    dict_copy["end_date"] = ts_2_dt_utc
     return CronTrigger(**dict_copy)
 
 
@@ -1019,16 +1017,16 @@ def bg_status_info(status_info_dict, ts_dt, bg_status_history):
 
 @pytest.fixture
 def garden_dict(
-    ts_epoch, system_dict, connection_dict, connection_publishing_dict, status_info_dict
+    ts_epoch,
+    system_dict,
+    connection_dict,
+    connection_publishing_dict,
 ):
     """A garden as a dictionary."""
 
     return {
         "id": "123f11af55a38e64799fa1c1",
         "name": "garden",
-        "status": "RUNNING",
-        "status_info": status_info_dict,
-        "namespaces": [system_dict["namespace"]],
         "systems": [system_dict],
         "connection_type": "http",
         "receiving_connections": [connection_dict],
@@ -1045,14 +1043,16 @@ def garden_dict(
 
 @pytest.fixture
 def bg_garden(
-    garden_dict, bg_system, bg_connection, bg_connection_publishing, bg_status_info
+    garden_dict,
+    bg_system,
+    bg_connection,
+    bg_connection_publishing,
 ):
     """An operation as a model."""
     dict_copy = copy.deepcopy(garden_dict)
     dict_copy["systems"] = [bg_system]
     dict_copy["receiving_connections"] = [bg_connection]
     dict_copy["publishing_connections"] = [bg_connection_publishing]
-    dict_copy["status_info"] = copy.deepcopy(bg_status_info)
     return Garden(**dict_copy)
 
 

@@ -1,6 +1,10 @@
 Brewtils Changelog
 ==================
 
+3.32.0rc0
+------
+12/17/25
+
 - Added support for preferences in User model
 
 3.31.0

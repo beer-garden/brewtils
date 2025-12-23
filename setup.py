@@ -39,7 +39,7 @@ setup(
         "requests<3", # Latest 2.32.5
         "simplejson<4", # Latest 3.20.2
         "wrapt", # Latest 1.17.3
-        "yapconf<1.0,>=0.3.7", # Latest 0.4.0
+        "yapconf<0.5,>=0.3.7", # Latest 0.5.0
     ],
     classifiers=[
         "Intended Audience :: Developers",

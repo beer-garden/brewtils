@@ -55,8 +55,9 @@ CONFIG = Box(default_box=True)
 # Global client
 CLIENT = None
 
+
 def get_config_value(
-    key: Optional[str]=None, default: Optional[Box] = None
+    key: Optional[str] = None, default: Optional[Box] = None
 ) -> Union[str, int, float, bool, complex, Box, None]:
     """Get specified key from the config.
 

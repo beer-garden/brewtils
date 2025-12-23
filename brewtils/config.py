@@ -81,8 +81,9 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
 
     return {key: get(key, config) for key in _CONNECTION_SPEC}
 
+
 def get(
-    key: Optional[str]=None, config: Box = None, default: Optional[Box] = None
+    key: Optional[str] = None, config: Box = None, default: Optional[Box] = None
 ) -> Union[str, int, float, bool, complex, Box, None]:
     """Get specified key from the config.
 
@@ -110,6 +111,7 @@ def get(
             return default
         value = value[key_part]
     return value
+
 
 def load_config(
     cli_args=True, environment=True, argument_parser=None, bootstrap=False, **kwargs

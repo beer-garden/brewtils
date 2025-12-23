@@ -102,9 +102,6 @@ def get(
         The value of the key in the config.
     """
 
-    if config is None:
-        config = brewtils.plugin.CONFIG
-
     value = config
     for key_part in key.split("."):
         if value is None or key_part not in value:

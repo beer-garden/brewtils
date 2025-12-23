@@ -543,7 +543,7 @@ class SystemClient(object):
             request.parent is None
             and brewtils.plugin.CONFIG
             and (
-                brewtils.plugin.get_config_value("bg_host").upper()
+                brewtils.plugin.get_config_value("bg_host", "").upper()
                 != self._easy_client.client.bg_host.upper()
                 or brewtils.plugin.get_config_value("bg_port")
                 != self._easy_client.client.bg_port
@@ -572,7 +572,7 @@ class SystemClient(object):
             return None
 
         if brewtils.plugin.CONFIG and (
-            brewtils.plugin.get_config_value("bg_host").upper()
+            brewtils.plugin.get_config_value("bg_host", "").upper()
             != self._easy_client.client.bg_host.upper()
             or brewtils.plugin.get_config_value("bg_port")
             != self._easy_client.client.bg_port

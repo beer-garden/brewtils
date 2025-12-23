@@ -143,7 +143,7 @@ class PublishClient(object):
         if parent is None:
             return None
 
-        if brewtils.plugin.CONFIG and (
+        if not brewtils.plugin.is_config_empty() and (
             brewtils.plugin.get_config_value("bg_host", "").upper()
             != self._easy_client.client.bg_host.upper()
             or brewtils.plugin.get_config_value("bg_port")

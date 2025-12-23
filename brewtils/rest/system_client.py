@@ -216,7 +216,7 @@ class SystemClient(object):
 
         # Now need to determine if the intended target is the current running plugin.
         # Start by ensuring there's a valid Plugin context active
-        self.target_self = bool(brewtils.plugin.CONFIG)
+        self.target_self = not brewtils.plugin.is_config_empty()
 
         # If ANY of the target specification arguments don't match the current plugin
         # then the target is different
@@ -227,10 +227,9 @@ class SystemClient(object):
             "system_namespace": "namespace",
         }
         for key, value in config_map.items():
-            if (
-                kwargs.get(key) is not None
-                and kwargs.get(key) != brewtils.plugin.CONFIG[value]
-            ):
+            if kwargs.get(key) is not None and kwargs.get(
+                key
+            ) != brewtils.plugin.get_config_value(value):
                 self.target_self = False
                 break
 
@@ -541,7 +540,7 @@ class SystemClient(object):
         # Support cross-server parent/child requests. Add parent if request has different host.
         if (
             request.parent is None
-            and brewtils.plugin.CONFIG
+            and not brewtils.plugin.is_config_empty()
             and (
                 brewtils.plugin.get_config_value("bg_host", "").upper()
                 != self._easy_client.client.bg_host.upper()
@@ -571,7 +570,7 @@ class SystemClient(object):
         if parent is None:
             return None
 
-        if brewtils.plugin.CONFIG and (
+        if not brewtils.plugin.is_config_empty() and (
             brewtils.plugin.get_config_value("bg_host", "").upper()
             != self._easy_client.client.bg_host.upper()
             or brewtils.plugin.get_config_value("bg_port")

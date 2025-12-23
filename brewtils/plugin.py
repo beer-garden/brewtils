@@ -56,6 +56,25 @@ CONFIG = Box(default_box=True)
 CLIENT = None
 
 
+def is_config_empty(config=None) -> bool:
+    """Check if the global CONFIG is populated
+
+    Returns:
+        bool: False if CONFIG is populated, True otherwise
+    """
+
+    if config is None:
+        config = CONFIG
+    for _, value in config.items():
+        if isinstance(value, dict):
+            if not is_config_empty(value):
+                return False
+        elif value is not None:
+            return False
+
+    return True
+
+
 def get_config_value(
     key: Optional[str] = None, default: Optional[Box] = None
 ) -> Union[str, int, float, bool, complex, Box, None]:

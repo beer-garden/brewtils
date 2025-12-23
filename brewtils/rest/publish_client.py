@@ -94,18 +94,18 @@ class PublishClient(object):
             if brewtils.plugin._system.prefix_topic:
                 _topic = brewtils.plugin._system.prefix_topic
             elif (
-                brewtils.plugin.CONFIG.garden
-                and brewtils.plugin.CONFIG.name
-                and brewtils.plugin.CONFIG.version
-                and brewtils.plugin.CONFIG.instance_name
-                and brewtils.plugin.CONFIG.namespace
+                brewtils.plugin.get_config_value("garden")
+                and brewtils.plugin.get_config_value("name")
+                and brewtils.plugin.get_config_value("version")
+                and brewtils.plugin.get_config_value("instance_name")
+                and brewtils.plugin.get_config_value("namespace")
             ):
                 _topic = "{0}.{1}.{2}.{3}.{4}".format(
-                    brewtils.plugin.CONFIG.garden,
-                    brewtils.plugin.CONFIG.namespace,
-                    brewtils.plugin.CONFIG.name,
-                    brewtils.plugin.CONFIG.version,
-                    brewtils.plugin.CONFIG.instance_name,
+                    brewtils.plugin.get_config_value("garden"),
+                    brewtils.plugin.get_config_value("namespace"),
+                    brewtils.plugin.get_config_value("name"),
+                    brewtils.plugin.get_config_value("version"),
+                    brewtils.plugin.get_config_value("instance_name"),
                 )
             else:
                 raise BrewtilsException("Unable to determine _topic to publish to")
@@ -144,9 +144,9 @@ class PublishClient(object):
             return None
 
         if brewtils.plugin.CONFIG and (
-            brewtils.plugin.CONFIG.bg_host.upper()
+            brewtils.plugin.get_config_value("bg_host", "").upper()
             != self._easy_client.client.bg_host.upper()
-            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
+            or brewtils.plugin.get_config_value("bg_port") != self._easy_client.client.bg_port
         ):
             self._logger.warning(
                 "A parent request was found, but the destination beer-garden "
@@ -178,11 +178,11 @@ class PublishClient(object):
         """
 
         if not (
-            brewtils.plugin.CONFIG.garden
-            and brewtils.plugin.CONFIG.name
-            and brewtils.plugin.CONFIG.version
-            and brewtils.plugin.CONFIG.instance_name
-            and brewtils.plugin.CONFIG.namespace
+            brewtils.plugin.get_config_value("garden")
+            and brewtils.plugin.get_config_value("name")
+            and brewtils.plugin.get_config_value("version")
+            and brewtils.plugin.get_config_value("instance_name")
+            and brewtils.plugin.get_config_value("namespace")
         ):
             raise BrewtilsException(
                 (
@@ -206,11 +206,11 @@ class PublishClient(object):
             topic_name=topic_name,
             add=self._schema_parser.serialize_subscriber(
                 Subscriber(
-                    garden=brewtils.plugin.CONFIG.garden,
-                    namespace=brewtils.plugin.CONFIG.namespace,
-                    system=brewtils.plugin.CONFIG.name,
-                    version=brewtils.plugin.CONFIG.version,
-                    instance=brewtils.plugin.CONFIG.instance_name,
+                    garden=brewtils.plugin.get_config_value("garden"),
+                    namespace=brewtils.plugin.get_config_value("namespace"),
+                    system=brewtils.plugin.get_config_value("name"),
+                    version=brewtils.plugin.get_config_value("version"),
+                    instance=brewtils.plugin.get_config_value("instance_name"),
                     command=cmd_name,
                     subscriber_type="GENERATED",
                 ),
@@ -236,11 +236,11 @@ class PublishClient(object):
             Topic: Updated Topic Model
         """
         if not (
-            brewtils.plugin.CONFIG.garden
-            and brewtils.plugin.CONFIG.name
-            and brewtils.plugin.CONFIG.version
-            and brewtils.plugin.CONFIG.instance_name
-            and brewtils.plugin.CONFIG.namespace
+            brewtils.plugin.get_config_value("garden")
+            and brewtils.plugin.get_config_value("name")
+            and brewtils.plugin.get_config_value("version")
+            and brewtils.plugin.get_config_value("instance_name")
+            and brewtils.plugin.get_config_value("namespace")
         ):
             raise BrewtilsException(
                 (
@@ -264,14 +264,14 @@ class PublishClient(object):
             topic_name=topic_name,
             remove=self._schema_parser.serialize_subscriber(
                 Subscriber(
-                    garden=brewtils.plugin.CONFIG.garden,
-                    namespace=brewtils.plugin.CONFIG.namespace,
-                    system=brewtils.plugin.CONFIG.name,
-                    version=brewtils.plugin.CONFIG.version,
-                    instance=brewtils.plugin.CONFIG.instance_name,
+                    garden=brewtils.plugin.get_config_value("garden"),
+                    namespace=brewtils.plugin.get_config_value("namespace"),
+                    system=brewtils.plugin.get_config_value("name"),
+                    version=brewtils.plugin.get_config_value("version"),
+                    instance=brewtils.plugin.get_config_value("instance_name"),
                     command=cmd_name,
                     subscriber_type="GENERATED",
                 ),
                 to_string=False,
             ),
-        )
+        )   

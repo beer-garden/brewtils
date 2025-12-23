@@ -10,6 +10,9 @@ from yapconf.exceptions import YapconfItemNotFound
 from brewtils.errors import ValidationError, _deprecate
 from brewtils.rest import normalize_url_prefix
 from brewtils.specification import _CONNECTION_SPEC, SPECIFICATION
+from typing import Optional, Union
+
+from box import Box
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +79,37 @@ def get_connection_info(cli_args=None, argument_parser=None, **kwargs):
     """
     config = load_config(cli_args=cli_args, argument_parser=argument_parser, **kwargs)
 
-    return {key: config[key] for key in _CONNECTION_SPEC}
+    return {key: get(key, config) for key in _CONNECTION_SPEC}
 
+def get(
+    key: Optional[str]=None, config: Box = None, default: Optional[Box] = None
+) -> Union[str, int, float, bool, complex, Box, None]:
+    """Get specified key from the config.
+
+    Nested keys can be separated with a "." If the key does not exist, then
+    a None will be returned.
+
+    If the key itself is None, then the entire config will be returned.
+
+    If the requested value is a container (has child items) then the returned value will
+    be an immutable (frozen) ``box.Box`` object.
+
+    Args:
+        key: The key to get, nested keys are separated with "."
+
+    Returns:
+        The value of the key in the config.
+    """
+
+    if config is None:
+        config = brewtils.plugin.CONFIG
+
+    value = config
+    for key_part in key.split("."):
+        if value is None or key_part not in value:
+            return default
+        value = value[key_part]
+    return value
 
 def load_config(
     cli_args=True, environment=True, argument_parser=None, bootstrap=False, **kwargs

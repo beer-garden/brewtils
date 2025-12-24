@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Renamed parent/child garden naming convention to upstream/downstream to better reflect data direction
+
 3.31.0
 ------
 12/11/25

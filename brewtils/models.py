@@ -1645,9 +1645,9 @@ class Garden(BaseModel):
         connection_type=None,
         receiving_connections=None,
         publishing_connections=None,
-        has_parent=None,
-        parent=None,
-        children=None,
+        has_upstream=None,
+        upstream=None,
+        downstream=None,
         metadata=None,
         default_user=None,
         shared_users=None,
@@ -1661,9 +1661,9 @@ class Garden(BaseModel):
         self.receiving_connections = receiving_connections or []
         self.publishing_connections = publishing_connections or []
 
-        self.has_parent = has_parent
-        self.parent = parent
-        self.children = children
+        self.has_upstream = has_upstream
+        self.upstream = upstream
+        self.downstream = downstream
         self.metadata = metadata or {}
 
         self.default_user = default_user
@@ -1683,8 +1683,8 @@ class Garden(BaseModel):
             % (
                 self.name,
                 self.version,
-                self.parent,
-                self.has_parent,
+                self.upstream,
+                self.has_upstream,
                 self.connection_type,
                 self.receiving_connections,
                 self.publishing_connections,

@@ -6,6 +6,8 @@ import warnings
 import pytest
 from mock import Mock
 
+from pydantic import ValidationError
+
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import Literal
 
@@ -627,6 +629,10 @@ class TestCommand(object):
         @command(**command_dict)
         def foo():
             pass
+
+        print(command_dict)
+        print(foo._command.topics)
+        print(bg_command.topics)
 
         assert_command_equal(foo._command, bg_command)
 

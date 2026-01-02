@@ -92,6 +92,9 @@ class TestPublishClient(object):
 
         easy_client.publish_event.assert_called()
         called_event = easy_client.publish_event.call_args.args[0]
+        print("What")
+        print(called_event.__dict__)
+        print(event.__dict__)
         assert SchemaParser.serialize_event(
             called_event
         ) == SchemaParser.serialize_event(event)

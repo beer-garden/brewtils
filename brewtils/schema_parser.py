@@ -201,6 +201,16 @@ class SchemaParser(object):
         Returns:
             A PatchOperation object
         """
+        if "operations" in patch:
+            patch = patch["operations"]
+        if isinstance(patch, list):
+            all_ops = []
+            for p in patch:
+                all_ops.extend(cls.parse(
+                    p, brewtils.models.PatchOperation, from_string=from_string, **kwargs
+                ))
+            return all_ops
+
         return cls.parse(
             patch, brewtils.models.PatchOperation, from_string=from_string, **kwargs
         )
@@ -554,10 +564,24 @@ class SchemaParser(object):
                 )
             kwargs["many"] = True
 
-        schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
+        #schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
-        with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
-            return schema.loads(data) if from_string else schema.load(data)
+        # with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
+        #     return schema.loads(data) if from_string else schema.load(data)
+        if isinstance(data, list):
+            all_obj = []
+            for p in data:
+                all_obj.append(cls.parse(
+                    p, model_class, from_string=from_string, **kwargs
+                ))
+            return all_obj
+
+        results = model_class.model_validate_json(data) if from_string else model_class.model_validate(data)
+
+        if model_class == brewtils.models.PatchOperation and kwargs.get("many", True):
+            return [results]
+        
+        return results
 
     # Serialization methods
     @classmethod
@@ -703,7 +727,7 @@ class SchemaParser(object):
         return cls.serialize(
             request,
             to_string=to_string,
-            schema_name=brewtils.models.Request.schema,
+            # schema_name=brewtils.models.Request.schema,
             **kwargs,
         )
 
@@ -912,7 +936,6 @@ class SchemaParser(object):
             Serialized representation of the job IDs
         """
         arg_dict = {"ids": job_id_list}
-
         return cls.serialize(
             arg_dict, to_string=to_string, schema_name="JobExportInputSchema", **kwargs
         )
@@ -933,6 +956,14 @@ class SchemaParser(object):
         Returns:
             Serialized representation of the Job
         """
+        kwargs['exclude'] = [
+            "next_run_time",
+            "success_count",
+            "error_count",
+            "canceled_count",
+            "skip_count",
+        ]
+
         return cls.serialize(
             job, to_string=to_string, schema_name="JobExportSchema", **kwargs
         )
@@ -1122,7 +1153,7 @@ class SchemaParser(object):
         cls,
         model,  # type: Union[BaseModel, typing.Iterable[BaseModel], dict]
         to_string=False,  # type: bool
-        schema_name=None,  # type: Optional[str]
+        # schema_name=None,  # type: Optional[str]
         **kwargs,  # type: Any
     ):
         # type: (...) -> Union[Dict[str, Any], Optional[str]]
@@ -1151,19 +1182,23 @@ class SchemaParser(object):
             A serialized model representation
 
         """
-        schema_name = schema_name or cls._get_schema_name(model)
+        #schema_name = schema_name or cls._get_schema_name(model)
 
         if cls._single_item(model):
             kwargs["many"] = False
 
-            schema = getattr(brewtils.schemas, schema_name)(**kwargs)
+            #schema = getattr(brewtils.schemas, schema_name)(**kwargs)
 
-            return schema.dumps(model) if to_string else schema.dump(model)
+            if isinstance(model, dict):
+                return json.dumps(model) if to_string else model
+
+            # return schema.dumps(model) if to_string else schema.dump(model)
+            return model.model_dump_json(exclude=kwargs.get("exclude", None)) if to_string else model.model_dump(exclude=kwargs.get("exclude", None))
 
         # Explicitly force to_string to False so only original call returns a string
         multiple = [
-            cls.serialize(x, to_string=False, schema_name=schema_name, **kwargs)
-            for x in model
+            cls.serialize(x, to_string=False, **kwargs)
+            for x in (model.model_dump() if isinstance(model, BaseModel) else model)
         ]
 
         return json.dumps(multiple) if to_string else multiple
@@ -1198,6 +1233,6 @@ class SchemaParser(object):
         - "Standard" collections (list, tuple, set) must return False
         - Dictionaries and Boxes must return True
         """
-        if isinstance(obj, (dict, Box)):
+        if isinstance(obj, (BaseModel, dict, Box)):
             return True
         return not isinstance(obj, Iterable)

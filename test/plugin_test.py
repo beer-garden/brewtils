@@ -10,7 +10,6 @@ from packaging.version import InvalidVersion
 import pytest
 from mock import ANY, MagicMock, Mock
 from requests import ConnectionError as RequestsConnectionError
-from unittest.mock import patch
 
 import brewtils.plugin
 from brewtils import get_connection_info

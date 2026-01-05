@@ -5,7 +5,6 @@ import typing  # noqa
 from typing import Any, Dict, Optional, Union  # noqa
 
 from box import Box  # type: ignore
-from marshmallow.experimental.context import Context
 
 import brewtils.models
 import brewtils.schemas

@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import copy
 
 import pytest
-from marshmallow.exceptions import MarshmallowError
 from pytest_lazy_fixtures import lf as lazy_fixture
 
 import brewtils.models

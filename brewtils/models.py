@@ -9,7 +9,13 @@ from mock import Mock
 
 from brewtils.errors import ModelError, _deprecate
 
-from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator, field_serializer
+from pydantic import (
+    BaseModel,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from pydantic.json_schema import SkipJsonSchema
 from typing import ClassVar, List, Literal, Any, Optional
 
@@ -122,13 +128,7 @@ class Permissions(Enum):
     GARDEN_ADMIN = 4
 
 
-# class BaseModel(object):
-#     schema = None
-
-
 class Command(BaseModel):
-    # schema = "CommandSchema"
-
     name: Optional[str] = None
     display_name: Optional[str] = None
     description: Optional[str] = None
@@ -145,27 +145,14 @@ class Command(BaseModel):
     topics: Optional[list[str]] = []
     allow_any_kwargs: Optional[bool] = None
 
-    # name = fields.Str(allow_none=True)
-    # display_name = fields.Str(allow_none=True)
-    # description = fields.Str(allow_none=True)
-    # parameters = fields.List(fields.Nested(lambda: ParameterSchema()), allow_none=True)
-    # command_type = fields.Str(allow_none=True)
-    # output_type = fields.Str(allow_none=True)
-    # schema = fields.Dict(allow_none=True)
-    # form = fields.Dict(allow_none=True)
-    # template = fields.Str(allow_none=True)
-    # icon_name = fields.Str(allow_none=True)
-    # hidden = fields.Boolean(allow_none=True)
-    # metadata = fields.Dict(allow_none=True)
-    # tags = fields.List(fields.Str(), allow_none=True)
-    # topics = fields.List(fields.Str(), allow_none=True)
-    # allow_any_kwargs = fields.Boolean(allow_none=True)
-
-    COMMAND_TYPES: ClassVar[List[str]] = ["ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP"]
+    COMMAND_TYPES: ClassVar[List[str]] = [
+        "ACTION",
+        "INFO",
+        "EPHEMERAL",
+        "ADMIN",
+        "TEMP",
+    ]
     OUTPUT_TYPES: ClassVar[list[str]] = ["STRING", "JSON", "XML", "HTML", "JS", "CSS"]
-
-    # COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP")
-    # OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     @field_validator("parameters", "tags", "topics", mode="before")
     @classmethod
@@ -173,47 +160,13 @@ class Command(BaseModel):
         if v is None:
             return []
         return v
-    
+
     @field_validator("metadata", mode="before")
     @classmethod
     def none_to_empty_dict(cls, v: object) -> object:
         if v is None:
             return {}
         return v
-
-    # def __init__(
-    #     self,
-    #     name=None,
-    #     display_name=None,
-    #     description=None,
-    #     parameters=None,
-    #     command_type=None,
-    #     output_type=None,
-    #     schema=None,
-    #     form=None,
-    #     template=None,
-    #     icon_name=None,
-    #     hidden=False,
-    #     metadata=None,
-    #     tags=None,
-    #     topics=None,
-    #     allow_any_kwargs=None,
-    # ):
-    #     self.name = name
-    #     self.display_name = display_name or name
-    #     self.description = description
-    #     self.parameters = parameters or []
-    #     self.command_type = command_type
-    #     self.output_type = output_type
-    #     # self.schema = schema
-    #     self.form = form
-    #     self.template = template
-    #     self.icon_name = icon_name
-    #     self.hidden = hidden
-    #     self.metadata = metadata or {}
-    #     self.tags = tags or []
-    #     self.topics = topics or []
-    #     self.allow_any_kwargs = allow_any_kwargs
 
     def __str__(self):
         return self.name
@@ -286,16 +239,15 @@ class Command(BaseModel):
 
 
 class Instance(BaseModel):
-    # schema = "InstanceSchema"
-    id: str = None
-    name: str = None
-    description: str = None
-    status: str = None
-    status_info: StatusInfo = None
-    queue_type: str = None
-    queue_info: dict = None
-    icon_name: str = None
-    metadata: dict = None
+    id: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    status_info: Optional[StatusInfo] = None
+    queue_type: Optional[str] = None
+    queue_info: Optional[dict] = {}
+    icon_name: Optional[str] = None
+    metadata: Optional[dict] = {}
 
     INSTANCE_STATUSES: ClassVar[list[str]] = [
         "INITIALIZING",
@@ -311,41 +263,12 @@ class Instance(BaseModel):
         "ERROR",
     ]
 
-    # INSTANCE_STATUSES = {
-    #     "INITIALIZING",
-    #     "RUNNING",
-    #     "PAUSED",
-    #     "STOPPED",
-    #     "DEAD",
-    #     "UNRESPONSIVE",
-    #     "STARTING",
-    #     "STOPPING",
-    #     "UNKNOWN",
-    #     "AWAITING_SYSTEM",
-    #     "ERROR",
-    # }
-
-    # def __init__(
-    #     self,
-    #     name=None,
-    #     description=None,
-    #     id=None,  # noqa # shadows built-in
-    #     status=None,
-    #     status_info=None,
-    #     queue_type=None,
-    #     queue_info=None,
-    #     icon_name=None,
-    #     metadata=None,
-    # ):
-    #     self.name = name
-    #     self.description = description
-    #     self.id = id
-    #     self.status = status.upper() if status else None
-    #     self.status_info = status_info if status_info else StatusInfo()
-    #     self.queue_type = queue_type
-    #     self.queue_info = queue_info or {}
-    #     self.icon_name = icon_name
-    #     self.metadata = metadata or {}
+    @field_validator("status")
+    @classmethod
+    def capitalize_status(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return v.upper()
 
     def __str__(self):
         return self.name
@@ -370,28 +293,14 @@ class Instance(BaseModel):
 
 
 class Choices(BaseModel):
-    # schema = "ChoicesSchema"
-    type: str = None
-    display: str = None
-    value: Any = None
-    strict: bool = Field(default=False)
-    details: dict = None
+    type: Optional[str] = None
+    display: Optional[str] = None
+    value: Optional[Any] = None
+    strict: Optional[bool] = Field(default=False)
+    details: Optional[dict] = {}
 
     TYPES: ClassVar[list[str]] = ["static", "url", "command"]
     DISPLAYS: ClassVar[list[str]] = ["select", "typeahead"]
-
-    # TYPES = ("static", "url", "command")
-    # DISPLAYS = ("select", "typeahead")
-
-    # def __init__(
-    #     self, type=None, display=None, value=None, strict=None, details=None  # noqa
-    # ):
-    #     # parameter 'type' shadows built-in
-    #     self.type = type
-    #     self.strict = strict
-    #     self.value = value
-    #     self.display = display
-    #     self.details = details or {}
 
     def __str__(self):
         return self.value.__str__()
@@ -405,9 +314,8 @@ class Choices(BaseModel):
 
 
 class Parameter(BaseModel):
-    # schema = "ParameterSchema"
     key: Optional[str] = None
-    type: Optional[str] = None  # noqa # shadows built-in
+    type: Optional[str] = None
     multi: Optional[bool] = None
     display_name: Optional[str] = None
     optional: Optional[bool] = None
@@ -422,12 +330,15 @@ class Parameter(BaseModel):
     form_input_type: Optional[str] = None
     type_info: Optional[dict] = {}
 
-    # is_kwarg: ClassVar[bool] = None
-    # model: ClassVar[dict] = None
-    # is_kwarg: Optional[bool] = PrivateAttr(default=None)
-    # model: Optional[dict] = PrivateAttr(default=None)
-    is_kwarg: Optional[SkipJsonSchema[bool]] = Field(exclude_if=lambda v: v is None, default=None)
-    model: Optional[SkipJsonSchema[object]] = Field(exclude_if=lambda v: v is None, default=None)
+    # These are special - they aren't part of the Parameter "API" (they aren't in
+    # the serialization schema) but we still need them on this model for consistency
+    # when creating Clients - https://github.com/beer-garden/beer-garden/issues/777
+    is_kwarg: Optional[SkipJsonSchema[bool]] = Field(
+        exclude_if=lambda v: v is None, default=None
+    )
+    model: Optional[SkipJsonSchema[object]] = Field(
+        exclude_if=lambda v: v is None, default=None
+    )
 
     TYPES: ClassVar[List[str]] = [
         "String",
@@ -441,7 +352,9 @@ class Parameter(BaseModel):
         "Bytes",
         "Base64",
     ]
-    FORM_INPUT_TYPES: ClassVar[List[str]] = ["textarea",]
+    FORM_INPUT_TYPES: ClassVar[List[str]] = [
+        "textarea",
+    ]
 
     @field_validator("parameters", mode="before")
     @classmethod
@@ -456,49 +369,6 @@ class Parameter(BaseModel):
         if v is None:
             return {}
         return v
-
-    # def __init__(
-    #     self,
-    #     key=None,
-    #     type=None,  # noqa # shadows built-in
-    #     multi=None,
-    #     display_name=None,
-    #     optional=None,
-    #     default=None,
-    #     description=None,
-    #     choices=None,
-    #     parameters=None,
-    #     nullable=None,
-    #     maximum=None,
-    #     minimum=None,
-    #     regex=None,
-    #     form_input_type=None,
-    #     type_info=None,
-    #     is_kwarg=None,
-    #     model=None,
-    # ):
-    #     self.key = key
-    #     self.type = type
-    #     self.multi = multi
-    #     self.display_name = display_name
-    #     self.optional = optional
-    #     self.default = default
-    #     self.description = description
-    #     self.choices = choices
-    #     self.parameters = parameters or []
-    #     self.nullable = nullable
-    #     self.maximum = maximum
-    #     self.minimum = minimum
-    #     self.regex = regex
-    #     self.form_input_type = form_input_type
-    #     self.type_info = type_info or {}
-
-    #     # These are special - they aren't part of the Parameter "API" (they aren't in
-    #     # the serialization schema) but we still need them on this model for consistency
-    #     # when creating Clients - https://github.com/beer-garden/beer-garden/issues/777
-    #     self.is_kwarg = is_kwarg
-    #     self.model = model
-    
 
     def __str__(self):
         return self.key
@@ -579,18 +449,13 @@ class Parameter(BaseModel):
 
 
 class StatusHistory(BaseModel):
-    # schema = "StatusHistorySchema"
-    heartbeat: datetime = None
-    status: str = None
+    heartbeat: Optional[datetime] = None
+    status: Optional[str] = None
 
-    # def __init__(self, status=None, heartbeat=None):
-    #     self.status = status
-    #     self.heartbeat = heartbeat
-
-    @field_serializer('heartbeat')
-    def serialize_dt8(self, dt: datetime) -> int:
+    @field_serializer("heartbeat")
+    def serialize_dt_status_history(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
 
@@ -621,18 +486,13 @@ class StatusHistory(BaseModel):
 
 
 class StatusInfo(BaseModel):
-    # schema = "StatusInfoSchema"
     heartbeat: datetime = None
     history: list[StatusHistory] = []
 
-    # def __init__(self, heartbeat=None, history=None):
-    #     self.heartbeat = heartbeat
-    #     self.history = history or []
-
-    @field_serializer('heartbeat')
-    def serialize_dt9(self, dt: datetime) -> int:
+    @field_serializer("heartbeat")
+    def serialize_dt_status_info(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
 
@@ -674,17 +534,9 @@ class StatusInfo(BaseModel):
 
 
 class RequestFile(BaseModel):
-    # schema = "RequestFileSchema"
-    storage_type: str = None
-    filename: str = None
-    id: str = None  # noqa # shadows built-in
-
-    # def __init__(
-    #     self, storage_type=None, filename=None, id=None  # noqa # shadows built-in
-    # ):
-    #     self.storage_type = storage_type
-    #     self.filename = filename
-    #     self.id = id  # noqa # shadows built-in
+    storage_type: Optional[str] = None
+    filename: Optional[str] = None
+    id: Optional[str] = None
 
     def __str__(self):
         return self.filename
@@ -697,41 +549,28 @@ class RequestFile(BaseModel):
 
 
 class File(BaseModel):
-    # schema = "FileSchema"
+    id: Optional[str] = None
+    owner_id: Optional[str] = None
+    owner_type: Optional[str] = None
+    owner: Optional[Any] = None
+    job: Optional[Job] = None
+    request: Optional[Request] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    chunks: Optional[dict] = None
+    chunk_size: Optional[int] = None
+    md5_sum: Optional[str] = None
+    status: Optional[str] = None
+    root_command_type: Optional[str] = None
 
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        owner_id=None,
-        owner_type=None,
-        created_at=None,
-        updated_at=None,
-        file_name=None,
-        file_size=None,
-        chunks=None,
-        chunk_size=None,
-        owner=None,
-        job=None,
-        request=None,
-        md5_sum=None,
-        status=None,
-        root_command_type=None,
-    ):
-        self.id = id
-        self.owner_id = owner_id
-        self.owner_type = owner_type
-        self.owner = owner
-        self.job = job
-        self.request = request
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.file_name = file_name
-        self.file_size = file_size
-        self.chunks = chunks
-        self.chunk_size = chunk_size
-        self.md5_sum = md5_sum
-        self.status = status
-        self.root_command_type = root_command_type
+    @field_serializer("created_at", "updated_at")
+    def serialize_dt_file(self, dt: datetime) -> int:
+        """
+        Serializes the datetime object to a Unix timestamp.
+        """
+        return int(dt.timestamp() * 1000)
 
     def __str__(self):
         return self.file_name
@@ -745,29 +584,22 @@ class File(BaseModel):
 
 
 class FileChunk(BaseModel):
-    # schema = "FileChunkSchema"
+    id: Optional[str] = None
+    file_id: Optional[str]
+    offset: Optional[int]
+    data: Optional[str]
+    owner: Optional[File] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    status: Optional[str] = None
+    root_command_type: Optional[str] = None
 
-    def __init__(
-        self,
-        id=None,  # noqa # shadows built-in
-        file_id=None,
-        offset=None,
-        data=None,
-        owner=None,
-        created_at=None,
-        updated_at=None,
-        status=None,
-        root_command_type=None,
-    ):
-        self.id = id
-        self.file_id = file_id
-        self.offset = offset
-        self.data = data
-        self.owner = owner
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.status = status
-        self.root_command_type = root_command_type
+    @field_serializer("created_at", "updated_at")
+    def serialize_dt_file_chunk(self, dt: datetime) -> int:
+        """
+        Serializes the datetime object to a Unix timestamp.
+        """
+        return int(dt.timestamp() * 1000)
 
     def __str__(self):
         return self.data
@@ -777,56 +609,30 @@ class FileChunk(BaseModel):
 
 
 class FileStatus(BaseModel):
-    # schema = "FileStatusSchema"
-
-    def __init__(
-        self,
-        owner_id=None,
-        owner_type=None,
-        updated_at=None,
-        file_name=None,
-        file_size=None,
-        chunks=None,
-        chunk_size=None,
-        chunk_id=None,
-        file_id=None,
-        offset=None,
-        data=None,
-        valid=None,
-        missing_chunks=None,
-        expected_max_size=None,
-        size_ok=None,
-        expected_number_of_chunks=None,
-        number_of_chunks=None,
-        chunks_ok=None,
-        operation_complete=None,
-        message=None,
-        md5_sum=None,
-    ):
-        # Top-level file info
-        self.file_id = file_id
-        self.file_name = file_name
-        self.file_size = file_size
-        self.updated_at = updated_at
-        self.chunk_size = chunk_size
-        self.chunks = chunks
-        self.owner_id = owner_id
-        self.owner_type = owner_type
-        self.md5_sum = md5_sum
-        # Chunk info
-        self.chunk_id = chunk_id
-        self.offset = offset
-        self.data = data
-        # Validation metadata
-        self.valid = valid
-        self.missing_chunks = missing_chunks
-        self.expected_number_of_chunks = expected_number_of_chunks
-        self.expected_max_size = expected_max_size
-        self.number_of_chunks = number_of_chunks
-        self.size_ok = size_ok
-        self.chunks_ok = chunks_ok
-        self.operation_complete = operation_complete
-        self.message = message
+    # Top-level file info
+    file_id: Optional[str] = None
+    updated_at: Optional[str] = None
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    chunk_size: Optional[int] = None
+    chunks: Optional[dict] = None
+    owner_id: Optional[str] = None
+    owner_type: Optional[str] = None
+    md5_sum: Optional[str] = None
+    # Chunk info
+    chunk_id: Optional[str] = None
+    offset: Optional[int] = None
+    data: Optional[str] = None
+    # Validation metadata
+    valid: Optional[bool] = None
+    missing_chunks: Optional[list[int]] = None
+    expected_number_of_chunks: Optional[int] = None
+    expected_max_size: Optional[int] = None
+    number_of_chunks: Optional[int] = None
+    size_ok: Optional[bool] = None
+    chunks_ok: Optional[bool] = None
+    operation_complete: Optional[bool] = None
+    message: Optional[str] = None
 
     def __str__(self):
         return "%s" % self.__dict__
@@ -836,8 +642,6 @@ class FileStatus(BaseModel):
 
 
 class RequestTemplate(BaseModel):
-    # schema = "RequestTemplateSchema"
-
     system: Optional[str] = None
     system_version: Optional[str] = None
     instance_name: Optional[str] = None
@@ -847,7 +651,7 @@ class RequestTemplate(BaseModel):
     command_type: Optional[str] = None
     parameters: Optional[dict] = None
     comment: Optional[str] = None
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = {}
     output_type: Optional[str] = None
 
     TEMPLATE_FIELDS: ClassVar[list[str]] = [
@@ -864,45 +668,16 @@ class RequestTemplate(BaseModel):
         "output_type",
     ]
 
-    # TEMPLATE_FIELDS = [
-    #     "system",
-    #     "system_version",
-    #     "instance_name",
-    #     "namespace",
-    #     "command",
-    #     "command_display_name",
-    #     "command_type",
-    #     "parameters",
-    #     "comment",
-    #     "metadata",
-    #     "output_type",
-    # ]
-
-    # def __init__(
-    #     self,
-    #     system=None,
-    #     system_version=None,
-    #     instance_name=None,
-    #     namespace=None,
-    #     command=None,
-    #     command_display_name=None,
-    #     command_type=None,
-    #     parameters=None,
-    #     comment=None,
-    #     metadata=None,
-    #     output_type=None,
-    # ):
-    #     self.system = system
-    #     self.system_version = system_version
-    #     self.instance_name = instance_name
-    #     self.namespace = namespace
-    #     self.command = command
-    #     self.command_display_name = command_display_name or command
-    #     self.command_type = command_type
-    #     self.parameters = parameters
-    #     self.comment = comment
-    #     self.metadata = metadata or {}
-    #     self.output_type = output_type
+    @model_validator(mode="before")
+    @classmethod
+    def set_command_display_name(cls, data: dict) -> dict:
+        if isinstance(data, dict):
+            if (
+                data.get("command_display_name") is None
+                and data.get("command") is not None
+            ):
+                data["command_display_name"] = data["command"]
+        return data
 
     def __str__(self):
         return self.command
@@ -922,11 +697,10 @@ class RequestTemplate(BaseModel):
 
 
 class Request(RequestTemplate):
-    # schema = "RequestSchema"
     id: Optional[str] = None
     is_event: Optional[bool] = False
-    parent: Optional[Request | Mock] = None #Field(exclude_if=lambda v: v is None, default=None)
-    children: Optional[list[Request]] = None #Field(exclude_if=lambda v: v is None, default=None)
+    parent: Optional[Request | Mock] = None
+    children: Optional[list[Request]] = None
     output: Optional[str] = None
     hidden: Optional[bool] = None
     status: Optional[str] = None
@@ -940,16 +714,17 @@ class Request(RequestTemplate):
     target_garden: Optional[str] = None
     root_command_type: Optional[str] = None
 
-    @field_serializer('created_at', 'updated_at', 'status_updated_at', when_used='unless-none')
-    def serialize_dt10(self, dt: datetime) -> int:
+    @field_serializer(
+        "created_at", "updated_at", "status_updated_at", when_used="unless-none"
+    )
+    def serialize_dt_request(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
 
     class Config:
-        validate_by_name=True
-        arbitrary_types_allowed=True
+        arbitrary_types_allowed = True
 
     STATUS_LIST: ClassVar[list[str]] = [
         "CREATED",
@@ -960,84 +735,20 @@ class Request(RequestTemplate):
         "ERROR",
         "INVALID",
     ]
-    COMPLETED_STATUSES: ClassVar[list[str]] = ["CANCELED", "SUCCESS", "ERROR", "INVALID"]
+    COMPLETED_STATUSES: ClassVar[list[str]] = [
+        "CANCELED",
+        "SUCCESS",
+        "ERROR",
+        "INVALID",
+    ]
     COMMAND_TYPES: ClassVar[list[str]] = [
-        "ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP"
+        "ACTION",
+        "INFO",
+        "EPHEMERAL",
+        "ADMIN",
+        "TEMP",
     ]
     OUTPUT_TYPES: ClassVar[list[str]] = ["STRING", "JSON", "XML", "HTML", "JS", "CSS"]
-
-    # STATUS_LIST = (
-    #     "CREATED",
-    #     "RECEIVED",
-    #     "IN_PROGRESS",
-    #     "CANCELED",
-    #     "SUCCESS",
-    #     "ERROR",
-    #     "INVALID",
-    # )
-    # COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR", "INVALID")
-    # COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP")
-    # OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
-
-    # def __init__(
-    #     self,
-    #     system=None,
-    #     system_version=None,
-    #     instance_name=None,
-    #     namespace=None,
-    #     command=None,
-    #     command_display_name=None,
-    #     id=None,  # noqa # shadows built-in
-    #     is_event=None,
-    #     parent=None,
-    #     children=None,
-    #     parameters=None,
-    #     comment=None,
-    #     output=None,
-    #     output_type=None,
-    #     status=None,
-    #     command_type=None,
-    #     root_command_type=None,
-    #     created_at=None,
-    #     error_class=None,
-    #     metadata=None,
-    #     hidden=None,
-    #     updated_at=None,
-    #     status_updated_at=None,
-    #     has_parent=None,
-    #     requester=None,
-    #     source_garden=None,
-    #     target_garden=None,
-    # ):
-    #     super(Request, self).__init__(
-    #         system=system,
-    #         system_version=system_version,
-    #         instance_name=instance_name,
-    #         namespace=namespace,
-    #         command=command,
-    #         command_display_name=command_display_name,
-    #         command_type=command_type,
-    #         parameters=parameters,
-    #         comment=comment,
-    #         metadata=metadata,
-    #         output_type=output_type,
-    #     )
-    #     self.id = id
-    #     self.is_event = is_event or False
-    #     self.parent = parent
-    #     self.children = children
-    #     self.output = output
-    #     self._status = status
-    #     self.hidden = hidden
-    #     self.created_at = created_at
-    #     self.updated_at = updated_at
-    #     self.status_updated_at = status_updated_at
-    #     self.error_class = error_class
-    #     self.has_parent = has_parent
-    #     self.requester = requester
-    #     self.source_garden = source_garden
-    #     self.target_garden = target_garden
-    #     self.root_command_type = root_command_type
 
     @classmethod
     def from_template(cls, template, **kwargs):
@@ -1069,14 +780,6 @@ class Request(RequestTemplate):
                 self.namespace,
             )
         )
-
-    # @property
-    # def status(self):
-    #     return self.status
-
-    # @status.setter
-    # def status(self, value):
-    #     self.status = value
 
     @property
     def is_ephemeral(self):
@@ -1137,7 +840,6 @@ class Request(RequestTemplate):
 
 
 class System(BaseModel):
-    # schema = "SystemSchema"
     id: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
@@ -1145,57 +847,17 @@ class System(BaseModel):
     max_instances: Optional[int] = None
     icon_name: Optional[str] = None
     instances: Optional[list[Instance]] = []
-    commands: Optional[list[Command]] = None
+    commands: Optional[list[Command]] = []
     display_name: Optional[str] = None
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = {}
     namespace: Optional[str] = None
     local: Optional[bool] = None
     template: Optional[str] = None
-    groups: Optional[list[str]] = None
+    groups: Optional[list[str]] = []
     prefix_topic: Optional[str] = None
-    requires: Optional[list[str]] = None
+    requires: Optional[list[str]] = []
     requires_timeout: Optional[int] = None
     garden_name: Optional[str] = None
-
-    # def __init__(
-    #     self,
-    #     name=None,
-    #     description=None,
-    #     version=None,
-    #     id=None,  # noqa # shadows built-in
-    #     max_instances=None,
-    #     instances=None,
-    #     commands=None,
-    #     icon_name=None,
-    #     display_name=None,
-    #     metadata=None,
-    #     namespace=None,
-    #     local=None,
-    #     template=None,
-    #     groups=None,
-    #     prefix_topic=None,
-    #     requires=None,
-    #     requires_timeout=None,
-    #     garden_name=None,
-    # ):
-    #     self.name = name
-    #     self.description = description
-    #     self.version = version
-    #     self.id = id
-    #     self.max_instances = max_instances
-    #     self.instances = instances or []
-    #     self.commands = commands or []
-    #     self.icon_name = icon_name
-    #     self.display_name = display_name
-    #     self.metadata = metadata or {}
-    #     self.namespace = namespace
-    #     self.local = local
-    #     self.template = template
-    #     self.groups = groups or []
-    #     self.prefix_topic = prefix_topic
-    #     self.requires = requires or []
-    #     self.requires_timeout = requires_timeout
-    #     self.garden_name = garden_name
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
@@ -1361,15 +1023,9 @@ class System(BaseModel):
 
 
 class PatchOperation(BaseModel):
-    # schema = "PatchSchema"
     operation: Optional[str] = None
     path: Optional[str] = None
     value: Optional[Any] = None
-
-    # def __init__(self, operation=None, path=None, value=None):
-    #     self.operation = operation
-    #     self.path = path
-    #     self.value = value
 
     def __str__(self):
         return "%s, %s, %s" % (self.operation, self.path, self.value)
@@ -1381,69 +1037,23 @@ class PatchOperation(BaseModel):
             self.value,
         )
 
-    # def unwrap_envelope(self, data, many, **_):
-    #     """Helper function for parsing the different patch formats.
-
-    #     This exists because previously multiple patches serialized like::
-
-    #         {
-    #             "operations": [
-    #                 {"operation": "replace", ...},
-    #                 {"operation": "replace", ...}
-    #                 ...
-    #             ]
-    #         }
-
-    #     But we also wanted to be able to handle a simple list::
-
-    #         [
-    #             {"operation": "replace", ...},
-    #             {"operation": "replace", ...}
-    #             ...
-    #         ]
-
-    #     Patches are now (as of v3) serialized as the latter. Prior to v3 they were
-    #     serialized as the former.
-    #     """
-    #     if isinstance(data, list):
-    #         return data
-    #     elif "operations" in data:
-    #         return data["operations"]
-    #     else:
-    #         return [data]
-
 
 class LoggingConfig(BaseModel):
-    # schema = "LoggingConfigSchema"
-    level: str = None
-    formatters: dict = None
-    handlers: dict = None
-    _loggers: dict = {}
+    level: Optional[str] = None
+    formatters: Optional[dict] = None
+    handlers: Optional[dict] = None
+    _loggers: Optional[dict] = {}
 
     LEVELS: ClassVar[set[str]] = {"DEBUG", "INFO", "WARN", "ERROR"}
     SUPPORTED_HANDLERS: ClassVar[set[str]] = {"stdout", "file", "logstash"}
-    DEFAULT_FORMAT: ClassVar[str] = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    DEFAULT_FORMAT: ClassVar[str] = (
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     DEFAULT_HANDLER: ClassVar[dict] = {
         "class": "logging.StreamHandler",
         "stream": "ext::/sys.stdout",
         "formatter": "default",
     }
-
-    # LEVELS = ("DEBUG", "INFO", "WARN", "ERROR")
-    # SUPPORTED_HANDLERS = ("stdout", "file", "logstash")
-
-    # DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    # DEFAULT_HANDLER = {
-    #     "class": "logging.StreamHandler",
-    #     "stream": "ext::/sys.stdout",
-    #     "formatter": "default",
-    # }
-
-    # def __init__(self, level=None, handlers=None, formatters=None, loggers=None):
-    #     self.level = level
-    #     self.handlers = handlers
-    #     self.formatters = formatters
-    #     self._loggers = loggers or {}
 
     @property
     def handler_names(self):
@@ -1530,48 +1140,24 @@ class LoggingConfig(BaseModel):
 
 
 class Event(BaseModel):
-    # schema = "EventSchema"
     name: Optional[str] = None
     namespace: Optional[str] = None
     garden: Optional[str] = None
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = {}
     timestamp: Optional[datetime] = None
 
     payload_type: Optional[str] = None
     payload: Optional[Request] = None
-    # payload = ModelField(allow_none=True, type_field="payload_type")
 
     error: Optional[bool] = None
     error_message: Optional[str] = None
 
-    @field_serializer('timestamp', when_used='unless-none')
-    def serialize_dt1(self, dt: datetime) -> int:
+    @field_serializer("timestamp", when_used="unless-none")
+    def serialize_dt_event(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
-
-    # def __init__(
-    #     self,
-    #     name=None,
-    #     namespace=None,
-    #     garden=None,
-    #     metadata=None,
-    #     timestamp=None,
-    #     payload_type=None,
-    #     payload=None,
-    #     error=None,
-    #     error_message=None,
-    # ):
-    #     self.name = name
-    #     self.namespace = namespace
-    #     self.garden = garden
-    #     self.metadata = metadata or {}
-    #     self.timestamp = timestamp
-    #     self.payload_type = payload_type
-    #     self.payload = payload
-    #     self.error = error
-    #     self.error_message = error_message
 
     def __str__(self):
         return "%s: %s" % (self.namespace, self.name)
@@ -1595,32 +1181,13 @@ class Event(BaseModel):
 
 
 class Queue(BaseModel):
-    # schema = "QueueSchema"
-    name: str = None
-    system: str = None
-    version: str = None
-    instance: str = None
-    system_id: str = None
-    display: str = None
-    size: int = None
-
-    # def __init__(
-    #     self,
-    #     name=None,
-    #     system=None,
-    #     version=None,
-    #     instance=None,
-    #     system_id=None,
-    #     display=None,
-    #     size=None,
-    # ):
-    #     self.name = name
-    #     self.system = system
-    #     self.version = version
-    #     self.instance = instance
-    #     self.system_id = system_id
-    #     self.display = display
-    #     self.size = size
+    name: Optional[str] = None
+    system: Optional[str] = None
+    version: Optional[str] = None
+    instance: Optional[str] = None
+    system_id: Optional[str] = None
+    display: Optional[str] = None
+    size: Optional[int] = None
 
     def __str__(self):
         return "%s: %s" % (self.name, self.size)
@@ -1630,33 +1197,18 @@ class Queue(BaseModel):
 
 
 class UserToken(BaseModel):
-    # schema = "UserTokenSchema"
-    id: str = None
-    uuid: str = None
-    issued_at: datetime = None
-    expires_at: datetime = None
-    username: str = None
+    id: Optional[str] = None
+    uuid: Optional[str] = None
+    issued_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    username: Optional[str] = None
 
-    @field_serializer('issued_at', 'expires_at')
-    def serialize_dt2(self, dt: datetime) -> int:
+    @field_serializer("issued_at", "expires_at")
+    def serialize_dt_user_token(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
-
-    # def __init__(
-    #     self,
-    #     id=None,  # noqa # shadows built-in
-    #     uuid=None,
-    #     issued_at=None,
-    #     expires_at=None,
-    #     username=None,
-    # ):
-    #     self.id = id
-    #     self.uuid = uuid
-    #     self.issued_at = issued_at
-    #     self.expires_at = expires_at
-    #     self.username = username
 
     def __str__(self):
         return "%s" % self.username
@@ -1671,8 +1223,8 @@ class UserToken(BaseModel):
 
 
 class Job(BaseModel):
-    id: str = None
-    name: str = None
+    id: Optional[str] = None
+    name: Optional[str] = None
     trigger_type: Optional[Literal["interval", "date", "cron", "file"]] = None
     # trigger = ModelField(
     #     type_field="trigger_type",
@@ -1692,50 +1244,13 @@ class Job(BaseModel):
     max_instances: Optional[int] = None
     timeout: Optional[int] = None
 
-    # TRIGGER_TYPES = {"interval", "date", "cron", "file"}
-    # STATUS_TYPES = {"RUNNING", "PAUSED"}
-    # schema = "JobSchema"
     TRIGGER_TYPES: ClassVar[set] = {"interval", "date", "cron", "file"}
     STATUS_TYPES: ClassVar[set] = {"RUNNING", "PAUSED"}
 
-    # def __init__(
-    #     self,
-    #     id=None,  # noqa # shadows built-in
-    #     name=None,
-    #     trigger_type=None,
-    #     trigger=None,
-    #     request_template=None,
-    #     misfire_grace_time=None,
-    #     coalesce=None,
-    #     next_run_time=None,
-    #     success_count=None,
-    #     error_count=None,
-    #     canceled_count=None,
-    #     skip_count=None,
-    #     status=None,
-    #     max_instances=None,
-    #     timeout=None,
-    # ):
-    #     self.id = id
-    #     self.name = name
-    #     self.trigger_type = trigger_type
-    #     self.trigger = trigger
-    #     self.request_template = request_template
-    #     self.misfire_grace_time = misfire_grace_time
-    #     self.coalesce = coalesce
-    #     self.next_run_time = next_run_time
-    #     self.success_count = success_count
-    #     self.error_count = error_count
-    #     self.canceled_count = canceled_count
-    #     self.skip_count = skip_count
-    #     self.status = status
-    #     self.max_instances = max_instances
-    #     self.timeout = timeout
-
-    @field_serializer('next_run_time')
-    def serialize_dt3(self, dt: datetime) -> int:
+    @field_serializer("next_run_time")
+    def serialize_dt_job(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
 
@@ -1747,18 +1262,13 @@ class Job(BaseModel):
 
 
 class DateTrigger(BaseModel):
-    # schema = "DateTriggerSchema"
-    run_date: datetime = None
-    timezone: str = None
+    run_date: Optional[datetime] = None
+    timezone: Optional[str] = "UTC"
 
-    # def __init__(self, run_date=None, timezone="UTC"):
-    #     self.run_date = run_date
-    #     self.timezone = timezone
-
-    @field_serializer('run_date')
-    def serialize_dt4(self, dt: datetime) -> int:
+    @field_serializer("run_date")
+    def serialize_dt_date_trigger(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
 
@@ -1781,48 +1291,23 @@ class DateTrigger(BaseModel):
 
 
 class IntervalTrigger(BaseModel):
-    # schema = "IntervalTriggerSchema"
-    weeks: int = None
-    days: int = None
-    hours: int = None
-    minutes: int = None
-    seconds: int = None
-    start_date: datetime = None
-    end_date: datetime = None
-    timezone: str = None
-    jitter: int = None
-    reschedule_on_finish: bool = None
+    weeks: Optional[int] = None
+    days: Optional[int] = None
+    hours: Optional[int] = None
+    minutes: Optional[int] = None
+    seconds: Optional[int] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    timezone: Optional[str] = "UTC"
+    jitter: Optional[int] = None
+    reschedule_on_finish: Optional[bool] = None
 
-    @field_serializer('start_date', 'end_date')
-    def serialize_dt5(self, dt: datetime) -> int:
+    @field_serializer("start_date", "end_date")
+    def serialize_dt_interval_trigger(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
-
-    # def __init__(
-    #     self,
-    #     weeks=None,
-    #     days=None,
-    #     hours=None,
-    #     minutes=None,
-    #     seconds=None,
-    #     start_date=None,
-    #     end_date=None,
-    #     timezone="UTC",
-    #     jitter=None,
-    #     reschedule_on_finish=None,
-    # ):
-    #     self.weeks = weeks
-    #     self.days = days
-    #     self.hours = hours
-    #     self.minutes = minutes
-    #     self.seconds = seconds
-    #     self.start_date = start_date
-    #     self.end_date = end_date
-    #     self.timezone = timezone
-    #     self.jitter = jitter
-    #     self.reschedule_on_finish = reschedule_on_finish
 
     def __str__(self):
         return repr(self)
@@ -1868,54 +1353,25 @@ class IntervalTrigger(BaseModel):
 
 
 class CronTrigger(BaseModel):
-    # schema = "CronTriggerSchema"
-    year: str = None
-    month: str = None
-    day: str = None
-    week: str = None
-    day_of_week: str = None
-    hour: str = None
-    minute: str = None
-    second: str = None
-    start_date: datetime = None
-    end_date: datetime = None
-    timezone: str = None
-    jitter: int = None
+    year: Optional[str] = None
+    month: Optional[str] = None
+    day: Optional[str] = None
+    week: Optional[str] = None
+    day_of_week: Optional[str] = None
+    hour: Optional[str] = None
+    minute: Optional[str] = None
+    second: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    timezone: Optional[str] = "UTC"
+    jitter: Optional[int] = None
 
-    @field_serializer('start_date', 'end_date')
-    def serialize_dt6(self, dt: datetime) -> int:
+    @field_serializer("start_date", "end_date")
+    def serialize_dt_cron_trigger(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
-
-    # def __init__(
-    #     self,
-    #     year=None,
-    #     month=None,
-    #     day=None,
-    #     week=None,
-    #     day_of_week=None,
-    #     hour=None,
-    #     minute=None,
-    #     second=None,
-    #     start_date=None,
-    #     end_date=None,
-    #     timezone="UTC",
-    #     jitter=None,
-    # ):
-    #     self.year = year
-    #     self.month = month
-    #     self.day = day
-    #     self.week = week
-    #     self.day_of_week = day_of_week
-    #     self.hour = hour
-    #     self.minute = minute
-    #     self.second = second
-    #     self.start_date = start_date
-    #     self.end_date = end_date
-    #     self.timezone = timezone
-    #     self.jitter = jitter
 
     def __str__(self):
         return repr(self)
@@ -1965,32 +1421,13 @@ class CronTrigger(BaseModel):
 
 
 class FileTrigger(BaseModel):
-    # schema = "FileTriggerSchema"
-    pattern: str = None
-    path: str = None
-    recursive: bool = None
-    create: bool = None
-    modify: bool = None
-    move: bool = None
-    delete: bool = None
-
-    # def __init__(
-    #     self,
-    #     pattern=None,
-    #     path=None,
-    #     recursive=None,
-    #     create=None,
-    #     modify=None,
-    #     move=None,
-    #     delete=None,
-    # ):
-    #     self.pattern = pattern
-    #     self.path = path
-    #     self.recursive = recursive
-    #     self.create = create
-    #     self.modify = modify
-    #     self.move = move
-    #     self.delete = delete
+    pattern: Optional[str] = None
+    path: Optional[str] = None
+    recursive: Optional[bool] = None
+    create: Optional[bool] = None
+    modify: Optional[bool] = None
+    move: Optional[bool] = None
+    delete: Optional[bool] = None
 
     def __str__(self):
         return repr(self)
@@ -2032,7 +1469,6 @@ class FileTrigger(BaseModel):
 
 
 class Connection(BaseModel):
-    # schema = "ConnectionSchema"
     api: Optional[str] = None
     status: Optional[str] = None
     status_info: Optional[StatusInfo] = StatusInfo()
@@ -2050,18 +1486,6 @@ class Connection(BaseModel):
         "ERROR",  # Error occured, outside of unreachable
         "UNKNOWN",
     ]
-
-    # def __init__(
-    #     self,
-    #     api=None,
-    #     status=None,
-    #     status_info=None,
-    #     config=None,
-    # ):
-    #     self.api = api
-    #     self.status = status
-    #     self.status_info = status_info if status_info else StatusInfo()
-    #     self.config = config or {}
 
     def __str__(self):
         return "%s %s" % (self.api, self.status)
@@ -2084,58 +1508,21 @@ class Connection(BaseModel):
 
 
 class Garden(BaseModel):
-    # schema = "GardenSchema"
     id: Optional[str] = None
     name: Optional[str] = None
     connection_type: Optional[str] = None
-    receiving_connections: Optional[list[Connection]] = None
-    publishing_connections: Optional[list[Connection]] = None
-    systems: Optional[list[System]] = None
+    receiving_connections: Optional[list[Connection]] = []
+    publishing_connections: Optional[list[Connection]] = []
+    systems: Optional[list[System]] = []
     has_parent: Optional[bool] = None
     parent: Optional[str]
     # TODO: Figure out why we had parent excluded in:
     # fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
     children: Optional[list[Garden]] = None
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = {}
     default_user: Optional[str] = None
     shared_users: Optional[bool] = None
-    version: Optional[str] = None
-
-    # def __init__(
-    #     self,
-    #     id=None,  # noqa # shadows built-in
-    #     name=None,
-    #     systems=None,
-    #     connection_type=None,
-    #     receiving_connections=None,
-    #     publishing_connections=None,
-    #     has_parent=None,
-    #     parent=None,
-    #     children=None,
-    #     metadata=None,
-    #     default_user=None,
-    #     shared_users=None,
-    #     version=None,
-    # ):
-    #     self.id = id
-    #     self.name = name
-    #     self.systems = systems or []
-
-    #     self.connection_type = connection_type
-    #     self.receiving_connections = receiving_connections or []
-    #     self.publishing_connections = publishing_connections or []
-
-    #     self.has_parent = has_parent
-    #     self.parent = parent
-    #     self.children = children
-    #     self.metadata = metadata or {}
-
-    #     self.default_user = default_user
-    #     self.shared_users = shared_users
-
-    #     self.version = version
-    #     if self.version is None:
-    #         self.version = "UNKNOWN"
+    version: Optional[str] = "UNKNOWN"
 
     def __str__(self):
         return "%s" % self.name
@@ -2207,39 +1594,18 @@ class Garden(BaseModel):
 
 
 class Operation(BaseModel):
-    # schema = "OperationSchema"
     model_type: Optional[str] = None
     model: Optional[Request] = None
-    #model = ModelField(allow_none=True, type_field="model_type")
+    # model = ModelField(allow_none=True, type_field="model_type")
 
-    args: Optional[list[str]] = None
-    kwargs: Optional[dict] = None
+    args: Optional[list[str]] = []
+    kwargs: Optional[dict] = {}
 
     target_garden_name: Optional[str] = None
     source_garden_name: Optional[str] = None
     source_api: Optional[str] = None
 
     operation_type: Optional[str] = None
-
-    # def __init__(
-    #     self,
-    #     model=None,
-    #     model_type=None,
-    #     args=None,
-    #     kwargs=None,
-    #     target_garden_name=None,
-    #     source_garden_name=None,
-    #     source_api=None,
-    #     operation_type=None,
-    # ):
-    #     self.model = model
-    #     self.model_type = model_type
-    #     self.args = args or []
-    #     self.kwargs = kwargs or {}
-    #     self.target_garden_name = target_garden_name
-    #     self.source_garden_name = source_garden_name
-    #     self.source_api = source_api
-    #     self.operation_type = operation_type
 
     def __str__(self):
         return "%s" % self.operation_type
@@ -2261,7 +1627,6 @@ class Operation(BaseModel):
 
 
 class Runner(BaseModel):
-    # schema = "RunnerSchema"
     id: Optional[str] = None
     name: Optional[str] = None
     path: Optional[str] = None
@@ -2269,24 +1634,6 @@ class Runner(BaseModel):
     stopped: Optional[bool] = None
     dead: Optional[bool] = None
     restart: Optional[bool] = None
-
-    # def __init__(
-    #     self,
-    #     id=None,  # noqa # shadows built-in
-    #     name=None,
-    #     path=None,
-    #     instance_id=None,
-    #     stopped=None,
-    #     dead=None,
-    #     restart=None,
-    # ):
-    #     self.id = id
-    #     self.name = name
-    #     self.path = path
-    #     self.instance_id = instance_id
-    #     self.stopped = stopped
-    #     self.dead = dead
-    #     self.restart = restart
 
     def __str__(self):
         return "%s" % self.name
@@ -2308,26 +1655,13 @@ class Runner(BaseModel):
 
 
 class Resolvable(BaseModel):
-    # schema = "ResolvableSchema"
     id: Optional[str] = None
     type: Optional[str] = None
     storage: Optional[str] = None
-    details: Optional[dict] = None
+    details: Optional[dict] = {}
 
     # Resolvable parameter types
     TYPES: ClassVar[str] = ("Base64", "Bytes")
-
-    # def __init__(
-    #     self,
-    #     id=None,  # noqa # shadows built-in
-    #     type=None,  # noqa # shadows built-in
-    #     storage=None,
-    #     details=None,
-    # ):
-    #     self.id = id
-    #     self.type = type
-    #     self.storage = storage
-    #     self.details = details or {}
 
     def __str__(self):
         return "%s: %s %s" % (self.id, self.type, self.storage)
@@ -2342,7 +1676,6 @@ class Resolvable(BaseModel):
 
 
 class User(BaseModel):
-    # schema = "UserSchema"
     id: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
@@ -2354,32 +1687,6 @@ class User(BaseModel):
     metadata: Optional[dict] = {}
     protected: Optional[bool] = None
     file_generated: Optional[bool] = None
-
-    # def __init__(
-    #     self,
-    #     username=None,
-    #     id=None,
-    #     password=None,
-    #     roles=None,
-    #     local_roles=None,
-    #     upstream_roles=None,
-    #     user_alias_mapping=None,
-    #     metadata=None,
-    #     is_remote=False,
-    #     protected=False,
-    #     file_generated=False,
-    # ):
-    #     self.username = username
-    #     self.id = id
-    #     self.password = password
-    #     self.roles = roles or []
-    #     self.local_roles = local_roles or []
-    #     self.upstream_roles = upstream_roles or []
-    #     self.is_remote = is_remote
-    #     self.user_alias_mapping = user_alias_mapping or []
-    #     self.metadata = metadata or {}
-    #     self.protected = protected
-    #     self.file_generated = file_generated
 
     def __str__(self):
         return "%s: %s" % (self.username, self.roles)
@@ -2418,44 +1725,16 @@ class Role(BaseModel):
     scope_instances: Optional[list[str]] = []
     scope_versions: Optional[list[str]] = []
     scope_commands: Optional[list[str]] = []
-    protected: Optional[bool] = None
-    file_generated: Optional[bool] = None
+    protected: Optional[bool] = False
+    file_generated: Optional[bool] = False
 
     # TODO: REMOVE after DB model Updated with Permissions enum
     PERMISSION_TYPES: ClassVar[set[str]] = {
         "GARDEN_ADMIN",
         "PLUGIN_ADMIN",
         "OPERATOR",
-        "READ_ONLY",  # Default value if not role is provided
+        "READ_ONLY",  # Default value if no role is provided
     }
-
-    # def __init__(
-    #     self,
-    #     name,
-    #     permission=None,
-    #     description=None,
-    #     id=None,
-    #     scope_gardens=None,
-    #     scope_namespaces=None,
-    #     scope_systems=None,
-    #     scope_instances=None,
-    #     scope_versions=None,
-    #     scope_commands=None,
-    #     protected=False,
-    #     file_generated=False,
-    # ):
-    #     self.name = name
-    #     self.permission = permission or Permissions.READ_ONLY.name
-    #     self.description = description
-    #     self.id = id
-    #     self.scope_gardens = scope_gardens or []
-    #     self.scope_namespaces = scope_namespaces or []
-    #     self.scope_systems = scope_systems or []
-    #     self.scope_instances = scope_instances or []
-    #     self.scope_versions = scope_versions or []
-    #     self.scope_commands = scope_commands or []
-    #     self.protected = protected
-    #     self.file_generated = file_generated
 
     def __str__(self):
         return "%s" % (self.name)
@@ -2497,50 +1776,23 @@ class Role(BaseModel):
 
 
 class UpstreamRole(Role):
-    # schema = "UpstreamRoleSchema"
     pass
 
 
 class AliasUserMap(BaseModel):
-    # schema = "AliasUserMapSchema"
     target_garden: str
     username: str
 
-    # def __init__(self, target_garden, username):
-    #     self.target_garden = target_garden
-    #     self.username = username
-
 
 class Subscriber(BaseModel):
-    # schema = "SubscriberSchema"
     garden: Optional[str] = None
     namespace: Optional[str] = None
     system: Optional[str] = None
     version: Optional[str] = None
     instance: Optional[str] = None
     command: Optional[str] = None
-    subscriber_type: Optional[str] = None
-    consumer_count: Optional[int] = None
-
-    # def __init__(
-    #     self,
-    #     garden=None,
-    #     namespace=None,
-    #     system=None,
-    #     version=None,
-    #     instance=None,
-    #     command=None,
-    #     subscriber_type=None,
-    #     consumer_count=0,
-    # ):
-    #     self.garden = garden
-    #     self.namespace = namespace
-    #     self.system = system
-    #     self.version = version
-    #     self.instance = instance
-    #     self.command = command
-    #     self.subscriber_type = subscriber_type or "DYNAMIC"
-    #     self.consumer_count = consumer_count
+    subscriber_type: Optional[str] = "DYNAMIC"
+    consumer_count: Optional[int] = 0
 
     def __str__(self):
         return "%s" % self.__dict__
@@ -2578,19 +1830,10 @@ class Subscriber(BaseModel):
 
 
 class Topic(BaseModel):
-    # schema = "TopicSchema"
     id: Optional[str] = None
     name: Optional[str] = None
-    subscribers: Optional[list[Subscriber]] = None
-    publisher_count: Optional[int] = None
-
-    # def __init__(
-    #     self, id=None, name=None, subscribers=None, publisher_count=0
-    # ):  # noqa # shadows built-in
-    #     self.id = id
-    #     self.name = name
-    #     self.subscribers = subscribers or []
-    #     self.publisher_count = publisher_count
+    subscribers: Optional[list[Subscriber]] = []
+    publisher_count: Optional[int] = 0
 
     def __str__(self):
         return "%s: %s" % (self.name, [str(s) for s in self.subscribers])
@@ -2604,20 +1847,14 @@ class Topic(BaseModel):
 
 
 class Replication(BaseModel):
-    # schema = "ReplicationSchema"
     id: Optional[str] = None
     replication_id: Optional[str] = None
     expires_at: Optional[datetime] = None
 
-    # def __init__(self, id=None, replication_id=None, expires_at=None):
-    #     self.id = id
-    #     self.replication_id = replication_id
-    #     self.expires_at = expires_at
-
-    @field_serializer('expires_at')
-    def serialize_dt7(self, dt: datetime) -> int:
+    @field_serializer("expires_at")
+    def serialize_dt_replication(self, dt: datetime) -> int:
         """
-        Serializes the datetime object to a Unix timestamp (float or int).
+        Serializes the datetime object to a Unix timestamp.
         """
         return int(dt.timestamp() * 1000)
 

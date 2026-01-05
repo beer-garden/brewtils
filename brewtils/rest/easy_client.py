@@ -414,29 +414,41 @@ class EasyClient(object):
             commands = SchemaParser.serialize_command(
                 new_commands, to_string=False, many=True
             )
-            operations.append(PatchOperation(operation="replace", path="/commands", value=commands))
+            operations.append(
+                PatchOperation(operation="replace", path="/commands", value=commands)
+            )
 
         add_instance = kwargs.pop("add_instance", None)
         if add_instance:
             instance = SchemaParser.serialize_instance(add_instance, to_string=False)
-            operations.append(PatchOperation(operation="add", path="/instance", value=instance))
+            operations.append(
+                PatchOperation(operation="add", path="/instance", value=instance)
+            )
 
         metadata = kwargs.pop("metadata", {})
         if metadata:
-            operations.append(PatchOperation(operation="update", path="/metadata", value=metadata))
+            operations.append(
+                PatchOperation(operation="update", path="/metadata", value=metadata)
+            )
 
         groups = kwargs.pop("groups", [])
         if groups:
-            operations.append(PatchOperation(operation="replace", path="/groups", value=groups))
+            operations.append(
+                PatchOperation(operation="replace", path="/groups", value=groups)
+            )
 
         requires = kwargs.pop("requires", [])
         if requires:
-            operations.append(PatchOperation(operation="replace", path="/requires", value=requires))
+            operations.append(
+                PatchOperation(operation="replace", path="/requires", value=requires)
+            )
 
         # The remaining kwargs are all strings
         # Sending an empty string (instead of None) ensures they're actually cleared
         for key, value in kwargs.items():
-            operations.append(PatchOperation(operation="replace", path="/%s" % key, value=value or ""))
+            operations.append(
+                PatchOperation(operation="replace", path="/%s" % key, value=value or "")
+            )
 
         return self.client.patch_system(
             system_id, SchemaParser.serialize_patch(operations, many=True)
@@ -520,10 +532,14 @@ class EasyClient(object):
         metadata = kwargs.pop("metadata", {})
 
         if new_status:
-            operations.append(PatchOperation(operation="replace", path="/status", value=new_status))
+            operations.append(
+                PatchOperation(operation="replace", path="/status", value=new_status)
+            )
 
         if metadata:
-            operations.append(PatchOperation(operation="update", path="/metadata", value=metadata))
+            operations.append(
+                PatchOperation(operation="update", path="/metadata", value=metadata)
+            )
 
         return self.client.patch_instance(
             instance_id, SchemaParser.serialize_patch(operations, many=True)
@@ -584,7 +600,8 @@ class EasyClient(object):
 
         """
         return self.client.patch_instance(
-            instance_id, SchemaParser.serialize_patch(PatchOperation(operation="heartbeat"))
+            instance_id,
+            SchemaParser.serialize_patch(PatchOperation(operation="heartbeat")),
         )
 
     @wrap_response(return_boolean=True, default_exc=DeleteError)
@@ -707,11 +724,19 @@ class EasyClient(object):
         operations = []
 
         if status:
-            operations.append(PatchOperation(operation="replace", path="/status", value=status))
+            operations.append(
+                PatchOperation(operation="replace", path="/status", value=status)
+            )
         if output:
-            operations.append(PatchOperation(operation="replace", path="/output", value=output))
+            operations.append(
+                PatchOperation(operation="replace", path="/output", value=output)
+            )
         if error_class:
-            operations.append(PatchOperation(operation="replace", path="/error_class", value=error_class))
+            operations.append(
+                PatchOperation(
+                    operation="replace", path="/error_class", value=error_class
+                )
+            )
 
         return self.client.patch_request(
             request_id, SchemaParser.serialize_patch(operations, many=True)
@@ -885,7 +910,9 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        return self._patch_job(job_id, [PatchOperation(operation="update", path="/status", value="PAUSED")])
+        return self._patch_job(
+            job_id, [PatchOperation(operation="update", path="/status", value="PAUSED")]
+        )
 
     def resume_job(self, job_id):
         """Resume a Job
@@ -897,7 +924,10 @@ class EasyClient(object):
             Job: The updated Job
 
         """
-        return self._patch_job(job_id, [PatchOperation(operation="update", path="/status", value="RUNNING")])
+        return self._patch_job(
+            job_id,
+            [PatchOperation(operation="update", path="/status", value="RUNNING")],
+        )
 
     def execute_job(self, job_id, reset_interval=False):
         """Execute a Job

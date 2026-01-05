@@ -206,9 +206,14 @@ class SchemaParser(object):
         if isinstance(patch, list):
             all_ops = []
             for p in patch:
-                all_ops.extend(cls.parse(
-                    p, brewtils.models.PatchOperation, from_string=from_string, **kwargs
-                ))
+                all_ops.extend(
+                    cls.parse(
+                        p,
+                        brewtils.models.PatchOperation,
+                        from_string=from_string,
+                        **kwargs,
+                    )
+                )
             return all_ops
 
         return cls.parse(
@@ -564,23 +569,27 @@ class SchemaParser(object):
                 )
             kwargs["many"] = True
 
-        #schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
+        # schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
 
         # with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
         #     return schema.loads(data) if from_string else schema.load(data)
         if isinstance(data, list):
             all_obj = []
             for p in data:
-                all_obj.append(cls.parse(
-                    p, model_class, from_string=from_string, **kwargs
-                ))
+                all_obj.append(
+                    cls.parse(p, model_class, from_string=from_string, **kwargs)
+                )
             return all_obj
 
-        results = model_class.model_validate_json(data) if from_string else model_class.model_validate(data)
+        results = (
+            model_class.model_validate_json(data)
+            if from_string
+            else model_class.model_validate(data)
+        )
 
         if model_class == brewtils.models.PatchOperation and kwargs.get("many", True):
             return [results]
-        
+
         return results
 
     # Serialization methods
@@ -956,7 +965,7 @@ class SchemaParser(object):
         Returns:
             Serialized representation of the Job
         """
-        kwargs['exclude'] = [
+        kwargs["exclude"] = [
             "next_run_time",
             "success_count",
             "error_count",
@@ -1182,18 +1191,22 @@ class SchemaParser(object):
             A serialized model representation
 
         """
-        #schema_name = schema_name or cls._get_schema_name(model)
+        # schema_name = schema_name or cls._get_schema_name(model)
 
         if cls._single_item(model):
             kwargs["many"] = False
 
-            #schema = getattr(brewtils.schemas, schema_name)(**kwargs)
+            # schema = getattr(brewtils.schemas, schema_name)(**kwargs)
 
             if isinstance(model, dict):
                 return json.dumps(model) if to_string else model
 
             # return schema.dumps(model) if to_string else schema.dump(model)
-            return model.model_dump_json(exclude=kwargs.get("exclude", None)) if to_string else model.model_dump(exclude=kwargs.get("exclude", None))
+            return (
+                model.model_dump_json(exclude=kwargs.get("exclude", None))
+                if to_string
+                else model.model_dump(exclude=kwargs.get("exclude", None))
+            )
 
         # Explicitly force to_string to False so only original call returns a string
         multiple = [

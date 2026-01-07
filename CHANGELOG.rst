@@ -1,9 +1,9 @@
 Brewtils Changelog
 ==================
 
-TBD
+3.31.1
 ------
-TBD
+1/7/26
 
 - Updated set heartbeat to use timezone aware datetime (#578)
 

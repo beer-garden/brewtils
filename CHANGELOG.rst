@@ -5,7 +5,7 @@ TBD
 ------
 TBD
 
-- Updated set heartbeat to use timezone aware datetime (#)
+- Updated set heartbeat to use timezone aware datetime (#578)
 
 3.31.0
 ------

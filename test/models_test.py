@@ -825,6 +825,11 @@ class TestTopic:
 
 class TestStatusInfo:
 
+    def test_set_status_heartbeat_has_tz(self):
+        status_info = StatusInfo()
+        status_info.set_status_heartbeat("RUNNING")
+        assert status_info.history[0].heartbeat.tzinfo is not None
+
     def test_max_history(self):
         status_info = StatusInfo()
 

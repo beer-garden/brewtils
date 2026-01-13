@@ -683,7 +683,7 @@ def _initialize_command(method):
     try:
         base_dir = os.path.dirname(inspect.getfile(method))
 
-        cmd.schema = resolve_schema(cmd.model_json_schema(), base_dir=base_dir)
+        cmd.schema = resolve_schema(cmd.schema, base_dir=base_dir)
         cmd.form = resolve_form(cmd.form, base_dir=base_dir)
         cmd.template = resolve_template(cmd.template, base_dir=base_dir)
     except PluginParamError as ex:

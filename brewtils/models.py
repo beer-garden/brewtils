@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from zoneinfo import ZoneInfo
 from mock import Mock
+from bson.objectid import ObjectId
 
 from brewtils.errors import ModelError, _deprecate
 
@@ -135,7 +136,7 @@ class Command(BaseModel):
     parameters: Optional[list[Parameter]] = []
     command_type: Optional[str] = None
     output_type: Optional[str] = None
-    schema: Optional[dict] = None
+    schema_: Optional[dict] = Field(alias="schema", default=None)
     form: Optional[dict] = None
     template: Optional[str] = None
     icon_name: Optional[str] = None
@@ -154,6 +155,10 @@ class Command(BaseModel):
     ]
     OUTPUT_TYPES: ClassVar[list[str]] = ["STRING", "JSON", "XML", "HTML", "JS", "CSS"]
 
+    class Config:
+        validate_by_alias = True
+        serialize_by_alias = True
+
     @field_validator("parameters", "tags", "topics", mode="before")
     @classmethod
     def none_to_empty_list(cls, v: object) -> object:
@@ -167,6 +172,14 @@ class Command(BaseModel):
         if v is None:
             return {}
         return v
+
+    @property
+    def schema(self):
+        return self.schema_
+
+    @schema.setter
+    def schema(self, value):
+        self.schema_ = value
 
     def __str__(self):
         return self.name
@@ -239,7 +252,7 @@ class Command(BaseModel):
 
 
 class Instance(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     name: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
@@ -262,6 +275,24 @@ class Instance(BaseModel):
         "AWAITING_SYSTEM",
         "ERROR",
     ]
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_instance(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_instance(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     @field_validator("status")
     @classmethod
@@ -321,7 +352,7 @@ class Parameter(BaseModel):
     optional: Optional[bool] = None
     default: Optional[Any] = None
     description: Optional[str] = None
-    choices: Optional[Choices] = None
+    choices: Optional[Choices | list] = None
     parameters: Optional[list[Parameter | Any]] = []
     nullable: Optional[bool] = None
     maximum: Optional[int] = None
@@ -452,7 +483,7 @@ class StatusHistory(BaseModel):
     heartbeat: Optional[datetime] = None
     status: Optional[str] = None
 
-    @field_serializer("heartbeat")
+    @field_serializer("heartbeat", when_used="unless-none")
     def serialize_dt_status_history(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -489,7 +520,7 @@ class StatusInfo(BaseModel):
     heartbeat: datetime = None
     history: list[StatusHistory] = []
 
-    @field_serializer("heartbeat")
+    @field_serializer("heartbeat", when_used="unless-none")
     def serialize_dt_status_info(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -565,7 +596,7 @@ class File(BaseModel):
     status: Optional[str] = None
     root_command_type: Optional[str] = None
 
-    @field_serializer("created_at", "updated_at")
+    @field_serializer("created_at", "updated_at", when_used="unless-none")
     def serialize_dt_file(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -594,7 +625,7 @@ class FileChunk(BaseModel):
     status: Optional[str] = None
     root_command_type: Optional[str] = None
 
-    @field_serializer("created_at", "updated_at")
+    @field_serializer("created_at", "updated_at", when_used="unless-none")
     def serialize_dt_file_chunk(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -840,7 +871,7 @@ class Request(RequestTemplate):
 
 
 class System(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     name: Optional[str] = None
     description: Optional[str] = None
     version: Optional[str] = None
@@ -858,6 +889,24 @@ class System(BaseModel):
     requires: Optional[list[str]] = []
     requires_timeout: Optional[int] = None
     garden_name: Optional[str] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_system(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_system(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     def __str__(self):
         return "%s:%s-%s" % (self.namespace, self.name, self.version)
@@ -1147,7 +1196,7 @@ class Event(BaseModel):
     timestamp: Optional[datetime] = None
 
     payload_type: Optional[str] = None
-    payload: Optional[Request] = None
+    payload: Optional[Request | Garden] = None
 
     error: Optional[bool] = None
     error_message: Optional[str] = None
@@ -1203,7 +1252,7 @@ class UserToken(BaseModel):
     expires_at: Optional[datetime] = None
     username: Optional[str] = None
 
-    @field_serializer("issued_at", "expires_at")
+    @field_serializer("issued_at", "expires_at", when_used="unless-none")
     def serialize_dt_user_token(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -1247,7 +1296,7 @@ class Job(BaseModel):
     TRIGGER_TYPES: ClassVar[set] = {"interval", "date", "cron", "file"}
     STATUS_TYPES: ClassVar[set] = {"RUNNING", "PAUSED"}
 
-    @field_serializer("next_run_time")
+    @field_serializer("next_run_time", when_used="unless-none")
     def serialize_dt_job(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -1261,11 +1310,19 @@ class Job(BaseModel):
         return "<Job: name=%s, id=%s>" % (self.name, self.id)
 
 
+class JobExportInput(BaseModel):
+    ids: Optional[List[str]] = None
+
+
+class JobExport(Job):
+    pass
+
+
 class DateTrigger(BaseModel):
     run_date: Optional[datetime] = None
     timezone: Optional[str] = "UTC"
 
-    @field_serializer("run_date")
+    @field_serializer("run_date", when_used="unless-none")
     def serialize_dt_date_trigger(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -1302,7 +1359,7 @@ class IntervalTrigger(BaseModel):
     jitter: Optional[int] = None
     reschedule_on_finish: Optional[bool] = None
 
-    @field_serializer("start_date", "end_date")
+    @field_serializer("start_date", "end_date", when_used="unless-none")
     def serialize_dt_interval_trigger(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -1366,7 +1423,7 @@ class CronTrigger(BaseModel):
     timezone: Optional[str] = "UTC"
     jitter: Optional[int] = None
 
-    @field_serializer("start_date", "end_date")
+    @field_serializer("start_date", "end_date", when_used="unless-none")
     def serialize_dt_cron_trigger(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
@@ -1508,14 +1565,14 @@ class Connection(BaseModel):
 
 
 class Garden(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     name: Optional[str] = None
     connection_type: Optional[str] = None
     receiving_connections: Optional[list[Connection]] = []
     publishing_connections: Optional[list[Connection]] = []
     systems: Optional[list[System]] = []
     has_parent: Optional[bool] = None
-    parent: Optional[str]
+    parent: Optional[str] = None
     # TODO: Figure out why we had parent excluded in:
     # fields.Nested(lambda: GardenSchema(exclude=("parent",))), allow_none=True
     children: Optional[list[Garden]] = None
@@ -1523,6 +1580,25 @@ class Garden(BaseModel):
     default_user: Optional[str] = None
     shared_users: Optional[bool] = None
     version: Optional[str] = "UNKNOWN"
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+        from_attributes = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_garden(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_garden(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     def __str__(self):
         return "%s" % self.name
@@ -1598,7 +1674,7 @@ class Operation(BaseModel):
     model: Optional[Request] = None
     # model = ModelField(allow_none=True, type_field="model_type")
 
-    args: Optional[list[str]] = []
+    args: Optional[list[str | System]] = []
     kwargs: Optional[dict] = {}
 
     target_garden_name: Optional[str] = None
@@ -1627,13 +1703,31 @@ class Operation(BaseModel):
 
 
 class Runner(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     name: Optional[str] = None
     path: Optional[str] = None
     instance_id: Optional[str] = None
     stopped: Optional[bool] = None
     dead: Optional[bool] = None
     restart: Optional[bool] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_runner(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_runner(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     def __str__(self):
         return "%s" % self.name
@@ -1676,7 +1770,7 @@ class Resolvable(BaseModel):
 
 
 class User(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     username: Optional[str] = None
     password: Optional[str] = None
     roles: Optional[list[str]] = []
@@ -1687,6 +1781,24 @@ class User(BaseModel):
     metadata: Optional[dict] = {}
     protected: Optional[bool] = None
     file_generated: Optional[bool] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_user(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_user(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     def __str__(self):
         return "%s: %s" % (self.username, self.roles)
@@ -1714,10 +1826,9 @@ class User(BaseModel):
 
 
 class Role(BaseModel):
-    # schema = "RoleSchema"
     permission: Optional[str] = None
     description: Optional[str] = None
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     name: str
     scope_gardens: Optional[list[str]] = []
     scope_namespaces: Optional[list[str]] = []
@@ -1735,6 +1846,24 @@ class Role(BaseModel):
         "OPERATOR",
         "READ_ONLY",  # Default value if no role is provided
     }
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_role(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_role(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     def __str__(self):
         return "%s" % (self.name)
@@ -1851,7 +1980,7 @@ class Replication(BaseModel):
     replication_id: Optional[str] = None
     expires_at: Optional[datetime] = None
 
-    @field_serializer("expires_at")
+    @field_serializer("expires_at", when_used="unless-none")
     def serialize_dt_replication(self, dt: datetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.

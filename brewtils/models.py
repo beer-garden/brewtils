@@ -1219,7 +1219,7 @@ class Event(BaseModel):
     timestamp: Optional[datetime] = None
 
     payload_type: Optional[str] = None
-    payload: Optional[BaseModel] = None
+    payload: Optional[Request | Garden | System] = None
 
     error: Optional[bool] = None
     error_message: Optional[str] = None

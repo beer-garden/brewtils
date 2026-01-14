@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import copy
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from zoneinfo import ZoneInfo
 from mock import Mock
@@ -16,9 +16,10 @@ from pydantic import (
     field_serializer,
     field_validator,
     model_validator,
+    AwareDatetime,
 )
 from pydantic.json_schema import SkipJsonSchema
-from typing import ClassVar, List, Literal, Any, Optional
+from typing import ClassVar, List, Literal, Any, Optional, Callable
 
 __all__ = [
     # "BaseModel",
@@ -137,7 +138,7 @@ class Command(BaseModel):
     command_type: Optional[str] = None
     output_type: Optional[str] = None
     schema_: Optional[dict] = Field(alias="schema", default=None)
-    form: Optional[dict] = None
+    form: Optional[dict | list | str] = None
     template: Optional[str] = None
     icon_name: Optional[str] = None
     hidden: Optional[bool] = None
@@ -251,78 +252,6 @@ class Command(BaseModel):
         return False
 
 
-class Instance(BaseModel):
-    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
-    name: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    status_info: Optional[StatusInfo] = None
-    queue_type: Optional[str] = None
-    queue_info: Optional[dict] = {}
-    icon_name: Optional[str] = None
-    metadata: Optional[dict] = {}
-
-    INSTANCE_STATUSES: ClassVar[list[str]] = [
-        "INITIALIZING",
-        "RUNNING",
-        "PAUSED",
-        "STOPPED",
-        "DEAD",
-        "UNRESPONSIVE",
-        "STARTING",
-        "STOPPING",
-        "UNKNOWN",
-        "AWAITING_SYSTEM",
-        "ERROR",
-    ]
-
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
-
-    @field_serializer("id", when_used="always")
-    def serialize_id_instance(self, v: Optional[str]) -> str:
-        """
-        Serializes the id to a string
-        """
-        return str(v)
-
-    @field_validator("id", mode="before")
-    @classmethod
-    def validate_id_instance(cls, v: Optional[str | ObjectId]) -> Optional[str]:
-        if v is None:
-            return v
-        return str(v)
-
-    @field_validator("status")
-    @classmethod
-    def capitalize_status(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return v
-        return v.upper()
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return "<Instance: name=%s, status=%s>" % (self.name, self.status)
-
-    def is_newer(self, other):
-        # Implemented not for full model to model comparison, but to allow for
-        # quick comparisons for event logic filtering
-        if not isinstance(other, Instance):
-            return False
-
-        if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
-            if hasattr(other, "status_info") and hasattr(
-                other.status_info, "heartbeat"
-            ):
-                return self.status_info.is_newer(other.status_info)
-            return True
-
-        return False
-
-
 class Choices(BaseModel):
     type: Optional[str] = None
     display: Optional[str] = None
@@ -352,7 +281,7 @@ class Parameter(BaseModel):
     optional: Optional[bool] = None
     default: Optional[Any] = None
     description: Optional[str] = None
-    choices: Optional[Choices | list] = None
+    choices: Optional[Choices | list | dict | Callable] = None
     parameters: Optional[list[Parameter | Any]] = []
     nullable: Optional[bool] = None
     maximum: Optional[int] = None
@@ -480,11 +409,22 @@ class Parameter(BaseModel):
 
 
 class StatusHistory(BaseModel):
-    heartbeat: Optional[datetime] = None
+    heartbeat: Optional[AwareDatetime] = None
     status: Optional[str] = None
 
+    @field_validator("heartbeat", mode="before")
+    @classmethod
+    def validate_dt_status_info(cls, v: object) -> datetime:
+        """
+        Validates the datetime object to an AwareDatetime.
+        """
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                return v.replace(tzinfo=UTC)
+        return v
+
     @field_serializer("heartbeat", when_used="unless-none")
-    def serialize_dt_status_history(self, dt: datetime) -> int:
+    def serialize_dt_status_history(self, dt: AwareDatetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
         """
@@ -517,11 +457,22 @@ class StatusHistory(BaseModel):
 
 
 class StatusInfo(BaseModel):
-    heartbeat: datetime = None
-    history: list[StatusHistory] = []
+    heartbeat: Optional[AwareDatetime] = None
+    history: Optional[list[StatusHistory]] = []
+
+    @field_validator("heartbeat", mode="before")
+    @classmethod
+    def validate_dt_status_info(cls, v: object) -> datetime:
+        """
+        Validates the datetime object to an AwareDatetime.
+        """
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                return v.replace(tzinfo=UTC)
+        return v
 
     @field_serializer("heartbeat", when_used="unless-none")
-    def serialize_dt_status_info(self, dt: datetime) -> int:
+    def serialize_dt_status_info(self, dt: AwareDatetime) -> int:
         """
         Serializes the datetime object to a Unix timestamp.
         """
@@ -533,7 +484,7 @@ class StatusInfo(BaseModel):
             or not self.history
             or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
         ):
-            self.heartbeat = datetime.utcnow()
+            self.heartbeat = datetime.now(UTC)
             self.history.append(
                 StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
             )
@@ -559,6 +510,78 @@ class StatusInfo(BaseModel):
         if hasattr(self, "heartbeat") and self.heartbeat:
             if hasattr(other, "heartbeat") and other.heartbeat:
                 return self.heartbeat > other.heartbeat
+            return True
+
+        return False
+
+
+class Instance(BaseModel):
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    status_info: Optional[StatusInfo] = StatusInfo()
+    queue_type: Optional[str] = None
+    queue_info: Optional[dict] = {}
+    icon_name: Optional[str] = None
+    metadata: Optional[dict] = {}
+
+    INSTANCE_STATUSES: ClassVar[list[str]] = [
+        "INITIALIZING",
+        "RUNNING",
+        "PAUSED",
+        "STOPPED",
+        "DEAD",
+        "UNRESPONSIVE",
+        "STARTING",
+        "STOPPING",
+        "UNKNOWN",
+        "AWAITING_SYSTEM",
+        "ERROR",
+    ]
+
+    class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
+
+    @field_serializer("id", when_used="always")
+    def serialize_id_instance(self, v: Optional[str]) -> str:
+        """
+        Serializes the id to a string
+        """
+        return str(v)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_instance(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
+
+    @field_validator("status")
+    @classmethod
+    def capitalize_status(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return v.upper()
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return "<Instance: name=%s, status=%s>" % (self.name, self.status)
+
+    def is_newer(self, other):
+        # Implemented not for full model to model comparison, but to allow for
+        # quick comparisons for event logic filtering
+        if not isinstance(other, Instance):
+            return False
+
+        if hasattr(self, "status_info") and hasattr(self.status_info, "heartbeat"):
+            if hasattr(other, "status_info") and hasattr(
+                other.status_info, "heartbeat"
+            ):
+                return self.status_info.is_newer(other.status_info)
             return True
 
         return False
@@ -1196,7 +1219,7 @@ class Event(BaseModel):
     timestamp: Optional[datetime] = None
 
     payload_type: Optional[str] = None
-    payload: Optional[Request | Garden] = None
+    payload: Optional[BaseModel] = None
 
     error: Optional[bool] = None
     error_message: Optional[str] = None

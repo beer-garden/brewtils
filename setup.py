@@ -35,6 +35,7 @@ setup(
         "lark-parser<1", # Latest 0.12.0
         "marshmallow<4.1,>=4.0", # Latest 4.0.1
         "pydantic<3", # Latest 2.12.5
+        "pymongo<5", # Latest 4.16.0
         "packaging", # Latest 25.0
         "pika<=1.4,>=1.0.1", # Latest 1.3.2
         "requests<3", # Latest 2.32.5

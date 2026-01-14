@@ -564,7 +564,7 @@ class SchemaParser(object):
             raise TypeError("When from_string=True data must be a string-type")
 
         if model_class == brewtils.models.PatchOperation:
-            if not isinstance(data, list) and from_string == False:
+            if not isinstance(data, list) and from_string is False:
                 data = [data]
             if not kwargs.get("many", True):
                 cls.logger.warning(

@@ -262,6 +262,9 @@ class Choices(BaseModel):
     TYPES: ClassVar[list[str]] = ["static", "url", "command"]
     DISPLAYS: ClassVar[list[str]] = ["select", "typeahead"]
 
+    class Config:
+        extra = "allow"
+
     def __str__(self):
         return self.value.__str__()
 
@@ -294,10 +297,10 @@ class Parameter(BaseModel):
     # the serialization schema) but we still need them on this model for consistency
     # when creating Clients - https://github.com/beer-garden/beer-garden/issues/777
     is_kwarg: Optional[SkipJsonSchema[bool]] = Field(
-        exclude_if=lambda v: v is None, default=None
+        exclude_if=lambda v: v is None, default=None, exclude=True
     )
     model: Optional[SkipJsonSchema[object]] = Field(
-        exclude_if=lambda v: v is None, default=None
+        exclude_if=lambda v: v is None, default=None, exclude=True
     )
 
     TYPES: ClassVar[List[str]] = [
@@ -1219,7 +1222,39 @@ class Event(BaseModel):
     timestamp: Optional[datetime] = None
 
     payload_type: Optional[str] = None
-    payload: Optional[Request | Garden | System] = None
+    payload: Optional[
+        System
+        | Instance
+        | Command
+        | Connection
+        | Parameter
+        | Request
+        | PatchOperation
+        | Choices
+        | LoggingConfig
+        | Event
+        | Events
+        | Queue
+        | UserToken
+        | Job
+        | RequestFile
+        | File
+        | FileChunk
+        | FileStatus
+        | RequestTemplate
+        | DateTrigger
+        | CronTrigger
+        | IntervalTrigger
+        | FileTrigger
+        | Garden
+        | Operation
+        | Resolvable
+        | Role
+        | User
+        | Subscriber
+        | Topic
+        | Replication
+    ] = None
 
     error: Optional[bool] = None
     error_message: Optional[str] = None

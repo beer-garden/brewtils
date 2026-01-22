@@ -22,7 +22,7 @@ from pydantic import (
     AwareDatetime,
 )
 from pydantic.json_schema import SkipJsonSchema
-from typing import ClassVar, List, Literal, Any, Optional, Callable, Self
+from typing import ClassVar, List, Literal, Any, Optional, Callable
 
 __all__ = [
     # "BaseModel",

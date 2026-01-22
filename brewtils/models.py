@@ -7,11 +7,14 @@ from enum import Enum
 from zoneinfo import ZoneInfo
 from mock import Mock
 from bson.objectid import ObjectId
+from uuid import UUID
+from bson.dbref import DBRef
 
 from brewtils.errors import ModelError, _deprecate
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     field_serializer,
     field_validator,
@@ -19,7 +22,7 @@ from pydantic import (
     AwareDatetime,
 )
 from pydantic.json_schema import SkipJsonSchema
-from typing import ClassVar, List, Literal, Any, Optional, Callable
+from typing import ClassVar, List, Literal, Any, Optional, Callable, Self
 
 __all__ = [
     # "BaseModel",
@@ -156,9 +159,10 @@ class Command(BaseModel):
     ]
     OUTPUT_TYPES: ClassVar[list[str]] = ["STRING", "JSON", "XML", "HTML", "JS", "CSS"]
 
-    class Config:
-        validate_by_alias = True
-        serialize_by_alias = True
+    model_config = ConfigDict(
+        validate_by_alias=True,
+        serialize_by_alias=True,
+    )
 
     @field_validator("parameters", "tags", "topics", mode="before")
     @classmethod
@@ -262,8 +266,9 @@ class Choices(BaseModel):
     TYPES: ClassVar[list[str]] = ["static", "url", "command"]
     DISPLAYS: ClassVar[list[str]] = ["select", "typeahead"]
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(
+        extra="allow",
+    )
 
     def __str__(self):
         return self.value.__str__()
@@ -543,9 +548,10 @@ class Instance(BaseModel):
         "ERROR",
     ]
 
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     @field_serializer("id", when_used="always")
     def serialize_id_instance(self, v: Optional[str]) -> str:
@@ -593,7 +599,11 @@ class Instance(BaseModel):
 class RequestFile(BaseModel):
     storage_type: Optional[str] = None
     filename: Optional[str] = None
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
 
     def __str__(self):
         return self.filename
@@ -606,7 +616,7 @@ class RequestFile(BaseModel):
 
 
 class File(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     owner_id: Optional[str] = None
     owner_type: Optional[str] = None
     owner: Optional[Any] = None
@@ -621,6 +631,10 @@ class File(BaseModel):
     md5_sum: Optional[str] = None
     status: Optional[str] = None
     root_command_type: Optional[str] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
 
     @field_serializer("created_at", "updated_at", when_used="unless-none")
     def serialize_dt_file(self, dt: datetime) -> int:
@@ -641,7 +655,7 @@ class File(BaseModel):
 
 
 class FileChunk(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     file_id: Optional[str]
     offset: Optional[int]
     data: Optional[str]
@@ -650,6 +664,10 @@ class FileChunk(BaseModel):
     updated_at: Optional[datetime] = None
     status: Optional[str] = None
     root_command_type: Optional[str] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
 
     @field_serializer("created_at", "updated_at", when_used="unless-none")
     def serialize_dt_file_chunk(self, dt: datetime) -> int:
@@ -754,9 +772,9 @@ class RequestTemplate(BaseModel):
 
 
 class Request(RequestTemplate):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     is_event: Optional[bool] = False
-    parent: Optional[Request | Mock] = None
+    parent: Optional[Request | DBRef | Mock] = None
     children: Optional[list[Request]] = None
     output: Optional[str] = None
     hidden: Optional[bool] = None
@@ -770,18 +788,6 @@ class Request(RequestTemplate):
     source_garden: Optional[str] = None
     target_garden: Optional[str] = None
     root_command_type: Optional[str] = None
-
-    @field_serializer(
-        "created_at", "updated_at", "status_updated_at", when_used="unless-none"
-    )
-    def serialize_dt_request(self, dt: datetime) -> int:
-        """
-        Serializes the datetime object to a Unix timestamp.
-        """
-        return int(dt.timestamp() * 1000)
-
-    class Config:
-        arbitrary_types_allowed = True
 
     STATUS_LIST: ClassVar[list[str]] = [
         "CREATED",
@@ -806,6 +812,38 @@ class Request(RequestTemplate):
         "TEMP",
     ]
     OUTPUT_TYPES: ClassVar[list[str]] = ["STRING", "JSON", "XML", "HTML", "JS", "CSS"]
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_request(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
+
+    @field_validator("created_at", "updated_at", "status_updated_at", mode="before")
+    @classmethod
+    def validate_dt_request(cls, v: object) -> datetime:
+        """
+        Validates the datetime object to an AwareDatetime.
+        """
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                return v.replace(tzinfo=UTC)
+        return v
+
+    @field_serializer(
+        "created_at", "updated_at", "status_updated_at", when_used="unless-none"
+    )
+    def serialize_dt_request(self, dt: datetime) -> int:
+        """
+        Serializes the datetime object to a Unix timestamp.
+        """
+        return int(dt.timestamp() * 1000)
 
     @classmethod
     def from_template(cls, template, **kwargs):
@@ -916,9 +954,10 @@ class System(BaseModel):
     requires_timeout: Optional[int] = None
     garden_name: Optional[str] = None
 
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     @field_serializer("id", when_used="always")
     def serialize_id_system(self, v: Optional[str]) -> str:
@@ -1222,42 +1261,16 @@ class Event(BaseModel):
     timestamp: Optional[datetime] = None
 
     payload_type: Optional[str] = None
-    payload: Optional[
-        System
-        | Instance
-        | Command
-        | Connection
-        | Parameter
-        | Request
-        | PatchOperation
-        | Choices
-        | LoggingConfig
-        | Event
-        | Events
-        | Queue
-        | UserToken
-        | Job
-        | RequestFile
-        | File
-        | FileChunk
-        | FileStatus
-        | RequestTemplate
-        | DateTrigger
-        | CronTrigger
-        | IntervalTrigger
-        | FileTrigger
-        | Garden
-        | Operation
-        | Resolvable
-        | Role
-        | User
-        | Subscriber
-        | Topic
-        | Replication
-    ] = None
+    # Payload needs to accept brewtils and mongo class instances
+    payload: Optional[object] = Field(default=None)
 
     error: Optional[bool] = None
     error_message: Optional[str] = None
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     @field_serializer("timestamp", when_used="unless-none")
     def serialize_dt_event(self, dt: datetime) -> int:
@@ -1304,11 +1317,30 @@ class Queue(BaseModel):
 
 
 class UserToken(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     uuid: Optional[str] = None
     issued_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
     username: Optional[str] = None
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_user_token(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
+
+    @field_validator("uuid", mode="before")
+    @classmethod
+    def validate_uuid_user_token(cls, v: Optional[str | UUID]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     @field_serializer("issued_at", "expires_at", when_used="unless-none")
     def serialize_dt_user_token(self, dt: datetime) -> int:
@@ -1330,7 +1362,7 @@ class UserToken(BaseModel):
 
 
 class Job(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None)
     name: Optional[str] = None
     trigger_type: Optional[Literal["interval", "date", "cron", "file"]] = None
     # trigger = ModelField(
@@ -1353,6 +1385,18 @@ class Job(BaseModel):
 
     TRIGGER_TYPES: ClassVar[set] = {"interval", "date", "cron", "file"}
     STATUS_TYPES: ClassVar[set] = {"RUNNING", "PAUSED"}
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_job(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     @field_serializer("next_run_time", when_used="unless-none")
     def serialize_dt_job(self, dt: datetime) -> int:
@@ -1628,7 +1672,7 @@ class Garden(BaseModel):
     connection_type: Optional[str] = None
     receiving_connections: Optional[list[Connection]] = []
     publishing_connections: Optional[list[Connection]] = []
-    systems: Optional[list[System]] = []
+    systems: Optional[list[System | ObjectId | str]] = []
     has_parent: Optional[bool] = None
     parent: Optional[str] = None
     # TODO: Figure out why we had parent excluded in:
@@ -1639,10 +1683,11 @@ class Garden(BaseModel):
     shared_users: Optional[bool] = None
     version: Optional[str] = "UNKNOWN"
 
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
-        from_attributes = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
     @field_serializer("id", when_used="always")
     def serialize_id_garden(self, v: Optional[str]) -> str:
@@ -1769,9 +1814,10 @@ class Runner(BaseModel):
     dead: Optional[bool] = None
     restart: Optional[bool] = None
 
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     @field_serializer("id", when_used="always")
     def serialize_id_runner(self, v: Optional[str]) -> str:
@@ -1807,13 +1853,18 @@ class Runner(BaseModel):
 
 
 class Resolvable(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     type: Optional[str] = None
     storage: Optional[str] = None
     details: Optional[dict] = {}
 
     # Resolvable parameter types
     TYPES: ClassVar[str] = ("Base64", "Bytes")
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     def __str__(self):
         return "%s: %s %s" % (self.id, self.type, self.storage)
@@ -1840,9 +1891,10 @@ class User(BaseModel):
     protected: Optional[bool] = None
     file_generated: Optional[bool] = None
 
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     @field_serializer("id", when_used="always")
     def serialize_id_user(self, v: Optional[str]) -> str:
@@ -1905,9 +1957,10 @@ class Role(BaseModel):
         "READ_ONLY",  # Default value if no role is provided
     }
 
-    class Config:
-        arbitrary_types_allowed = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+    )
 
     @field_serializer("id", when_used="always")
     def serialize_id_role(self, v: Optional[str]) -> str:
@@ -2017,10 +2070,21 @@ class Subscriber(BaseModel):
 
 
 class Topic(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None)
     name: Optional[str] = None
     subscribers: Optional[list[Subscriber]] = []
     publisher_count: Optional[int] = 0
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_topic(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     def __str__(self):
         return "%s: %s" % (self.name, [str(s) for s in self.subscribers])
@@ -2034,9 +2098,13 @@ class Topic(BaseModel):
 
 
 class Replication(BaseModel):
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None)
     replication_id: Optional[str] = None
     expires_at: Optional[datetime] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
 
     @field_serializer("expires_at", when_used="unless-none")
     def serialize_dt_replication(self, dt: datetime) -> int:

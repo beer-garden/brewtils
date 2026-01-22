@@ -592,11 +592,23 @@ class SchemaParser(object):
         if isinstance(data, list):
             all_obj = []
             for p in data:
-                all_obj.append(
+                results = (
                     model.model_validate_json(p)
                     if from_string
                     else model.model_validate(p)
                 )
+                if (
+                    model_class == brewtils.models.Event
+                    and results.payload
+                    and results.payload_type
+                ):
+                    results.payload = cls.parse(
+                        results.payload,
+                        cls._models[results.payload_type],
+                        from_string,
+                        **kwargs,
+                    )
+                all_obj.append(results)
             return all_obj
 
         try:
@@ -608,6 +620,17 @@ class SchemaParser(object):
         except AttributeError:
             results = model.from_json(data) if from_string else model(**data)
 
+        if (
+            model_class == brewtils.models.Event
+            and results.payload
+            and results.payload_type
+        ):
+            results.payload = cls.parse(
+                results.payload,
+                cls._models[results.payload_type],
+                from_string,
+                **kwargs,
+            )
         return results
 
     # Serialization methods

@@ -1370,7 +1370,7 @@ class Job(BaseModel):
     #     allowed_types=["interval", "date", "cron", "file"],
     #     allow_none=True,
     # )
-    trigger: IntervalTrigger | DateTrigger | CronTrigger | FileTrigger
+    trigger: Optional[IntervalTrigger | DateTrigger | CronTrigger | FileTrigger] = None
     request_template: RequestTemplate = None
     misfire_grace_time: Optional[int] = None
     coalesce: Optional[bool] = None

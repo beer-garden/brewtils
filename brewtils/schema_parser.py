@@ -1248,7 +1248,12 @@ class SchemaParser(object):
                 return json.dumps(model) if to_string else model
 
             # return schema.dumps(model) if to_string else schema.dump(model)
-            model = schema.model_validate(model)
+            try:
+                model = schema.model_validate(model)
+            except:
+                # In case this is a BaseModel
+                model = schema.model_validate(model.to_dict())
+
             return (
                 model.model_dump_json(exclude=kwargs.get("exclude", None))
                 if to_string

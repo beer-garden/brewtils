@@ -636,6 +636,13 @@ class File(BaseModel):
         populate_by_name=True,
     )
 
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_file(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
+
     @field_serializer("created_at", "updated_at", when_used="unless-none")
     def serialize_dt_file(self, dt: datetime) -> int:
         """
@@ -668,6 +675,13 @@ class FileChunk(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_instance(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     @field_serializer("created_at", "updated_at", when_used="unless-none")
     def serialize_dt_file_chunk(self, dt: datetime) -> int:
@@ -1672,7 +1686,7 @@ class Garden(BaseModel):
     connection_type: Optional[str] = None
     receiving_connections: Optional[list[Connection]] = []
     publishing_connections: Optional[list[Connection]] = []
-    systems: Optional[list[System | ObjectId | str]] = []
+    systems: Optional[list[System]] = []
     has_parent: Optional[bool] = None
     parent: Optional[str] = None
     # TODO: Figure out why we had parent excluded in:
@@ -1777,7 +1791,7 @@ class Operation(BaseModel):
     model: Optional[Request] = None
     # model = ModelField(allow_none=True, type_field="model_type")
 
-    args: Optional[list[str | System]] = []
+    args: Optional[list[str | BaseModel]] = []
     kwargs: Optional[dict] = {}
 
     target_garden_name: Optional[str] = None
@@ -1936,7 +1950,7 @@ class User(BaseModel):
 
 
 class Role(BaseModel):
-    permission: Optional[str] = None
+    permission: Optional[str] = Permissions.READ_ONLY.name
     description: Optional[str] = None
     id: Optional[str] = Field(alias="_id", default=None, exclude_if=lambda v: v is None)
     name: str
@@ -2105,6 +2119,13 @@ class Replication(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id_instance(cls, v: Optional[str | ObjectId]) -> Optional[str]:
+        if v is None:
+            return v
+        return str(v)
 
     @field_serializer("expires_at", when_used="unless-none")
     def serialize_dt_replication(self, dt: datetime) -> int:

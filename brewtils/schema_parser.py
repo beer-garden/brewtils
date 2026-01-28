@@ -201,7 +201,11 @@ class SchemaParser(object):
             A PatchOperation object
         """
         if "operations" in patch:
-            patch = patch["operations"]
+            if from_string:
+                patch = json.loads(patch)["operations"]
+                from_string = False
+            else:
+                patch = patch["operations"]
         # if isinstance(patch, list):
         #     all_ops = []
         #     for p in patch:

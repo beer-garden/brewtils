@@ -1403,6 +1403,7 @@ class Job(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         populate_by_name=True,
+        extra="allow",
     )
 
     @field_validator("id", mode="before")
@@ -1431,7 +1432,12 @@ class JobExportInput(BaseModel):
 
 
 class JobExport(Job):
-    pass
+    # Exclude these fields
+    next_run_time: Optional[datetime] = Field(default=None, exclude=True)
+    success_count: Optional[int] = Field(default=None, exclude=True)
+    error_count: Optional[int] = Field(default=None, exclude=True)
+    canceled_count: Optional[int] = Field(default=None, exclude=True)
+    skip_count: Optional[int] = Field(default=None, exclude=True)
 
 
 class DateTrigger(BaseModel):
@@ -1791,7 +1797,7 @@ class Operation(BaseModel):
     model: Optional[Request] = None
     # model = ModelField(allow_none=True, type_field="model_type")
 
-    args: Optional[list[str | BaseModel]] = []
+    args: Optional[list[str | bool | BaseModel]] = []
     kwargs: Optional[dict] = {}
 
     target_garden_name: Optional[str] = None

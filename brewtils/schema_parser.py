@@ -7,8 +7,9 @@ from typing import Any, Dict, Optional, Union  # noqa
 from box import Box  # type: ignore
 
 import brewtils.models
+import brewtils.schema_parser
 import brewtils.schemas
-from brewtils.models import BaseModel  # noqa
+from pydantic import BaseModel  # noqa
 
 from collections.abc import Iterable  # type: ignore  # noqa
 
@@ -201,7 +202,11 @@ class SchemaParser(object):
             A PatchOperation object
         """
         if "operations" in patch:
-            patch = patch["operations"]
+            if from_string:
+                patch = json.loads(patch)["operations"]
+                from_string = False
+            else:
+                patch = patch["operations"]
         # if isinstance(patch, list):
         #     all_ops = []
         #     for p in patch:
@@ -1248,11 +1253,13 @@ class SchemaParser(object):
                 return json.dumps(model) if to_string else model
 
             # return schema.dumps(model) if to_string else schema.dump(model)
-            try:
+
+            if not isinstance(model, BaseModel):
+                if cls is not brewtils.schema_parser.SchemaParser:
+                    if not isinstance(model, dict):
+                        model = model.to_dict()
+            
                 model = schema.model_validate(model)
-            except:
-                # In case this is a BaseModel
-                model = schema.model_validate(model.to_dict())
 
             return (
                 model.model_dump_json(exclude=kwargs.get("exclude", None))

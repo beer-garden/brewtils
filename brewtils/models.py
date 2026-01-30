@@ -634,6 +634,7 @@ class File(BaseModel):
 
     model_config = ConfigDict(
         populate_by_name=True,
+        validate_assignment=True,
     )
 
     @field_validator("id", mode="before")
@@ -1917,7 +1918,7 @@ class User(BaseModel):
     )
 
     @field_serializer("id", when_used="always")
-    def serialize_id_user(self, v: Optional[str]) -> str:
+    def serialize_id_user(self, v: Optional[str | ObjectId]) -> str:
         """
         Serializes the id to a string
         """

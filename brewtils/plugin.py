@@ -17,7 +17,7 @@ from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
-from brewtils.config import load_config
+from brewtils.config import load_config, get
 from brewtils.decorators import (
     _parse_client,
     _parse_shutdown_functions,
@@ -44,6 +44,7 @@ from brewtils.request_handling import (
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 from brewtils.specification import _CONNECTION_SPEC
+from typing import Optional, Union
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -53,6 +54,47 @@ request_context.current_request = None
 CONFIG = Box(default_box=True)
 # Global client
 CLIENT = None
+
+
+def is_config_empty(config=None) -> bool:
+    """Check if the global CONFIG is populated
+
+    Returns:
+        bool: False if CONFIG is populated, True otherwise
+    """
+
+    if config is None:
+        config = CONFIG
+    for _, value in config.items():
+        if isinstance(value, dict):
+            if not is_config_empty(value):
+                return False
+        elif value is not None:
+            return False
+
+    return True
+
+
+def get_config_value(
+    key: Optional[str] = None, default: Optional[Box] = None
+) -> Union[str, int, float, bool, complex, Box, None]:
+    """Get specified key from the config.
+
+    Nested keys can be separated with a "." If the key does not exist, then
+    a None will be returned.
+
+    If the key itself is None, then the entire config will be returned.
+
+    If the requested value is a container (has child items) then the returned value will
+    be an immutable (frozen) ``box.Box`` object.
+
+    Args:
+        key: The key to get, nested keys are separated with "."
+
+    Returns:
+        The value of the key in the config.
+    """
+    return get(key, CONFIG, default)
 
 
 def get_current_request_read_only():

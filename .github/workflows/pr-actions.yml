@@ -145,3 +145,9 @@ jobs:
 
       - name: Check Package
         run: twine check dist/*
+
+      - name: Check Docker Build
+        run: make docker-build VERSION=TEST
+
+      - name: Check Docs Docker Build
+        run: make docs-deps docker-build-docs VERSION=TEST

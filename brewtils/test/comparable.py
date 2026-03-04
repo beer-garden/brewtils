@@ -10,6 +10,7 @@
 
 Seriously, this is a 'use at your own risk' kind of thing.
 """
+
 from functools import partial
 
 import brewtils.test

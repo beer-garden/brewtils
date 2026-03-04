@@ -1066,7 +1066,7 @@ class EasyClient(object):
         # before giving up
         for _ in range(10):
 
-            (valid, meta) = self._check_chunked_file_validity(file_id)
+            valid, meta = self._check_chunked_file_validity(file_id)
             if valid:
                 break
 

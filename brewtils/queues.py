@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """This module currently exists to maintain backwards compatibility."""
+
 import warnings
 
 from brewtils.pika import PikaClient

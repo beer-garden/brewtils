@@ -3,7 +3,10 @@ Brewtils Changelog
 
 3.32.0
 ------
-TBD
+3/4/26
+
+- Updated Yapconf version to 0.5 (#579)
+
 
 3.31.1
 ------

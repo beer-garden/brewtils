@@ -5,6 +5,9 @@ Brewtils Changelog
 ------
 TBD
 
+- Added support for SystemClient to define choice_validation_enabled flag during initialization or command execution.
+  Default behavior is to skip choice validation if a parent request is present. (#585)
+  Examples: SystemClient(..., choice_validation_enabled=True) or SystemClient().call_command(..., _choice_validation_enabled=True)
 - Added Target-Garden header to set target garden when provided in kwargs
 
 3.32.0

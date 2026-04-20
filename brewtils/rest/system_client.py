@@ -67,6 +67,12 @@ class SystemClient(object):
                 to each namespace to help load balance the requests. It will rotate per
                 Request to the target system.
 
+            choice_validation_enabled:
+                Flag controlling whether choice validation is enabled when creating
+                requests. Valid options are True, False, and None. True will enable
+                full choice validation, False will disable it, and None will use the
+                default behavior. Default is None for System Clients.
+
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first
         attempt to send a Request. At that point the SystemClient will query Beer-garden
@@ -179,7 +185,8 @@ class SystemClient(object):
             Only has an effect when blocking=False.
         raise_on_error (bool): Flag controlling whether created Requests that complete
             with an ERROR state should raise an exception
-
+        choice_validation_enabled (bool): Flag controlling whether choice validation is
+            enabled when creating requests.
         bg_host (str): Beer-garden hostname
         bg_port (int): Beer-garden port
         bg_url_prefix (str): URL path that will be used as a prefix when communicating
@@ -267,6 +274,7 @@ class SystemClient(object):
         self._max_delay = kwargs.get("max_delay", 30)
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
+        self._choice_validation_enabled = kwargs.get("choice_validation_enabled", None)
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
         # in that version. This logic is what was added in Python 3.5
@@ -415,6 +423,9 @@ class SystemClient(object):
         raise_on_error = kwargs.pop("_raise_on_error", self._raise_on_error)
         blocking = kwargs.pop("_blocking", self._blocking)
         timeout = kwargs.pop("_timeout", self._timeout)
+        choice_validation_enabled = kwargs.pop(
+            "_choice_validation_enabled", self._choice_validation_enabled
+        )
 
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
@@ -426,6 +437,7 @@ class SystemClient(object):
                     request,
                     blocking=blocking,
                     timeout=timeout,
+                    choice_validation_enabled=choice_validation_enabled,
                     target_garden=self._system.garden_name,
                 )
 

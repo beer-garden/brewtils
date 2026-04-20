@@ -7,6 +7,29 @@ TBD
 
 - Added Target-Garden header to set target garden when provided in kwargs
 
+3.32.0
+------
+3/4/26
+
+- Updated Yapconf version to 0.5 (#579)
+
+
+3.31.1
+------
+1/7/26
+
+- Updated set heartbeat to use timezone aware datetime (#578)
+
+3.31.0
+------
+12/11/25
+
+## Major dependency upgrades and dropping 3.6, 3.7, 3.8, 3.9, 3.10 Python Support
+
+- Upgraded all dependencies to latest versions (#543)
+- Updated Logs read to return dictionary with logs, start line, and end line in output object (#568)
+- Added ERROR to list of valid instance statuses(#569)
+
 3.30.0
 ------
 9/23/25

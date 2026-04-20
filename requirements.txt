@@ -6,10 +6,10 @@ sphinx ~= 6.2.1
 sphinx_rtd_theme < 1
 
 # Test and Lint Dependencies
-black ; python_version > "3.5"
-coverage < 6
-flake8 < 4
-mock < 5
-pytest < 8
-pytest-lazy-fixture < 1
-requests-mock < 2
+black
+coverage
+flake8
+mock
+pytest
+pytest-lazy-fixtures
+requests-mock

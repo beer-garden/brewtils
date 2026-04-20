@@ -36,10 +36,7 @@ from brewtils.errors import PluginParamError
 from brewtils.models import Command, Parameter
 from brewtils.test.comparable import assert_command_equal, assert_parameter_equal
 
-if sys.version_info.major == 2:
-    from funcsigs import signature  # noqa
-else:
-    from inspect import signature  # noqa
+from inspect import signature  # noqa
 
 
 @pytest.fixture
@@ -1388,13 +1385,11 @@ class TestSignatureValidate(object):
             import textwrap
 
             exec_locals = {}
-            class_dec = textwrap.dedent(
-                """
+            class_dec = textwrap.dedent("""
                 class Tester(object):
                     def c(self, foo, /):
                         pass
-                """
-            )
+                """)
 
             # Black doesn't handle this well - because we run in 2.7 mode it wants to
             # put a space after exec, but then it complains about the space after exec.

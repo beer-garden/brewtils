@@ -2,23 +2,20 @@
 import json
 from base64 import b64decode
 from io import BytesIO
-from pathlib import Path
-from typing import Any, Callable, List, NoReturn, Optional, Type, Union
+from pathlib import Path  # noqa
+from typing import Any, Callable, List, NoReturn, Optional, Type, Union  # noqa
 
-try:
-    from hashlib import file_digest, md5
-except ImportError:
-    from hashlib import md5
-    from brewtils.rest import file_digest
+from hashlib import file_digest, md5
 
-import six
-import wrapt
-from requests import Response  # noqa # not in requirements file
+
 import time
 
+import wrapt
+from requests import Response  # noqa # not in requirements file
+
 from brewtils.config import get_connection_info
+from brewtils.errors import BrewtilsException  # noqa
 from brewtils.errors import (
-    BrewtilsException,
     ConflictError,
     DeleteError,
     FetchError,
@@ -31,7 +28,7 @@ from brewtils.errors import (
     WaitExceededError,
     _deprecate,
 )
-from brewtils.models import BaseModel, Event, Job, PatchOperation
+from brewtils.models import BaseModel, Event, Job, PatchOperation  # noqa
 from brewtils.rest.client import RestClient
 from brewtils.schema_parser import SchemaParser
 
@@ -996,7 +993,7 @@ class EasyClient(object):
         default_file_params = {}
 
         # Establish the file descriptor
-        if isinstance(file_to_upload, six.string_types):
+        if isinstance(file_to_upload, str):
             try:
                 fd = open(file_to_upload, "rb")
             except Exception:
@@ -1069,7 +1066,7 @@ class EasyClient(object):
         # before giving up
         for _ in range(10):
 
-            (valid, meta) = self._check_chunked_file_validity(file_id)
+            valid, meta = self._check_chunked_file_validity(file_id)
             if valid:
                 break
 

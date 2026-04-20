@@ -4,7 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional  # noqa
 
 from packaging.version import InvalidVersion, parse
 
@@ -17,7 +17,7 @@ from brewtils.errors import (
     ValidationError,
     _deprecate,
 )
-from brewtils.models import Request, System
+from brewtils.models import Request, System  # noqa
 from brewtils.request_handling import LocalRequestProcessor
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
@@ -216,7 +216,7 @@ class SystemClient(object):
 
         # Now need to determine if the intended target is the current running plugin.
         # Start by ensuring there's a valid Plugin context active
-        self.target_self = bool(brewtils.plugin.CONFIG)
+        self.target_self = not brewtils.plugin.is_config_empty()
 
         # If ANY of the target specification arguments don't match the current plugin
         # then the target is different
@@ -227,26 +227,25 @@ class SystemClient(object):
             "system_namespace": "namespace",
         }
         for key, value in config_map.items():
-            if (
-                kwargs.get(key) is not None
-                and kwargs.get(key) != brewtils.plugin.CONFIG[value]
-            ):
+            if kwargs.get(key) is not None and kwargs.get(
+                key
+            ) != brewtils.plugin.get_config_value(value):
                 self.target_self = False
                 break
 
         # Now assign self._system_name, etc based on the value of target_self
         if self.target_self:
-            self._system_name = brewtils.plugin.CONFIG.name
-            self._version_constraint = brewtils.plugin.CONFIG.version
-            self._default_instance = brewtils.plugin.CONFIG.instance_name
-            self._system_namespace = brewtils.plugin.CONFIG.namespace or None
+            self._system_name = brewtils.plugin.get_config_value("name")
+            self._version_constraint = brewtils.plugin.get_config_value("version")
+            self._default_instance = brewtils.plugin.get_config_value("instance_name")
+            self._system_namespace = brewtils.plugin.get_config_value("namespace", None)
 
         else:
             self._system_name = kwargs.get("system_name")
             self._version_constraint = kwargs.get("version_constraint", "latest")
             self._default_instance = kwargs.get("default_instance", "default")
             self._system_namespace = kwargs.get(
-                "system_namespace", brewtils.plugin.CONFIG.namespace or None
+                "system_namespace", brewtils.plugin.get_config_value("namespace", None)
             )
             self._system_namespaces = kwargs.get("system_namespaces", [])
 
@@ -544,12 +543,13 @@ class SystemClient(object):
         # Support cross-server parent/child requests. Add parent if request has different host.
         if (
             request.parent is None
-            and brewtils.plugin.CONFIG
+            and not brewtils.plugin.is_config_empty()
             and (
-                brewtils.plugin.CONFIG.bg_host.upper()
+                brewtils.plugin.get_config_value("bg_host", "").upper()
                 != self._easy_client.client.bg_host.upper()
-                or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
-                or brewtils.plugin.CONFIG.bg_url_prefix
+                or brewtils.plugin.get_config_value("bg_port")
+                != self._easy_client.client.bg_port
+                or brewtils.plugin.get_config_value("bg_url_prefix")
                 != self._easy_client.client.bg_prefix
             )
         ):
@@ -559,9 +559,9 @@ class SystemClient(object):
             request.has_parent = request.parent is not None
 
             ec = EasyClient(
-                bg_host=brewtils.plugin.CONFIG.bg_host,
-                bg_port=brewtils.plugin.CONFIG.bg_port,
-                bg_url_prefix=brewtils.plugin.CONFIG.bg_url_prefix,
+                bg_host=brewtils.plugin.get_config_value("bg_host"),
+                bg_port=brewtils.plugin.get_config_value("bg_port"),
+                bg_url_prefix=brewtils.plugin.get_config_value("bg_url_prefix"),
             )
             ec.put_request(request)
 
@@ -573,10 +573,11 @@ class SystemClient(object):
         if parent is None:
             return None
 
-        if brewtils.plugin.CONFIG and (
-            brewtils.plugin.CONFIG.bg_host.upper()
+        if not brewtils.plugin.is_config_empty() and (
+            brewtils.plugin.get_config_value("bg_host", "").upper()
             != self._easy_client.client.bg_host.upper()
-            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
+            or brewtils.plugin.get_config_value("bg_port")
+            != self._easy_client.client.bg_port
         ):
             self._logger.warning(
                 "A parent request was found, but the destination beer-garden "

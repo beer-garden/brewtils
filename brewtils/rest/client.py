@@ -3,11 +3,11 @@
 import functools
 import json
 from base64 import b64encode
-from typing import Any, List
+from typing import Any, List  # noqa
 
 import requests.exceptions
 import urllib3
-from requests import Response, Session
+from requests import Response, Session  # noqa
 from requests.adapters import HTTPAdapter
 from requests.utils import quote
 from yapconf import YapconfSpec

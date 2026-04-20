@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import warnings
+from zoneinfo import ZoneInfo
 
 import pytest
-import pytz
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 from brewtils.errors import ModelError
 from brewtils.models import (
@@ -573,7 +573,7 @@ class TestEvent(object):
     def test_repr(self, bg_event, bg_request):
         assert (
             repr(bg_event) == "<Event: namespace=ns, garden=beer, "
-            "name=REQUEST_CREATED, timestamp=2016-01-01 00:00:00, error=False, "
+            "name=REQUEST_CREATED, timestamp=2016-01-01 00:00:00+00:00, error=False, "
             "error_message=None, metadata={'extra': 'info'}, payload_type=Request, "
             "payload=%r>" % bg_request
         )
@@ -634,7 +634,7 @@ class TestRole(object):
 class TestDateTrigger(object):
     def test_scheduler_kwargs(self, bg_date_trigger, ts_dt_utc):
         assert bg_date_trigger.scheduler_kwargs == {
-            "timezone": pytz.utc,
+            "timezone": ZoneInfo("UTC"),
             "run_date": ts_dt_utc,
         }
 
@@ -662,7 +662,7 @@ class TestIntervalTrigger(object):
             "seconds": None,
             "start_date": None,
             "end_date": None,
-            "timezone": pytz.utc,
+            "timezone": ZoneInfo("UTC"),
             "jitter": None,
             "reschedule_on_finish": None,
         }
@@ -672,7 +672,11 @@ class TestIntervalTrigger(object):
     ):
         expected = interval_trigger_dict
         expected.update(
-            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
+            {
+                "timezone": ZoneInfo("UTC"),
+                "start_date": ts_dt_utc,
+                "end_date": ts_2_dt_utc,
+            }
         )
         assert bg_interval_trigger.scheduler_kwargs == expected
 
@@ -690,7 +694,7 @@ class TestCronTrigger(object):
             "second": None,
             "start_date": None,
             "end_date": None,
-            "timezone": pytz.utc,
+            "timezone": ZoneInfo("UTC"),
             "jitter": None,
         }
 
@@ -699,7 +703,11 @@ class TestCronTrigger(object):
     ):
         expected = cron_trigger_dict
         expected.update(
-            {"timezone": pytz.utc, "start_date": ts_dt_utc, "end_date": ts_2_dt_utc}
+            {
+                "timezone": ZoneInfo("UTC"),
+                "start_date": ts_dt_utc,
+                "end_date": ts_2_dt_utc,
+            }
         )
         assert bg_cron_trigger.scheduler_kwargs == expected
 
@@ -714,8 +722,8 @@ class TestCronTrigger(object):
         ),
         (
             lazy_fixture("bg_date_trigger"),
-            "<DateTrigger: run_date=2016-01-01 00:00:00>",
-            "<DateTrigger: run_date=2016-01-01 00:00:00>",
+            "<DateTrigger: run_date=2016-01-01 00:00:00+00:00>",
+            "<DateTrigger: run_date=2016-01-01 00:00:00+00:00>",
         ),
         (
             lazy_fixture("bg_file_trigger"),
@@ -816,6 +824,11 @@ class TestTopic:
 
 
 class TestStatusInfo:
+
+    def test_set_status_heartbeat_has_tz(self):
+        status_info = StatusInfo()
+        status_info.set_status_heartbeat("RUNNING")
+        assert status_info.history[0].heartbeat.tzinfo is not None
 
     def test_max_history(self):
         status_info = StatusInfo()

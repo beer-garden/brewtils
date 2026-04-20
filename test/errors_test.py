@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import sys
 
 import pytest
 
@@ -54,12 +53,7 @@ class TestErrors(object):
         e1 = CustomException("error1")
         e2 = CustomException(e1)
 
-        # On python version 2, errors with custom attributes do not list those
-        # attributes as arguments.
-        if sys.version_info.major < 3:
-            arguments = []
-        else:
-            arguments = [str(e1)]
+        arguments = [str(e1)]
 
         expected = {
             "message": str(e2),

@@ -11,7 +11,6 @@ from requests import Response, Session  # noqa
 from requests.adapters import HTTPAdapter
 from requests.utils import quote
 from yapconf import YapconfSpec
-
 import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
@@ -216,6 +215,13 @@ class RestClient(object):
 
         return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
 
+    def _generate_target_garden_headers(self, target_garden):
+        if target_garden is not None:
+            if target_garden == quote(target_garden):
+                return {"Target-Garden": target_garden}
+
+        return {}
+
     def can_connect(self, **kwargs):
         # type: (**Any) -> bool
         """Determine if a connection to the Beer-garden server is possible
@@ -365,7 +371,10 @@ class RestClient(object):
         return self.session.patch(
             self.garden_url + quote(garden_name),
             data=payload,
-            headers={**self.JSON_HEADERS, **{"Target-Garden": garden_name}},
+            headers={
+                **self.JSON_HEADERS,
+                **self._generate_target_garden_headers(garden_name),
+            },
         )
 
     @enable_auth
@@ -438,10 +447,8 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        if kwargs.get("target_garden"):
-            headers = {"Target-Garden": kwargs["target_garden"]}
-            return self.session.delete(self.system_url + system_id, headers=headers)
-        return self.session.delete(self.system_url + system_id)
+        headers = self._generate_target_garden_headers(kwargs.get("target_garden"))
+        return self.session.delete(self.system_url + system_id, headers=headers)
 
     @enable_auth
     def get_instance(self, instance_id):
@@ -468,9 +475,10 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        headers = self.JSON_HEADERS
-        if kwargs.get("target_garden"):
-            headers = {**headers, **{"Target-Garden": kwargs["target_garden"]}}
+        headers = {
+            **self.JSON_HEADERS,
+            **self._generate_target_garden_headers(kwargs.get("target_garden")),
+        }
         return self.session.patch(
             self.instance_url + str(instance_id),
             data=payload,
@@ -555,9 +563,10 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        headers = self.JSON_HEADERS
-        if kwargs.get("target_garden"):
-            headers = {**headers, **{"Target-Garden": kwargs["target_garden"]}}
+        headers = {
+            **self.JSON_HEADERS,
+            **self._generate_target_garden_headers(kwargs.get("target_garden")),
+        }
         return self.session.post(
             self.request_url, data=payload, headers=headers, params=kwargs
         )

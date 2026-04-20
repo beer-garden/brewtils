@@ -5,6 +5,8 @@ Brewtils Changelog
 ------
 TBD
 
+- Added Target-Garden header to set target garden when provided in kwargs
+
 3.32.0
 ------
 3/4/26

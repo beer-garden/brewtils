@@ -68,9 +68,10 @@ class SystemClient(object):
                 Request to the target system.
 
             choice_validation_enabled:
-                Flag controlling whether choice validation is enabled when creating requests. Valid options are
-                True, False, and None. True will enable full choice validation, False will disable it, and None
-                will use the default behavior. Default is None for System Clients.
+                Flag controlling whether choice validation is enabled when creating
+                requests. Valid options are True, False, and None. True will enable
+                full choice validation, False will disable it, and None will use the
+                default behavior. Default is None for System Clients.
 
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first

@@ -3,12 +3,20 @@ import yaml
 from typing import Any, Callable, Dict, Optional
 from functools import wraps
 from models import Parameter, Command
+from brewtils.plugin import (  # noqa F401
+    get_current_request_read_only,
+)
+import requests.exceptions
+import urllib3
+from requests import Response, Session  # noqa
+from requests.adapters import HTTPAdapter
+from requests.utils import quote
 
 class SwaggerDecorator:
 
     swagger_spec: Dict[str, Any]
 
-    def parse_swagger_file(self, swagger_path: str) -> Dict[str, Any]:
+    def _parse_swagger_file(self, swagger_path: str) -> Dict[str, Any]:
         """Load and parse a Swagger/OpenAPI file."""
         with open(swagger_path, 'r') as f:
             if swagger_path.endswith('.json'):
@@ -17,13 +25,16 @@ class SwaggerDecorator:
                 return yaml.safe_load(f)
         
     def __init__(self, swagger_path: str, base_url: str = None, name=None, version=None):
-        self.swagger_spec = self.parse_swagger_file(swagger_path)
+        self.swagger_spec = self._parse_swagger_file(swagger_path)
         
         if base_url is None:
             paths = self.swagger_spec.get('paths', {})
             self.base_url_final = base_url or self.swagger_spec.get('servers', [{}])[0].get('url', '')
         else:
             self.base_url_final = base_url
+
+        self._config = self._load_config(args, kwargs)
+        self.session = Session()
 
         if name:
             self._bg_name = name
@@ -59,9 +70,27 @@ class SwaggerDecorator:
                 description = details.get('description', json.dumps(details))
 
                 self._commands.push(Command(name=operation_id, parameters=parameters, description=description))
+                setattr(self, operation_id, self._invoke_api)
 
 
-    def param_type_to_brewtils(self,items):
+    def _invoke_api(self, **kwargs):
+        current_request = get_current_request_read_only()
+        if current_request is None:
+            raise RuntimeError("No current request found. This method must be called within a command execution context.")
+
+        paths = self.swagger_spec.get('paths', {})
+        for path, methods in paths.items():
+            for method, details in methods.items():
+                if method.lower() not in ['get', 'post', 'put', 'delete', 'patch']:
+                    continue
+                if current_request.command == details.get('operationId', f"{method}_{path}"):
+                    # This is the current API to execute
+
+                    return
+                
+        raise RuntimeError(f"No matching API found for command {current_request.command}")
+
+    def _param_type_to_brewtils(self,items):
         if hasattr(items, 'anyOf') or hasattr(items, 'oneOf'):
             return "Any"
         if hasattr(items, '$ref'):
@@ -83,7 +112,7 @@ class SwaggerDecorator:
         else:
             return "String"
 
-    def convert_parameters(self, param):               
+    def _convert_parameters(self, param):               
 
         parameter = Parameter()
      
@@ -92,9 +121,9 @@ class SwaggerDecorator:
             if 'type' in schema:
                 if schema['type'] == 'array' and 'items' in schema:
                     parameter.multiple = True
-                    parameter.type = self.param_type_to_brewtils(schema['items'])
+                    parameter.type = self._param_type_to_brewtils(schema['items'])
                 else:
-                    parameter.type = self.param_type_to_brewtils(schema)
+                    parameter.type = self._param_type_to_brewtils(schema)
 
             if 'minimum' in schema:
                 parameter.minimum = schema['minimum']
@@ -111,6 +140,7 @@ class SwaggerDecorator:
         parameter.description = param.get('description', json.dumps(param))
         parameter.optional = str(param.get('required', 'true')).lower() == 'false'
         parameter.name = param.get('name')
+        parameter.is_kwarg = True
 
         return parameter
     

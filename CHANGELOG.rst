@@ -1,7 +1,7 @@
 Brewtils Changelog
 ==================
 
-TBD
+3.33.0
 ------
 TBD
 

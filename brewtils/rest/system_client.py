@@ -436,6 +436,7 @@ class SystemClient(object):
                     blocking=blocking,
                     timeout=timeout,
                     choice_validation_enabled=choice_validation_enabled,
+                    target_garden=self._system.garden_name,
                 )
 
         except ValidationError:

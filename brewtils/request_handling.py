@@ -7,7 +7,6 @@ import sys
 import threading
 from concurrent.futures.thread import ThreadPoolExecutor
 
-import six
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils.plugin
@@ -72,10 +71,17 @@ class LocalRequestProcessor(object):
                     if parameter.key not in request.parameters:
                         request.parameters[parameter.key] = parameter.default
             request.command_type = command.command_type
+            request.hidden = command.hidden
+
+        request.source_garden = brewtils.plugin.get_config_value("garden", None)
+        request.target_garden = brewtils.plugin.get_config_value("garden", None)
+
+        request.status = "CREATED"
+        request = self._ez_client.put_request(request)
 
         request.status = "IN_PROGRESS"
-
         request = self._ez_client.put_request(request)
+
         brewtils.plugin.request_context.current_request = request
 
         try:
@@ -153,7 +159,7 @@ class LocalRequestProcessor(object):
 
     @staticmethod
     def _format_output(output):
-        if isinstance(output, six.string_types):
+        if isinstance(output, str):
             return output
 
         try:
@@ -381,7 +387,7 @@ class RequestProcessor(object):
 
     @staticmethod
     def _format_output(output):
-        if isinstance(output, six.string_types):
+        if isinstance(output, str):
             return output
 
         try:
@@ -418,8 +424,7 @@ class AdminProcessor(RequestProcessor):
         self._updater.update_request(request, headers)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RequestConsumer(threading.Thread):
+class RequestConsumer(threading.Thread, metaclass=abc.ABCMeta):
     """Base class for consumers
 
     Classes deriving from this are expected to provide a concrete implementation for a
@@ -479,8 +484,7 @@ class RequestConsumer(threading.Thread):
         raise ValueError("Unknown connection type '%s'" % connection_type)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RequestUpdater(object):
+class RequestUpdater(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_request(self, request, headers):
         pass

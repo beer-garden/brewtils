@@ -5,7 +5,7 @@ from concurrent.futures import wait
 
 import pytest
 from mock import Mock, call
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 import brewtils.rest
 from brewtils.errors import (

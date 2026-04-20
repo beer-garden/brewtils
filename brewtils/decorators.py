@@ -4,25 +4,28 @@ import functools
 import inspect
 import os
 import sys
-from types import MethodType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
-
-import six
+from inspect import Parameter as InspectParameter  # noqa
+from inspect import signature
+from types import MethodType  # noqa
+from typing import (  # noqa
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from brewtils.choices import process_choices
 from brewtils.display import resolve_form, resolve_schema, resolve_template
 from brewtils.errors import PluginParamError, _deprecate
 from brewtils.models import Command, Parameter, Resolvable
 
-if sys.version_info.major == 2:
-    from funcsigs import Parameter as InspectParameter  # noqa
-    from funcsigs import signature
-else:
-    from inspect import Parameter as InspectParameter  # noqa
-    from inspect import signature
-
-    if sys.version_info.major == 3 and sys.version_info.minor >= 8:
-        from typing import get_args
+if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+    from typing import get_args
 
 __all__ = [
     "client",
@@ -639,13 +642,10 @@ def _parse_method(method):
             _signature_validate(method_command, method)
 
         except PluginParamError as ex:
-            six.raise_from(
-                PluginParamError(
-                    "Error initializing parameters for command '%s': %s"
-                    % (method_command.name, ex)
-                ),
-                ex,
-            )
+            raise PluginParamError(
+                "Error initializing parameters for command '%s': %s"
+                % (method_command.name, ex)
+            ) from ex
 
         return method_command
 
@@ -687,10 +687,9 @@ def _initialize_command(method):
         cmd.form = resolve_form(cmd.form, base_dir=base_dir)
         cmd.template = resolve_template(cmd.template, base_dir=base_dir)
     except PluginParamError as ex:
-        six.raise_from(
-            PluginParamError("Error initializing command '%s': %s" % (cmd.name, ex)),
-            ex,
-        )
+        raise PluginParamError(
+            "Error initializing command '%s': %s" % (cmd.name, ex)
+        ) from ex
 
     return cmd
 
@@ -1017,7 +1016,7 @@ def _format_type(param_type):
 
 
 def _initialize_parameters(parameter_list, method=None):
-    # type: (Iterable[Parameter, object, dict], obj) -> List[Parameter]
+    # type: (Iterable[Parameter, object, dict], object) -> List[Parameter]
     """Initialize Parameters from a list of parameter definitions
 
     This exists for backwards compatibility with the old way of specifying Models.
@@ -1169,6 +1168,7 @@ def _signature_validate(cmd, method):
     Raises:
         PluginParamError: There was a validation problem
     """
+
     for param in cmd.parameters:
         sig_param = None
         has_kwargs = False
@@ -1183,22 +1183,38 @@ def _signature_validate(cmd, method):
             method, param.key
         ) and param.type != _parameter_type_hint(method, param.key):
             raise PluginParamError(
+                f"Command {method.__name__} Parameter {param.key},"
                 "Parameter Type assigned in the @parameter(type=?) does not match "
                 "either the function Type Hint or the Doc String definition. "
-                "Please evaluate your type matching."
+                "Please evaluate your type matching"
             )
 
         # Couldn't find the parameter. That's OK if this parameter is meant to be part
         # of the **kwargs AND the function has a **kwargs parameter.
         if sig_param is None:
-            if not param.is_kwarg:
+            if not has_kwargs and not param.is_kwarg:
                 raise PluginParamError(
-                    "Parameter was not not marked as part of kwargs and wasn't found "
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "wasn't found in the method signature and command "
+                    "does not declare a **kwargs signature parameter"
+                )
+            elif not has_kwargs and param.is_kwarg:
+                raise PluginParamError(
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "wasn't found in the method signature and command "
+                    "does not declare a **kwargs signature parameter, "
+                    "but was marked as part of kwargs (is_kwarg=True)"
+                )
+            elif not param.is_kwarg:
+                raise PluginParamError(
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "was not marked as part of kwargs and wasn't found "
                     "in the method signature (should is_kwarg be True?)"
                 )
             elif not has_kwargs:
                 raise PluginParamError(
-                    "Parameter was declared as a kwarg (is_kwarg=True) but the method "
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "was declared as a kwarg (is_kwarg=True) but the method "
                     "signature does not declare a **kwargs parameter"
                 )
 
@@ -1207,14 +1223,16 @@ def _signature_validate(cmd, method):
         else:
             if param.is_kwarg:
                 raise PluginParamError(
-                    "Parameter was marked as part of kwargs but was found in the "
+                    f"Command {method.__name__} Parameter {param.key} "
+                    "was marked as part of kwargs but was found in the "
                     "method signature (should is_kwarg be False?)"
                 )
 
             # I don't think this is even possible in Python < 3.8
             if sig_param.kind == InspectParameter.POSITIONAL_ONLY:
                 raise PluginParamError(
-                    "Sorry, positional-only type parameters are not supported"
+                    f"Command {method.__name__} Parameter {param.key}, "
+                    "positional-only type parameters are not supported"
                 )
 
 

@@ -17,7 +17,7 @@ from packaging.version import Version
 from requests import ConnectionError as RequestsConnectionError
 
 import brewtils
-from brewtils.config import load_config
+from brewtils.config import load_config, get
 from brewtils.decorators import (
     _parse_client,
     _parse_shutdown_functions,
@@ -45,6 +45,7 @@ from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
 from brewtils.rest.system_client import SystemClient
 from brewtils.specification import _CONNECTION_SPEC
+from typing import Optional, Union
 
 # This is what enables request nesting to work easily
 request_context = threading.local()
@@ -54,6 +55,47 @@ request_context.current_request = None
 CONFIG = Box(default_box=True)
 # Global client
 CLIENT = None
+
+
+def is_config_empty(config=None) -> bool:
+    """Check if the global CONFIG is populated
+
+    Returns:
+        bool: False if CONFIG is populated, True otherwise
+    """
+
+    if config is None:
+        config = CONFIG
+    for _, value in config.items():
+        if isinstance(value, dict):
+            if not is_config_empty(value):
+                return False
+        elif value is not None:
+            return False
+
+    return True
+
+
+def get_config_value(
+    key: Optional[str] = None, default: Optional[Box] = None
+) -> Union[str, int, float, bool, complex, Box, None]:
+    """Get specified key from the config.
+
+    Nested keys can be separated with a "." If the key does not exist, then
+    a None will be returned.
+
+    If the key itself is None, then the entire config will be returned.
+
+    If the requested value is a container (has child items) then the returned value will
+    be an immutable (frozen) ``box.Box`` object.
+
+    Args:
+        key: The key to get, nested keys are separated with "."
+
+    Returns:
+        The value of the key in the config.
+    """
+    return get(key, CONFIG, default)
 
 
 def get_current_request_read_only():
@@ -430,50 +472,40 @@ class Plugin(object):
         # Now roll up / interpret all metadata to get the Commands
         self._system.commands = _parse_client(new_client)
 
-        try:
-            # Put some attributes on the Client class
-            client_clazz = type(new_client)
-            client_clazz.current_request = property(
-                lambda _: request_context.current_request
-            )
+        # Put some attributes on the Client class
+        client_clazz = type(new_client)
+        client_clazz.current_request = property(
+            lambda _: request_context.current_request
+        )
 
-            # Add for back-compatibility
-            client_clazz._bg_name = self._system.name
-            client_clazz._bg_version = self._system.version
-            client_clazz._bg_commands = self._system.commands
-            client_clazz._groups = self._system.groups
-            client_clazz._prefix_topic = self._system.prefix_topic
-            client_clazz._requires = self._system.requires
-            client_clazz._current_request = client_clazz.current_request
+        # Add for back-compatibility
+        client_clazz._bg_name = self._system.name
+        client_clazz._bg_version = self._system.version
+        client_clazz._bg_commands = self._system.commands
+        client_clazz._groups = self._system.groups
+        client_clazz._prefix_topic = self._system.prefix_topic
+        client_clazz._requires = self._system.requires
+        client_clazz._current_request = client_clazz.current_request
 
-            # Can only inject System Clients if the Client inherits from a class object
-            # TODO: Should we add a configuration to explicitly disable this?
-            if self._auto_self_client and issubclass(client_clazz, object):
+        # Can only inject System Clients if the Client inherits from a class object
+        # TODO: Should we add a configuration to explicitly disable this?
+        if self._auto_self_client and issubclass(client_clazz, object):
 
-                def system_client_getattribute(self, name):
-                    try:
-                        if not name.startswith("_"):
-                            request = get_current_request_read_only()
-                            # Does not support recursive calls
-                            if request and request.command != name:
-                                if self.__class__._bg_commands:
-                                    for bg_command in self.__class__._bg_commands:
-                                        if bg_command.name == name:
-                                            return getattr(SystemClient(), name)
-                    except Exception:
-                        pass
-                    return object.__getattribute__(self, name)
+            def system_client_getattribute(self, name):
+                try:
+                    if not name.startswith("_"):
+                        request = get_current_request_read_only()
+                        # Does not support recursive calls
+                        if request and request.command != name:
+                            if self.__class__._bg_commands:
+                                for bg_command in self.__class__._bg_commands:
+                                    if bg_command.name == name:
+                                        return getattr(SystemClient(), name)
+                except Exception:
+                    pass
+                return object.__getattribute__(self, name)
 
-                new_client.__class__.__getattribute__ = system_client_getattribute
-        except TypeError:
-            if sys.version_info.major != 2:
-                raise
-
-            self._logger.warning(
-                "Unable to assign attributes to Client class - current_request will "
-                "not be available. If you're using an old-style class declaration "
-                "it's recommended to switch to new-style if possible."
-            )
+            new_client.__class__.__getattribute__ = system_client_getattribute
 
         self._client = new_client
         global CLIENT

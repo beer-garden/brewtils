@@ -7,7 +7,7 @@ import pika.spec
 import pytest
 from mock import ANY, MagicMock, Mock, PropertyMock, call
 from pika.exceptions import AMQPError, ChannelClosedByBroker, ConnectionClosedByBroker
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 import brewtils.pika
 from brewtils.errors import DiscardMessageException, RepublishRequestException

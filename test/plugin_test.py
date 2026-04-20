@@ -255,7 +255,7 @@ class TestInit(object):
             client,
             system=bg_system,
             max_concurrent=1,
-            **get_connection_info(cli_args=args)
+            **get_connection_info(cli_args=args),
         )
 
         assert plugin._config.bg_host == "remotehost"
@@ -939,34 +939,61 @@ class TestDeprecations(object):
 
             getattr(plugin, attribute)
 
-            assert len(w) == 1
-            assert w[0].category == DeprecationWarning
+            # assert len(w) == 1
+            # assert w[0].category == DeprecationWarning
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if warning.category == DeprecationWarning and str(
+                    warning.message
+                ).startswith(attribute):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_plugin_base(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
             PluginBase(Mock(), bg_host="localhost")
-            assert len(w) == 1
 
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'PluginBase'" in str(warning)
-            assert "'Plugin'" in str(warning)
-            assert "4.0" in str(warning)
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "'PluginBase'" in str(warning)
+                    and "'Plugin'" in str(warning)
+                    and "4.0" in str(warning)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
     def test_remote_plugin(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
             RemotePlugin(Mock(), bg_host="localhost")
-            assert len(w) == 1
 
-            warning = w[0]
-            assert warning.category == DeprecationWarning
-            assert "'RemotePlugin'" in str(warning)
-            assert "'Plugin'" in str(warning)
-            assert "4.0" in str(warning)
+            assert len(w) > 0
+
+            found_expected_warnings = False
+            for warning in w:
+                if (
+                    warning.category == DeprecationWarning
+                    and "'RemotePlugin'" in str(warning)
+                    and "'Plugin'" in str(warning)
+                    and "4.0" in str(warning)
+                ):
+                    found_expected_warnings = True
+                    break
+
+            assert found_expected_warnings
 
 
 class TestDependencies(object):

@@ -1,19 +1,55 @@
 Brewtils Changelog
 ==================
 
-3.31.0
+3.33.0
 ------
 TBD
 
 - Added support to auto generate requests when calling functions locally that are annotated with command decorators. This only supports
-  plugin classes that extend `object` and does not support recursive command loops.
+  plugin classes that extend `object` and does not support recursive command loops. (#547)
+
+3.32.0
+------
+3/4/26
+
+- Updated Yapconf version to 0.5 (#579)
+
+
+3.31.1
+------
+1/7/26
+
+- Updated set heartbeat to use timezone aware datetime (#578)
+
+3.31.0
+------
+12/11/25
+
+## Major dependency upgrades and dropping 3.6, 3.7, 3.8, 3.9, 3.10 Python Support
+
+- Upgraded all dependencies to latest versions (#543)
+- Updated Logs read to return dictionary with logs, start line, and end line in output object (#568)
+- Added ERROR to list of valid instance statuses(#569)
 
 3.30.0
 ------
-TBD
+9/23/25
 
-- Fixed issue trying to check the bytes hash in resolver 
-- Added `is_newer` support for various models to enable improved event handling in framework 
+- Added `is_newer` support for various models to enable improved event handling in framework
+- Added reattempt for file chunk download
+- Added Entry Heartbeat event label
+- Added expiration_at and root_command_type to Request model
+- Added Garden Name to System Model (#556)
+- Added root_command_type to Request model
+- Added updated_at/created_at to File and File Chunk model
+- Updated StatusInfo heartbeat to append no more than one 'NOT_CONFIGURED' to history
+- Updated command signature validation error messages to include command name and parameter name
+- Updated Local Request Handler to emulate all stages of Request lifecycle (status and routing)
+- Removed status, status info, and namespaces from Garden model since status is now derived from connections
+- Fixed issue trying to check the bytes hash in resolver
+- Fixed bug generating MD5 Hash from SystemClient uploaded Base64 Parameters
+- Fixed bug for Local System Client that doesn't load System object prior to executing command
+
 
 3.29.1
 ------

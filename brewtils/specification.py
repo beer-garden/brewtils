@@ -221,7 +221,7 @@ _PLUGIN_SPEC = {
             "Whether to automatically invoke SystemClient for local"
             "system commands via self"
         ),
-        "default": True,
+        "default": False,
     },
     "instance_name": {
         "type": "str",

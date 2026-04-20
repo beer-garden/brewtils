@@ -139,7 +139,7 @@ class Plugin(object):
         - ``require``
         - ``requires``
         - ``requires_timeout``
-        - ``auto_self_client`` (defaults to "true")
+        - ``auto_self_client`` (defaults to "false")
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -288,7 +288,9 @@ class Plugin(object):
         self._custom_logger = False
         self._logger = self._setup_logging(logger=logger, **kwargs)
 
-        self._auto_self_client = kwargs.pop("auto_self_client", True)
+        self._auto_self_client = kwargs.pop("auto_self_client", False)
+        if not isinstance(self._auto_self_client, bool):
+            self._auto_self_client = str(self._auto_self_client).lower() == "true"
 
         # Need to pop out shutdown functions because these are not processed
         # until shutdown

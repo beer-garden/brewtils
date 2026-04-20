@@ -185,7 +185,8 @@ class SystemClient(object):
             Only has an effect when blocking=False.
         raise_on_error (bool): Flag controlling whether created Requests that complete
             with an ERROR state should raise an exception
-        choice_validation_enabled (bool): Flag controlling whether choice validation is enabled when creating requests.
+        choice_validation_enabled (bool): Flag controlling whether choice validation is
+            enabled when creating requests.
         bg_host (str): Beer-garden hostname
         bg_port (int): Beer-garden port
         bg_url_prefix (str): URL path that will be used as a prefix when communicating

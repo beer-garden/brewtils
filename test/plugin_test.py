@@ -201,6 +201,7 @@ class TestInit(object):
         os.environ["BG_GROUP"] = "GroupA"
         os.environ["BG_PREFIX_TOPIC"] = "custom.topic"
         os.environ["BG_REQUIRE"] = "SystemA"
+        os.environ["BG_AUTO_SELF_CLIENT"] = "False"
 
         plugin = Plugin(client, system=bg_system, max_concurrent=1)
 
@@ -210,6 +211,7 @@ class TestInit(object):
         assert plugin._config.ssl_enabled is False
         assert plugin._config.ca_verify is False
         assert plugin._config.prefix_topic == "custom.topic"
+        assert plugin._config.auto_self_client is False
         assert "GroupA" == plugin._config.group
         assert "SystemA" in plugin._config.require
 

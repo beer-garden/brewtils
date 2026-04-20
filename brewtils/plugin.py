@@ -43,6 +43,7 @@ from brewtils.request_handling import (
 )
 from brewtils.resolvers.manager import ResolutionManager
 from brewtils.rest.easy_client import EasyClient
+from brewtils.rest.system_client import SystemClient
 from brewtils.specification import _CONNECTION_SPEC
 from typing import Optional, Union
 
@@ -138,6 +139,7 @@ class Plugin(object):
         - ``require``
         - ``requires``
         - ``requires_timeout``
+        - ``auto_self_client`` (defaults to "false")
 
     Connection information tells the Plugin how to communicate with Beer-garden. The
     most important of these is the ``bg_host`` (to tell the plugin where to find the
@@ -250,6 +252,9 @@ class Plugin(object):
 
         prefix_topic (str): Prefix for Generated Command Topics
 
+        auto_self_client (bool): Whether to automatically invoke SystemClient for local
+            system commands via self
+
         logger (:py:class:`logging.Logger`): Logger that will be used by the Plugin.
             Passing a logger will prevent the Plugin from preforming any additional
             logging configuration.
@@ -282,6 +287,10 @@ class Plugin(object):
         # Need to set up logging before loading config
         self._custom_logger = False
         self._logger = self._setup_logging(logger=logger, **kwargs)
+
+        self._auto_self_client = kwargs.pop("auto_self_client", False)
+        if not isinstance(self._auto_self_client, bool):
+            self._auto_self_client = str(self._auto_self_client).lower() == "true"
 
         # Need to pop out shutdown functions because these are not processed
         # until shutdown
@@ -479,6 +488,26 @@ class Plugin(object):
         client_clazz._prefix_topic = self._system.prefix_topic
         client_clazz._requires = self._system.requires
         client_clazz._current_request = client_clazz.current_request
+
+        # Can only inject System Clients if the Client inherits from a class object
+        # TODO: Should we add a configuration to explicitly disable this?
+        if self._auto_self_client and issubclass(client_clazz, object):
+
+            def system_client_getattribute(self, name):
+                try:
+                    if not name.startswith("_"):
+                        request = get_current_request_read_only()
+                        # Does not support recursive calls
+                        if request and request.command != name:
+                            if self.__class__._bg_commands:
+                                for bg_command in self.__class__._bg_commands:
+                                    if bg_command.name == name:
+                                        return getattr(SystemClient(), name)
+                except Exception:
+                    pass
+                return object.__getattribute__(self, name)
+
+            new_client.__class__.__getattribute__ = system_client_getattribute
 
         self._client = new_client
         global CLIENT

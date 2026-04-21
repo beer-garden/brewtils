@@ -1,6 +1,18 @@
 Brewtils Changelog
 ==================
 
+3.33.0
+------
+TBD
+
+- Added support to auto generate requests when calling functions locally that are annotated with command decorators. This only supports
+  plugin classes that extend `object` and does not support recursive command loops. This is disabled by default (#547)
+  Examples: Plugin(..., auto_self_client=True)
+- Added support for SystemClient to define choice_validation_enabled flag during initialization or command execution.
+  Default behavior is to skip choice validation if a parent request is present. (#585)
+  Examples: SystemClient(..., choice_validation_enabled=True) or SystemClient().call_command(..., _choice_validation_enabled=True)
+- Added Target-Garden header to set target garden when provided in kwargs (#567,#578)
+
 3.32.0
 ------
 3/4/26

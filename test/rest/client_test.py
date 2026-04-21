@@ -289,7 +289,7 @@ class TestRestClient(object):
 
     def test_delete_system_1(self, client, session_mock):
         client.delete_system("id")
-        session_mock.delete.assert_called_with(client.system_url + "id")
+        session_mock.delete.assert_called_with(client.system_url + "id", headers={})
 
     def test_get_instance_1(self, client, session_mock):
         client.get_instance("id")

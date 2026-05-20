@@ -1,11 +1,31 @@
 Brewtils Changelog
 ==================
 
+3.33.0
+------
+4/21/2026
+
+- Added support to auto generate requests when calling functions locally that are annotated with command decorators. This only supports
+  plugin classes that extend `object` and does not support recursive command loops. This is disabled by default (#547)
+  Examples: Plugin(..., auto_self_client=True)
+- Added support for SystemClient to define choice_validation_enabled flag during initialization or command execution.
+  Default behavior is to skip choice validation if a parent request is present. (#585)
+  Examples: SystemClient(..., choice_validation_enabled=True) or SystemClient().call_command(..., _choice_validation_enabled=True)
+- Added Target-Garden header to set target garden when provided in kwargs (#567,#578)
+
 3.33.0rc0
 ------
 12/17/25
 
-- Added support for preferences in User model
+- Added support for preferences in User model (Not Released yet, but will be used for future features) (#582)
+
+3.32.0
+------
+3/4/26
+
+- Updated Yapconf version to 0.5 (#579)
+
+
 3.31.1
 ------
 1/7/26

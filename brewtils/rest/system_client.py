@@ -67,6 +67,12 @@ class SystemClient(object):
                 to each namespace to help load balance the requests. It will rotate per
                 Request to the target system.
 
+            choice_validation_enabled:
+                Flag controlling whether choice validation is enabled when creating
+                requests. Valid options are True, False, and None. True will enable
+                full choice validation, False will disable it, and None will use the
+                default behavior. Default is None for System Clients.
+
     Loading the System:
         The System definition is lazily loaded, so nothing happens until the first
         attempt to send a Request. At that point the SystemClient will query Beer-garden
@@ -179,7 +185,8 @@ class SystemClient(object):
             Only has an effect when blocking=False.
         raise_on_error (bool): Flag controlling whether created Requests that complete
             with an ERROR state should raise an exception
-
+        choice_validation_enabled (bool): Flag controlling whether choice validation is
+            enabled when creating requests.
         bg_host (str): Beer-garden hostname
         bg_port (int): Beer-garden port
         bg_url_prefix (str): URL path that will be used as a prefix when communicating
@@ -216,7 +223,7 @@ class SystemClient(object):
 
         # Now need to determine if the intended target is the current running plugin.
         # Start by ensuring there's a valid Plugin context active
-        self.target_self = bool(brewtils.plugin.CONFIG)
+        self.target_self = not brewtils.plugin.is_config_empty()
 
         # If ANY of the target specification arguments don't match the current plugin
         # then the target is different
@@ -227,26 +234,25 @@ class SystemClient(object):
             "system_namespace": "namespace",
         }
         for key, value in config_map.items():
-            if (
-                kwargs.get(key) is not None
-                and kwargs.get(key) != brewtils.plugin.CONFIG[value]
-            ):
+            if kwargs.get(key) is not None and kwargs.get(
+                key
+            ) != brewtils.plugin.get_config_value(value):
                 self.target_self = False
                 break
 
         # Now assign self._system_name, etc based on the value of target_self
         if self.target_self:
-            self._system_name = brewtils.plugin.CONFIG.name
-            self._version_constraint = brewtils.plugin.CONFIG.version
-            self._default_instance = brewtils.plugin.CONFIG.instance_name
-            self._system_namespace = brewtils.plugin.CONFIG.namespace or None
+            self._system_name = brewtils.plugin.get_config_value("name")
+            self._version_constraint = brewtils.plugin.get_config_value("version")
+            self._default_instance = brewtils.plugin.get_config_value("instance_name")
+            self._system_namespace = brewtils.plugin.get_config_value("namespace", None)
 
         else:
             self._system_name = kwargs.get("system_name")
             self._version_constraint = kwargs.get("version_constraint", "latest")
             self._default_instance = kwargs.get("default_instance", "default")
             self._system_namespace = kwargs.get(
-                "system_namespace", brewtils.plugin.CONFIG.namespace or None
+                "system_namespace", brewtils.plugin.get_config_value("namespace", None)
             )
             self._system_namespaces = kwargs.get("system_namespaces", [])
 
@@ -268,6 +274,7 @@ class SystemClient(object):
         self._max_delay = kwargs.get("max_delay", 30)
         self._blocking = kwargs.get("blocking", True)
         self._raise_on_error = kwargs.get("raise_on_error", False)
+        self._choice_validation_enabled = kwargs.get("choice_validation_enabled", None)
 
         # This is for Python 3.4 compatibility - max_workers MUST be non-None
         # in that version. This logic is what was added in Python 3.5
@@ -407,15 +414,41 @@ class SystemClient(object):
         # tried to pass a parameter without a key:
         # client.command_name(param)
         if args:
-            raise RequestProcessException(
-                "Using positional arguments when creating a request is not allowed. "
-                "Please use keyword arguments instead."
-            )
+            if self.target_self:
+                _command = self._commands[kwargs["_command"]]
+                if _command:
+                    arg_counter = 0
+                    for arg in args:
+                        if arg_counter < len(_command.parameters):
+                            if _command.parameters[arg_counter].key in kwargs:
+                                raise RequestProcessException(
+                                    (
+                                        "Keyword argument overlapped with provided positional "
+                                        "argument. Please use all keyword arguments instead."
+                                    )
+                                )
+                            kwargs[_command.parameters[arg_counter].key] = arg
+                            arg_counter = arg_counter + 1
+                        else:
+                            raise RequestProcessException(
+                                (
+                                    "More positional arguments provided that command parameters. "
+                                    "Please use all keyword arguments instead."
+                                )
+                            )
+            else:
+                raise RequestProcessException(
+                    "Using positional arguments when creating a request is not allowed. "
+                    "Please use keyword arguments instead."
+                )
 
         # Need to pop here, otherwise we'll try to send as a request parameter
         raise_on_error = kwargs.pop("_raise_on_error", self._raise_on_error)
         blocking = kwargs.pop("_blocking", self._blocking)
         timeout = kwargs.pop("_timeout", self._timeout)
+        choice_validation_enabled = kwargs.pop(
+            "_choice_validation_enabled", self._choice_validation_enabled
+        )
 
         # If the request fails validation and the version constraint allows,
         # check for a new version and retry
@@ -424,7 +457,11 @@ class SystemClient(object):
 
             if not self.target_self:
                 request = self._easy_client.create_request(
-                    request, blocking=blocking, timeout=timeout
+                    request,
+                    blocking=blocking,
+                    timeout=timeout,
+                    choice_validation_enabled=choice_validation_enabled,
+                    target_garden=self._system.garden_name,
                 )
 
         except ValidationError:
@@ -541,12 +578,13 @@ class SystemClient(object):
         # Support cross-server parent/child requests. Add parent if request has different host.
         if (
             request.parent is None
-            and brewtils.plugin.CONFIG
+            and not brewtils.plugin.is_config_empty()
             and (
-                brewtils.plugin.CONFIG.bg_host.upper()
+                brewtils.plugin.get_config_value("bg_host", "").upper()
                 != self._easy_client.client.bg_host.upper()
-                or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
-                or brewtils.plugin.CONFIG.bg_url_prefix
+                or brewtils.plugin.get_config_value("bg_port")
+                != self._easy_client.client.bg_port
+                or brewtils.plugin.get_config_value("bg_url_prefix")
                 != self._easy_client.client.bg_prefix
             )
         ):
@@ -556,9 +594,9 @@ class SystemClient(object):
             request.has_parent = request.parent is not None
 
             ec = EasyClient(
-                bg_host=brewtils.plugin.CONFIG.bg_host,
-                bg_port=brewtils.plugin.CONFIG.bg_port,
-                bg_url_prefix=brewtils.plugin.CONFIG.bg_url_prefix,
+                bg_host=brewtils.plugin.get_config_value("bg_host"),
+                bg_port=brewtils.plugin.get_config_value("bg_port"),
+                bg_url_prefix=brewtils.plugin.get_config_value("bg_url_prefix"),
             )
             ec.put_request(request)
 
@@ -570,10 +608,11 @@ class SystemClient(object):
         if parent is None:
             return None
 
-        if brewtils.plugin.CONFIG and (
-            brewtils.plugin.CONFIG.bg_host.upper()
+        if not brewtils.plugin.is_config_empty() and (
+            brewtils.plugin.get_config_value("bg_host", "").upper()
             != self._easy_client.client.bg_host.upper()
-            or brewtils.plugin.CONFIG.bg_port != self._easy_client.client.bg_port
+            or brewtils.plugin.get_config_value("bg_port")
+            != self._easy_client.client.bg_port
         ):
             self._logger.warning(
                 "A parent request was found, but the destination beer-garden "

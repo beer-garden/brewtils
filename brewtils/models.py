@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from zoneinfo import ZoneInfo
 
@@ -505,7 +505,7 @@ class StatusInfo(BaseModel):
             or not self.history
             or (status == "NOT_CONFIGURED" and status != self.history[-1].status)
         ):
-            self.heartbeat = datetime.utcnow()
+            self.heartbeat = datetime.now(UTC)
             self.history.append(
                 StatusHistory(status=copy.deepcopy(status), heartbeat=self.heartbeat)
             )

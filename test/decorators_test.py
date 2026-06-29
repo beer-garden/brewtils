@@ -1480,13 +1480,11 @@ class TestSignatureValidate(object):
             import textwrap
 
             exec_locals = {}
-            class_dec = textwrap.dedent(
-                """
+            class_dec = textwrap.dedent("""
                 class Tester(object):
                     def c(self, foo, /):
                         pass
-                """
-            )
+                """)
 
             # Black doesn't handle this well - because we run in 2.7 mode it wants to
             # put a space after exec, but then it complains about the space after exec.

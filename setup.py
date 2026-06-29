@@ -14,7 +14,7 @@ def find_version():
     return match_object.group(1)
 
 
-with open("README.rst") as readme_file:
+with open("README.md") as readme_file:
     readme = readme_file.read()
 
 
@@ -23,7 +23,7 @@ setup(
     version=find_version(),
     description="Beer-garden plugin and utility library",
     long_description=readme,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     url="https://beer-garden.io/",
     author="The Beer-garden Team",
     author_email=" ",
@@ -40,7 +40,7 @@ setup(
         "simplejson<4", # Latest 3.20.2
         "typing_extensions>=4.12.2", # Latest 4.15.0
         "wrapt", # Latest 1.17.3
-        "yapconf<1.0,>=0.3.7", # Latest 0.4.0
+        "yapconf<1.0,>=0.3.7", # Latest 0.5.0
     ],
     classifiers=[
         "Intended Audience :: Developers",

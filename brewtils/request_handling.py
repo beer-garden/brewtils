@@ -73,8 +73,8 @@ class LocalRequestProcessor(object):
             request.command_type = command.command_type
             request.hidden = command.hidden
 
-        request.source_garden = getattr(brewtils.plugin.CONFIG, "garden", None)
-        request.target_garden = getattr(brewtils.plugin.CONFIG, "garden", None)
+        request.source_garden = brewtils.plugin.get_config_value("garden", None)
+        request.target_garden = brewtils.plugin.get_config_value("garden", None)
 
         request.status = "CREATED"
         request = self._ez_client.put_request(request)

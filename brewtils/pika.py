@@ -620,7 +620,7 @@ class PikaConsumer(RequestConsumer):
             self._connection.close()
 
         for arg in args:
-            if type(arg) == ChannelClosedByBroker:
+            if isinstance(arg, ChannelClosedByBroker):
                 self.logger.error("Channel Closed by RabbitMQ, shutting down")
                 self._panic_event.set()
 

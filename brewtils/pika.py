@@ -14,7 +14,7 @@ from pika import (
     SSLOptions,
     URLParameters,
 )
-from pika.exceptions import AMQPError, ConnectionWrongStateError
+from pika.exceptions import AMQPError, ConnectionWrongStateError, ChannelClosedByBroker
 from pika.spec import PERSISTENT_DELIVERY_MODE
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
@@ -618,6 +618,11 @@ class PikaConsumer(RequestConsumer):
 
         if self._connection.is_open:
             self._connection.close()
+
+        for arg in args:
+            if type(arg) == ChannelClosedByBroker:
+                self.logger.error("Channel Closed by RabbitMQ, shutting down")
+                self._panic_event.set()
 
     def start_consuming(self):
         """Begin consuming messages

@@ -31,6 +31,7 @@ from brewtils.errors import (
     RequestProcessingError,
     RestConnectionError,
     ValidationError,
+    NotFoundError,
     _deprecate,
 )
 from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
@@ -942,6 +943,12 @@ class Plugin(object):
         """Handle status Request"""
         try:
             self._ez_client.instance_heartbeat(self._instance.id)
+        except NotFoundError:
+            self.logger.error(
+                "Attempted to re-register Instance ID: %s", self._instance.id
+            )
+            self._system = self._initialize_system()
+            self._instance = self._initialize_instance()
         except (RequestsConnectionError, RestConnectionError):
             pass
 

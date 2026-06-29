@@ -251,6 +251,7 @@ class PikaConsumer(RequestConsumer):
             queue before giving up (default -1 aka never)
         max_reconnect_timeout (int): Maximum time to wait before reconnect attempt
         starting_reconnect_timeout (int): Time to wait before first reconnect attempt
+        rebuild_channel_logic (func): function called to rebuild channel if closed remotely
     """
 
     def __init__(
@@ -260,11 +261,14 @@ class PikaConsumer(RequestConsumer):
         panic_event=None,
         logger=None,
         thread_name=None,
+        rebuild_channel_logic=None,
         **kwargs,
     ):
         self._connection = None
         self._channel = None
         self._consumer_tag = None
+
+        self._rebuild_channel_logic = rebuild_channel_logic
 
         self._queue_name = queue_name
         self._panic_event = panic_event
@@ -621,8 +625,8 @@ class PikaConsumer(RequestConsumer):
 
         for arg in args:
             if isinstance(arg, ChannelClosedByBroker):
-                self.logger.error("Channel Closed by RabbitMQ, shutting down")
-                self._panic_event.set()
+                if self._rebuild_channel_logic is not None:
+                    self._rebuild_channel_logic()
 
     def start_consuming(self):
         """Begin consuming messages

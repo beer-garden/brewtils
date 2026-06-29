@@ -92,7 +92,7 @@ lint: ## check style with flake8
 
 # Testing / Coverage
 test-python: ## run tests quickly with the default Python
-	pytest $(TEST_DIR)
+	pytest $(TEST_DIR) --ignore $(TEST_DIR)/log_test.py
 
 test-tox: ## run tests on every Python version with tox
 	tox

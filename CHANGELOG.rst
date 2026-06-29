@@ -5,8 +5,8 @@ TBD
 ------
 TBD
 
-- Added RabbitMQ remote disconnect logic for Plugin to shutdown if RabbitMQ closes the channel connection or rejects Topic subscription (#) 
-- Added Plugin re-register logic for if Instance is unknown by Beer-Garden (#) 
+- Added RabbitMQ remote disconnect logic for Plugin to shutdown if RabbitMQ closes the channel connection or rejects Topic subscription (#589) 
+- Added Plugin re-register logic for if Instance is unknown by Beer-Garden (#589) 
 
 3.33.0
 ------

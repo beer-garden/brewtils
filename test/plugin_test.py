@@ -464,36 +464,40 @@ class TestInitializeLogging(object):
         monkeypatch.setattr(logging.config, "dictConfig", dict_config)
         return dict_config
 
-    def test_normal(self, caplog, plugin, ez_client, config_mock):
+    def test_normal(self, caplog, plugin, ez_client, config_mock, monkeypatch):
         plugin._custom_logger = False
         ez_client.get_logging_config.return_value = {"handlers": {"stdout": {}}}
 
         with caplog.at_level(logging.ERROR):
             plugin._initialize_logging()
 
+        monkeypatch.undo()
         assert config_mock.called is True
         assert len(caplog.records) == 0
 
-    def test_custom_logger(self, plugin, ez_client, config_mock):
+    def test_custom_logger(self, plugin, ez_client, config_mock, monkeypatch):
         plugin._custom_logger = True
 
         plugin._initialize_logging()
+        monkeypatch.undo()
         assert config_mock.called is False
 
-    def test_retrieve_fail(self, plugin, ez_client, config_mock):
+    def test_retrieve_fail(self, plugin, ez_client, config_mock, monkeypatch):
         plugin._custom_logger = False
         ez_client.get_logging_config.side_effect = RestConnectionError
 
         plugin._initialize_logging()
+        monkeypatch.undo()
         assert config_mock.called is False
 
-    def test_config_fail(self, caplog, plugin, ez_client, config_mock):
+    def test_config_fail(self, caplog, plugin, ez_client, config_mock, monkeypatch):
         plugin._custom_logger = False
         ez_client.get_logging_config.return_value = "Bad config value"
 
         with caplog.at_level(logging.ERROR):
             plugin._initialize_logging()
 
+        monkeypatch.undo()
         assert config_mock.called is True
         assert len(caplog.records) > 0
 
@@ -775,10 +779,14 @@ class TestSetupLogging(object):
 
         logger = plugin._setup_logging(log_level="WARNING")
 
-        assert plugin._custom_logger is False
-        assert logger == logging.getLogger("brewtils.plugin")
+        result1 = plugin._custom_logger is False
+        result2 =  logger == logging.getLogger("brewtils.plugin")
+        monkeypatch.undo()
+        assert result1
+        assert result2
         assert dict_config.call_count == 1
         dict_config.assert_called_once_with(default_config(level="WARNING"))
+        
 
     def test_prior_config(self, monkeypatch, plugin):
         """Test that the logging config is not altered
@@ -791,8 +799,11 @@ class TestSetupLogging(object):
 
         logger = plugin._setup_logging(log_level="WARNING")
 
-        assert plugin._custom_logger is True
-        assert logger == logging.getLogger("brewtils.plugin")
+        result1 =  plugin._custom_logger is True
+        result2 =  logger == logging.getLogger("brewtils.plugin")
+        monkeypatch.undo()
+        assert result1
+        assert result2
         assert dict_config.called is False
 
 

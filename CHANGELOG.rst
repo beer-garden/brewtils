@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Added deprecated decorator and deprecated kwarg to command and parameter decorators (#540)
+
 3.33.0
 ------
 4/21/2026
@@ -54,7 +60,6 @@ Brewtils Changelog
 - Fixed issue trying to check the bytes hash in resolver
 - Fixed bug generating MD5 Hash from SystemClient uploaded Base64 Parameters
 - Fixed bug for Local System Client that doesn't load System object prior to executing command
-
 
 3.29.1
 ------

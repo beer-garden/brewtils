@@ -38,6 +38,7 @@ setup(
         "pika<=1.4,>=1.0.1", # Latest 1.3.2
         "requests<3", # Latest 2.32.5
         "simplejson<4", # Latest 3.20.2
+        "typing_extensions>=4.12.2", # Latest 4.15.0
         "wrapt", # Latest 1.17.3
         "yapconf<1.0,>=0.3.7", # Latest 0.5.0
     ],

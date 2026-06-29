@@ -242,6 +242,7 @@ class ParameterSchema(BaseSchema):
     regex = fields.Str(allow_none=True)
     form_input_type = fields.Str(allow_none=True)
     type_info = fields.Dict(allow_none=True)
+    deprecated = fields.Bool(allow_none=True)
 
 
 class CommandSchema(BaseSchema):
@@ -260,6 +261,7 @@ class CommandSchema(BaseSchema):
     tags = fields.List(fields.Str(), allow_none=True)
     topics = fields.List(fields.Str(), allow_none=True)
     allow_any_kwargs = fields.Boolean(allow_none=True)
+    deprecated = fields.Boolean(allow_none=True)
 
 
 class InstanceSchema(BaseSchema):

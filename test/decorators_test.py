@@ -38,6 +38,11 @@ from brewtils.test.comparable import assert_command_equal, assert_parameter_equa
 
 from inspect import signature  # noqa
 
+if sys.version_info.major == 3 and sys.version_info.minor >= 13:
+    from warnings import deprecated  # noqa
+elif sys.version_info.major == 3 and sys.version_info.minor < 13:
+    from typing_extensions import deprecated  # noqa
+
 
 @pytest.fixture
 def cmd():
@@ -694,6 +699,45 @@ class TestCommand(object):
 
         assert cmd1._command.display_name == "foo_test"
 
+    def test_command_deprecated_docstring(self):
+        @deprecated("Do not use for this reason")
+        @command(deprecated=True)
+        def cmd():
+            """Docstring"""
+            return True
+
+        assert hasattr(cmd, "_command")
+
+        _cmd = _initialize_command(cmd)
+
+        assert _cmd.description == "(Deprecated) Docstring"
+        assert _cmd.hidden is True
+
+    def test_command_deprecated_description(self):
+        @command(description="Description", deprecated=True)
+        def cmd():
+            """Docstring"""
+            return True
+
+        assert hasattr(cmd, "_command")
+
+        _cmd = _initialize_command(cmd)
+
+        assert _cmd.description == "(Deprecated) Description"
+        assert _cmd.hidden is True
+
+    def test_command_deprecated_no_description(self):
+        @command(deprecated=True)
+        def cmd():
+            return True
+
+        assert hasattr(cmd, "_command")
+
+        _cmd = _initialize_command(cmd)
+
+        assert _cmd.description == "(Deprecated)"
+        assert _cmd.hidden is True
+
 
 class TestParameter(object):
     """Test parameter decorator
@@ -792,6 +836,32 @@ class TestParameter(object):
             @parameter(**basic_param, type="Bad Type")
             def cmd_bad_2(foo):
                 return foo
+
+    def test_parameter_deprecated(self, basic_param):
+        @parameter(**basic_param, deprecated=True)
+        def cmd(foo):
+            return foo
+
+        assert hasattr(cmd, "parameters")
+        assert len(cmd.parameters) == 1
+        assert (
+            _initialize_parameter(cmd.parameters[0]).description
+            == "(Deprecated) Mutant"
+        )
+
+    def test_parameter_deprecated_multiple_param(self, basic_param):
+        @parameter(**basic_param)
+        @parameter(key="bar", description="Param2", deprecated=True)
+        def cmd(foo):
+            return foo
+
+        assert hasattr(cmd, "parameters")
+        assert len(cmd.parameters) == 2
+        assert _initialize_parameter(cmd.parameters[0]).description == "Mutant"
+        assert (
+            _initialize_parameter(cmd.parameters[1]).description
+            == "(Deprecated) Param2"
+        )
 
 
 class TestParameters(object):
@@ -1077,6 +1147,31 @@ class TestInitializeParameter(object):
     def test_file_defaults(self):
         """File parameter defaults should be cleared for safety"""
         assert _initialize_parameter(Parameter(key="f", type="Base64")).default is None
+
+    def test_deprecated(self):
+        """File parameter defaults should be cleared for safety"""
+        assert (
+            _initialize_parameter(Parameter(key="a", type="boolean")).description
+            is None
+        )
+        assert (
+            _initialize_parameter(
+                Parameter(key="a", type="boolean", deprecated=True)
+            ).description
+            == "(Deprecated)"
+        )
+        assert (
+            _initialize_parameter(
+                Parameter(key="a", type="boolean", description="Desc")
+            ).description
+            == "Desc"
+        )
+        assert (
+            _initialize_parameter(
+                Parameter(key="a", type="boolean", description="Desc", deprecated=True)
+            ).description
+            == "(Deprecated) Desc"
+        )
 
     class TestNesting(object):
         @pytest.fixture
@@ -1485,6 +1580,52 @@ class TestDeprecations(object):
                 _initialize_parameter(cmd.parameters[0]),
                 _initialize_parameter(**parameter_dict),
             )
+
+
+class TestDeprecated(object):
+    """Test deprecated parameter"""
+
+    def test_deprecated_command_docstring(self):
+        @deprecated("Do not use for this reason")
+        @command
+        def cmd():
+            """Docstring"""
+            return True
+
+        # Initialize this command and make sure the description has been updated
+        assert hasattr(cmd, "_command")
+
+        _cmd = _initialize_command(cmd)
+
+        assert _cmd.description == "(Deprecated) Docstring"
+        assert _cmd.hidden is True
+
+    def test_deprecated_command_description(self):
+        @deprecated("Do not use for this reason")
+        @command(description="Description")
+        def cmd():
+            """Docstring"""
+            return True
+
+        assert hasattr(cmd, "_command")
+
+        _cmd = _initialize_command(cmd)
+
+        assert _cmd.description == "(Deprecated) Description"
+        assert _cmd.hidden is True
+
+    def test_deprecated_command_no_description(self):
+        @deprecated("Do not use for this reason")
+        @command()
+        def cmd():
+            return True
+
+        assert hasattr(cmd, "_command")
+
+        _cmd = _initialize_command(cmd)
+
+        assert _cmd.description == "(Deprecated)"
+        assert _cmd.hidden is True
 
 
 class TestShutdown(object):

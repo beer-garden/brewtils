@@ -33,4 +33,3 @@ def global_config():
     """Make sure that the global CONFIG is reset after every test"""
     yield
     brewtils.plugin.CONFIG = Box(default_box=True)
-

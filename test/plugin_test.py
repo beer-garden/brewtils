@@ -780,13 +780,12 @@ class TestSetupLogging(object):
         logger = plugin._setup_logging(log_level="WARNING")
 
         result1 = plugin._custom_logger is False
-        result2 =  logger == logging.getLogger("brewtils.plugin")
+        result2 = logger == logging.getLogger("brewtils.plugin")
         monkeypatch.undo()
         assert result1
         assert result2
         assert dict_config.call_count == 1
         dict_config.assert_called_once_with(default_config(level="WARNING"))
-        
 
     def test_prior_config(self, monkeypatch, plugin):
         """Test that the logging config is not altered
@@ -799,8 +798,8 @@ class TestSetupLogging(object):
 
         logger = plugin._setup_logging(log_level="WARNING")
 
-        result1 =  plugin._custom_logger is True
-        result2 =  logger == logging.getLogger("brewtils.plugin")
+        result1 = plugin._custom_logger is True
+        result2 = logger == logging.getLogger("brewtils.plugin")
         monkeypatch.undo()
         assert result1
         assert result2

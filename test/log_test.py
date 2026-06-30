@@ -95,6 +95,7 @@ class TestFindLogFile(object):
 
         assert result
 
+
 class TestReadLogFile(object):
     @pytest.fixture
     def lines(self):

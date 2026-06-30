@@ -848,23 +848,24 @@ class Plugin(object):
             runner_id=self._config.runner_id,
         )
 
-    def _re_initialize_instance(self, timeout=300):
+    def _re_initialize_instance(self):
         self.logger.error("Attempting to rebuild Instance %s", self._instance.id)
         try:
             wait_time = 0.1
-            while timeout > 0:
+            while wait_time > 0:
                 if self._ez_client.can_connect():
                     self._system = self._initialize_system()
                     self._instance = self._initialize_instance()
                     self._initialize_instance()
                     return
                 else:
-                    timeout = timeout - wait_time
                     wait_time = min(wait_time * 2, 30)
+                    self.logger.error(
+                        "Waiting %s seconds to rebuild Instance %s",
+                        wait_time,
+                        self._instance.id,
+                    )
                     self._wait(wait_time)
-
-            self.logger.error("Failed to rebuild Instance and Topics, Shutting Down")
-            self._shutdown_event.set()
 
         except NotFoundError:
             self.logger.error("Failed to rebuild Instance and Topics, Shutting Down")

@@ -34,8 +34,3 @@ def global_config():
     yield
     brewtils.plugin.CONFIG = Box(default_box=True)
 
-@pytest.fixture(autouse=True)
-def global_config(monkeypatch):
-    """Make sure that the monkeypatch is reset after every test"""
-    yield
-    monkeypatch.undo()

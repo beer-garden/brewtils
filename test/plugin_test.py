@@ -471,7 +471,7 @@ class TestInitializeLogging(object):
         with caplog.at_level(logging.ERROR):
             plugin._initialize_logging()
 
-        monkeypatch.undo()
+        # monkeypatch.undo()
         assert config_mock.called is True
         assert len(caplog.records) == 0
 

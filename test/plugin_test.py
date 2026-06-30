@@ -487,7 +487,7 @@ class TestInitializeLogging(object):
         ez_client.get_logging_config.side_effect = RestConnectionError
 
         plugin._initialize_logging()
-        monkeypatch.undo()
+        # monkeypatch.undo()
         assert config_mock.called is False
 
     def test_config_fail(self, caplog, plugin, ez_client, config_mock, monkeypatch):
@@ -497,7 +497,7 @@ class TestInitializeLogging(object):
         with caplog.at_level(logging.ERROR):
             plugin._initialize_logging()
 
-        monkeypatch.undo()
+        # monkeypatch.undo()
         assert config_mock.called is True
         assert len(caplog.records) > 0
 

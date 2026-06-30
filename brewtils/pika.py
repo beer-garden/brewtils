@@ -560,9 +560,7 @@ class PikaConsumer(RequestConsumer):
         Args:
             connection: The connection
             args: Tuple of arguments describing why the connection closed
-                For pika < 1: reply_code (Numeric code indicating close reason),
-                reply_text (String describing close reason).  For pika >= 1
-                exc (Exception describing close).
+                For pika >= 1 exc (Exception describing close).
 
         Returns:
             None

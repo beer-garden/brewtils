@@ -31,6 +31,7 @@ from brewtils.errors import (
     RequestProcessingError,
     RestConnectionError,
     ValidationError,
+    NotFoundError,
     _deprecate,
 )
 from brewtils.log import configure_logging, default_config, find_log_file, read_log_file
@@ -847,6 +848,29 @@ class Plugin(object):
             runner_id=self._config.runner_id,
         )
 
+    def _re_initialize_instance(self):
+        self.logger.error("Attempting to rebuild Instance %s", self._instance.id)
+        try:
+            wait_time = 0.1
+            while wait_time > 0:
+                if self._ez_client.can_connect():
+                    self._system = self._initialize_system()
+                    self._instance = self._initialize_instance()
+                    self._initialize_instance()
+                    return
+                else:
+                    wait_time = min(wait_time * 2, 30)
+                    self.logger.error(
+                        "Waiting %s seconds to rebuild Instance %s",
+                        wait_time,
+                        self._instance.id,
+                    )
+                    self._wait(wait_time)
+
+        except NotFoundError:
+            self.logger.error("Failed to rebuild Instance and Topics, Shutting Down")
+            self._shutdown_event.set()
+
     def _initialize_processors(self):
         """Create RequestProcessors for the admin and request queues"""
         # If the queue connection is TLS we need to update connection params with
@@ -875,6 +899,7 @@ class Plugin(object):
             thread_name="Admin Consumer",
             queue_name=self._instance.queue_info["admin"]["name"],
             max_concurrent=1,
+            rebuild_channel_logic=self._re_initialize_instance,
             **common_args,
         )
         request_consumer = RequestConsumer.create(
@@ -942,6 +967,8 @@ class Plugin(object):
         """Handle status Request"""
         try:
             self._ez_client.instance_heartbeat(self._instance.id)
+        except NotFoundError:
+            self._re_initialize_instance()
         except (RequestsConnectionError, RestConnectionError):
             pass
 

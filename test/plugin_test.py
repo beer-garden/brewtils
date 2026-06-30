@@ -479,7 +479,7 @@ class TestInitializeLogging(object):
         plugin._custom_logger = True
 
         plugin._initialize_logging()
-        monkeypatch.undo()
+        # monkeypatch.undo()
         assert config_mock.called is False
 
     def test_retrieve_fail(self, plugin, ez_client, config_mock, monkeypatch):

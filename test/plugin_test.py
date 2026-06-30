@@ -781,7 +781,7 @@ class TestSetupLogging(object):
 
         result1 = plugin._custom_logger is False
         result2 = logger == logging.getLogger("brewtils.plugin")
-        monkeypatch.undo()
+        # monkeypatch.undo()
         assert result1
         assert result2
         assert dict_config.call_count == 1

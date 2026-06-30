@@ -471,7 +471,6 @@ class TestInitializeLogging(object):
         with caplog.at_level(logging.ERROR):
             plugin._initialize_logging()
 
-        # monkeypatch.undo()
         assert config_mock.called is True
         assert len(caplog.records) == 0
 
@@ -479,7 +478,6 @@ class TestInitializeLogging(object):
         plugin._custom_logger = True
 
         plugin._initialize_logging()
-        # monkeypatch.undo()
         assert config_mock.called is False
 
     def test_retrieve_fail(self, plugin, ez_client, config_mock, monkeypatch):
@@ -487,7 +485,6 @@ class TestInitializeLogging(object):
         ez_client.get_logging_config.side_effect = RestConnectionError
 
         plugin._initialize_logging()
-        # monkeypatch.undo()
         assert config_mock.called is False
 
     def test_config_fail(self, caplog, plugin, ez_client, config_mock, monkeypatch):
@@ -497,7 +494,6 @@ class TestInitializeLogging(object):
         with caplog.at_level(logging.ERROR):
             plugin._initialize_logging()
 
-        # monkeypatch.undo()
         assert config_mock.called is True
         assert len(caplog.records) > 0
 
@@ -781,7 +777,7 @@ class TestSetupLogging(object):
 
         result1 = plugin._custom_logger is False
         result2 = logger == logging.getLogger("brewtils.plugin")
-        # monkeypatch.undo()
+        monkeypatch.undo()
         assert result1
         assert result2
         assert dict_config.call_count == 1

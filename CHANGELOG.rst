@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.34.0
 ------
-TBD
+6/30/2026
 
 - Added RabbitMQ remote disconnect logic for Plugin to shutdown if RabbitMQ closes the channel connection or rejects Topic subscription (#589) 
 - Added Plugin re-register logic for if Instance is unknown by Beer-Garden (#589) 

@@ -112,14 +112,21 @@ def process_choices(choices):
         Choices: Dictionary that fully describes a choices specification
     """
 
-    if choices is None or isinstance(choices, Choices):
+    if choices is None:  # or isinstance(choices, Choices):
         return choices
 
     # If choices is a Callable, call it
     if callable(choices):
         choices = choices()
 
-    if isinstance(choices, dict):
+    if isinstance(choices, Choices):
+        choice_type = choices.type
+        value = choices.value
+        display = choices.display if choices.display else _determine_display(value)
+        strict = choices.strict
+        details = choices.details
+        key_reference = choices.model_extra.get("key_reference")
+    elif isinstance(choices, dict):
         if not choices.get("value"):
             raise PluginParamError(
                 "No 'value' provided for choices. You must at least "
@@ -134,6 +141,7 @@ def process_choices(choices):
         display = choices.get("display", _determine_display(value))
         choice_type = choices.get("type")
         strict = choices.get("strict", True)
+        key_reference = choices.get("key_reference")
 
         if choice_type is None:
             choice_type = _determine_type(value)
@@ -199,7 +207,9 @@ def process_choices(choices):
             details = parse(unparsed_value, parse_as="url")
         else:
             if isinstance(value, dict):
-                unparsed_value = choices.get("key_reference")
+                unparsed_value = (
+                    key_reference if key_reference else choices.get("key_reference")
+                )
                 if unparsed_value is None:
                     raise PluginParamError(
                         "Specifying a static choices dictionary requires a "

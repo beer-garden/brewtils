@@ -628,6 +628,10 @@ class TestCommand(object):
         def foo():
             pass
 
+        print(command_dict)
+        print(foo._command.topics)
+        print(bg_command.topics)
+
         assert_command_equal(foo._command, bg_command)
 
     def test_function(self):

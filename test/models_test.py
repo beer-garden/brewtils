@@ -340,7 +340,7 @@ class TestRequest(object):
 
     def test_set_status(self, request1):
         request1.status = "RECEIVED"
-        assert request1._status == "RECEIVED"
+        assert request1.status == "RECEIVED"
 
     def test_is_ephemeral(self, request1):
         assert not request1.is_ephemeral

@@ -5,11 +5,11 @@ import typing  # noqa
 from typing import Any, Dict, Optional, Union  # noqa
 
 from box import Box  # type: ignore
-from marshmallow.experimental.context import Context
 
 import brewtils.models
+import brewtils.schema_parser
 import brewtils.schemas
-from brewtils.models import BaseModel  # noqa
+from pydantic import BaseModel  # noqa
 
 from collections.abc import Iterable  # type: ignore  # noqa
 
@@ -20,42 +20,42 @@ class SchemaParser(object):
     logger = logging.getLogger(__name__)
 
     _models = {
-        "ChoicesSchema": brewtils.models.Choices,
-        "CommandSchema": brewtils.models.Command,
-        "ConnectionSchema": brewtils.models.Connection,
-        "CronTriggerSchema": brewtils.models.CronTrigger,
-        "DateTriggerSchema": brewtils.models.DateTrigger,
-        "EventSchema": brewtils.models.Event,
-        "FileTriggerSchema": brewtils.models.FileTrigger,
-        "GardenSchema": brewtils.models.Garden,
-        "InstanceSchema": brewtils.models.Instance,
-        "IntervalTriggerSchema": brewtils.models.IntervalTrigger,
-        "JobSchema": brewtils.models.Job,
+        "Choices": brewtils.models.Choices,
+        "Command": brewtils.models.Command,
+        "Connection": brewtils.models.Connection,
+        "CronTrigger": brewtils.models.CronTrigger,
+        "DateTrigger": brewtils.models.DateTrigger,
+        "Event": brewtils.models.Event,
+        "FileTrigger": brewtils.models.FileTrigger,
+        "Garden": brewtils.models.Garden,
+        "Instance": brewtils.models.Instance,
+        "IntervalTrigger": brewtils.models.IntervalTrigger,
+        "Job": brewtils.models.Job,
         "JobExport": brewtils.models.Job,
-        "LoggingConfigSchema": brewtils.models.LoggingConfig,
-        "QueueSchema": brewtils.models.Queue,
-        "ParameterSchema": brewtils.models.Parameter,
-        "PatchSchema": brewtils.models.PatchOperation,
-        "UserTokenSchema": brewtils.models.UserToken,
-        "RequestSchema": brewtils.models.Request,
-        "RequestFileSchema": brewtils.models.RequestFile,
-        "FileSchema": brewtils.models.File,
-        "FileChunkSchema": brewtils.models.FileChunk,
-        "FileStatusSchema": brewtils.models.FileStatus,
-        "RequestTemplateSchema": brewtils.models.RequestTemplate,
-        "SystemSchema": brewtils.models.System,
-        "OperationSchema": brewtils.models.Operation,
-        "RunnerSchema": brewtils.models.Runner,
-        "ResolvableSchema": brewtils.models.Resolvable,
-        "RoleSchema": brewtils.models.Role,
-        "UpstreamRoleSchema": brewtils.models.UpstreamRole,
-        "UserSchema": brewtils.models.User,
-        "AliasUserMapSchema": brewtils.models.AliasUserMap,
-        "SubscriberSchema": brewtils.models.Subscriber,
-        "TopicSchema": brewtils.models.Topic,
-        "StatusInfoSchema": brewtils.models.StatusInfo,
-        "StatusHistorySchema": brewtils.models.StatusHistory,
-        "ReplicationSchema": brewtils.models.Replication,
+        "LoggingConfig": brewtils.models.LoggingConfig,
+        "Queue": brewtils.models.Queue,
+        "Parameter": brewtils.models.Parameter,
+        "PatchOperation": brewtils.models.PatchOperation,
+        "UserToken": brewtils.models.UserToken,
+        "Request": brewtils.models.Request,
+        "RequestFile": brewtils.models.RequestFile,
+        "File": brewtils.models.File,
+        "FileChunk": brewtils.models.FileChunk,
+        "FileStatus": brewtils.models.FileStatus,
+        "RequestTemplate": brewtils.models.RequestTemplate,
+        "System": brewtils.models.System,
+        "Operation": brewtils.models.Operation,
+        "Runner": brewtils.models.Runner,
+        "Resolvable": brewtils.models.Resolvable,
+        "Role": brewtils.models.Role,
+        "UpstreamRole": brewtils.models.UpstreamRole,
+        "User": brewtils.models.User,
+        "AliasUserMap": brewtils.models.AliasUserMap,
+        "Subscriber": brewtils.models.Subscriber,
+        "Topic": brewtils.models.Topic,
+        "StatusInfo": brewtils.models.StatusInfo,
+        "StatusHistory": brewtils.models.StatusHistory,
+        "Replication": brewtils.models.Replication,
     }
 
     # Deserialization methods
@@ -201,9 +201,33 @@ class SchemaParser(object):
         Returns:
             A PatchOperation object
         """
-        return cls.parse(
+        if "operations" in patch:
+            if from_string:
+                patch = json.loads(patch)["operations"]
+                from_string = False
+            else:
+                patch = patch["operations"]
+        # if isinstance(patch, list):
+        #     all_ops = []
+        #     for p in patch:
+        #         all_ops.extend(
+        #             cls.parse(
+        #                 p,
+        #                 brewtils.models.PatchOperation,
+        #                 from_string=from_string,
+        #                 **kwargs,
+        #             )
+        #         )
+        #     return all_ops
+
+        results = cls.parse(
             patch, brewtils.models.PatchOperation, from_string=from_string, **kwargs
         )
+
+        if not isinstance(results, list):
+            return [results]
+
+        return results
 
     @classmethod
     def parse_logging_config(cls, logging_config, from_string=False, **kwargs):
@@ -545,6 +569,8 @@ class SchemaParser(object):
             raise TypeError("When from_string=True data must be a string-type")
 
         if model_class == brewtils.models.PatchOperation:
+            if not isinstance(data, list) and from_string is False:
+                data = [data]
             if not kwargs.get("many", True):
                 cls.logger.warning(
                     "A patch object should always be wrapped as a list of objects. "
@@ -554,10 +580,63 @@ class SchemaParser(object):
                 )
             kwargs["many"] = True
 
-        schema = getattr(brewtils.schemas, model_class.schema)(**kwargs)
+        # schema = getattr(brewtils.models, model_class.__name__)#(**kwargs)
 
-        with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
-            return schema.loads(data) if from_string else schema.load(data)
+        model = cls._models[model_class.__name__]
+
+        # with Context[brewtils.schemas.BrewtilsContext]({"models": cls._models}):
+        #     return schema.loads(data) if from_string else schema.load(data)
+
+        # Check if from string is a list
+        if from_string:
+            parsed_data = json.loads(data)
+            if isinstance(parsed_data, list):
+                data = parsed_data
+                from_string = False
+
+        if isinstance(data, list):
+            all_obj = []
+            for p in data:
+                results = (
+                    model.model_validate_json(p)
+                    if from_string
+                    else model.model_validate(p)
+                )
+                if (
+                    model_class == brewtils.models.Event
+                    and results.payload
+                    and results.payload_type
+                ):
+                    results.payload = cls.parse(
+                        results.payload,
+                        cls._models[results.payload_type],
+                        from_string,
+                        **kwargs,
+                    )
+                all_obj.append(results)
+            return all_obj
+
+        try:
+            results = (
+                model.model_validate_json(data)
+                if from_string
+                else model.model_validate(data)
+            )
+        except AttributeError:
+            results = model.from_json(data) if from_string else model(**data)
+
+        if (
+            model_class == brewtils.models.Event
+            and results.payload
+            and results.payload_type
+        ):
+            results.payload = cls.parse(
+                results.payload,
+                cls._models[results.payload_type],
+                from_string,
+                **kwargs,
+            )
+        return results
 
     # Serialization methods
     @classmethod
@@ -583,7 +662,7 @@ class SchemaParser(object):
         return cls.serialize(
             system,
             to_string=to_string,
-            schema_name=brewtils.models.System.schema,
+            schema_name=brewtils.models.System.__name__,
             **kwargs,
         )
 
@@ -603,7 +682,7 @@ class SchemaParser(object):
         return cls.serialize(
             instance,
             to_string=to_string,
-            schema_name=brewtils.models.Instance.schema,
+            schema_name=brewtils.models.Instance.__name__,
             **kwargs,
         )
 
@@ -623,7 +702,7 @@ class SchemaParser(object):
         return cls.serialize(
             command,
             to_string=to_string,
-            schema_name=brewtils.models.Command.schema,
+            schema_name=brewtils.models.Command.__name__,
             **kwargs,
         )
 
@@ -643,7 +722,7 @@ class SchemaParser(object):
         return cls.serialize(
             connection,
             to_string=to_string,
-            schema_name=brewtils.models.Connection.schema,
+            schema_name=brewtils.models.Connection.__name__,
             **kwargs,
         )
 
@@ -663,7 +742,7 @@ class SchemaParser(object):
         return cls.serialize(
             parameter,
             to_string=to_string,
-            schema_name=brewtils.models.Parameter.schema,
+            schema_name=brewtils.models.Parameter.__name__,
             **kwargs,
         )
 
@@ -683,7 +762,7 @@ class SchemaParser(object):
         return cls.serialize(
             request_file,
             to_string=to_string,
-            schema_name=brewtils.models.RequestFile.schema,
+            schema_name=brewtils.models.RequestFile.__name__,
             **kwargs,
         )
 
@@ -703,7 +782,7 @@ class SchemaParser(object):
         return cls.serialize(
             request,
             to_string=to_string,
-            schema_name=brewtils.models.Request.schema,
+            schema_name=brewtils.models.Request.__name__,
             **kwargs,
         )
 
@@ -723,7 +802,7 @@ class SchemaParser(object):
         return cls.serialize(
             patch,
             to_string=to_string,
-            schema_name=brewtils.models.PatchOperation.schema,
+            schema_name=brewtils.models.PatchOperation.__name__,
             **kwargs,
         )
 
@@ -743,7 +822,7 @@ class SchemaParser(object):
         return cls.serialize(
             logging_config,
             to_string=to_string,
-            schema_name=brewtils.models.LoggingConfig.schema,
+            schema_name=brewtils.models.LoggingConfig.__name__,
             **kwargs,
         )
 
@@ -763,7 +842,7 @@ class SchemaParser(object):
         return cls.serialize(
             event,
             to_string=to_string,
-            schema_name=brewtils.models.Event.schema,
+            schema_name=brewtils.models.Event.__name__,
             **kwargs,
         )
 
@@ -783,7 +862,7 @@ class SchemaParser(object):
         return cls.serialize(
             queue,
             to_string=to_string,
-            schema_name=brewtils.models.Queue.schema,
+            schema_name=brewtils.models.Queue.__name__,
             **kwargs,
         )
 
@@ -801,7 +880,10 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            user, to_string=to_string, schema_name=brewtils.models.User.schema, **kwargs
+            user,
+            to_string=to_string,
+            schema_name=brewtils.models.User.__name__,
+            **kwargs,
         )
 
     @classmethod
@@ -818,7 +900,10 @@ class SchemaParser(object):
             Serialized representation
         """
         return cls.serialize(
-            role, to_string=to_string, schema_name=brewtils.models.Role.schema, **kwargs
+            role,
+            to_string=to_string,
+            schema_name=brewtils.models.Role.__name__,
+            **kwargs,
         )
 
     @classmethod
@@ -837,7 +922,7 @@ class SchemaParser(object):
         return cls.serialize(
             role,
             to_string=to_string,
-            schema_name=brewtils.models.UpstreamRole.schema,
+            schema_name=brewtils.models.UpstreamRole.__name__,
             **kwargs,
         )
 
@@ -857,7 +942,7 @@ class SchemaParser(object):
         return cls.serialize(
             alias_user_map,
             to_string=to_string,
-            schema_name=brewtils.models.AliasUserMap.schema,
+            schema_name=brewtils.models.AliasUserMap.__name__,
             **kwargs,
         )
 
@@ -877,7 +962,7 @@ class SchemaParser(object):
         return cls.serialize(
             user_token,
             to_string=to_string,
-            schema_name=brewtils.models.UserToken.schema,
+            schema_name=brewtils.models.UserToken.__name__,
             **kwargs,
         )
 
@@ -895,7 +980,7 @@ class SchemaParser(object):
             Serialize representation of job.
         """
         return cls.serialize(
-            job, to_string=to_string, schema_name=brewtils.models.Job.schema, **kwargs
+            job, to_string=to_string, schema_name=brewtils.models.Job.__name__, **kwargs
         )
 
     @classmethod
@@ -912,9 +997,8 @@ class SchemaParser(object):
             Serialized representation of the job IDs
         """
         arg_dict = {"ids": job_id_list}
-
         return cls.serialize(
-            arg_dict, to_string=to_string, schema_name="JobExportInputSchema", **kwargs
+            arg_dict, to_string=to_string, schema_name="JobExportInput", **kwargs
         )
 
     @classmethod
@@ -933,9 +1017,15 @@ class SchemaParser(object):
         Returns:
             Serialized representation of the Job
         """
-        return cls.serialize(
-            job, to_string=to_string, schema_name="JobExportSchema", **kwargs
-        )
+        kwargs["exclude"] = [
+            "next_run_time",
+            "success_count",
+            "error_count",
+            "canceled_count",
+            "skip_count",
+        ]
+
+        return cls.serialize(job, to_string=to_string, schema_name="Job", **kwargs)
 
     @classmethod
     def serialize_garden(cls, garden, to_string=True, **kwargs):
@@ -953,7 +1043,7 @@ class SchemaParser(object):
         return cls.serialize(
             garden,
             to_string=to_string,
-            schema_name=brewtils.models.Garden.schema,
+            schema_name=brewtils.models.Garden.__name__,
             **kwargs,
         )
 
@@ -973,7 +1063,7 @@ class SchemaParser(object):
         return cls.serialize(
             operation,
             to_string=to_string,
-            schema_name=brewtils.models.Operation.schema,
+            schema_name=brewtils.models.Operation.__name__,
             **kwargs,
         )
 
@@ -993,7 +1083,7 @@ class SchemaParser(object):
         return cls.serialize(
             runner,
             to_string=to_string,
-            schema_name=brewtils.models.Runner.schema,
+            schema_name=brewtils.models.Runner.__name__,
             **kwargs,
         )
 
@@ -1013,7 +1103,7 @@ class SchemaParser(object):
         return cls.serialize(
             resolvable,
             to_string=to_string,
-            schema_name=brewtils.models.Resolvable.schema,
+            schema_name=brewtils.models.Resolvable.__name__,
             **kwargs,
         )
 
@@ -1033,7 +1123,7 @@ class SchemaParser(object):
         return cls.serialize(
             subscriber,
             to_string=to_string,
-            schema_name=brewtils.models.Subscriber.schema,
+            schema_name=brewtils.models.Subscriber.__name__,
             **kwargs,
         )
 
@@ -1053,7 +1143,7 @@ class SchemaParser(object):
         return cls.serialize(
             topic,
             to_string=to_string,
-            schema_name=brewtils.models.Topic.schema,
+            schema_name=brewtils.models.Topic.__name__,
             **kwargs,
         )
 
@@ -1073,7 +1163,7 @@ class SchemaParser(object):
         return cls.serialize(
             status_info,
             to_string=to_string,
-            schema_name=brewtils.models.StatusInfo.schema,
+            schema_name=brewtils.models.StatusInfo.__name__,
             **kwargs,
         )
 
@@ -1093,7 +1183,7 @@ class SchemaParser(object):
         return cls.serialize(
             status_history,
             to_string=to_string,
-            schema_name=brewtils.models.StatusHistory.schema,
+            schema_name=brewtils.models.StatusHistory.__name__,
             **kwargs,
         )
 
@@ -1113,7 +1203,7 @@ class SchemaParser(object):
         return cls.serialize(
             replication,
             to_string=to_string,
-            schema_name=brewtils.models.Replication.schema,
+            schema_name=brewtils.models.Replication.__name__,
             **kwargs,
         )
 
@@ -1156,14 +1246,31 @@ class SchemaParser(object):
         if cls._single_item(model):
             kwargs["many"] = False
 
-            schema = getattr(brewtils.schemas, schema_name)(**kwargs)
+            # schema = getattr(brewtils.models, schema_name)(**kwargs)
+            schema = getattr(brewtils.models, schema_name)
 
-            return schema.dumps(model) if to_string else schema.dump(model)
+            if isinstance(model, dict):
+                return json.dumps(model) if to_string else model
+
+            # return schema.dumps(model) if to_string else schema.dump(model)
+
+            if not isinstance(model, BaseModel):
+                if cls is not brewtils.schema_parser.SchemaParser:
+                    if not isinstance(model, dict):
+                        model = model.to_dict()
+            
+                model = schema.model_validate(model)
+
+            return (
+                model.model_dump_json(exclude=kwargs.get("exclude", None))
+                if to_string
+                else model.model_dump(exclude=kwargs.get("exclude", None))
+            )
 
         # Explicitly force to_string to False so only original call returns a string
         multiple = [
             cls.serialize(x, to_string=False, schema_name=schema_name, **kwargs)
-            for x in model
+            for x in (model.model_dump() if isinstance(model, BaseModel) else model)
         ]
 
         return json.dumps(multiple) if to_string else multiple
@@ -1182,9 +1289,9 @@ class SchemaParser(object):
         Returns:
             The schema name, if found. None otherwise.
         """
-        if isinstance(obj, brewtils.models.BaseModel):
+        if isinstance(obj, BaseModel):
             # Use type() here because Command has an instance attribute named "schema"
-            return type(obj).schema
+            return type(obj).__name__
 
         return None
 
@@ -1198,6 +1305,6 @@ class SchemaParser(object):
         - "Standard" collections (list, tuple, set) must return False
         - Dictionaries and Boxes must return True
         """
-        if isinstance(obj, (dict, Box)):
+        if isinstance(obj, (BaseModel, dict, Box)):
             return True
         return not isinstance(obj, Iterable)

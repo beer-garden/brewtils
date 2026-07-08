@@ -528,7 +528,7 @@ class TestInitializeSystem(object):
         assert ez_client.update_system.called is False
 
     @pytest.mark.parametrize(
-        "current_commands", [[], [Command("test")], [Command("other_test")]]
+        "current_commands", [[], [Command(name="test")], [Command(name="other_test")]]
     )
     def test_system_exists(
         self, plugin, ez_client, bg_system, bg_instance, current_commands
@@ -545,7 +545,7 @@ class TestInitializeSystem(object):
         )
         ez_client.find_unique_system.return_value = existing_system
 
-        bg_system.commands = [Command("test")]
+        bg_system.commands = [Command(name="test")]
         ez_client.update_system.return_value = bg_system
 
         plugin._initialize_system()
@@ -610,7 +610,7 @@ class TestInitializeInstance(object):
         )
 
     def test_unregistered_instance(self, plugin, ez_client, bg_system):
-        bg_system.has_instance = Mock(return_value=False)
+        bg_system.instances = []
 
         with pytest.raises(PluginValidationError):
             plugin._initialize_instance()

@@ -792,6 +792,7 @@ class Request(RequestTemplate):
         hidden=None,
         updated_at=None,
         status_updated_at=None,
+        parent_id=None,
         has_parent=None,
         requester=None,
         source_garden=None,
@@ -821,6 +822,7 @@ class Request(RequestTemplate):
         self.updated_at = updated_at
         self.status_updated_at = status_updated_at
         self.error_class = error_class
+        self.parent_id = parent_id
         self.has_parent = has_parent
         self.requester = requester
         self.source_garden = source_garden

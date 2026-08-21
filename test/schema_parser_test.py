@@ -1157,11 +1157,15 @@ class TestRoundTrip(object):
         ],
     )
     def test_serialized_start(self, model, data):
-        assert self.compare(
-            SchemaParser.serialize(
-                SchemaParser.parse(data, model, from_string=False), to_string=False
+        schema_data = SchemaParser.serialize(
+            SchemaParser.parse(data, model, from_string=False), to_string=False
+        )
+        assert (
+            self.compare(
+                schema_data,
+                data,
             ),
-            data,
+            f"Value mismatch: Expected {data}, but got {schema_data}",
         )
 
     def compare(self, obj1: dict | str, obj2: dict | str):

@@ -1157,12 +1157,22 @@ class TestRoundTrip(object):
         ],
     )
     def test_serialized_start(self, model, data):
-        assert (
+        self.compare_dictionaries(
             SchemaParser.serialize(
                 SchemaParser.parse(data, model, from_string=False), to_string=False
-            )
-            == data
+            ),
+            data,
         )
+
+    def compare_dictionaries(self, obj1: dict, obj2: dict):
+        assert len(obj1.keys()) == len(obj2.keys())
+
+        for key in obj1.keys():
+            assert key in obj2.keys()
+            if type(obj2) == dict:
+                self.compare_dictionaries(obj1[key], obj2[key])
+            else:
+                assert obj1[key] == obj2[key]
 
     def test_patch_model_start(self, bg_patch):
         """Patches are always parsed into a list, so they need a tweak to test"""

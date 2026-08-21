@@ -1160,21 +1160,15 @@ class TestRoundTrip(object):
         schema_data = SchemaParser.serialize(
             SchemaParser.parse(data, model, from_string=False), to_string=False
         )
-        assert (
-            self.compare(
-                schema_data,
-                data,
-            ),
-            f"Value mismatch: Expected {data}, but got {schema_data}",
-        )
+        assert self.compare(schema_data, data)
 
     def compare(self, obj1: dict | str, obj2: dict | str):
 
-        if type(obj1) != type(obj2):
+        if type(obj1) is not type(obj2):
             return False
 
-        if type(obj1) == dict:
-            if len(obj1.keys()) != len(obj2.keys()):
+        if type(obj1) is dict:
+            if len(obj1.keys()) is not len(obj2.keys()):
                 return False
 
             for key in obj1.keys():
@@ -1183,7 +1177,7 @@ class TestRoundTrip(object):
                 if not self.compare(obj1[key], obj2[key]):
                     return False
 
-        elif type(obj1) == list:
+        elif type(obj1) is list:
             for obj1_value in obj1:
                 if not any(self.compare(obj1_value, obj2_value) for obj2_value in obj2):
                     return False

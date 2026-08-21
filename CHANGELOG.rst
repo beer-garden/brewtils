@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+3.35.0
+------
+TBD
+
+- Updated Request model to include `parent_id` for association mapping (#592)
+
 3.34.0
 ------
 6/30/2026

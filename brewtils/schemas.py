@@ -385,15 +385,9 @@ class RequestSchema(RequestTemplateSchema):
     is_event = fields.Bool(allow_none=True)
     parent = fields.Nested(
         lambda: RequestSchema(exclude=("children",)), allow_none=True
-    )    
+    )
     children = fields.List(
-        fields.Nested(
-            lambda: RequestSchema(
-                exclude=(
-                    "parent",
-                )
-            )
-        ),
+        fields.Nested(lambda: RequestSchema(exclude=("parent",))),
         dump_default=None,
         allow_none=True,
     )

@@ -109,7 +109,7 @@ class SwaggerDecorator:
         """
         spec = YapconfSpec(_CONNECTION_SPEC)
 
-        return spec.load_config(*[brewtils.plugin.CONFIG])
+        return spec.load_config('ENVIRONMENT')
 
     def _invoke_api(self, **kwargs):
         current_request = get_current_request_read_only()

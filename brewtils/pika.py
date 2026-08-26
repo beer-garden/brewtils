@@ -14,7 +14,7 @@ from pika import (
     SSLOptions,
     URLParameters,
 )
-from pika.exceptions import AMQPError, ConnectionWrongStateError
+from pika.exceptions import AMQPError, ConnectionWrongStateError, ChannelClosedByBroker
 from pika.spec import PERSISTENT_DELIVERY_MODE
 
 from brewtils.errors import DiscardMessageException, RepublishRequestException
@@ -251,6 +251,7 @@ class PikaConsumer(RequestConsumer):
             queue before giving up (default -1 aka never)
         max_reconnect_timeout (int): Maximum time to wait before reconnect attempt
         starting_reconnect_timeout (int): Time to wait before first reconnect attempt
+        rebuild_channel_logic (func): function called to rebuild channel if closed remotely
     """
 
     def __init__(
@@ -260,11 +261,14 @@ class PikaConsumer(RequestConsumer):
         panic_event=None,
         logger=None,
         thread_name=None,
+        rebuild_channel_logic=None,
         **kwargs,
     ):
         self._connection = None
         self._channel = None
         self._consumer_tag = None
+
+        self._rebuild_channel_logic = rebuild_channel_logic
 
         self._queue_name = queue_name
         self._panic_event = panic_event
@@ -556,9 +560,7 @@ class PikaConsumer(RequestConsumer):
         Args:
             connection: The connection
             args: Tuple of arguments describing why the connection closed
-                For pika < 1: reply_code (Numeric code indicating close reason),
-                reply_text (String describing close reason).  For pika >= 1
-                exc (Exception describing close).
+                For pika >= 1 exc (Exception describing close).
 
         Returns:
             None
@@ -618,6 +620,11 @@ class PikaConsumer(RequestConsumer):
 
         if self._connection.is_open:
             self._connection.close()
+
+        for arg in args:
+            if isinstance(arg, ChannelClosedByBroker):
+                if self._rebuild_channel_logic is not None:
+                    self._rebuild_channel_logic()
 
     def start_consuming(self):
         """Begin consuming messages

@@ -59,11 +59,16 @@ class TestLog(object):
             instance_name="inst",
         )
 
-        assert os.path.exists(os.path.join(str(tmpdir), "log"))
-        assert config_mock.called is True
+        result1 = os.path.exists(os.path.join(str(tmpdir), "log"))
+        result2 = config_mock.called is True
 
         mangled_config = config_mock.call_args[0][0]
-        assert "foo" in mangled_config["handlers"]["file"]["filename"]
+        result3 = "foo" in mangled_config["handlers"]["file"]["filename"]
+
+        monkeypatch.undo()
+        assert result1
+        assert result2
+        assert result3
 
 
 class TestFindLogFile(object):
@@ -72,7 +77,10 @@ class TestFindLogFile(object):
         root_mock = Mock(handlers=[handler_mock])
         monkeypatch.setattr(logging, "getLogger", Mock(return_value=root_mock))
 
-        assert find_log_file() == "foo.log"
+        result = find_log_file() == "foo.log"
+        monkeypatch.undo()
+
+        assert result
 
     def test_failure(self, monkeypatch):
         # This ensures the handler doesn't have a baseFilename attribute
@@ -81,7 +89,11 @@ class TestFindLogFile(object):
         root_mock = Mock(handlers=[handler_mock])
         monkeypatch.setattr(logging, "getLogger", Mock(return_value=root_mock))
 
-        assert find_log_file() is None
+        result = find_log_file() is None
+
+        monkeypatch.undo()
+
+        assert result
 
 
 class TestReadLogFile(object):

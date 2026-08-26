@@ -11,7 +11,6 @@ from requests import Response, Session  # noqa
 from requests.adapters import HTTPAdapter
 from requests.utils import quote
 from yapconf import YapconfSpec
-
 import brewtils.plugin
 from brewtils.errors import _deprecate
 from brewtils.rest import normalize_url_prefix
@@ -216,6 +215,13 @@ class RestClient(object):
 
         return spec.load_config(*[kwargs, renamed, positional, brewtils.plugin.CONFIG])
 
+    def _generate_target_garden_headers(self, target_garden):
+        if target_garden is not None:
+            if target_garden == quote(target_garden):
+                return {"Target-Garden": target_garden}
+
+        return {}
+
     def can_connect(self, **kwargs):
         # type: (**Any) -> bool
         """Determine if a connection to the Beer-garden server is possible
@@ -365,7 +371,10 @@ class RestClient(object):
         return self.session.patch(
             self.garden_url + quote(garden_name),
             data=payload,
-            headers=self.JSON_HEADERS,
+            headers={
+                **self.JSON_HEADERS,
+                **self._generate_target_garden_headers(garden_name),
+            },
         )
 
     @enable_auth
@@ -428,8 +437,8 @@ class RestClient(object):
         )
 
     @enable_auth
-    def delete_system(self, system_id):
-        # type: (str) -> Response
+    def delete_system(self, system_id, **kwargs):
+        # type: (str, Any) -> Response
         """Performs a DELETE on a System URL
 
         Args:
@@ -438,7 +447,8 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
-        return self.session.delete(self.system_url + system_id)
+        headers = self._generate_target_garden_headers(kwargs.get("target_garden"))
+        return self.session.delete(self.system_url + system_id, headers=headers)
 
     @enable_auth
     def get_instance(self, instance_id):
@@ -454,8 +464,8 @@ class RestClient(object):
         return self.session.get(self.instance_url + instance_id)
 
     @enable_auth
-    def patch_instance(self, instance_id, payload):
-        # type: (str, str) -> Response
+    def patch_instance(self, instance_id, payload, **kwargs):
+        # type: (str, str, *Any) -> Response
         """Performs a PATCH on the instance URL
 
         Args:
@@ -465,10 +475,14 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
+        headers = {
+            **self.JSON_HEADERS,
+            **self._generate_target_garden_headers(kwargs.get("target_garden")),
+        }
         return self.session.patch(
             self.instance_url + str(instance_id),
             data=payload,
-            headers=self.JSON_HEADERS,
+            headers=headers,
         )
 
     @enable_auth
@@ -549,8 +563,12 @@ class RestClient(object):
         Returns:
             Requests Response object
         """
+        headers = {
+            **self.JSON_HEADERS,
+            **self._generate_target_garden_headers(kwargs.get("target_garden")),
+        }
         return self.session.post(
-            self.request_url, data=payload, headers=self.JSON_HEADERS, params=kwargs
+            self.request_url, data=payload, headers=headers, params=kwargs
         )
 
     @enable_auth

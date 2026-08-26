@@ -2,7 +2,7 @@ import json
 import yaml
 from typing import Any, Callable, Dict, Optional
 from functools import wraps
-from models import Parameter, Command
+from brewtils.models import Parameter, Command
 from brewtils.plugin import (  # noqa F401
     get_current_request_read_only,
 )

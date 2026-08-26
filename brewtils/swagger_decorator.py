@@ -26,15 +26,15 @@ class SwaggerDecorator:
                 return json.load(f)
             else:
                 return yaml.safe_load(f)
+
+    def _parse_swagger_url(self, swagger_url: str) -> Dict[str, Any]:
+        """Load and parse a Swagger/OpenAPI file."""
+        response = self.session.get(swagger_url)
+
+        return response.json()
+
         
-    def __init__(self, swagger_path: str, base_url: str = None, name=None, version=None):
-        self.swagger_spec = self._parse_swagger_file(swagger_path)
-        
-        if base_url is None:
-            paths = self.swagger_spec.get('paths', {})
-            self.base_url_final = base_url or self.swagger_spec.get('servers', [{}])[0].get('url', '')
-        else:
-            self.base_url_final = base_url
+    def __init__(self, swagger_path: str = None, swagger_url: str = None, base_url: str = None, name=None, version=None):
 
         self._config = self._load_config()
         self.session = Session()
@@ -46,6 +46,19 @@ class SwaggerDecorator:
 
         if self._config.client_cert is not None and self._config.client_key:
             self.session.cert = (self._config.client_cert, self._config.client_key)
+
+        if swagger_path is not None:
+            self.swagger_spec = self._parse_swagger_file(swagger_path)
+        elif swagger_url is not None:
+            self.swagger_spec = self._parse_swagger_url(swagger_url)
+        else:
+            raise Exception("Unable to get swagger file")
+        
+        if base_url is None:
+            paths = self.swagger_spec.get('paths', {})
+            self.base_url_final = base_url or self.swagger_spec.get('servers', [{}])[0].get('url', '')
+        else:
+            self.base_url_final = base_url
 
         if name:
             self._bg_name = name

@@ -11,6 +11,9 @@ import urllib3
 from requests import Response, Session  # noqa
 from requests.adapters import HTTPAdapter
 from requests.utils import quote
+from brewtils.specification import _CONNECTION_SPEC
+from yapconf import YapconfSpec
+import brewtils.plugin
 
 class SwaggerDecorator:
 
@@ -33,8 +36,16 @@ class SwaggerDecorator:
         else:
             self.base_url_final = base_url
 
-        self._config = self._load_config(args, kwargs)
+        self._config = self._load_config()
         self.session = Session()
+
+        if self._config.client_cert is not None:
+            self.session.verify = self._config.ca_cert
+        else:
+            self.session.verify = self._config.ca_verify
+
+        if self._config.client_cert is not None and self._config.client_key:
+            self.session.cert = (self._config.client_cert, self._config.client_key)
 
         if name:
             self._bg_name = name
@@ -62,16 +73,30 @@ class SwaggerDecorator:
                 operation_id = details.get('operationId', f"{method}_{path}")
                 parameters = []
                 for param in details.get('parameters', []):
-                    parameters.append(self.convert_parameters(param))
+                    parameters.append(self._convert_parameters(param))
                 request_body = details.get('requestBody', {})
                 if request_body:
-                    parameters.append(Parameter(key='body', type='Any'))
+                    parameters.append(Parameter(key='requestBody', type='Any'))
 
                 description = details.get('description', json.dumps(details))
 
                 self._commands.push(Command(name=operation_id, parameters=parameters, description=description))
                 setattr(self, operation_id, self._invoke_api)
 
+    @staticmethod
+    def _load_config():
+        """Load a config based on the CONNECTION section of the Brewtils Specification
+
+        This will load a configuration with the following source precedence:
+
+        1. the global configuration (brewtils.plugin.CONFIG)
+
+        Returns:
+            The resolved configuration object
+        """
+        spec = YapconfSpec(_CONNECTION_SPEC)
+
+        return spec.load_config(*[brewtils.plugin.CONFIG])
 
     def _invoke_api(self, **kwargs):
         current_request = get_current_request_read_only()
@@ -85,8 +110,35 @@ class SwaggerDecorator:
                     continue
                 if current_request.command == details.get('operationId', f"{method}_{path}"):
                     # This is the current API to execute
+                    parameters = {}
+                    for param in details.get('parameters', []):
+                        if param.get('name') in kwargs:
+                            parameters[param.get('name')] = kwargs[param.get('name')]
 
-                    return
+                    requestBody = None
+                    if "requestBody" in kwargs:
+                        requestBody = kwargs["requestBody"]
+
+                    url = self.base_url_final + path
+
+                    # Call Session with detail info
+                    if method.lower() == "get":
+                        response =self.session.get(url, params=parameters, json=requestBody)                       
+                    elif method.lower() == "post":
+                        response =self.session.get(url, params=parameters, json=requestBody)
+                    elif method.lower() == "put":
+                        response =self.session.put(url, params=parameters, json=requestBody)
+                    elif method.lower() == "delete":
+                        response =self.session.delete(url, params=parameters, json=requestBody)
+                    elif method.lower() == "patch":
+                        response = self.session.patch(url, params=parameters, json=requestBody)
+                    else:
+                        raise RuntimeError(f"No matching API found for command {current_request.command}")
+
+                    if "application/json" in response.headers.get("Content-Type", ""):
+                        return response.json()
+                    else:
+                        return response.text
                 
         raise RuntimeError(f"No matching API found for command {current_request.command}")
 

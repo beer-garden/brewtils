@@ -12,6 +12,8 @@ import re
 
 
 class SwaggerDecorator:
+    # Creates Client class for Swagger documentation based off the the
+    # Swagger Version 3.0 standards
 
     swagger_spec: Dict[str, Any]
 
@@ -83,26 +85,25 @@ class SwaggerDecorator:
                     raise Exception("Unable to find valid server url")
         else:
             self.base_url_final = base_url
+     
+        self._bg_description = self.swagger_spec.get("info",{}).get("description")
 
         if name:
             self._bg_name = name
-        elif (
-            hasattr(self.swagger_spec, "info") and "title" in self.swagger_spec["info"]
-        ):
-            self._bg_name = self.swagger_spec["info"]["title"]
         else:
+            self._bg_name = self.swagger_spec.get("info",{}).get("title", None)
+
+        if self._bg_name is None:
             raise ValueError(
                 "Swagger spec must have 'info.title' or a name must be provided."
             )
 
         if version:
             self._bg_version = version
-        elif (
-            hasattr(self.swagger_spec, "info")
-            and "version" in self.swagger_spec["info"]
-        ):
-            self._bg_version = self.swagger_spec["info"]["version"]
         else:
+            self._bg_version = self.swagger_spec.get("info",{}).get("version", None)
+            
+        if self._bg_version is None:
             raise ValueError(
                 "Swagger spec must have 'info.version' or a version must be provided."
             )

@@ -242,6 +242,9 @@ class SwaggerDecorator:
                     else:
                         target_url = self.base_url_final
 
+                    if target_url.endswith("/"):
+                        target_url = target_url[:-1]
+
                     if "http://" not in target_url or "https://" not in target_url:
                         if self._config.ssl_enabled:
                             url = "https://" + target_url + path

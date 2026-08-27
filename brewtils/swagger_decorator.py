@@ -62,11 +62,11 @@ class SwaggerDecorator:
         server_param = None
         self.base_url_final = None
 
-        if base_url is None:
-            servers = self.swagger_spec.get("servers", [])
+        if base_url is None or len(base_url) == 0:
 
+            servers = self.swagger_spec.get("servers", [])
             if len(servers) == 0:
-                self.base_url_final = ""
+                raise Exception("Unable to find valid server url")
             elif len(servers) == 1:
                 self.base_url_final = servers[0].get("url", "")
             else:
@@ -81,17 +81,21 @@ class SwaggerDecorator:
                         choices=urls,
                         optional=False,
                     )
+
                 else:
                     raise Exception("Unable to find valid server url")
         else:
             self.base_url_final = base_url
-     
-        self._bg_description = self.swagger_spec.get("info",{}).get("description")
+
+        if server_param is None and self.base_url_final is None:
+            raise Exception("Unable to find valid server url")
+
+        self._bg_description = self.swagger_spec.get("info", {}).get("description")
 
         if name:
             self._bg_name = name
         else:
-            self._bg_name = self.swagger_spec.get("info",{}).get("title", None)
+            self._bg_name = self.swagger_spec.get("info", {}).get("title", None)
 
         if self._bg_name is None:
             raise ValueError(
@@ -101,7 +105,7 @@ class SwaggerDecorator:
         if version:
             self._bg_version = version
         else:
-            self._bg_version = self.swagger_spec.get("info",{}).get("version", None)
+            self._bg_version = self.swagger_spec.get("info", {}).get("version", None)
 
         if self._bg_version is None:
             raise ValueError(
@@ -212,7 +216,7 @@ class SwaggerDecorator:
         current_request = get_current_request_read_only()
         if current_request is None:
             raise RuntimeError(
-                "No current request found. This method must be called " \
+                "No current request found. This method must be called "
                 "within a command execution context."
             )
 
@@ -245,11 +249,13 @@ class SwaggerDecorator:
                     if target_url.endswith("/"):
                         target_url = target_url[:-1]
 
-                    if "http://" not in target_url or "https://" not in target_url:
+                    if "http://" not in target_url and "https://" not in target_url:
                         if self._config.ssl_enabled:
-                            url = "https://" + target_url + path
+                            target_url = "https://" + target_url
                         else:
-                            url = "http://" + target_url + path
+                            target_url = "http://" + target_url
+
+                    url = target_url + path
 
                     # Call Session with detail info
                     if method.lower() == "get":

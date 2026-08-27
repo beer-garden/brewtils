@@ -357,6 +357,13 @@ class SwaggerDecorator:
 
         if not parameter.nullable and parameter.optional and parameter.default is None:
             parameter.nullable = True
+
+        # Inline Parameters will always be required because we have to do
+        # string replacement on those values
+        if param.get("in", "") == "path":
+            parameter.optional = False
+            parameter.nullable = False
+
         return parameter
 
     def _convert_request_body(self, request_body):

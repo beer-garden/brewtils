@@ -102,7 +102,7 @@ class SwaggerDecorator:
             self._bg_version = version
         else:
             self._bg_version = self.swagger_spec.get("info",{}).get("version", None)
-            
+
         if self._bg_version is None:
             raise ValueError(
                 "Swagger spec must have 'info.version' or a version must be provided."
@@ -242,10 +242,11 @@ class SwaggerDecorator:
                     else:
                         target_url = self.base_url_final
 
-                    if self._config.ssl_enabled:
-                        url = "https://" + target_url + path
-                    else:
-                        url = "http://" + target_url + path
+                    if "http://" not in target_url or "https://" not in target_url:
+                        if self._config.ssl_enabled:
+                            url = "https://" + target_url + path
+                        else:
+                            url = "http://" + target_url + path
 
                     # Call Session with detail info
                     if method.lower() == "get":

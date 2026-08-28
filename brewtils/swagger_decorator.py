@@ -75,7 +75,7 @@ class SwaggerDecorator:
                 if len(unique_urls) > 0:
                     server_param = Parameter(
                         key="_server",
-                        name="Server URL",
+                        display_name="Server URL",
                         description="Select Target Server",
                         type="String",
                         choices=urls,
@@ -145,7 +145,7 @@ class SwaggerDecorator:
                             Parameter(key="requestBody", type="Any", optional=False)
                         )
 
-                if hasattr(details, "summary"):
+                if "summary" in details:
                     description = re.sub(
                         r"[^\w\s]|\n|\r", "", details.get("summary", "")
                     )
@@ -158,29 +158,29 @@ class SwaggerDecorator:
 
                 tags = details.get("tags", [])
 
-                if hasattr(details, "responses"):
+                if "responses" in details:
                     responses = details.get("responses")
                     for response in ["200", "201"]:
-                        if hasattr(responses, response):
+                        if response in responses:
                             success_response = responses.get(response)
-                            if hasattr(success_response, "content"):
+                            if "content" in success_response:
                                 success_content = success_response.get("content")
-                                if hasattr(success_content, "application/json"):
+                                if "application/json" in success_content:
                                     output_type = "JSON"
                                     break
-                                if hasattr(success_content, "text/plain"):
+                                if "text/plain" in success_content:
                                     output_type = "STRING"
                                     break
-                                if hasattr(success_content, "application/xml"):
+                                if "application/xml" in success_content:
                                     output_type = "XML"
                                     break
-                                if hasattr(success_content, "text/html"):
+                                if "text/html" in success_content:
                                     output_type = "HTML"
                                     break
-                                if hasattr(success_content, "text/javascript"):
+                                if "text/javascript" in success_content:
                                     output_type = "JS"
                                     break
-                                if hasattr(success_content, "text/css"):
+                                if "text/css" in success_content:
                                     output_type = "CSS"
                                     break
 
@@ -293,9 +293,9 @@ class SwaggerDecorator:
         )
 
     def _param_type_to_brewtils(self, items):
-        if hasattr(items, "anyOf") or hasattr(items, "oneOf"):
+        if "anyOf" in items or  "oneOf" in items:
             return "Any"
-        if hasattr(items, "$ref"):
+        if "$ref" in items:
             return "Dictionary"
 
         swagger_param = items.get("type", None)
@@ -308,6 +308,7 @@ class SwaggerDecorator:
         elif swagger_param.lower() == "boolean":
             return "Boolean"
         elif swagger_param.lower() == "array":
+            # TODO Fix arrays to actually work
             return "list"
         elif swagger_param.lower() == "object":
             return "Dictionary"
@@ -336,7 +337,7 @@ class SwaggerDecorator:
 
     def _convert_parameters(self, param):
 
-        if hasattr(param, "$ref"):
+        if "$ref" in param:
             ref = self._ref_lookup(param.get("$ref"))
 
             if ref is not None:
@@ -359,7 +360,7 @@ class SwaggerDecorator:
             r"[^\w\s]|\n|\r", "", param.get("description", "")
         )
 
-        if hasattr(param, "required"):
+        if "required" in param:
             parameter.optional = str(param.get("required", "true")).lower() == "false"
 
         parameter.name = param.get("name")
@@ -379,33 +380,33 @@ class SwaggerDecorator:
 
     def _convert_request_body(self, request_body):
 
-        if hasattr(request_body, "$ref"):
+        if  "$ref" in request_body:
             ref = self._ref_lookup(request_body.get("$ref"))
 
             if ref is not None:
                 return self._convert_request_body(ref)
 
         parameter = Parameter(key="requestBody", type="Any", optional=False)
-        if hasattr(request_body, "description"):
+        if  "description" in request_body:
             parameter.description = re.sub(
                 r"[^\w\s]|\n|\r", "", request_body.get("description", "")
             )
 
-        if hasattr(request_body, "name"):
+        if "name" in request_body:
             parameter.display_name = re.sub(
                 r"[^\w\s]|\n|\r", "", request_body.get("name", "")
             )
 
-        if hasattr(request_body, "content"):
+        if "content" in request_body:
             content = request_body.get("content")
-            if hasattr(content, "application/json"):
+            if "application/json" in content:
                 parameter.type = "Dictionary"
 
-            if hasattr(content, "text/plain"):
+            elif "text/plain" in content:
                 parameter.type = "String"
 
         if (
-            hasattr(request_body, "required")
+            "required" in request_body
             and str(request_body.get("required", "true")).lower() == "false"
         ):
             parameter.optional = True
@@ -422,7 +423,7 @@ class SwaggerDecorator:
                 return model
 
             key = paths.pop(0)
-            if hasattr(model, key):
+            if key in model:
                 return _path_ref(paths, getattr(model, key))
 
             return None

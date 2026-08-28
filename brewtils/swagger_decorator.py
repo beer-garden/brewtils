@@ -293,7 +293,7 @@ class SwaggerDecorator:
         )
 
     def _param_type_to_brewtils(self, items):
-        if "anyOf" in items or  "oneOf" in items:
+        if "anyOf" in items or "oneOf" in items:
             return "Any"
         if "$ref" in items:
             return "Dictionary"
@@ -380,14 +380,14 @@ class SwaggerDecorator:
 
     def _convert_request_body(self, request_body):
 
-        if  "$ref" in request_body:
+        if "$ref" in request_body:
             ref = self._ref_lookup(request_body.get("$ref"))
 
             if ref is not None:
                 return self._convert_request_body(ref)
 
         parameter = Parameter(key="requestBody", type="Any", optional=False)
-        if  "description" in request_body:
+        if "description" in request_body:
             parameter.description = re.sub(
                 r"[^\w\s]|\n|\r", "", request_body.get("description", "")
             )

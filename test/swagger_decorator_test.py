@@ -225,3 +225,92 @@ class TestPassedValues(object):
         assert client._bg_commands[0].parameters[0].maximum == 5
         assert client._bg_commands[0].parameters[0].choices == [2, 3, 4]
         assert client._bg_commands[0].parameters[0].default == 3
+
+    def test_parameter_ref(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "$ref": "#/components/parameters/param",
+                            },
+                        ],
+                    },
+                },
+            },
+            "components": {
+                "parameters": {
+                    "param": {
+                        "name": "param",
+                        "in": "query",
+                        "required": False,
+                        "description": "My Parameter",
+                        "type": "number",
+                    }
+                }
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        client = SwaggerDecorator(swagger_path=str(json_file))
+
+        assert len(client._bg_commands[0].parameters) == 1
+        assert client._bg_commands[0].parameters[0].key == "param"
+        assert client._bg_commands[0].parameters[0].description == "My Parameter"
+
+    @pytest.mark.parametrize(
+        "output_type,expected_type",
+        [
+            ("application/json", "JSON"),
+            ("text/plain", "STRING"),
+            ("application/xml", "XML"),
+            ("text/html", "HTML"),
+            ("text/javascript", "JS"),
+            ("text/css", "CSS"),
+        ],
+    )
+    def test_output_type(self, tmp_path, mock_api_env, output_type, expected_type):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "required": False,
+                                "description": "My Parameter",
+                            },
+                        ],
+                        "responses": {"200": {"content": {output_type: {}}}},
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        client = SwaggerDecorator(swagger_path=str(json_file))
+
+        assert len(client._bg_commands[0].parameters) == 1
+        assert client._bg_commands[0].parameters[0].key == "param"
+        assert client._bg_commands[0].parameters[0].description == "My Parameter"
+        assert client._bg_commands[0].output_type == expected_type

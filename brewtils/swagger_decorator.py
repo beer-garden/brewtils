@@ -159,7 +159,7 @@ class SwaggerDecorator:
                 tags = details.get("tags", [])
 
                 if "responses" in details:
-                    responses = details.get("responses")
+                    responses = details["responses"]
                     for response in ["200", "201"]:
                         if response in responses:
                             success_response = responses.get(response)
@@ -424,7 +424,7 @@ class SwaggerDecorator:
 
             key = paths.pop(0)
             if key in model:
-                return _path_ref(paths, getattr(model, key))
+                return _path_ref(paths, model[key])
 
             return None
 

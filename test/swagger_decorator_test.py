@@ -1,5 +1,4 @@
 import pytest
-from mock import Mock
 from brewtils import SwaggerDecorator
 import json
 

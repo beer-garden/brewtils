@@ -684,6 +684,7 @@ def user_dict(role_dict, upstream_role_dict, alias_user_map_dict):
         "metadata": {},
         "protected": False,
         "file_generated": False,
+        "preferences": {"theme": "dark"},
     }
 
 

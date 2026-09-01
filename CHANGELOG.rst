@@ -27,6 +27,12 @@ Brewtils Changelog
   Examples: SystemClient(..., choice_validation_enabled=True) or SystemClient().call_command(..., _choice_validation_enabled=True)
 - Added Target-Garden header to set target garden when provided in kwargs (#567,#578)
 
+3.33.0rc0
+------
+12/17/25
+
+- Added support for preferences in User model (Not Released yet, but will be used for future features) (#582)
+
 3.32.0
 ------
 3/4/26

@@ -1920,6 +1920,7 @@ class User(BaseModel):
         is_remote=False,
         protected=False,
         file_generated=False,
+        preferences=None,
     ):
         self.username = username
         self.id = id
@@ -1932,6 +1933,7 @@ class User(BaseModel):
         self.metadata = metadata or {}
         self.protected = protected
         self.file_generated = file_generated
+        self.preferences = preferences or {}
 
     def __str__(self):
         return "%s: %s" % (self.username, self.roles)

@@ -356,9 +356,11 @@ def child_request_dict(ts_epoch):
         "error_class": None,
         "metadata": {"child": "stuff"},
         "has_parent": True,
+        "parent_id": None,
         "requester": "user",
         "source_garden": "parent",
         "target_garden": "child",
+        "children": None,
     }
 
 
@@ -385,6 +387,7 @@ def parent_request_dict(ts_epoch):
         "id": "58542eb571afd47ead90d25d",
         "is_event": False,
         "parent": None,
+        "parent_id": None,
         "parameters": {},
         "comment": "bye!",
         "output": "nested output",
@@ -442,6 +445,9 @@ def bg_request_template(request_template_dict):
 @pytest.fixture
 def request_dict(parent_request_dict, child_request_dict, ts_epoch):
     """A request represented as a dictionary."""
+    dict_copy_child = copy.deepcopy(child_request_dict)
+    dict_copy_child["parent_id"] = "58542eb571afd47ead90d25e"
+
     return {
         "system": "system",
         "system_version": "1.0.0",
@@ -452,7 +458,8 @@ def request_dict(parent_request_dict, child_request_dict, ts_epoch):
         "id": "58542eb571afd47ead90d25e",
         "is_event": False,
         "parent": parent_request_dict,
-        "children": [child_request_dict],
+        "parent_id": parent_request_dict["id"],
+        "children": [dict_copy_child],
         "parameters": {"message": "hey!"},
         "comment": "hi!",
         "output": "output",
@@ -478,7 +485,10 @@ def bg_request(request_dict, parent_request, child_request, ts_dt):
     """A request as a model."""
     dict_copy = copy.deepcopy(request_dict)
     dict_copy["parent"] = parent_request
+
+    child_request.parent_id = dict_copy["id"]
     dict_copy["children"] = [child_request]
+
     dict_copy["created_at"] = ts_dt
     dict_copy["updated_at"] = ts_dt
     dict_copy["status_updated_at"] = ts_dt

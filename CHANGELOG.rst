@@ -1,6 +1,20 @@
 Brewtils Changelog
 ==================
 
+3.35.0
+------
+8/1/2026
+
+- Updated Request model to include `parent_id` for association mapping (#592)
+
+3.34.0
+------
+6/30/2026
+
+- Added RabbitMQ remote disconnect logic for Plugin to shutdown if RabbitMQ closes the channel connection or rejects Topic subscription (#589) 
+- Added Plugin re-register logic for if Instance is unknown by Beer-Garden (#589) 
+
+
 3.33.0
 ------
 4/21/2026

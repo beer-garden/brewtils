@@ -387,14 +387,7 @@ class RequestSchema(RequestTemplateSchema):
         lambda: RequestSchema(exclude=("children",)), allow_none=True
     )
     children = fields.List(
-        fields.Nested(
-            lambda: RequestSchema(
-                exclude=(
-                    "parent",
-                    "children",
-                )
-            )
-        ),
+        fields.Nested(lambda: RequestSchema(exclude=("parent",))),
         dump_default=None,
         allow_none=True,
     )
@@ -406,6 +399,7 @@ class RequestSchema(RequestTemplateSchema):
     updated_at = DateTime(allow_none=True, format="epoch")
     status_updated_at = DateTime(allow_none=True, format="epoch")
     has_parent = fields.Bool(allow_none=True)
+    parent_id = fields.Str(allow_none=True)
     requester = fields.String(allow_none=True)
     source_garden = fields.String(allow_none=True)
     target_garden = fields.String(allow_none=True)

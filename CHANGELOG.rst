@@ -3,7 +3,7 @@ Brewtils Changelog
 
 3.35.0
 ------
-8/1/2026
+9/1/2026
 
 - Updated Request model to include `parent_id` for association mapping (#592)
 

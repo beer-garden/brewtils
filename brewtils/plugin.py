@@ -349,7 +349,7 @@ class Plugin(object):
         self._system = self._setup_system(system, kwargs)
 
         # Make sure this is set after self._system
-        if client:
+        if client is not None:
             self._set_client(client)
         else:
             self._client = None
@@ -417,7 +417,7 @@ class Plugin(object):
 
     @client.setter
     def client(self, new_client):
-        if self._client:
+        if self._client is not None:
             raise AttributeError("Sorry, you can't change a plugin's client once set")
 
         if new_client is None:
@@ -434,7 +434,7 @@ class Plugin(object):
                     function()
                     executed_functions.append(function)
 
-            elif self._client and hasattr(self._client, function):
+            elif self._client is not None and hasattr(self._client, function):
                 client_function = getattr(self._client, function)
                 if callable(client_function):
                     if client_function not in executed_functions:
@@ -444,7 +444,7 @@ class Plugin(object):
                     self._logger.error(
                         f"Provided non callable function for function: {function}"
                     )
-            elif self._client:
+            elif self._client is not None:
                 self._logger.error(
                     (
                         "Provided function not existing on client "

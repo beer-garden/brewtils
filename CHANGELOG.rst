@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Fixed Plugin client None checks
+
 3.35.0
 ------
 9/1/2026

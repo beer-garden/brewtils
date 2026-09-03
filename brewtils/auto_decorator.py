@@ -30,7 +30,7 @@ class AutoDecorator:
                     and not func.startswith("__")
                 ):
                     # decorators.py will handle anything with brewtils annotation
-                    method_command = _parse_method(_wrapped, force=True)
+                    method_command = _parse_method(_wrapped, auto_parse=True)
                     if method_command:
                         method_command.hidden = func.startswith("_")
                         client._bg_commands.append(method_command)

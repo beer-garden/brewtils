@@ -36,6 +36,7 @@ setup(
         "marshmallow<4.1,>=4.0", # Latest 4.0.1
         "packaging", # Latest 25.0
         "pika<=1.4,>=1.0.1", # Latest 1.3.2
+        "pyyaml<7", # Latest 6.0.3
         "requests<3", # Latest 2.32.5
         "simplejson<4", # Latest 3.20.2
         "wrapt", # Latest 1.17.3

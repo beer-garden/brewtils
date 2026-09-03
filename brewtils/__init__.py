@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from brewtils.__version__ import __version__
 from brewtils.auto_decorator import AutoDecorator
+from brewtils.swagger_decorator import SwaggerDecorator
 from brewtils.config import get_argument_parser, get_connection_info, load_config
 from brewtils.decorators import (
     client,
@@ -42,6 +43,7 @@ __all__ = [
     "configure_logging",
     "normalize_url_prefix",
     "AutoDecorator",
+    "SwaggerDecorator",
     "get_current_request_read_only",
 ]
 

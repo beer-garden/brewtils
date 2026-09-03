@@ -2,6 +2,7 @@ from inspect import Parameter as InspectParameter  # noqa
 from inspect import signature
 
 from brewtils.models import Command
+from brewtils.decorators import _parse_method
 
 
 class AutoDecorator:
@@ -26,17 +27,16 @@ class AutoDecorator:
         for func in dir(client):
             if callable(getattr(client, func)):
                 _wrapped = getattr(client, func)
-                if not hasattr(_wrapped, "_command") and not func.startswith("__"):
-                    # decorators.py will handle all of the markings
-                    has_kwargs = any(
-                        [
-                            True
-                            for p in signature(_wrapped).parameters.values()
-                            if p.kind == InspectParameter.VAR_KEYWORD
-                        ]
-                    )
-                    _wrapped._command = Command(
-                        hidden=func.startswith("_"), allow_any_kwargs=has_kwargs
-                    )
+                if (
+                    not hasattr(_wrapped, "_command")
+                    and hasattr(_wrapped, "parameters")
+                    and hasattr(_wrapped, "subscribe_topics")
+                    and not func.startswith("__")
+                ):
+                    # decorators.py will handle anything with brewtils annotation
+                    method_command = _parse_method(_wrapped, force=True)
+                    if method_command:
+                        method_command.hidden = func.startswith("_")
+                        client._bg_commands.append(method_command)
 
         return client

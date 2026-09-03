@@ -582,6 +582,9 @@ def _parse_client(client):
     """
     bg_commands = []
 
+    if hasattr(client, "_bg_commands"):
+        bg_commands = getattr(client, "_bg_commands")
+
     for attr in dir(client):
         method = getattr(client, attr)
 
@@ -593,8 +596,8 @@ def _parse_client(client):
     return bg_commands
 
 
-def _parse_method(method):
-    # type: (MethodType) -> Optional[Command]
+def _parse_method(method, auto_parse=False):
+    # type: (MethodType, bool) -> Optional[Command]
     """Parse a method object as a Beer-garden command target
 
     If the method looks like a valid command target (based on the presence of certain
@@ -615,6 +618,7 @@ def _parse_method(method):
         hasattr(method, "_command")
         or hasattr(method, "parameters")
         or hasattr(method, "subscribe_topics")
+        or auto_parse
     ):
         # Create a command object if there isn't one already
         method_command = _initialize_command(method)

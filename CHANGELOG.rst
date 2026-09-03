@@ -5,7 +5,7 @@ TBD
 ------
 TBD
 
-- Fixed Plugin client None checks
+- Fixed Plugin client None checks (#595)
 
 3.35.0
 ------

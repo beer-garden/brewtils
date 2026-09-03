@@ -25,8 +25,8 @@ class AutoDecorator:
                 _wrapped = getattr(client, func)
                 if (
                     not hasattr(_wrapped, "_command")
-                    and hasattr(_wrapped, "parameters")
-                    and hasattr(_wrapped, "subscribe_topics")
+                    and not hasattr(_wrapped, "parameters")
+                    and not hasattr(_wrapped, "subscribe_topics")
                     and not func.startswith("__")
                 ):
                     # decorators.py will handle anything with brewtils annotation

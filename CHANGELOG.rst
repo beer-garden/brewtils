@@ -6,7 +6,7 @@ TBD
 TBD
 
 - Fixed Plugin client None checks (#595)
-- Added option to AutoDecorate initialized class object (#)
+- Added option to AutoDecorate initialized class object (#596)
 
 3.35.0
 ------

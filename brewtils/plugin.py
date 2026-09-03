@@ -371,7 +371,7 @@ class Plugin(object):
             self._initialize_logging()
 
     def run(self):
-        if not self._client:
+        if self._client is None:
             raise AttributeError(
                 "Unable to start a Plugin without a Client. Please set the 'client' "
                 "attribute to an instance of a class decorated with @brewtils.system"

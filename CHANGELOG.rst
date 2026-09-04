@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Expand Request Command Types to support `GARDEN`
+
 3.35.0
 ------
 9/1/2026

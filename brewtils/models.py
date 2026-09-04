@@ -123,7 +123,7 @@ class BaseModel(object):
 class Command(BaseModel):
     schema = "CommandSchema"
 
-    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP")
+    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP", "GARDEN")
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
@@ -764,7 +764,7 @@ class Request(RequestTemplate):
         "INVALID",
     )
     COMPLETED_STATUSES = ("CANCELED", "SUCCESS", "ERROR", "INVALID")
-    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP")
+    COMMAND_TYPES = ("ACTION", "INFO", "EPHEMERAL", "ADMIN", "TEMP", "GARDEN")
     OUTPUT_TYPES = ("STRING", "JSON", "XML", "HTML", "JS", "CSS")
 
     def __init__(
@@ -848,16 +848,9 @@ class Request(RequestTemplate):
 
     def __repr__(self):
         return (
-            "<Request: command=%s, status=%s, system=%s, system_version=%s, "
-            "instance_name=%s, namespace=%s>"
-            % (
-                self.command,
-                self.status,
-                self.system,
-                self.system_version,
-                self.instance_name,
-                self.namespace,
-            )
+            f"<Request: command={self.command}, status={self.status}, "
+            f"system={self.system}, system_version={self.system_version}, "
+            f"instance_name={self.instance_name}, namespace={self.namespace}>"
         )
 
     @property

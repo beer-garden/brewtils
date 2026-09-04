@@ -848,8 +848,9 @@ class Request(RequestTemplate):
 
     def __repr__(self):
         return (
-            f"<Request: command={self.command}, status={self.status}, system={self.system}, "
-            f"system_version={self.system_version}, instance_name={self.instance_name}, namespace={self.namespace}>"
+            f"<Request: command={self.command}, status={self.status}, "
+            f"system={self.system}, system_version={self.system_version}, "
+            f"instance_name={self.instance_name}, namespace={self.namespace}>"
         )
 
     @property

@@ -32,7 +32,7 @@ setup(
     package_data={"": ["README.md"]},
     install_requires=[
         "appdirs<2", # Latest 1.4.4
-        "lark-parser<1", # Latest 0.12.0
+        "lark<1.4,>=1.1.6", # Latest 1.3.1
         "marshmallow<4.1,>=4.0", # Latest 4.0.1
         "packaging", # Latest 25.0
         "pika<=1.4,>=1.0.1", # Latest 1.3.2

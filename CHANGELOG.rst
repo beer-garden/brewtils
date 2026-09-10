@@ -1,6 +1,12 @@
 Brewtils Changelog
 ==================
 
+TBD
+------
+TBD
+
+- Upgraded from `lark-parser` to `lark` to migrate away from MD5 hashing in dependencies (#)
+
 3.35.0
 ------
 9/1/2026

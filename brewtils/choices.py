@@ -40,6 +40,7 @@ class FunctionTransformer(Transformer):
         if args:
             args = [x for x in args if x is not None]
         return {"name": str(s[0]), "args": args or []}
+
     @staticmethod
     def url(s):
         args = s[1] if len(s) > 1 else []

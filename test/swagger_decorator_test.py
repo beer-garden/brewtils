@@ -357,7 +357,7 @@ class TestPassedValues(object):
         assert len(client._bg_commands[0].parameters) == 1
         assert client._bg_commands[0].parameters[0].key == "param"
         assert client._bg_commands[0].parameters[0].description == "My Parameter"
-        assert client._bg_commands[0].parameters[0].multi == True
+        assert client._bg_commands[0].parameters[0].multi
         assert client._bg_commands[0].parameters[0].type == "String"
 
     def test_parameter_array_collection_format(self, tmp_path, mock_api_env):
@@ -394,7 +394,7 @@ class TestPassedValues(object):
         assert len(client._bg_commands[0].parameters) == 1
         assert client._bg_commands[0].parameters[0].key == "param"
         assert client._bg_commands[0].parameters[0].description == "My Parameter"
-        assert client._bg_commands[0].parameters[0].multi == True
+        assert client._bg_commands[0].parameters[0].multi
         assert client._bg_commands[0].parameters[0].type == "String"
 
     def test_parameter_url(self, tmp_path, mock_api_env):

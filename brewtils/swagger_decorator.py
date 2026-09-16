@@ -11,6 +11,7 @@ from yapconf import YapconfSpec
 import re
 import logging
 
+
 class SwaggerDecorator:
     # Creates Client class for Swagger documentation based off the the
     # Swagger Version 3.0 standards
@@ -25,11 +26,25 @@ class SwaggerDecorator:
             else:
                 return yaml.safe_load(f)
 
-    def _parse_swagger_url(self, swagger_url: str) -> Dict[str, Any]:
+    def _parse_swagger_url(self) -> Dict[str, Any]:
         """Load and parse a Swagger/OpenAPI file."""
-        response = self.session.get(swagger_url)
+        response = self.session.get(self.swagger_url)
 
         return response.json()
+
+    def _check_version(self, exception: exceptions.RequestException):
+        if self.swagger_url is not None:
+            live_swagger = self._parse_swagger_url()
+            if self.swagger_spec.get("info", {}).get(
+                "version", None
+            ) != live_swagger.get("info", {}).get("version", None):
+                raise exceptions.RequestException(
+                    f"Live Swagger URL Version of API "
+                    f'{live_swagger.get("info", {}).get("version", None)} does not '
+                    f"match initilalized Plugin version "
+                    f'{self.swagger_spec.get("info", {}).get("version", None)}. '
+                    "Please restart plugin. Exception: {exception}"
+                ) from exception
 
     def __init__(
         self,
@@ -43,6 +58,7 @@ class SwaggerDecorator:
         self.logger = logging.getLogger(__name__)
         self._config = self._load_config()
         self.session = Session()
+        self.swagger_url = swagger_url
 
         if self._config.client_cert is not None:
             self.session.verify = self._config.ca_cert
@@ -55,7 +71,7 @@ class SwaggerDecorator:
         if swagger_path is not None:
             self.swagger_spec = self._parse_swagger_file(swagger_path)
         elif swagger_url is not None:
-            self.swagger_spec = self._parse_swagger_url(swagger_url)
+            self.swagger_spec = self._parse_swagger_url()
         else:
             raise Exception("Unable to get swagger file")
 
@@ -286,7 +302,9 @@ class SwaggerDecorator:
 
                     try:
                         response.raise_for_status()
-                        if "application/json" in response.headers.get("Content-Type", ""):
+                        if "application/json" in response.headers.get(
+                            "Content-Type", ""
+                        ):
                             return response.json()
                         else:
                             return response.text
@@ -294,18 +312,18 @@ class SwaggerDecorator:
                         self.logger.error("--- DEBUG ERROR INFO ---")
                         self.logger.error(f"Exception Type: {type(e).__name__}")
                         self.logger.error(f"Error Message: {e}")
-                        
+
                         # Check if a response object exists (HTTP errors vs connection dropouts)
-                        if hasattr(e, 'response') and e.response is not None:
+                        if hasattr(e, "response") and e.response is not None:
                             # Access the underlying prepared request details
                             failed_request = e.response.request
-                            
+
                             self.logger.error(f"Requested URL: {failed_request.url}")
                             self.logger.error(f"HTTP Method:   {failed_request.method}")
                             self.logger.error("\n--- Outgoing Request Headers ---")
                             for key, value in failed_request.headers.items():
                                 self.logger.error(f"{key}: {value}")
-                                
+
                             self.logger.error("\n--- Incoming Response Headers ---")
                             for key, value in e.response.headers.items():
                                 self.logger.error(f"{key}: {value}")
@@ -313,6 +331,7 @@ class SwaggerDecorator:
                             # Request failed before receiving a server response (e.g., DNS error)
                             self.logger.error(f"Failed to connect to: {url}")
 
+                        self._check_version(e)
                         raise e
 
         raise RuntimeError(

@@ -246,13 +246,106 @@ class SwaggerDecorator:
                     "operationId", f"{method}_{path}"
                 ):
                     # This is the current API to execute
-                    parameters = {}
+                    parameters = []
                     for param in details.get("parameters", []):
                         if (
                             param.get("name") in kwargs
                             and kwargs[param.get("name")] is not None
                         ):
-                            parameters[param.get("name")] = kwargs[param.get("name")]
+                            style = param.get("style")
+                            explode = (
+                                str(param.get("explode", "false")).lower() == "true"
+                            )
+                            # Handle none Array objects
+                            if type(kwargs[param.get("name")]) is not list:
+
+                                if style == "form":
+                                    if explode:
+                                        for valueKey in kwargs[param.get("name")]:
+                                            # Each key in Object gets assigned as parameter
+                                            parameters.append(
+                                                (
+                                                    valueKey,
+                                                    kwargs[param.get("name")][valueKey],
+                                                )
+                                            )
+                                    else:
+                                        parameterValues = []
+                                        for valueKey in kwargs[param.get("name")]:
+                                            # Each key in Object gets added to comma seperated list
+                                            parameterValues.append(valueKey)
+                                            parameterValues.append(
+                                                kwargs[param.get("name")][valueKey]
+                                            )
+                                        parameters.append(
+                                            (
+                                                param.get("name"),
+                                                ",".join(parameterValues),
+                                            )
+                                        )
+                                elif style == "deepObject":
+                                    # Can't call function in string formatter until py3.13 so have to preload it
+                                    name = param.get("name")
+                                    for valueKey in kwargs[param.get("name")]:
+                                        # Each key in Object gets assigned as parameter
+                                        parameters.append(
+                                            (
+                                                f"{name}[{valueKey}]",
+                                                kwargs[name][valueKey],
+                                            )
+                                        )
+                                else:
+                                    parameters.append(
+                                        (param.get("name"), kwargs[param.get("name")])
+                                    )
+
+                            else:
+                                # OpenAPI migrated Collection Format to Style/Explode
+                                collectionFormat = param.get("collectionFormat", "csv")
+
+                                if collectionFormat == "multi" or explode:
+                                    for paramValue in kwargs[param.get("name")]:
+                                        parameters.append(
+                                            (param.get("name"), paramValue)
+                                        )
+                                elif (
+                                    collectionFormat == "ssv"
+                                    or style == "spaceDelimited"
+                                ):
+                                    # Space-separated values
+                                    parameters.append(
+                                        (
+                                            param.get("name"),
+                                            " ".join(kwargs[param.get("name")]),
+                                        )
+                                    )
+                                elif (
+                                    collectionFormat == "tsv"
+                                    or style == "pipeDelimited"
+                                ):
+                                    # Tab-separated values
+                                    parameters.append(
+                                        (
+                                            param.get("name"),
+                                            "\t".join(kwargs[param.get("name")]),
+                                        )
+                                    )
+                                elif collectionFormat == "pipes":
+                                    # Pipe-separated values
+                                    parameters.append(
+                                        (
+                                            param.get("name"),
+                                            "|".join(kwargs[param.get("name")]),
+                                        )
+                                    )
+                                else:
+                                    # Comma-separated values OR Form is True (default)
+                                    parameters.append(
+                                        (
+                                            param.get("name"),
+                                            ",".join(kwargs[param.get("name")]),
+                                        )
+                                    )
 
                     requestBody = None
                     if "requestBody" in kwargs:
@@ -354,7 +447,6 @@ class SwaggerDecorator:
         elif swagger_param.lower() == "boolean":
             return "Boolean"
         elif swagger_param.lower() == "array":
-            # TODO Fix arrays to actually work
             return "list"
         elif swagger_param.lower() == "object":
             return "Dictionary"
@@ -375,6 +467,12 @@ class SwaggerDecorator:
             parameter.maximum = schema["maximum"]
         if "enum" in schema:
             parameter.choices = schema["enum"]
+
+        if "collectionFormat" in schema:
+            parameter.multiple = True
+
+        if schema.get("style") in ["spacespaceDelimited", "pipeDelimited"]:
+            parameter.multiple = True
 
         parameter.nullable = str(schema.get("nullable", "false")).lower() == "true"
 

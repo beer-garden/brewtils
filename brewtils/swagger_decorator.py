@@ -284,7 +284,8 @@ class SwaggerDecorator:
                                             )
                                         )
                                 elif style == "deepObject":
-                                    # Can't call function in string formatter until py3.13 so have to preload it
+                                    # Can't call function in string formatter until 
+                                    # py3.13 so have to preload it
                                     name = param.get("name")
                                     for valueKey in kwargs[param.get("name")]:
                                         # Each key in Object gets assigned as parameter

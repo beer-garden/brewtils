@@ -313,3 +313,83 @@ class TestPassedValues(object):
         assert client._bg_commands[0].parameters[0].key == "param"
         assert client._bg_commands[0].parameters[0].description == "My Parameter"
         assert client._bg_commands[0].output_type == expected_type
+
+    def test_parameter_array(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                    },
+                                },
+                                "style": "form",
+                                "explode": "true",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        client = SwaggerDecorator(swagger_path=str(json_file))
+
+        assert len(client._bg_commands[0].parameters) == 1
+        assert client._bg_commands[0].parameters[0].key == "param"
+        assert client._bg_commands[0].parameters[0].description == "My Parameter"
+        assert client._bg_commands[0].parameters[0].multiple == True
+        assert client._bg_commands[0].parameters[0].type == "String"
+
+    def test_parameter_array_collection_format(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "type": "string",
+                                "collectionFormat": "multi",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        client = SwaggerDecorator(swagger_path=str(json_file))
+
+        assert len(client._bg_commands[0].parameters) == 1
+        assert client._bg_commands[0].parameters[0].key == "param"
+        assert client._bg_commands[0].parameters[0].description == "My Parameter"
+        assert client._bg_commands[0].parameters[0].multiple == True
+        assert client._bg_commands[0].parameters[0].type == "String"

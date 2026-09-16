@@ -284,7 +284,7 @@ class SwaggerDecorator:
                                             )
                                         )
                                 elif style == "deepObject":
-                                    # Can't call function in string formatter until 
+                                    # Can't call function in string formatter until
                                     # py3.13 so have to preload it
                                     name = param.get("name")
                                     for valueKey in kwargs[param.get("name")]:
@@ -470,9 +470,6 @@ class SwaggerDecorator:
             parameter.choices = schema["enum"]
 
         if "collectionFormat" in schema:
-            parameter.multiple = True
-
-        if schema.get("style") in ["spacespaceDelimited", "pipeDelimited"]:
             parameter.multiple = True
 
         parameter.nullable = str(schema.get("nullable", "false")).lower() == "true"

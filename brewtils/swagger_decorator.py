@@ -5,11 +5,11 @@ from brewtils.models import Parameter, Command
 from brewtils.plugin import (  # noqa F401
     get_current_request_read_only,
 )
-from requests import Session  # noqa
+from requests import Session, exceptions  # noqa
 from brewtils.specification import _CONNECTION_SPEC
 from yapconf import YapconfSpec
 import re
-
+import logging
 
 class SwaggerDecorator:
     # Creates Client class for Swagger documentation based off the the
@@ -40,6 +40,7 @@ class SwaggerDecorator:
         version=None,
     ):
 
+        self.logger = logging.getLogger(__name__)
         self._config = self._load_config()
         self.session = Session()
 
@@ -283,10 +284,36 @@ class SwaggerDecorator:
                             f"No matching API found for command {current_request.command}"
                         )
 
-                    if "application/json" in response.headers.get("Content-Type", ""):
-                        return response.json()
-                    else:
-                        return response.text
+                    try:
+                        response.raise_for_status()
+                        if "application/json" in response.headers.get("Content-Type", ""):
+                            return response.json()
+                        else:
+                            return response.text
+                    except exceptions.RequestException as e:
+                        self.logger.error("--- DEBUG ERROR INFO ---")
+                        self.logger.error(f"Exception Type: {type(e).__name__}")
+                        self.logger.error(f"Error Message: {e}")
+                        
+                        # Check if a response object exists (HTTP errors vs connection dropouts)
+                        if hasattr(e, 'response') and e.response is not None:
+                            # Access the underlying prepared request details
+                            failed_request = e.response.request
+                            
+                            self.logger.error(f"Requested URL: {failed_request.url}")
+                            self.logger.error(f"HTTP Method:   {failed_request.method}")
+                            self.logger.error("\n--- Outgoing Request Headers ---")
+                            for key, value in failed_request.headers.items():
+                                self.logger.error(f"{key}: {value}")
+                                
+                            self.logger.error("\n--- Incoming Response Headers ---")
+                            for key, value in e.response.headers.items():
+                                self.logger.error(f"{key}: {value}")
+                        else:
+                            # Request failed before receiving a server response (e.g., DNS error)
+                            self.logger.error(f"Failed to connect to: {url}")
+
+                        raise e
 
         raise RuntimeError(
             f"No matching API found for command {current_request.command}"

@@ -320,10 +320,7 @@ class SwaggerDecorator:
                                             " ".join(kwargs[param.get("name")]),
                                         )
                                     )
-                                elif (
-                                    collectionFormat == "tsv"
-                                    or style == "pipeDelimited"
-                                ):
+                                elif collectionFormat == "tsv":
                                     # Tab-separated values
                                     parameters.append(
                                         (
@@ -331,7 +328,10 @@ class SwaggerDecorator:
                                             "\t".join(kwargs[param.get("name")]),
                                         )
                                     )
-                                elif collectionFormat == "pipes":
+                                elif (
+                                    collectionFormat == "pipes"
+                                    or style == "pipeDelimited"
+                                ):
                                     # Pipe-separated values
                                     parameters.append(
                                         (
@@ -366,7 +366,10 @@ class SwaggerDecorator:
                         else:
                             target_url = "http://" + target_url
 
-                    url = target_url + path
+                    if path.startswith("/"):
+                        url = target_url + path
+                    else:
+                        url = target_url + "/" + path
 
                     # Call Session with detail info
                     if method.lower() == "get":
@@ -457,7 +460,7 @@ class SwaggerDecorator:
     def _parse_schema(self, schema, parameter):
         if "type" in schema:
             if schema["type"] == "array" and "items" in schema:
-                parameter.multiple = True
+                parameter.multi = True
                 parameter.type = self._param_type_to_brewtils(schema["items"])
             else:
                 parameter.type = self._param_type_to_brewtils(schema)
@@ -470,7 +473,7 @@ class SwaggerDecorator:
             parameter.choices = schema["enum"]
 
         if "collectionFormat" in schema:
-            parameter.multiple = True
+            parameter.multi = True
 
         parameter.nullable = str(schema.get("nullable", "false")).lower() == "true"
 
@@ -491,6 +494,7 @@ class SwaggerDecorator:
         parameter.type = "String"
         parameter.nullable = True
         parameter.optional = True
+        parameter.multi = False
 
         if "schema" in param:
             schema = param["schema"]

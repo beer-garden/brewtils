@@ -1,6 +1,9 @@
 import pytest
 from brewtils import SwaggerDecorator
 import json
+import brewtils.plugin
+from brewtils.models import Request
+import requests_mock
 
 
 class TestPassedValues(object):
@@ -354,7 +357,7 @@ class TestPassedValues(object):
         assert len(client._bg_commands[0].parameters) == 1
         assert client._bg_commands[0].parameters[0].key == "param"
         assert client._bg_commands[0].parameters[0].description == "My Parameter"
-        assert client._bg_commands[0].parameters[0].multiple == True
+        assert client._bg_commands[0].parameters[0].multi == True
         assert client._bg_commands[0].parameters[0].type == "String"
 
     def test_parameter_array_collection_format(self, tmp_path, mock_api_env):
@@ -391,5 +394,464 @@ class TestPassedValues(object):
         assert len(client._bg_commands[0].parameters) == 1
         assert client._bg_commands[0].parameters[0].key == "param"
         assert client._bg_commands[0].parameters[0].description == "My Parameter"
-        assert client._bg_commands[0].parameters[0].multiple == True
+        assert client._bg_commands[0].parameters[0].multi == True
         assert client._bg_commands[0].parameters[0].type == "String"
+
+    def test_parameter_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "type": "string",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param="test")
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["test"]}
+
+    def test_parameter_multi_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                    },
+                                },
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param=["1", "2", "3"])
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["1,2,3"]}
+
+    def test_parameter_array_explode_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                    },
+                                },
+                                # "style": "form",
+                                "explode": "true",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param=["1", "2", "3"])
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["1", "2", "3"]}
+
+    def test_parameter_array_pipe_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                    },
+                                },
+                                "style": "pipeDelimited",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param=["1", "2", "3"])
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["1|2|3"]}
+
+    def test_parameter_array_space_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                    },
+                                },
+                                "style": "spaceDelimited",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param=["1", "2", "3"])
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["1 2 3"]}
+
+    def test_parameter_array_tab_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "type": "string",
+                                "collectionFormat": "tsv",
+                                "description": "My Parameter",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param=["1", "2", "3"])
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["1\t2\t3"]}
+
+    def test_parameter_form_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "description": "My Parameter",
+                                "style": "form",
+                                "explode": "false",
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "role": {
+                                            "type": "string",
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param={"role": "test", "status": "success"})
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"param": ["role,test,status,success"]}
+
+    def test_parameter_form_explode_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "description": "My Parameter",
+                                "style": "form",
+                                "explode": "true",
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "role": {
+                                            "type": "string",
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param={"role": "test", "status": "success"})
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {"role": ["test"], "status": ["success"]}
+
+    def test_parameter_deepObject_url(self, tmp_path, mock_api_env):
+
+        json_file = tmp_path / "test_swagger.json"
+        sample_swagger = {
+            "info": {
+                "description": "Beer Garden API",
+                "title": "Beer Garden",
+                "version": "0.0.0",
+            },
+            "servers": [{"url": "http://0.0.0.0"}],
+            "paths": {
+                "test/path": {
+                    "get": {
+                        "summary": "Path Summary",
+                        "parameters": [
+                            {
+                                "name": "param",
+                                "in": "query",
+                                "description": "My Parameter",
+                                "style": "deepObject",
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "role": {
+                                            "type": "string",
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        json_file.write_text(json.dumps(sample_swagger), encoding="utf-8")
+
+        with requests_mock.Mocker() as mock:
+            mock.get(
+                "http://0.0.0.0/test/path", json={"status": "success"}, status_code=200
+            )
+            brewtils.plugin.request_context.current_request = Request(
+                command="get_test/path"
+            )
+            client = SwaggerDecorator(swagger_path=str(json_file))
+            client._invoke_api(param={"role": "test", "status": "success"})
+
+            assert mock.called is True
+            assert mock.call_count == 1
+
+            last_request = mock.request_history[0]
+            assert last_request.qs == {
+                "param[role]": ["test"],
+                "param[status]": ["success"],
+            }

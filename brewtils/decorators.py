@@ -582,6 +582,9 @@ def _parse_client(client):
     """
     bg_commands = []
 
+    if hasattr(client, "_bg_commands"):
+        bg_commands = getattr(client, "_bg_commands")
+
     for attr in dir(client):
         method = getattr(client, attr)
 

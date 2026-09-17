@@ -36,7 +36,7 @@ class SwaggerDecorator:
         if self.swagger_url is not None:
             try:
                 live_swagger = self._parse_swagger_url()
-            except:
+            except Exception:
                 # Error is already captured in the actual error, no need
                 # for duplicate errors
                 return

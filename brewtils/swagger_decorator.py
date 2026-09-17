@@ -34,7 +34,12 @@ class SwaggerDecorator:
 
     def _check_version(self, exception: exceptions.RequestException):
         if self.swagger_url is not None:
-            live_swagger = self._parse_swagger_url()
+            try:
+                live_swagger = self._parse_swagger_url()
+            except:
+                # Error is already captured in the actual error, no need
+                # for duplicate errors
+                return
             if self.swagger_spec.get("info", {}).get(
                 "version", None
             ) != live_swagger.get("info", {}).get("version", None):
